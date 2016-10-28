@@ -1,4 +1,5 @@
 ﻿using System;
+using NeuralNetworkLibrary.Networks.PublicAPIs;
 
 namespace NeuralNetworkLibrary.Networks
 {
@@ -37,12 +38,12 @@ namespace NeuralNetworkLibrary.Networks
         /// <summary>
         /// Gets the optional threshold for the first layer of hidden neurons
         /// </summary>
-        protected readonly double? Z1Threshold;
+        public readonly double? Z1Threshold;
 
         /// <summary>
         /// Gets the optional threshold for the second neurons layer
         /// </summary>
-        protected readonly double? Z2Threshold;
+        public readonly double? Z2Threshold;
 
         #endregion
 

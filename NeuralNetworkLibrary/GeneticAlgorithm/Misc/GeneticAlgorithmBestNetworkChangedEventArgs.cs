@@ -1,5 +1,5 @@
 ﻿using System;
-using NeuralNetworkLibrary.Networks;
+using NeuralNetworkLibrary.Networks.PublicAPIs;
 
 namespace NeuralNetworkLibrary.GeneticAlgorithm.Misc
 {

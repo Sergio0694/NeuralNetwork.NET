@@ -79,16 +79,18 @@ namespace NeuralNetworkLibrary.Networks.Implementations
         public override byte[] Serialize()
         {
             // Variables initialization
-            const int fixedSize = 28;
+            const int fixedSize = 32;
             int size = fixedSize + InputLayerSize * HiddenLayerSize * 8 + HiddenLayerSize * OutputLayerSize * 8;
             byte[] buffer = new byte[size];
 
             // Create the stream and serialize the instance
             using (MemoryStream stream = new MemoryStream(buffer))
             {
+
                 stream.Write(BitConverter.GetBytes(InputLayerSize), 0, 4);
                 stream.Write(BitConverter.GetBytes(HiddenLayerSize), 0, 4);
                 stream.Write(BitConverter.GetBytes(OutputLayerSize), 0, 4);
+                stream.Write(BitConverter.GetBytes(W2.GetLength(1)), 0, 4);
                 stream.Write(BitConverter.GetBytes(Z1Threshold ?? double.MinValue), 0, 8);
                 stream.Write(BitConverter.GetBytes(Z2Threshold ?? double.MinValue), 0, 8);
                 W1.ForEach((i, j) => stream.Write(BitConverter.GetBytes(W1[i, j]), 0, 8));

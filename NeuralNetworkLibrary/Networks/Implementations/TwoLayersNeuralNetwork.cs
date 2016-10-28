@@ -21,7 +21,7 @@ namespace NeuralNetworkLibrary.Networks.Implementations
         /// <summary>
         /// Gets the optional threshold for the last layer of hidden neurons
         /// </summary>
-        protected readonly double? Z3Threshold;
+        public readonly double? Z3Threshold;
 
         /// <summary>
         /// Gets a copy of the internal weights of the network

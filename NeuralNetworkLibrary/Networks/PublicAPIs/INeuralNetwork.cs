@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkLibrary.Networks
+﻿namespace NeuralNetworkLibrary.Networks.PublicAPIs
 {
     /// <summary>
     /// An interface to mask a neural network implementation

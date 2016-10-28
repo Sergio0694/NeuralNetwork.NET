@@ -48,8 +48,9 @@
     <Compile Include="Helpers\MatrixHelper.cs" />
     <Compile Include="Networks\Implementations\NeuralNetwork.cs" />
     <Compile Include="Networks\Implementations\TwoLayersNeuralNetwork.cs" />
-    <Compile Include="Networks\INeuralNetwork.cs" />
     <Compile Include="Networks\NeuralNetworkBase.cs" />
+    <Compile Include="Networks\PublicAPIs\INeuralNetwork.cs" />
+    <Compile Include="Networks\PublicAPIs\NeuralNetworkDeserializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\RandomExtensions.cs" />
   </ItemGroup>

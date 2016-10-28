@@ -8,6 +8,7 @@ using NeuralNetworkLibrary.GeneticAlgorithm.Misc;
 using NeuralNetworkLibrary.Helpers;
 using NeuralNetworkLibrary.Networks;
 using NeuralNetworkLibrary.Networks.Implementations;
+using NeuralNetworkLibrary.Networks.PublicAPIs;
 
 namespace NeuralNetworkLibrary.GeneticAlgorithm
 {
@@ -247,6 +248,75 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
             });
         }
 
+        #region Pre-initialized providers
+
+        // Helper method to get a provider instance
+        private static NeuralNetworkGeneticAlgorithmProvider ReconstructInstance(
+            Func<int, Func<double[,], double[,]>, double> fitnessFunction, NeuralNetworkBase network,
+            int population, int weightsMutationRate, int eliteSamples)
+        {
+            // Reconstruct the original data
+            NeuralNetworkGeneticAlgorithmProvider provider;
+            if (network is TwoLayersNeuralNetwork)
+            {
+                TwoLayersNeuralNetwork twoLayers = (TwoLayersNeuralNetwork)network;
+                provider = new NeuralNetworkGeneticAlgorithmProvider(
+                    fitnessFunction, twoLayers.InputLayerSize, twoLayers.OutputLayerSize, twoLayers.HiddenLayerSize,
+                    twoLayers.SecondHiddenLayerSize, twoLayers.Z1Threshold, twoLayers.Z2Threshold,
+                    twoLayers.Z3Threshold,
+                    population, weightsMutationRate, eliteSamples);
+            }
+            else
+            {
+                provider = new NeuralNetworkGeneticAlgorithmProvider(
+                    fitnessFunction, network.InputLayerSize, network.OutputLayerSize, network.HiddenLayerSize,
+                    0, network.Z1Threshold, network.Z2Threshold, null, population, weightsMutationRate, eliteSamples);
+            }
+
+            // Randomize the population
+            NeuralNetworkBase[] initialPopulation = new NeuralNetworkBase[population];
+            initialPopulation[0] = network;
+            for (int i = 1; i < population - 1; i++) initialPopulation[i] = provider.MutateNetwork(network);
+            return provider;
+        }
+
+        /// <summary>
+        /// Creates a new instance from a serialized neural network
+        /// </summary>
+        /// <param name="fitnessFunction">The fitness function used to evaluate the neural networks</param>
+        /// <param name="networkData">The serialized neural network to use to initialize the provider</param>
+        /// <param name="population">Number of networks in the population</param>
+        /// <param name="weightsMutationRate">Probability for each weight mutation</param>
+        /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
+        public static Task<NeuralNetworkGeneticAlgorithmProvider> FromSerializedNetworkAsync(
+            Func<int, Func<double[,], double[,]>, double> fitnessFunction, byte[] networkData,
+            int population, int weightsMutationRate, int eliteSamples)
+        {
+            return Task.Run(() =>
+            {
+                // Try to deserialize the original network
+                NeuralNetworkBase network = NeuralNetworkDeserializer.TryGetInstance(networkData) as NeuralNetworkBase;
+                return network == null ? null : ReconstructInstance(fitnessFunction, network, population, weightsMutationRate, eliteSamples);
+            });
+        }
+
+        /// <summary>
+        /// Creates a new instance from a serialized neural network
+        /// </summary>
+        /// <param name="fitnessFunction">The fitness function used to evaluate the neural networks</param>
+        /// <param name="network">The neural network to use to initialize the provider</param>
+        /// <param name="population">Number of networks in the population</param>
+        /// <param name="weightsMutationRate">Probability for each weight mutation</param>
+        /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
+        public static Task<NeuralNetworkGeneticAlgorithmProvider> FromNetworkAsync(
+            Func<int, Func<double[,], double[,]>, double> fitnessFunction, INeuralNetwork network,
+            int population, int weightsMutationRate, int eliteSamples)
+        {
+            return Task.Run(() => ReconstructInstance(fitnessFunction, (NeuralNetworkBase)network, population, weightsMutationRate, eliteSamples));
+        }
+
+        #endregion
+
         #endregion
 
         #region Public methods
@@ -322,6 +392,38 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         }
 
         /// <summary>
+        /// Returns a new mutated network from the input network
+        /// </summary>
+        /// <param name="network">The input network</param>
+        private NeuralNetworkBase MutateNetwork(NeuralNetworkBase network)
+        {
+            // Iterate over all the layers
+            Random r = new Random(network.GetHashCode());
+            if (network.GetType() == typeof(NeuralNetwork))
+            {
+                Tuple<double[,], double[,]> weights = ((NeuralNetwork)network).Weights;
+                foreach (double[,] weight in new[] { weights.Item1, weights.Item2 })
+                {
+                    MatrixHelper.RandomMutate(weight, WeightsMutationRate, r);
+                }
+                return new NeuralNetwork(network.InputLayerSize, network.OutputLayerSize, network.HiddenLayerSize, weights.Item1, weights.Item2, Z1Threshold, Z2Threshold);
+            }
+            else
+            {
+                // Double neural network
+                TwoLayersNeuralNetwork twoLayersNet = (TwoLayersNeuralNetwork)network;
+                Tuple<double[,], double[,], double[,]> weights = twoLayersNet.Weights;
+                foreach (double[,] weight in new[] { weights.Item1, weights.Item2, weights.Item3 })
+                {
+                    MatrixHelper.RandomMutate(weight, WeightsMutationRate, r);
+                }
+                return new TwoLayersNeuralNetwork(network.InputLayerSize, network.OutputLayerSize, network.HiddenLayerSize,
+                    twoLayersNet.SecondHiddenLayerSize, weights.Item1, weights.Item2, weights.Item3,
+                    Z1Threshold, Z2Threshold, Z3Threshold);
+            }
+        }
+
+        /// <summary>
         /// Runs the genetic algorithm
         /// </summary>
         /// <param name="token">The cancellation token for the algorithm</param>
@@ -393,37 +495,8 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
                 }
                 if (children.Count != PopulationSize) Debugger.Break();
 
-                // Add random weights mutations
-                Func<NeuralNetworkBase, NeuralNetworkBase> mutate = net =>
-                {
-                    // Iterate over all the layers
-                    Random r = new Random(net.GetHashCode());
-                    if (net.GetType() == typeof(NeuralNetwork))
-                    {
-                        Tuple<double[,], double[,]> weights = ((NeuralNetwork)net).Weights;
-                        foreach (double[,] weight in new[] { weights.Item1, weights.Item2 })
-                        {
-                            MatrixHelper.RandomMutate(weight, WeightsMutationRate, r);
-                        }
-                        return new NeuralNetwork(net.InputLayerSize, net.OutputLayerSize, net.HiddenLayerSize, weights.Item1, weights.Item2, Z1Threshold, Z2Threshold);
-                    }
-                    else
-                    {
-                        // Double neural network
-                        TwoLayersNeuralNetwork twoLayersNet = (TwoLayersNeuralNetwork)net;
-                        Tuple<double[,], double[,], double[,]> weights = twoLayersNet.Weights;
-                        foreach (double[,] weight in new[] { weights.Item1, weights.Item2, weights.Item3 })
-                        {
-                            MatrixHelper.RandomMutate(weight, WeightsMutationRate, r);
-                        }
-                        return new TwoLayersNeuralNetwork(net.InputLayerSize, net.OutputLayerSize, net.HiddenLayerSize,
-                            twoLayersNet.SecondHiddenLayerSize, weights.Item1, weights.Item2, weights.Item3,
-                            Z1Threshold, Z2Threshold, Z3Threshold);
-                    }
-                };
-
                 // Queue and run all the current mutation
-                IEnumerable<Task<NeuralNetworkBase>> mutation = children.Select(child => Task.Run(() => mutate(child)));
+                IEnumerable<Task<NeuralNetworkBase>> mutation = children.Select(child => Task.Run(() => MutateNetwork(child)));
                 _Population = await Task.WhenAll(mutation);
             }
         }
