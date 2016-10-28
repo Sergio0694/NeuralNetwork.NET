@@ -1,5 +1,4 @@
-﻿using System.Resources;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -14,7 +13,14 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: NeutralResourcesLanguage("it")]
+
+// Se si imposta ComVisible su false, i tipi in questo assembly non saranno visibili 
+// ai componenti COM. Se è necessario accedere a un tipo in questo assembly da 
+// COM, impostare su true l'attributo ComVisible per tale tipo.
+[assembly: ComVisible(false)]
+
+// Se il progetto viene esposto a COM, il GUID seguente verrà utilizzato come ID della libreria dei tipi
+[assembly: Guid("b0812186-b9c8-4d4d-8180-46d176db9653")]
 
 // Le informazioni sulla versione di un assembly sono costituite dai seguenti quattro valori:
 //
