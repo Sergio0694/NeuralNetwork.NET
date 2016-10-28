@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using NeuralNetworkLibrary.Helpers;
 
 namespace NeuralNetworkLibrary.Networks.Implementations
@@ -100,6 +101,30 @@ namespace NeuralNetworkLibrary.Networks.Implementations
                 w3 = MatrixHelper.TwoPointsCrossover(W3, net.W3, random);
             return new TwoLayersNeuralNetwork(InputLayerSize, OutputLayerSize, HiddenLayerSize, SecondHiddenLayerSize, 
                 w1, w2, w3, Z1Threshold, Z2Threshold, Z3Threshold);
+        }
+
+        #endregion
+
+        #region Serialization
+
+        // Serializes the instance
+        public override byte[] Serialize()
+        {
+            // Variables initialization
+            const int fixedSize = 12;
+            byte[] single = base.Serialize();
+            int size = single.Length + fixedSize + SecondHiddenLayerSize * OutputLayerSize * 8;
+            byte[] buffer = new byte[size];
+
+            // Create the stream and serialize the instance
+            using (MemoryStream stream = new MemoryStream(buffer))
+            {
+                stream.Write(single, 0, single.Length);
+                stream.Write(BitConverter.GetBytes(SecondHiddenLayerSize), 0, 4);
+                stream.Write(BitConverter.GetBytes(Z3Threshold ?? double.MinValue), 0, 8);
+                W3.ForEach((i, j) => stream.Write(BitConverter.GetBytes(W3[i, j]), 0, 8));
+            }
+            return buffer;
         }
 
         #endregion

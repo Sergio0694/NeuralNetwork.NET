@@ -20,5 +20,10 @@
         /// </summary>
         /// <param name="input">The input to process</param>
         double[,] Forward(double[,] input);
+
+        /// <summary>
+        /// Serializes the current instance into a byte array
+        /// </summary>
+        byte[] Serialize();
     }
 }

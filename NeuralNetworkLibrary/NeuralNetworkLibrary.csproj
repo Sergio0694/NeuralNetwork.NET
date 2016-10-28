@@ -42,8 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GeneticAlgorithm\GeneticAlgorithmBestNetworkChangedEventArgs.cs" />
-    <Compile Include="GeneticAlgorithm\GeneticAlgorithmProgress.cs" />
+    <Compile Include="GeneticAlgorithm\Misc\GeneticAlgorithmBestNetworkChangedEventArgs.cs" />
+    <Compile Include="GeneticAlgorithm\Misc\GeneticAlgorithmProgress.cs" />
     <Compile Include="GeneticAlgorithm\NeuralNetworkGeneticAlgorithmProvider.cs" />
     <Compile Include="Helpers\MatrixHelper.cs" />
     <Compile Include="Networks\Implementations\NeuralNetwork.cs" />
@@ -53,9 +53,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Helpers\RandomExtensions.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="GeneticAlgorithm\Misc\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

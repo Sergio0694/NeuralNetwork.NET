@@ -30,6 +30,11 @@ namespace NeuralNetworkLibrary.Networks
         protected readonly double[,] W1;
 
         /// <summary>
+        /// Gets the weights from the first hidden layer
+        /// </summary>
+        protected readonly double[,] W2;
+
+        /// <summary>
         /// Gets the optional threshold for the first layer of hidden neurons
         /// </summary>
         protected readonly double? Z1Threshold;
@@ -38,11 +43,6 @@ namespace NeuralNetworkLibrary.Networks
         /// Gets the optional threshold for the second neurons layer
         /// </summary>
         protected readonly double? Z2Threshold;
-
-        /// <summary>
-        /// Gets the weights from the first hidden layer
-        /// </summary>
-        protected readonly double[,] W2;
 
         #endregion
 
@@ -79,5 +79,10 @@ namespace NeuralNetworkLibrary.Networks
         /// <param name="other">The other network to use for the crossover</param>
         /// <param name="random">The random instance</param>
         public abstract NeuralNetworkBase Crossover(NeuralNetworkBase other, Random random);
+
+        /// <summary>
+        /// Serializes the current instance into a byte array
+        /// </summary>
+        public abstract byte[] Serialize();
     }
 }
