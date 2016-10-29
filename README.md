@@ -6,11 +6,11 @@ This library provides simple APIs to create and train neural networks given a us
 ## Usage
 
 The library provides a `NeuralNetworkGeneticAlgorithmProvider` class that implements a genetic algorithm. This class can be initialized using different parameters and will run the algorithm to create and train the neural networks.
-First, declare a fitness function using the `FitnessDelegate` delegate.
+First, declare a fitness function using the `NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate` delegate.
 This delegate takes as arguments an identifier for the current network and its forward function, and returns the fitness score for the tested species.
 
 ```C#
-FitnessDelegate fitnessFunction = (uid, f) =>
+NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate fitnessFunction = (uid, f) =>
 {
   // The uid parameter is a unique uid for the current neural network calling the fitness function
   double[,] testData = PrepareTestData(); // Prepare your own data to feed the neural network

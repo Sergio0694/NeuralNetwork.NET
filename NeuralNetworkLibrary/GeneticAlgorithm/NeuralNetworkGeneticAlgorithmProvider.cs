@@ -68,11 +68,17 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         #region Genetic algorithm public parameters
 
         /// <summary>
+        /// Represents the forward method used to process the input data using a neural network
+        /// </summary>
+        /// <param name="input">The input data to process</param>
+        public delegate double[,] ForwardFunction(double[,] input);
+
+        /// <summary>
         /// Represents the method used to calculate the fitness score for each neural network
         /// </summary>
         /// <param name="uid">A unique identifier for the network</param>
         /// <param name="forwardFunction">The forward function to test the current neural network</param>
-        public delegate double FitnessDelegate(int uid, Func<double[,], double[,]> forwardFunction);
+        public delegate double FitnessDelegate(int uid, ForwardFunction forwardFunction);
 
         /// <summary>
         /// Gets the function used to evaluate the fitness of every generated network
