@@ -68,9 +68,16 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         #region Genetic algorithm public parameters
 
         /// <summary>
+        /// Represents the method used to calculate the fitness score for each neural network
+        /// </summary>
+        /// <param name="uid">A unique identifier for the network</param>
+        /// <param name="forwardFunction">The forward function to test the current neural network</param>
+        public delegate double FitnessDelegate(int uid, Func<double[,], double[,]> forwardFunction);
+
+        /// <summary>
         /// Gets the function used to evaluate the fitness of every generated network
         /// </summary>
-        public Func<int, Func<double[,], double[,]>, double> FitnessFunction { get; }
+        public FitnessDelegate FitnessFunction { get; }
 
         /// <summary>
         /// Gets or sets the callback action used to report the progress
@@ -155,7 +162,7 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
 
         // Private constructor
         private NeuralNetworkGeneticAlgorithmProvider(
-            Func<int, Func<double[,], double[,]>, double> fitnessFunction,
+            FitnessDelegate fitnessFunction,
             int input, int output, int firstHiddenSize, int secondHiddenSize, double? z1Th, double? z2Th, double? z3Th,
             int population, int weightsMutationRate, int eliteSamples)
         {
@@ -207,7 +214,7 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
         public static Task<NeuralNetworkGeneticAlgorithmProvider> NewSingleLayerAsync(
-            Func<int, Func<double[,], double[,]>, double> fitnessFunction,
+            FitnessDelegate fitnessFunction,
             int input, int output, int size, double? z1Threshold, double? z2Threshold,
             int population, int weightsMutationRate, int eliteSamples)
         {
@@ -235,7 +242,7 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
         public static Task<NeuralNetworkGeneticAlgorithmProvider> NewTwoLayersLayerAsync(
-            Func<int, Func<double[,], double[,]>, double> fitnessFunction,
+            FitnessDelegate fitnessFunction,
             int input, int output, int firstHiddenSize, int secondHiddenSize, double? z1Threshold, double? z2Threshold, double? z3Threshold,
             int population, int weightsMutationRate, int eliteSamples)
         {
@@ -252,7 +259,7 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
 
         // Helper method to get a provider instance
         private static NeuralNetworkGeneticAlgorithmProvider ReconstructInstance(
-            Func<int, Func<double[,], double[,]>, double> fitnessFunction, NeuralNetworkBase network,
+            FitnessDelegate fitnessFunction, NeuralNetworkBase network,
             int population, int weightsMutationRate, int eliteSamples)
         {
             // Reconstruct the original data
@@ -289,7 +296,7 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
         public static Task<NeuralNetworkGeneticAlgorithmProvider> FromSerializedNetworkAsync(
-            Func<int, Func<double[,], double[,]>, double> fitnessFunction, byte[] networkData,
+            FitnessDelegate fitnessFunction, byte[] networkData,
             int population, int weightsMutationRate, int eliteSamples)
         {
             return Task.Run(() =>
@@ -309,7 +316,7 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
         public static Task<NeuralNetworkGeneticAlgorithmProvider> FromNetworkAsync(
-            Func<int, Func<double[,], double[,]>, double> fitnessFunction, INeuralNetwork network,
+            FitnessDelegate fitnessFunction, INeuralNetwork network,
             int population, int weightsMutationRate, int eliteSamples)
         {
             return Task.Run(() => ReconstructInstance(fitnessFunction, (NeuralNetworkBase)network, population, weightsMutationRate, eliteSamples));

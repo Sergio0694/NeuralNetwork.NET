@@ -6,10 +6,11 @@ This library provides simple APIs to create and train neural networks given a us
 ## Usage
 
 The library provides a `NeuralNetworkGeneticAlgorithmProvider` class that implements a genetic algorithm. This class can be initialized using different parameters and will run the algorithm to create and train the neural networks.
-First, declare a fitness function:
+First, declare a fitness function using the `FitnessDelegate` delegate.
+This delegate takes as arguments an identifier for the current network and its forward function, and returns the fitness score for the tested species.
 
 ```C#
-Func<int, Func<double[,], double[,]>, double> fitnessFunction = (uid, f) =>
+FitnessDelegate fitnessFunction = (uid, f) =>
 {
   // The uid parameter is a unique uid for the current neural network calling the fitness function
   double[,] testData = PrepareTestData(); // Prepare your own data to feed the neural network
@@ -23,7 +24,16 @@ Func<int, Func<double[,], double[,]>, double> fitnessFunction = (uid, f) =>
 Then get a neural network provider using one of the available methods:
 
 ```C#
-NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.NewSingleLayerAsync(fitnessFunction, 16, 4, 16, null, 0.5, 100, 5, 10);
+NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.NewSingleLayerAsync(
+  fitnessFunction, // The fitness function to test the networks
+  16, // Number of inputs
+  4, // Number of outputs
+  16, // Number of neurons in the hidden layer
+  null, // Optional threshold for the activation function of the hidden layer neurons
+  0.5, // Optiona threshold for the activation function of the output neurons
+  100, // Size of the population for the genetic algorithm
+  5, // Percentage of random mutations for each weight in the networks
+  10); // Number of best networks to carry over each generation
 ```
 
 You can also use a callback action to monitor the provider feedback:
@@ -40,6 +50,7 @@ provider.ProgressCallback = callback;
 Then you can start and stop the provider when necessary:
 
 ```C#
+// Returns true if the provider is started correctly, false if it was already running
 provider.StartAsync();
 
 // Wait until a good enough network has been trained
@@ -65,5 +76,10 @@ byte[] serialized = network.Serialize();
 
 // The serialized data can be used to recreate the network or another provider
 INeuralNetwork deserialized = NeuralNetworkDeserializer.TryGetInstance(serialized);
-NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.FromSerializedNetworkAsync(fitnessFunction, deserialized, 100, 5, 10);
+NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.FromSerializedNetworkAsync(
+  fitnessFunction, // Use the same fitness function used to obtain the serialized network
+  deserialized, // The serialized network (all the provider parameters will be extracted from the network info)
+  100, // Population size
+  5, // Random mutations probability
+  10); // Elite samples mantained over each generation
 ```
