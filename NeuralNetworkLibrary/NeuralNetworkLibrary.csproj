@@ -42,12 +42,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Examples\CrossesGames\CrossesGameBase.cs" />
-    <Compile Include="Examples\CrossesGames\Enums\CrossesGameResult.cs" />
-    <Compile Include="Examples\CrossesGames\Enums\GameBoardTileValue.cs" />
-    <Compile Include="Examples\CrossesGames\Implementations\ConnectFour.cs" />
-    <Compile Include="Examples\CrossesGames\RandomCompetitiveCrossesGameBase.cs" />
-    <Compile Include="Examples\CrossesGames\Implementations\TicTacToe.cs" />
+    <Compile Include="Examples\BoardGames\BoardGameBase.cs" />
+    <Compile Include="Examples\BoardGames\Enums\CrossesGameResult.cs" />
+    <Compile Include="Examples\BoardGames\Enums\Direction.cs" />
+    <Compile Include="Examples\BoardGames\Enums\GameBoardTileValue.cs" />
+    <Compile Include="Examples\BoardGames\Implementations\2048.cs" />
+    <Compile Include="Examples\BoardGames\Implementations\ConnectFour.cs" />
+    <Compile Include="Examples\BoardGames\RandomCompetitiveCrossesGameBase.cs" />
+    <Compile Include="Examples\BoardGames\Implementations\TicTacToe.cs" />
+    <Compile Include="Examples\NeuralNetworkExampleTrainer.cs" />
     <Compile Include="GeneticAlgorithm\Misc\GeneticAlgorithmBestNetworkChangedEventArgs.cs" />
     <Compile Include="GeneticAlgorithm\Misc\GeneticAlgorithmProgress.cs" />
     <Compile Include="GeneticAlgorithm\NeuralNetworkGeneticAlgorithmProvider.cs" />

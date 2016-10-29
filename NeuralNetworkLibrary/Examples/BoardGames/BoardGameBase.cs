@@ -1,11 +1,9 @@
-﻿using NeuralNetworkLibrary.Examples.CrossesGames.Enums;
-
-namespace NeuralNetworkLibrary.Examples.CrossesGames
+﻿namespace NeuralNetworkLibrary.Examples.BoardGames
 {
     /// <summary>
     /// The base abstract class for all the crosses games
     /// </summary>
-    public abstract class CrossesGameBase
+    public abstract class BoardGameBase<T>
     {
         #region Fields and parameters
 
@@ -27,12 +25,7 @@ namespace NeuralNetworkLibrary.Examples.CrossesGames
         /// <summary>
         /// Gets the board game
         /// </summary>
-        protected readonly GameBoardTileValue[,] Board;
-
-        /// <summary>
-        /// Gets the number of remaining moves
-        /// </summary>
-        public int AvailableMoves { get; protected set; }
+        protected readonly T[,] Board;
 
         #endregion
 
@@ -41,14 +34,20 @@ namespace NeuralNetworkLibrary.Examples.CrossesGames
         /// </summary>
         /// <param name="height">The height of the game board</param>
         /// <param name="width">The width of the game bard</param>
-        protected CrossesGameBase(int height, int width)
+        protected BoardGameBase(int height, int width)
         {
             Height = height;
             Width = width;
-            Board = new GameBoardTileValue[height, width];
+            Board = new T[height, width];
             TotalTiles = height * width;
-            AvailableMoves = TotalTiles;
         }
+
+        /// <summary>
+        /// The access method to get the serialized values for the game board
+        /// </summary>
+        /// <param name="x">The target row</param>
+        /// <param name="y">The target column</param>
+        protected abstract double this[int x, int y] { get; }
 
         /// <summary>
         /// Serializes the current game state into a linear 1 * Size matrix
@@ -60,7 +59,7 @@ namespace NeuralNetworkLibrary.Examples.CrossesGames
             {
                 for (int j = 0; j < Width; j++)
                 {
-                    board[0, i * Width + j] = (double)Board[i, j];
+                    board[0, i * Width + j] = this[i, j];
                 }
             }
             return board;

@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkLibrary.Examples.CrossesGames.Enums
+﻿namespace NeuralNetworkLibrary.Examples.BoardGames.Enums
 {
     /// <summary>
     /// Indicates the value of a given position on the game board

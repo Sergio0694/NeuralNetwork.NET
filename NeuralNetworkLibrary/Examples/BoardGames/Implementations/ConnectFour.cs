@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using NeuralNetworkLibrary.Examples.CrossesGames.Enums;
+using NeuralNetworkLibrary.Examples.BoardGames.Enums;
 
-namespace NeuralNetworkLibrary.Examples.CrossesGames.Implementations
+namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
 {
     /// <summary>
     /// A simple class that represents the classic Force4 game

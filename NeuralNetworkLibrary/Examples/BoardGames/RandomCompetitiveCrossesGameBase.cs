@@ -1,12 +1,12 @@
 ﻿using System;
-using NeuralNetworkLibrary.Examples.CrossesGames.Enums;
+using NeuralNetworkLibrary.Examples.BoardGames.Enums;
 
-namespace NeuralNetworkLibrary.Examples.CrossesGames
+namespace NeuralNetworkLibrary.Examples.BoardGames
 {
     /// <summary>
     /// Base class for a game played against a random opponent
     /// </summary>
-    public abstract class RandomCompetitiveCrossesGameBase : CrossesGameBase
+    public abstract class RandomCompetitiveCrossesGameBase : BoardGameBase<GameBoardTileValue>
     {
         #region Fields and parameters
 
@@ -19,6 +19,11 @@ namespace NeuralNetworkLibrary.Examples.CrossesGames
         /// Gets whether or not it is the player's turn
         /// </summary>
         protected bool _PlayerTurn;
+
+        /// <summary>
+        /// Gets the number of remaining moves
+        /// </summary>
+        public int AvailableMoves { get; protected set; }
 
         #endregion
 
@@ -33,10 +38,14 @@ namespace NeuralNetworkLibrary.Examples.CrossesGames
         {
             // Fixed fields
             RandomProvider = random;
+            AvailableMoves = height * width;
 
             // First turn
             if (firstTurn) _PlayerTurn = true;
         }
+
+        // Serialization converter
+        protected override double this[int x, int y] => (double)Board[x, y];
 
         #region Abstract methods
 

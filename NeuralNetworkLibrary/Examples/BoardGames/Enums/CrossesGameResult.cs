@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkLibrary.Examples.CrossesGames.Enums
+﻿namespace NeuralNetworkLibrary.Examples.BoardGames.Enums
 {
     /// <summary>
     /// Indicates the result of a single match

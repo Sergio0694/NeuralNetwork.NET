@@ -1,6 +1,6 @@
 ﻿using System;
-using NeuralNetworkLibrary.Examples.CrossesGames.Enums;
-using NeuralNetworkLibrary.Examples.CrossesGames.Implementations;
+using NeuralNetworkLibrary.Examples.BoardGames.Enums;
+using NeuralNetworkLibrary.Examples.BoardGames.Implementations;
 using NeuralNetworkLibrary.GeneticAlgorithm;
 
 namespace NeuralNetworkLibrary.Examples
@@ -13,7 +13,7 @@ namespace NeuralNetworkLibrary.Examples
         /// <summary>
         /// Gets a fitness function that lets the neural networks learn how to play TicTacToe
         /// </summary>
-        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate Function { get; } = (uid, forward) =>
+        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate TicTacToeFitnessFunction { get; } = (uid, forward) =>
         {
             // Initialize the score, the random provider and start looping
             double score = 0;
@@ -77,6 +77,57 @@ namespace NeuralNetworkLibrary.Examples
                 }
             }
             return score;
+        };
+
+        /// <summary>
+        /// Gets a fitness function that lets the neural networks learn how to play 2048
+        /// </summary>
+        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate _2048FitnessFunction { get; } = (uid, forward) =>
+        {
+            // Initialize the random provider and start the loop
+            Random random = new Random(uid);
+            double top = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                _2048 match = new _2048(random);
+                while (true)
+                {
+                    // Serialize and get the next move
+                    double[,] serialized = match.Serialize();
+                    double[,] move = forward(serialized);
+                    int position = 0;
+                    double max = double.MinValue;
+                    for (int j = 0; j < move.GetLength(1); j++)
+                    {
+                        if (move[0, j] > max)
+                        {
+                            max = move[0, j];
+                            position = j;
+                        }
+                    }
+                    Direction dir;
+                    switch (position)
+                    {
+                        case 0: dir = Direction.Up; break;
+                        case 1: dir = Direction.Down; break;
+                        case 2: dir = Direction.Left; break;
+                        case 3: dir = Direction.Right; break;
+                        default: throw new InvalidOperationException();
+                    }
+
+                    // Try to move and check the result
+                    if (!match.Move(dir, false))
+                    {
+                        Direction? d = match.NextAvailableMove;
+                        if (d == null) break;
+                        match.Move(d.Value, false);
+                    }
+
+                    if (match.NextAvailableMove == null) break;
+                }
+                if (match.Score > top) top = match.Score;
+            }
+            return top;
         };
     }
 }
