@@ -78,7 +78,8 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
         /// </summary>
         /// <param name="uid">A unique identifier for the network</param>
         /// <param name="forwardFunction">The forward function to test the current neural network</param>
-        public delegate double FitnessDelegate(int uid, ForwardFunction forwardFunction);
+        /// <param name="opponents">A collection of the forward functions of the other species in the current generation, used for competitive learning</param>
+        public delegate double FitnessDelegate(int uid, ForwardFunction forwardFunction, IEnumerable<ForwardFunction> opponents);
 
         /// <summary>
         /// Gets the function used to evaluate the fitness of every generated network
@@ -446,9 +447,10 @@ namespace NeuralNetworkLibrary.GeneticAlgorithm
             while (!token.IsCancellationRequested)
             {
                 // Test the current generation
-                IEnumerable<Task<Tuple<NeuralNetworkBase, double>>> testing = _Population.Select(async net =>
+                IEnumerable<Task<Tuple<NeuralNetworkBase, double>>> testing = _Population.Select(async (net, i) =>
                 {
-                    double fitness = await Task.Run(() => FitnessFunction(net.GetHashCode(), net.Forward));
+                    IEnumerable<ForwardFunction> opponents = _Population.Where((entry, pos) => pos != i).Select<NeuralNetworkBase, ForwardFunction>(entry => entry.Forward);
+                    double fitness = await Task.Run(() => FitnessFunction(net.GetHashCode(), net.Forward, opponents));
                     return Tuple.Create(net, fitness);
                 });
                 Tuple<NeuralNetworkBase, double>[] result = await Task.WhenAll(testing);

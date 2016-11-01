@@ -13,7 +13,7 @@ namespace NeuralNetworkLibrary.Examples
         /// <summary>
         /// Gets a fitness function that lets the neural networks learn how to play TicTacToe
         /// </summary>
-        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate TicTacToeFitnessFunction { get; } = (uid, forward) =>
+        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate TicTacToeFitnessFunction { get; } = (uid, forward, opponents) =>
         {
             // Initialize the score, the random provider and start looping
             double score = 0;
@@ -82,7 +82,7 @@ namespace NeuralNetworkLibrary.Examples
         /// <summary>
         /// Gets a fitness function that lets the neural networks learn how to play 2048
         /// </summary>
-        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate _2048FitnessFunction { get; } = (uid, forward) =>
+        public static NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate _2048FitnessFunction { get; } = (uid, forward, opponents) =>
         {
             // Initialize the random provider and start the loop
             Random random = new Random(uid);
