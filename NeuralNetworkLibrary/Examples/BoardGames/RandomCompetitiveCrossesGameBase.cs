@@ -18,7 +18,12 @@ namespace NeuralNetworkLibrary.Examples.BoardGames
         /// <summary>
         /// Gets whether or not it is the player's turn
         /// </summary>
-        protected bool _PlayerTurn;
+        public bool PlayerTurn { get; protected set; }
+
+        /// <summary>
+        /// Gets the value of the next move that will be made
+        /// </summary>
+        protected GameBoardTileValue CurrentMoveValue => PlayerTurn ? GameBoardTileValue.Nought : GameBoardTileValue.Cross;
 
         /// <summary>
         /// Gets the number of remaining moves
@@ -41,7 +46,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames
             AvailableMoves = height * width;
 
             // First turn
-            if (firstTurn) _PlayerTurn = true;
+            if (firstTurn) PlayerTurn = true;
         }
 
         // Serialization converter

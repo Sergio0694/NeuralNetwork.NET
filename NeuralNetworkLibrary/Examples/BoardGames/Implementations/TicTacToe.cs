@@ -84,7 +84,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
         public bool Move(int x, int y, bool auto)
         {
             // Turn check
-            if (_PlayerTurn) throw new InvalidOperationException("It is not the plyer's turn");
+            if (PlayerTurn) throw new InvalidOperationException("It is not the plyer's turn");
             if (AvailableMoves == 0) throw new InvalidOperationException("The game is already over");
 
             // Check if the move is valid
@@ -92,7 +92,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
             {
                 Board[x, y] = GameBoardTileValue.Nought;
                 AvailableMoves--;
-                _PlayerTurn = false;
+                PlayerTurn = false;
                 return true;
             }
 
@@ -107,7 +107,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
                         {
                             Board[x, y] = GameBoardTileValue.Nought;
                             AvailableMoves--;
-                            _PlayerTurn = false;
+                            PlayerTurn = false;
                             return false;
                         }
                     }
@@ -122,7 +122,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
         public override void MoveOpponent()
         {
             // Find the free positions
-            if (_PlayerTurn || AvailableMoves == 0) throw new InvalidOperationException();
+            if (PlayerTurn || AvailableMoves == 0) throw new InvalidOperationException();
             List<int[]> free = new List<int[]>();
             for (int i = 0; i < 3; i++)
             {
@@ -135,7 +135,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
             int[] chosen = free[RandomProvider.Next(0, free.Count)];
             Board[chosen[0], chosen[1]] = GameBoardTileValue.Cross;
             AvailableMoves--;
-            _PlayerTurn = true;
+            PlayerTurn = true;
         }
 
         #endregion

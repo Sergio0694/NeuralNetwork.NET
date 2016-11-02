@@ -78,22 +78,23 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
         public override CrossesGameResult CheckMatchResult()
         {
             // Check player and opponent
-            if (_PlayerTurn && CheckBitboardWin(OpponentBitboard)) return CrossesGameResult.OpponentVictory;
-            if (!_PlayerTurn && CheckBitboardWin(PlayerBitboard)) return CrossesGameResult.PlayerVictory;
+            if (PlayerTurn && CheckBitboardWin(OpponentBitboard)) return CrossesGameResult.OpponentVictory;
+            if (!PlayerTurn && CheckBitboardWin(PlayerBitboard)) return CrossesGameResult.PlayerVictory;
 
             // No winner
             return CrossesGameResult.Tie;
         }
 
         /// <summary>
-        /// Performs the player move, throws an InvalidOperationException if it's the opponent's turn
+        /// Performs the move for the current player, throws an InvalidOperationException if it's not the right turn
         /// </summary>
         /// <param name="index">The target column</param>
+        /// <param name="value">The value of the next move</param>
         /// <param name="auto">If true and the target position isn't empty, the first empty tile will be used</param>
-        public bool Move(int index, bool auto)
+        public bool Move(int index, GameBoardTileValue value, bool auto)
         {
             // Turn check
-            if (_PlayerTurn) throw new InvalidOperationException("It is not the plyer's turn");
+            if (value != CurrentMoveValue) throw new InvalidOperationException("It is not the right plyer's turn");
             if (AvailableMoves == 0) throw new InvalidOperationException("The game is already over");
 
             // Check if the move is valid
@@ -101,10 +102,11 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
             {
                 if (Board[i, index] == GameBoardTileValue.Empty)
                 {
-                    Board[i, index] = GameBoardTileValue.Nought;
-                    PlayerBitboard = SetMove(PlayerBitboard, i, index);
+                    Board[i, index] = value;
+                    if (value == GameBoardTileValue.Nought) PlayerBitboard = SetMove(PlayerBitboard, i, index);
+                    else OpponentBitboard = SetMove(OpponentBitboard, i, index);
                     AvailableMoves--;
-                    _PlayerTurn = false;
+                    PlayerTurn = !PlayerTurn;
                     return true;
                 }
             }
@@ -118,10 +120,11 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
                     {
                         if (Board[j, i] == GameBoardTileValue.Empty)
                         {
-                            Board[j, i] = GameBoardTileValue.Nought;
-                            PlayerBitboard = SetMove(PlayerBitboard, i, index);
+                            Board[j, i] = value;
+                            if (value == GameBoardTileValue.Nought) PlayerBitboard = SetMove(PlayerBitboard, i, index);
+                            else OpponentBitboard = SetMove(OpponentBitboard, i, index);
                             AvailableMoves--;
-                            _PlayerTurn = false;
+                            PlayerTurn = !PlayerTurn;
                             return false;
                         }
                     }
@@ -136,7 +139,7 @@ namespace NeuralNetworkLibrary.Examples.BoardGames.Implementations
         public override void MoveOpponent()
         {
             // Find the free positions
-            if (_PlayerTurn || AvailableMoves == 0) throw new InvalidOperationException();
+            if (PlayerTurn || AvailableMoves == 0) throw new InvalidOperationException();
             List<int> free = new List<int>();
             for (int i = 0; i < 3; i++)
             {

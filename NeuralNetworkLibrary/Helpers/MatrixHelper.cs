@@ -27,6 +27,26 @@ namespace NeuralNetworkLibrary.Helpers
         }
 
         /// <summary>
+        /// Calculates the index of the maximum value in a linear matrix
+        /// </summary>
+        /// <param name="m">The input matrix</param>
+        public static int MaxIndex(this double[,] m)
+        {
+            if (m.GetLength(0) != 1) throw new ArgumentOutOfRangeException("The input matrix must be a 1*n matrix");
+            int position = 0;
+            double max = double.MinValue;
+            for (int j = 0; j < m.GetLength(1); j++)
+            {
+                if (m[0, j] > max)
+                {
+                    max = m[0, j];
+                    position = j;
+                }
+            }
+            return position;
+        }
+
+        /// <summary>
         /// Performs the multiplication between two matrices
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
