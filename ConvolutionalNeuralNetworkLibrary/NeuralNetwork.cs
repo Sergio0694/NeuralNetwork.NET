@@ -24,7 +24,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <summary>
         /// Gets the number of neurons in the first hidden layer of the network
         /// </summary>
-        public readonly int HiddenLayerSize;
+        public int HiddenLayerSize { get; }
 
         /// <summary>
         /// Gets the weights from the inputs to the first hidden layer
@@ -138,7 +138,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public (double, double) CostFunctionPrime([NotNull] double[] input, [NotNull] double[] y)
+        public (double[], double[]) CostFunctionPrime([NotNull] double[] input, [NotNull] double[] y)
         {
             // Forward the input
             double[] yHat = Forward(input);
@@ -154,9 +154,9 @@ namespace ConvolutionalNeuralNetworkLibrary
                 delta3 = new double[y.Length];
             for (int i = 0; i < y.Length; i++)
                 delta3[3] = negativeDelta[i] * z3prime[i];
-            double dJdW2 = 0;
+            double[] dJdW2 = new double[_A2.Length];
             for (int i = 0; i < _A2.Length; i++)
-                dJdW2 += _A2[i] * delta3[i];
+                dJdW2[i] = _A2[i] * delta3[i];
 
             // Derivative with respect to W1
             double[]
@@ -165,9 +165,9 @@ namespace ConvolutionalNeuralNetworkLibrary
                 delta2 = new double[delta3w2t.Length];
             for (int i = 0; i < delta2.Length; i++)
                 delta2[i] = delta3w2t[i] * z2prime[i];
-            double dJdW1 = 0;
+            double[] dJdW1 = new double[input.Length];
             for (int i = 0; i < input.Length; i++)
-                dJdW1 += input[i] * delta2[i];
+                dJdW1[i] = input[i] * delta2[i];
 
             // Return the results
             return (dJdW1, dJdW2);

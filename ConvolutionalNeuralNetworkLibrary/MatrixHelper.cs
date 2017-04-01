@@ -45,13 +45,17 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Performs the Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
         /// </summary>
         /// <param name="m">The input matrix to edit</param>
-        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void ReLU([NotNull] this double[,] m)
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] ReLU([NotNull] this double[,] m)
         {
             int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] result = new double[h, w];
             for (int i = 0; i < h; i++)
                 for (int j = 0; j < w; j++)
-                    if (m[i, j] < 0) m[i, j] = 0;
+                    result[i, j] = m[i, j] >= 0 ? m[i, j] : 0;
+            return result;
         }
 
         /// <summary>
