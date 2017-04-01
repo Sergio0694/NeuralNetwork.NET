@@ -6,6 +6,12 @@ using JetBrains.Annotations;
 namespace ConvolutionalNeuralNetworkLibrary.Convolution
 {
     /// <summary>
+    /// A delegate that processes a volume of data (a stack of rectangular matrices) and returns a new data volume
+    /// </summary>
+    /// <param name="volume">The data volume (width*height*depth) to process, layer by layer</param>
+    public delegate double[][,] VolumicProcessor([NotNull] double[][,] volume);
+
+    /// <summary>
     /// A class that represents a convolution pipeline with a series of sequential operations
     /// </summary>
     public class ConvolutionPipeline
@@ -14,13 +20,13 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
         /// Gets the pipeline in use in the current instance
         /// </summary>
         [NotNull]
-        public Func<double[,], double[,]>[] Pipeline { get; }
+        public VolumicProcessor[] Pipeline { get; }
 
         /// <summary>
         /// Initializes a new instance with the given pipeline
         /// </summary>
         /// <param name="pipeline">The convolution pipeline to execute</param>
-        public ConvolutionPipeline([NotNull] Func<double[,], double[,]>[] pipeline)
+        public ConvolutionPipeline([NotNull] VolumicProcessor[] pipeline)
         {
             if (pipeline.Length == 0) throw new ArgumentOutOfRangeException("The pipeline must contain at least a function");
             Pipeline = pipeline;
@@ -33,11 +39,11 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public double[,] Process([NotNull] double[,] input)
+        public double[][,] Process([NotNull] double[,] input)
         {
-            double[,] result = input;
-            foreach (Func<double[,], double[,]> f in Pipeline)
-                input = f(input);
+            double[][,] result = new double[][,] { input };
+            foreach (VolumicProcessor p in Pipeline)
+                result = p(result);
             return result;
         }
 
@@ -48,9 +54,9 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public IList<double[,]> Process([NotNull] IList<double[,]> inputs)
+        public IList<double[][,]> Process([NotNull] IList<double[,]> inputs)
         {
-            double[][,] results = new double[inputs.Count][,];
+            double[][][,] results = new double[inputs.Count][][,];
             ParallelLoopResult result = Parallel.For(0, inputs.Count, i => results[i] = Process(inputs[i]));
             if (!result.IsCompleted) throw new Exception("Error executing the parallel loop");
             return results;

@@ -18,14 +18,17 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Initializes a new instance for the input network
         /// </summary>
         /// <param name="network">The neural network to train</param>
-        public NetworkTrainer([NotNull] NeuralNetwork network) => Network = network;
+        public NetworkTrainer([NotNull] NeuralNetwork network,
+            [NotNull] Func<double[], double> costFunction)
+        {
+            Network = network;
+            CostFunction = costFunction;
+        }
 
         public void Foo()
         {
             // TODO
-            BoundedBroydenFletcherGoldfarbShanno bfgs = new BoundedBroydenFletcherGoldfarbShanno(
-                Network.InputLayerSize * Network.HiddenLayerSize + Network.HiddenLayerSize * Network.OutputLayerSize,
-                CostFunction, null);            
+            BoundedBroydenFletcherGoldfarbShanno bfgs = new BoundedBroydenFletcherGoldfarbShanno(1);       
         }
     }
 }

@@ -7,13 +7,19 @@
     {
         #region Edge detection
 
+        /// <summary>
+        /// { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 }
+        /// </summary>
         public static double[,] TopSobel { get; } = new double[,]
         {
             { 1, 2, 1 },
             { 0, 0, 0 },
             { -1, -2, -1 }
         };
-        
+
+        /// <summary>
+        /// { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 }
+        /// </summary>
         public static double[,] BottomSobel { get; } = new double[,]
         {
             { -1, -2, -1 },
@@ -21,6 +27,9 @@
             { 1, 2, 1 }
         };
 
+        /// <summary>
+        /// { 1, 0, -1 }, { 2, 0, -2 }, { 1, 0, -1 }
+        /// </summary>
         public static double[,] LeftSobel { get; } = new double[,]
         {
             { 1, 0, -1 },
@@ -28,6 +37,9 @@
             { 1, 0, -1 }
         };
 
+        /// <summary>
+        /// { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 }
+        /// </summary>
         public static double[,] RightSobel { get; } = new double[,]
         {
             { -1, 0, 1 },
@@ -35,6 +47,9 @@
             { -1, 0, 1 }
         };
 
+        /// <summary>
+        /// { 0, -1, 0 }, { 0, 2, 0 }, { 0, -1, 0 }
+        /// </summary>
         public static double[,] VerticalSobel { get; } = new double[,]
         {
             { 0, -1, 0 },
@@ -42,6 +57,9 @@
             { 0, -1, 0 }
         };
 
+        /// <summary>
+        /// { 0, 0, 0 }, { -1, 2, -1 }, { 0, 0, 0 }
+        /// </summary>
         public static double[,] HorizontalSobel { get; } = new double[,]
         {
             { 0, 0, 0 },
@@ -73,6 +91,9 @@
 
         #region Emboss
 
+        /// <summary>
+        /// { -2, -1, 0 }, { -1, 1, 1 }, { 0, 1, 2 }
+        /// </summary>
         public static double[,] BottomRightEmboss { get; } = new double[,]
         {
             { -2, -1, 0 },
@@ -80,13 +101,19 @@
             { 0, 1, 2 }
         };
 
+        /// <summary>
+        /// { 0, 1, 2 }, { -1, 1, 1 }, { -2, -1, 0 }
+        /// </summary>
         public static double[,] TopRightEmboss { get; } = new double[,]
         {
             { 0, 1, 2 },
             { -1, 1, 1 },
             { -2, -1, 0 }
         };
-        
+
+        /// <summary>
+        /// { 2, 1, 0 }, { 1, 1, -1 }, { 0, -1, -2 }
+        /// </summary>
         public static double[,] TopLeftEmboss { get; } = new double[,]
         {
             { 2, 1, 0 },
@@ -94,6 +121,9 @@
             { 0, -1, -2 }
         };
 
+        /// <summary>
+        /// { 0, -1, -2 }, { 1, 1, -1 }, { 2, 1, 0 }
+        /// </summary>
         public static double[,] BottomLeftEmboss { get; } = new double[,]
         {
             { 0, -1, -2 },
