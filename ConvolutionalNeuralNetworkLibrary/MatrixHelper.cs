@@ -14,7 +14,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Pools the input matrix with a window of 2 and a stride of 2
         /// </summary>
         /// <param name="m">The input matrix to pool</param>
+        [Pure]
         [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Pool2x2([NotNull] this double[,] m)
         {
             // Prepare the result matrix
@@ -43,6 +45,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Performs the Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
         /// </summary>
         /// <param name="m">The input matrix to edit</param>
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
         public static void ReLU([NotNull] this double[,] m)
         {
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -56,7 +59,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// </summary>
         /// <param name="m">The input matrix</param>
         /// <param name="kernel">The 3x3 convolution kernel to use</param>
+        [Pure]
         [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Convolute3x3([NotNull] this double[,] m, [NotNull] double[,] kernel)
         {
             // Prepare the output matrix
@@ -107,7 +112,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// </summary>
         /// <param name="v">The input vector</param>
         /// <param name="m">The matrix to multiply</param>
+        [Pure]
         [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
         public static double[] Multiply([NotNull] double[] v, [NotNull] double[,] m)
         {
             // Initialize the parameters and the result vector
@@ -135,54 +142,57 @@ namespace ConvolutionalNeuralNetworkLibrary
         }
 
         /// <summary>
-        /// Performs the multiplication between two matrices
+        /// Transposes the input matrix
         /// </summary>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="m">The matrix to transpose</param>
+        [Pure]
         [NotNull]
-        public static double[,] Multiply([NotNull] double[,] m1, [NotNull] double[,] m2)
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Transpose([NotNull] double[,] m)
         {
-            // Initialize the parameters and the result matrix
-            int h = m1.GetLength(0);
-            int w = m2.GetLength(1);
-            int l = m1.GetLength(1);
-            double[,] result = new double[h, w];
-            unsafe
-            {
-                // Get the pointers and iterate fo each row
-                fixed (double* pm = result, pm1 = m1, pm2 = m2)
-                {
-                    for (int i = 0; i < h; i++)
-                    {
-                        // Save the index and iterate for each column
-                        int i1 = i * l;
-                        for (int j = 0; j < w; j++)
-                        {
-                            // Perform the multiplication
-                            int i2 = j;
-                            double res = 0;
-                            for (int k = 0; k < l; k++, i2 += w)
-                            {
-                                res += pm1[i1 + k] * pm2[i2];
-                            }
-                            pm[i * w + j] = res;
-                        }
-                    }
-                }
-            }
+            int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] result = new double[w, h];
+            for (int i = 0; i < h; i++)
+                for (int j = 0; j < w; j++)
+                    result[j, i] = m[i, j];
             return result;
         }
 
         /// <summary>
         /// Returns the result of the input after the activation function has been applied
         /// </summary>
-        /// <param name="m">The input to process</param>
-        public static void Sigmoid([NotNull] double[,] m)
+        /// <param name="v">The input to process</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] Sigmoid([NotNull] double[] v)
         {
-            int h = m.GetLength(0), w = m.GetLength(1);
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                    m[i, j] = 1 / (1 + Math.Exp(-m[i, j]));
+            double[] result = new double[v.Length];
+            for (int i = 0; i < v.Length; i++)
+                result[i] = 1 / (1 + Math.Exp(-v[i]));
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the result of the input after the activation function primed has been applied
+        /// </summary>
+        /// <param name="v">The input to process</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] SigmoidPrime([NotNull] double[] v)
+        {
+            double[] result = new double[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                double
+                    exp = Math.Exp(-v[i]),
+                    sum = 1 + exp,
+                    square = sum * sum,
+                    div = exp / square;
+                result[i] = div;
+            }
+            return result;
         }
 
         #endregion
