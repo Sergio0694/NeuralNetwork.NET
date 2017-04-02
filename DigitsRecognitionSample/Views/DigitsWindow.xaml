@@ -1,0 +1,197 @@
+﻿<Window x:Class="DigitsRecognitionSample.Views.DigitsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:userControls="clr-namespace:DigitsRecognitionSample.UserControls"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        Background="{StaticResource BackgroundDarkBrush}"
+        Title="StackViewer" 
+        MinHeight="240" 
+        MinWidth="400" 
+        Height="240" 
+        Width="400">
+
+    <Border BorderBrush="#FF0064A8" 
+            BorderThickness="1">
+        <Grid>
+
+            <!--Window maagement buttons-->
+            <Grid Height="30"
+                  VerticalAlignment="Top"
+                  Canvas.ZIndex="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+                <userControls:CustomToggleButton x:Name="onTopToggle" 
+                                                 Grid.Column="1" 
+                                                 Style="{DynamicResource DarkButtonStyleNotPressed}"
+                                                 OnToggled="OnTopToggle_OnOnToggled">
+                    <Button.Content>
+                        <Viewbox Margin="7">
+                            <Polygon Points="10,0 0,0 5,10" 
+                                     Fill="White" />
+                        </Viewbox>
+                    </Button.Content>
+                </userControls:CustomToggleButton>
+                <Button Grid.Column="2"
+                        Grid.Row="0"
+                        Style="{DynamicResource DarkButtonStyleThemeColor}"
+                        Click="MinimizeButton_Clicked">
+                    <Button.Content>
+                        <Viewbox Margin="7">
+                            <Rectangle Height="2" 
+                                       Width="8" 
+                                       Fill="White" 
+                                       Margin="0,5,0,0"/>
+                        </Viewbox>
+                    </Button.Content>
+                </Button>
+                <Button Grid.Column="3" 
+                        Grid.Row="0"
+                        Style="{DynamicResource DarkButtonStyleThemeColor}"
+                        Click="CloseButton_Clicked">
+                    <Button.Content>
+                        <Viewbox Margin="3">
+                            <TextBlock Text="X" 
+                                       FontWeight="SemiBold"/>
+                        </Viewbox>
+                    </Button.Content>
+                </Button>
+            </Grid>
+
+            <!--App content-->
+            <Grid Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!--Title and menu items-->
+                <StackPanel Margin="10,0,0,0">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!--Logo-->
+                        <TextBlock Text="&#xEC26;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   Foreground="#FFC0C0C0"
+                                   FontSize="20"
+                                   Margin="0,5,0,0"/>
+
+                        <!--Title-->
+                        <TextBlock Text="Digits recognition" 
+                                   Grid.Column="1"
+                                   Margin="10,0,0,0"
+                                   Foreground="#FF6C6C6E"
+                                   VerticalAlignment="Center" 
+                                   FontWeight="Thin"
+                                   FontSize="21"/>
+                    </Grid>
+                </StackPanel>
+
+                <!--Primary content-->
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!--First row content-->
+                    <Grid Margin="10,0,0,0"
+                          Height="44">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Iteration"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="#0"
+                                   x:Name="GenBlock"
+                                   Margin="10,0,0,0"
+                                   Grid.Column="1"
+                                   Foreground="White"
+                                   FontSize="32"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Light"/>
+                        <TextBlock Text="Value"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"
+                                   Grid.Column="2"
+                                   Margin="16,0,0,0"/>
+                        <Viewbox Margin="10,0,16,0"
+                                 Grid.Column="3"
+                                 HorizontalAlignment="Left">
+                            <TextBlock Text="/"
+                                       x:Name="ValueBlock"                                   
+                                       Foreground="White"
+                                       FontSize="32"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Light"/>
+                        </Viewbox>
+                    </Grid>
+
+                    <!--Train-->
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch"
+                            Click="Button_Click"
+                            Grid.Row="1">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/network.png"
+                                       Width="48"
+                                       Height="48"/>
+                                <TextBlock Text="Train" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+
+                    <!--Click-->
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch"
+                            Click="Button_Click_1"
+                            Grid.Row="2">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/gamepad.png"
+                                       Width="48"
+                                       Height="48"/>
+                                <TextBlock Text="Play" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

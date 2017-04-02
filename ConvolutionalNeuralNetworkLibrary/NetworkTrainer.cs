@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using ConvolutionalNeuralNetworkLibrary.Convolution;
@@ -19,6 +20,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="pipeline">The convolution pipeline to apply to the input data</param>
         /// <param name="ys">The results vector</param>
         /// <param name="size">The number of nodes in the hidden layer of the network</param>
+        /// <param name="token">The cancellation token for the training session</param>
+        /// <param name="solution">An optional starting solution to resume a previous training session</param>
+        /// <param name="progress">An optional progress callback</param>
         [PublicAPI]
         [Pure]
         [NotNull]
@@ -27,6 +31,8 @@ namespace ConvolutionalNeuralNetworkLibrary
             [NotNull] IReadOnlyList<double[,]> data, 
             [NotNull] ConvolutionPipeline pipeline, 
             [NotNull] double[,] ys, int size,
+            CancellationToken token,
+            [CanBeNull] double[] solution = null,
             [CanBeNull] IProgress<CNNOptimizationProgress> progress = null)
         {
             // Preliminary checks
@@ -72,17 +78,23 @@ namespace ConvolutionalNeuralNetworkLibrary
                 return gradient.dJdW1.Cast<double>().Concat(gradient.dJdW2.Cast<double>()).ToArray();
             }
 
-            // TODO
+            // Initialize the optimization function
             BoundedBroydenFletcherGoldfarbShanno bfgs = new BoundedBroydenFletcherGoldfarbShanno(
                 inputs * size + size * outputs, // Number of free variables in the function to optimize
-                CostFunction, GradientFunction);
+                CostFunction, GradientFunction)
+            {
+                Token = token
+            };
 
-            // TODO// Handle the progress if necessary
+            // Handle the progress if necessary
             if (progress != null) bfgs.Progress += (s, e) =>
             {
                 progress.Report(new CNNOptimizationProgress((inputs, size, outputs, e.Solution), e.Iteration, e.Value));
             };
-            bfgs.Minimize();
+
+            // Minimize the cost function
+            if (solution != null) bfgs.Minimize(solution);
+            else bfgs.Minimize();
 
             // Return the result network
             return NeuralNetwork.Deserialize(inputs, size, outputs, bfgs.Solution);

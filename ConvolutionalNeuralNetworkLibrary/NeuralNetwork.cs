@@ -300,9 +300,10 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="size">The number of nodes in the hidden layer</param>
         /// <param name="outputs">The number of output nodes</param>
         /// <param name="w1w2">The serialized network weights</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
-        internal static NeuralNetwork Deserialize(int inputs, int size, int outputs, double[] w1w2)
+        public static NeuralNetwork Deserialize(int inputs, int size, int outputs, double[] w1w2)
         {
             double[,]
                     w1 = new double[inputs, size],
@@ -318,9 +319,10 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <summary>
         /// Serializes the current weights into a linear array of (W1.h*W1.w) + (W2.h*W2.w) elements
         /// </summary>
+        [PublicAPI]
         [Pure]
         [NotNull]
-        internal double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
+        public double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
 
         #endregion
     }

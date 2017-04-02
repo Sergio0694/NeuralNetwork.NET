@@ -154,7 +154,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Image Source="/Assets/image.png"
+                                <Image Source="/Assets/network.png"
                                        Width="48"
                                        Height="48"/>
                                 <TextBlock Text="Train" 
