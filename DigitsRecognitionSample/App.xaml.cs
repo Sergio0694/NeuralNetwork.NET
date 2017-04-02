@@ -37,12 +37,12 @@ namespace DigitsRecognitionSample
             {
                 return new double[][,]
                 {
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.RightSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.LeftSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.Outline),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.Sharpen),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.TopSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.RightSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.LeftSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.BottomSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.Outline),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.Sharpen),
                 };
             }).SelectMany(group => group).ToArray(), // 13*13*10 >> 11*11*60
             v => v.Select(MatrixHelper.ReLU).ToArray(), // Set minimum threshold
@@ -52,14 +52,14 @@ namespace DigitsRecognitionSample
             {
                 return new double[][,]
                 {
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.RightSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.LeftSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomSobel),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.Outline),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.Sharpen),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomRightEmboss),
-                    MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopLeftEmboss)
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.TopSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.RightSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.LeftSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.BottomSobel),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.Outline),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.Sharpen),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.BottomRightEmboss),
+                    MatrixHelper.Convolute3x3(feature, KernelsCollection.TopLeftEmboss)
                 };
             }).SelectMany(group => group).ToArray(), // 5*5*60 >> 3*3*480
             v => v.Select(MatrixHelper.ReLU).ToArray(), // Set minimum threshold

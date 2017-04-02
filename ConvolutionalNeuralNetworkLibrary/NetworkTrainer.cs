@@ -19,7 +19,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="data">The raw input data for the supervised training</param>
         /// <param name="pipeline">The convolution pipeline to apply to the input data</param>
         /// <param name="ys">The results vector</param>
-        /// <param name="size">The number of nodes in the hidden layer of the network</param>
+        /// <param name="size">The number of nodes in the hidden layer of the network (it will be decided automatically if null)</param>
         /// <param name="token">The cancellation token for the training session</param>
         /// <param name="solution">An optional starting solution to resume a previous training session</param>
         /// <param name="progress">An optional progress callback</param>
@@ -30,7 +30,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         public static NeuralNetwork ComputeTrainedNetwork(
             [NotNull] IReadOnlyList<double[,]> data, 
             [NotNull] ConvolutionPipeline pipeline, 
-            [NotNull] double[,] ys, int size,
+            [NotNull] double[,] ys, [CanBeNull] int? size,
             CancellationToken token,
             [CanBeNull] double[] solution = null,
             [CanBeNull] IProgress<CNNOptimizationProgress> progress = null)
@@ -62,25 +62,26 @@ namespace ConvolutionalNeuralNetworkLibrary
             int
                 inputs = x.GetLength(1),
                 outputs = ys.GetLength(1);
+            if (size == null) size = (inputs + outputs) / 2;
 
             // Calculates the cost for a network with the input weights
             double CostFunction(double[] w1w2)
             {
-                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size, outputs, w1w2);
+                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size.Value, outputs, w1w2);
                 return network.CalculateCost(x, ys);
             }
 
             // Calculates the gradient for a network with the input weights
             double[] GradientFunction(double[] w1w2)
             {
-                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size, outputs, w1w2);
+                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size.Value, outputs, w1w2);
                 (double[,] dJdW1, double[,] dJdW2) gradient = network.CostFunctionPrime(x, ys);
                 return gradient.dJdW1.Cast<double>().Concat(gradient.dJdW2.Cast<double>()).ToArray();
             }
 
             // Initialize the optimization function
             BoundedBroydenFletcherGoldfarbShanno bfgs = new BoundedBroydenFletcherGoldfarbShanno(
-                inputs * size + size * outputs, // Number of free variables in the function to optimize
+                inputs * size.Value + size.Value * outputs, // Number of free variables in the function to optimize
                 CostFunction, GradientFunction)
             {
                 Token = token
@@ -89,7 +90,7 @@ namespace ConvolutionalNeuralNetworkLibrary
             // Handle the progress if necessary
             if (progress != null) bfgs.Progress += (s, e) =>
             {
-                progress.Report(new CNNOptimizationProgress((inputs, size, outputs, e.Solution), e.Iteration, e.Value));
+                progress.Report(new CNNOptimizationProgress((inputs, size.Value, outputs, e.Solution), e.Iteration, e.Value));
             };
 
             // Minimize the cost function
@@ -97,7 +98,7 @@ namespace ConvolutionalNeuralNetworkLibrary
             else bfgs.Minimize();
 
             // Return the result network
-            return NeuralNetwork.Deserialize(inputs, size, outputs, bfgs.Solution);
+            return NeuralNetwork.Deserialize(inputs, size.Value, outputs, bfgs.Solution);
         }
     }
 }

@@ -82,7 +82,7 @@ namespace DigitsRecognitionSample.Views
             double[] solution = _Network?.SerializeWeights();
             _Network = await Task.Run(() =>
             {
-                return NetworkTrainer.ComputeTrainedNetwork(source, App.SharedPipeline, y, 400, cts.Token, solution,
+                return NetworkTrainer.ComputeTrainedNetwork(source, App.SharedPipeline, y, 100, cts.Token, solution,
                     new Progress<CNNOptimizationProgress>(p =>
                     {
                         Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
