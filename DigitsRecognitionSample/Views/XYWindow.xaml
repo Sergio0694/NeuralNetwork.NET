@@ -8,9 +8,9 @@
         ResizeMode="NoResize"
         Background="{StaticResource BackgroundDarkBrush}"
         Title="StackViewer" 
-        MinHeight="200" 
+        MinHeight="240" 
         MinWidth="400" 
-        Height="200" 
+        Height="240" 
         Width="400">
 
     <Border BorderBrush="#FF0064A8" 
@@ -103,15 +103,19 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <!--First row content-->
-                    <Grid Margin="10,0,0,0">
+                    <Grid Margin="10,0,0,0"
+                          Height="44">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Gen"
+                        <TextBlock Text="Iteration"
                                    Foreground="White"
                                    VerticalAlignment="Center"/>
                         <TextBlock Text="#0"
@@ -121,10 +125,25 @@
                                    Foreground="White"
                                    FontSize="32"
                                    VerticalAlignment="Center"
-                                   FontWeight="Light"/>                    
+                                   FontWeight="Light"/>
+                        <TextBlock Text="Value"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"
+                                   Grid.Column="2"
+                                   Margin="16,0,0,0"/>
+                        <Viewbox Margin="10,0,16,0"
+                                 Grid.Column="3"
+                                 HorizontalAlignment="Left">
+                            <TextBlock Text="/"
+                                       x:Name="ValueBlock"                                   
+                                       Foreground="White"
+                                       FontSize="32"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Light"/>
+                        </Viewbox>
                     </Grid>
 
-                    <!--Button-->
+                    <!--Train-->
                     <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
                             HorizontalAlignment="Stretch"
                             Click="Button_Click"
@@ -136,9 +155,33 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Image Source="/Assets/image.png"
-                                       Width="36"
-                                       Height="36"/>
+                                       Width="48"
+                                       Height="48"/>
                                 <TextBlock Text="Train" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+
+                    <!--Click-->
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch"
+                            Click="Button_Click_1"
+                            Grid.Row="2">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/gamepad.png"
+                                       Width="48"
+                                       Height="48"/>
+                                <TextBlock Text="Play" 
                                            FontWeight="Thin"
                                            FontSize="22"
                                            Margin="20,0,0,0"

@@ -311,6 +311,44 @@ namespace ConvolutionalNeuralNetworkLibrary
             return result;
         }
 
+        /// <summary>
+        /// Flattens the input volume in a linear array
+        /// </summary>
+        /// <param name="volume">The volume to flatten</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] Flatten([NotNull] this double[][,] volume)
+        {
+            // Preliminary checks and declarations
+            if (volume.Length == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
+            int
+                depth = volume.Length,
+                h = volume[0].GetLength(0),
+                w = volume[0].GetLength(1);
+            double[] result = new double[h * w * depth];
+
+            // Copy the volume data
+            unsafe
+            {
+                fixed (double* r = result)
+                {
+                    // Iterate for each depth layer
+                    for (int i = 0; i < depth; i++)
+                    {
+                        fixed (double* p = volume[i])
+                        {
+                            // Copy each 2D matrix
+                            for (int j = 0; j < h; j++)
+                                for (int z = 0; z < w; z++)
+                                    r[h * w * i + j * w + z] = p[j * w + z];
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
         #endregion
     }
 }

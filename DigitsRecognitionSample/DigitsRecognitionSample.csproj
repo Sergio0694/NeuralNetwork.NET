@@ -107,106 +107,109 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\gamepad.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\image.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\network.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_0.png">
+    <Content Include="Assets\Samples\XO\O\Y_0.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_1.png">
+    <Content Include="Assets\Samples\XO\O\Y_1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_10.png">
+    <Content Include="Assets\Samples\XO\O\Y_10.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_11.png">
+    <Content Include="Assets\Samples\XO\O\Y_11.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_12.png">
+    <Content Include="Assets\Samples\XO\O\Y_12.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_13.png">
+    <Content Include="Assets\Samples\XO\O\Y_13.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_14.png">
+    <Content Include="Assets\Samples\XO\O\Y_14.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_15.png">
+    <Content Include="Assets\Samples\XO\O\Y_15.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_2.png">
+    <Content Include="Assets\Samples\XO\O\Y_2.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_3.png">
+    <Content Include="Assets\Samples\XO\O\Y_3.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_4.png">
+    <Content Include="Assets\Samples\XO\O\Y_4.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_5.png">
+    <Content Include="Assets\Samples\XO\O\Y_5.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_6.png">
+    <Content Include="Assets\Samples\XO\O\Y_6.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_7.png">
+    <Content Include="Assets\Samples\XO\O\Y_7.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_8.png">
+    <Content Include="Assets\Samples\XO\O\Y_8.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\Y\Y_9.png">
+    <Content Include="Assets\Samples\XO\O\Y_9.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_0.png">
+    <Content Include="Assets\Samples\XO\X\X_0.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_1.png">
+    <Content Include="Assets\Samples\XO\X\X_1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_10.png">
+    <Content Include="Assets\Samples\XO\X\X_10.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_11.png">
+    <Content Include="Assets\Samples\XO\X\X_11.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_12.png">
+    <Content Include="Assets\Samples\XO\X\X_12.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_13.png">
+    <Content Include="Assets\Samples\XO\X\X_13.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_14.png">
+    <Content Include="Assets\Samples\XO\X\X_14.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_15.png">
+    <Content Include="Assets\Samples\XO\X\X_15.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_2.png">
+    <Content Include="Assets\Samples\XO\X\X_2.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_3.png">
+    <Content Include="Assets\Samples\XO\X\X_3.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_4.png">
+    <Content Include="Assets\Samples\XO\X\X_4.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_5.png">
+    <Content Include="Assets\Samples\XO\X\X_5.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_6.png">
+    <Content Include="Assets\Samples\XO\X\X_6.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_7.png">
+    <Content Include="Assets\Samples\XO\X\X_7.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_8.png">
+    <Content Include="Assets\Samples\XO\X\X_8.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\Samples\XY\X\X_9.png">
+    <Content Include="Assets\Samples\XO\X\X_9.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\xy.png">

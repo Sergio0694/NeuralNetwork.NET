@@ -4,27 +4,14 @@ using System.IO;
 using System.Windows;
 using System.Drawing;
 using System.Windows.Input;
-using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
+using System.Windows.Threading;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using Microsoft.Win32;
 using ConvolutionalNeuralNetworkLibrary;
 using ConvolutionalNeuralNetworkLibrary.Convolution;
 using ConvolutionalNeuralNetworkLibrary.ImageProcessing;
 using JetBrains.Annotations;
-using DigitsRecognitionSample.Views;
+using Microsoft.Win32;
 
 namespace DigitsRecognitionSample.Views
 {
@@ -48,25 +35,31 @@ namespace DigitsRecognitionSample.Views
 
         private void CloseButton_Clicked(object sender, RoutedEventArgs e) => Close();
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        [CanBeNull]
+        private NeuralNetwork _Network;
+
+        [CanBeNull]
+        private ConvolutionPipeline _Pipeline;
+
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
             // Get the filenames
             String[]
-                x = Directory.GetFiles($@"{AppDomain.CurrentDomain.BaseDirectory}\Assets\Samples\XY\X"),
-                y = Directory.GetFiles($@"{AppDomain.CurrentDomain.BaseDirectory}\Assets\Samples\XY\Y");
+                x = Directory.GetFiles($@"{AppDomain.CurrentDomain.BaseDirectory}\Assets\Samples\XO\X"),
+                o = Directory.GetFiles($@"{AppDomain.CurrentDomain.BaseDirectory}\Assets\Samples\XO\O");
 
             // Get the images
             Bitmap[]
                 xbmp = x.Select(f => new Bitmap(f).ToGrayscale()).ToArray(),
-                ybmp = y.Select(f => new Bitmap(f).ToGrayscale()).ToArray();
+                obmp = o.Select(f => new Bitmap(f).ToGrayscale()).ToArray();
 
             // Normalize the data
             double[][,]
                 xn = xbmp.Select(b => b.ToNormalizedPixelData()).ToArray(),
-                yn = ybmp.Select(b => b.ToNormalizedPixelData()).ToArray();
+                on = obmp.Select(b => b.ToNormalizedPixelData()).ToArray();
 
             // Setup the kernel pipeline
-            ConvolutionPipeline pipeline = new ConvolutionPipeline(new VolumicProcessor[]
+            _Pipeline = new ConvolutionPipeline(new VolumicProcessor[]
             {
                 // 10 kernels, 28*28*1 pixels >> 26*26*10
                 v => new double[][,]
@@ -121,7 +114,7 @@ namespace DigitsRecognitionSample.Views
             // Get the results matrix (number of samples by output nodes)
             int 
                 _10 = x.Length,
-                results = _10 + y.Length;
+                results = _10 + o.Length;
             double[,] expectation = new double[results, 2];
             for (int i = 0; i < results; i++)
             {
@@ -129,9 +122,43 @@ namespace DigitsRecognitionSample.Views
                 expectation[i, 1] = i < _10 ? 0.0 : 1.0;
             }
 
-            IReadOnlyList<double[,]> source = xn.Concat(yn).ToArray();
-            NeuralNetwork network = NetworkTrainer.ComputeTrainedNetwork(source, pipeline, expectation, 100, 
-                new Progress<CNNOptimizationProgress>(p => System.Diagnostics.Debug.WriteLine($"#{p.Iteration} >> {p.Cost}")));
+            IReadOnlyList<double[,]> source = xn.Concat(on).ToArray();
+            _Network = await Task.Run(() =>
+            {
+                return NetworkTrainer.ComputeTrainedNetwork(source, _Pipeline, expectation, 200,
+                    new Progress<CNNOptimizationProgress>(p =>
+                    {
+                        System.Diagnostics.Debug.WriteLine($"#{p.Iteration} >> {p.Cost}");
+                        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                        {
+                            GenBlock.Text = $"#{p.Iteration}";
+                            ValueBlock.Text = p.Cost.ToString();
+                        }));
+                    }));
+            });
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (_Network == null || _Pipeline == null) return;
+            OpenFileDialog picker = new OpenFileDialog
+            {
+                DefaultExt = ".png",
+                Filter = "PNG image (.png)|*.png"
+            };
+            bool? result = picker.ShowDialog();
+            if (result.HasValue && result.Value)
+            {
+                Bitmap
+                    image = new Bitmap(picker.FileName),
+                    grayscale = image.ToGrayscale();
+                double[,] normalized = grayscale.ToNormalizedPixelData();
+                double[][,] data = _Pipeline.Process(normalized);
+                double[] flat = data.Flatten();
+                double[] yHat = _Network.Forward(flat);
+                int index = yHat[0] > yHat[1] ? 0 : 1;
+                MessageBox.Show($"The symbol is {(index == 0 ? "X" : "O")}");
+            }
         }
     }
 }
