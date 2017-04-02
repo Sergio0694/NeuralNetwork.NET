@@ -85,7 +85,7 @@
         public static double[,] Outline { get; } = new double[,]
         {
             { -1, -1, -1 },
-            { -1, 8, -1 },
+            { -1, 2, -1 },
             { -1, -1, -1 }
         };
 

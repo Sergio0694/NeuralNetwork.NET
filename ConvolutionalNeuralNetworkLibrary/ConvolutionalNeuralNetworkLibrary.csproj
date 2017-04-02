@@ -48,6 +48,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.ValueTuple, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -61,6 +62,7 @@
   <ItemGroup>
     <Compile Include="ConvolutionalNeuralNetwork.cs" />
     <Compile Include="Convolution\ConvolutionPipeline.cs" />
+    <Compile Include="ImageProcessing\ImageToolkit.cs" />
     <Compile Include="KernelsCollection.cs" />
     <Compile Include="MatrixHelper.cs" />
     <Compile Include="NetworkTrainer.cs" />

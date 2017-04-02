@@ -6,9 +6,37 @@ namespace ConvolutionalNeuralNetworkLibrary
     /// <summary>
     /// An helper class with methods to process fixed-size matrices
     /// </summary>
-    internal static class MatrixHelper
+    public static class MatrixHelper
     {
         #region CNN
+
+        /// <summary>
+        /// Returns the normalized matrix with a max value of 1
+        /// </summary>
+        /// <param name="m">The input matrix to normalize</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Normalize([NotNull] this double[,] m)
+        {
+            // Prepare the result matrix
+            int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] result = new double[h, w];
+
+            // Pool the input matrix
+            unsafe
+            {
+                fixed(double* p = m, r = result)
+                {
+                    double max = 0;
+                    for (int i = 0; i < m.Length; i++)
+                        if (p[i] > max) max = p[i];
+                    for (int i = 0; i < m.Length; i++)
+                        r[i] = p[i] / max;
+                }
+            }
+            return result;
+        }
 
         /// <summary>
         /// Pools the input matrix with a window of 2 and a stride of 2
@@ -25,10 +53,10 @@ namespace ConvolutionalNeuralNetworkLibrary
 
             // Pool the input matrix
             int x = 0;
-            for (int i = 0; i < h; i += 2)
+            for (int i = 0; i < h - 1; i += 2)
             {
                 int y = 0;
-                for (int j = 0; j < w; j += 2)
+                for (int j = 0; j < w - 1; j += 2)
                 {
                     double
                         maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],

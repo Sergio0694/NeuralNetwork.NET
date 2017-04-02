@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +14,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using ConvolutionalNeuralNetworkLibrary;
+using ConvolutionalNeuralNetworkLibrary.Convolution;
+using ConvolutionalNeuralNetworkLibrary.ImageProcessing;
+using JetBrains.Annotations;
 
 namespace DigitsRecognitionSample
 {
@@ -69,49 +72,72 @@ namespace DigitsRecognitionSample
             bool? result = picker.ShowDialog();
             if (result.HasValue && result.Value)
             {
-                Bitmap 
+                Bitmap
                     image = new Bitmap(picker.FileName),
-                    grayscale = ToGrayscale(image);
+                    grayscale = image.ToGrayscale();
                 SaveFileDialog saver = new SaveFileDialog
                 {
                     DefaultExt = ".png",
                     Filter = "PNG image (.png)|*.png"
                 };
-                result = saver.ShowDialog();
-                if (result.HasValue && result.Value)
-                {
-                    grayscale.Save(saver.FileName);
-                }
-            }
-        }
+                //result = saver.ShowDialog();
+                //if (!(result.HasValue && result.Value)) return;
+                //grayscale.Save(saver.FileName);
 
-        public static Bitmap ToGrayscale(Bitmap original)
-        {
-            // Create a blank bitmap the same size as original
-            Bitmap newBitmap = new Bitmap(original.Width, original.Height);
-
-            // Get a graphics object from the new image
-            using (Graphics g = Graphics.FromImage(newBitmap))
-            {
-                // Create the grayscale ColorMatrix
-                ColorMatrix colorMatrix = new ColorMatrix(
-                new float[][]
+                // Example convolution pipeline
+                double[,] normalized = grayscale.ToNormalizedPixelData();
+                ConvolutionPipeline pipeline = new ConvolutionPipeline(new VolumicProcessor[]
                 {
-                    new float[] { 0.3f, 0.3f, 0.3f, 0, 0 },
-                    new float[] { 0.59f, 0.59f, 0.59f, 0, 0 },
-                    new float[] { 0.11f, 0.11f, 0.11f, 0, 0 },
-                    new float[] { 0, 0, 0, 1, 0 },
-                    new float[] { 0, 0, 0, 0, 1 }
+                    // 10 kernels, 28*28*1 pixels >> 26*26*10
+                    v => new double[][,]
+                    {
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopSobel),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.RightSobel),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.LeftSobel),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomSobel),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.Outline),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.Sharpen),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomLeftEmboss),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopRightEmboss),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopLeftEmboss),
+                        MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomRightEmboss)
+                    },
+                    v => v.Select(MatrixHelper.ReLU).ToArray(), // Set minimum threshold
+                    v => v.Select(MatrixHelper.Pool2x2).ToArray(), // 26*26*10 >> 13*13*10
+                    v => v.Select(MatrixHelper.Normalize).ToArray(),
+                    v => v.Select(feature =>
+                    {
+                        return new double[][,]
+                        {
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.RightSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.LeftSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.Outline),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.Sharpen),
+                        };
+                    }).SelectMany(group => group).ToArray(), // 13*13*10 >> 11*11*60
+                    v => v.Select(MatrixHelper.ReLU).ToArray(), // Set minimum threshold
+                    v => v.Select(MatrixHelper.Pool2x2).ToArray(), // 11*11*60 >> 5*5*60
+                    v => v.Select(MatrixHelper.Normalize).ToArray(),
+                    v => v.Select(feature =>
+                    {
+                        return new double[][,]
+                        {
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.RightSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.LeftSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomSobel),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.Outline),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.Sharpen),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.BottomRightEmboss),
+                            MatrixHelper.Convolute3x3(v[0], KernelsCollection.TopLeftEmboss)
+                        };
+                    }).SelectMany(group => group).ToArray(), // 5*5*60 >> 3*3*480
+                    v => v.Select(MatrixHelper.ReLU).ToArray(), // Set minimum threshold
+                    v => v.Select(MatrixHelper.Pool2x2).ToArray() // 3*3*360 >> 1*1*480
                 });
-
-                // Create the image attributes and set the color matrix
-                ImageAttributes attributes = new ImageAttributes();
-                attributes.SetColorMatrix(colorMatrix);
-
-                // Draw the original image on the new image using the grayscale color matrix
-                g.DrawImage(original, new System.Drawing.Rectangle(0, 0, original.Width, original.Height),
-                    0, 0, original.Width, original.Height, GraphicsUnit.Pixel, attributes);
-                return newBitmap;
+                double[][,] volume = pipeline.Process(normalized);
             }
         }
     }
