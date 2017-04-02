@@ -146,6 +146,47 @@ namespace ConvolutionalNeuralNetworkLibrary
         }
 
         /// <summary>
+        /// Performs the multiplication between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Multiply([NotNull] double[,] m1, [NotNull] double[,] m2)
+        {
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+            double[,] result = new double[h, w];
+            unsafe
+            {
+                // Get the pointers and iterate fo each row
+                fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                {
+                    for (int i = 0; i < h; i++)
+                    {
+                        // Save the index and iterate for each column
+                        int i1 = i * l;
+                        for (int j = 0; j < w; j++)
+                        {
+                            // Perform the multiplication
+                            int i2 = j;
+                            double res = 0;
+                            for (int k = 0; k < l; k++, i2 += w)
+                            {
+                                res += pm1[i1 + k] * pm2[i2];
+                            }
+                            pm[i * w + j] = res;
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Transposes the input matrix
         /// </summary>
         /// <param name="m">The matrix to transpose</param>
@@ -178,6 +219,23 @@ namespace ConvolutionalNeuralNetworkLibrary
         }
 
         /// <summary>
+        /// Returns the result of the input after the activation function has been applied
+        /// </summary>
+        /// <param name="m">The input to process</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Sigmoid([NotNull] double[,] m)
+        {
+            int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] result = new double[h, w];
+            for (int i = 0; i < h; i++)
+                for (int j = 0; j < w; j++)
+                    result[i, j] = 1 / (1 + Math.Exp(-m[i, j]));
+            return result;
+        }
+
+        /// <summary>
         /// Returns the result of the input after the activation function primed has been applied
         /// </summary>
         /// <param name="v">The input to process</param>
@@ -195,6 +253,32 @@ namespace ConvolutionalNeuralNetworkLibrary
                     square = sum * sum,
                     div = exp / square;
                 result[i] = div;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the result of the input after the activation function primed has been applied
+        /// </summary>
+        /// <param name="v">The input to process</param>
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] SigmoidPrime([NotNull] double[,] m)
+        {
+            int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] result = new double[h, w];
+            for (int i = 0; i < h; i++)
+            {
+                for (int j = 0; j < w; j++)
+                {
+                    double
+                        exp = Math.Exp(-m[i, j]),
+                        sum = 1 + exp,
+                        square = sum * sum,
+                        div = exp / square;
+                    result[i, j] = div;
+                }
             }
             return result;
         }
