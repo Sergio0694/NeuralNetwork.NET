@@ -34,7 +34,11 @@ namespace DigitsRecognitionSample.Views
 
         private void MinimizeButton_Clicked(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
-        private void CloseButton_Clicked(object sender, RoutedEventArgs e) => Close();
+        private void CloseButton_Clicked(object sender, RoutedEventArgs e)
+        {
+            _Cts?.Cancel();
+            Close();
+        }
 
         [CanBeNull]
         private NeuralNetwork _Network;

@@ -63,7 +63,7 @@ namespace DigitsRecognitionSample
                 };
             }).SelectMany(group => group).ToArray(), // 5*5*60 >> 3*3*480
             v => v.Select(MatrixHelper.ReLU).ToArray(), // Set minimum threshold
-            v => v.Select(MatrixHelper.Pool2x2).ToArray() // 3*3*360 >> 1*1*480
+            v => v.Select(MatrixHelper.Pool2x2).ToArray() // 3*3*480 >> 1*1*480
         });
     }
 }

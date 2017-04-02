@@ -33,13 +33,24 @@ namespace DigitsRecognitionSample.Views
 
         private void MinimizeButton_Clicked(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
-        private void CloseButton_Clicked(object sender, RoutedEventArgs e) => Close();
+        private void CloseButton_Clicked(object sender, RoutedEventArgs e)
+        {
+            _Cts?.Cancel();
+            Close();
+        }
 
         [CanBeNull]
         private NeuralNetwork _Network;
 
+        private CancellationTokenSource _Cts;
+
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
+            // Token setup
+            CancellationTokenSource cts = new CancellationTokenSource();
+            _Cts?.Cancel();
+            _Cts = cts;
+
             // Get the filenames
             String[]
                 x = Directory.GetFiles($@"{AppDomain.CurrentDomain.BaseDirectory}\Assets\Samples\XO\X"),
@@ -69,7 +80,7 @@ namespace DigitsRecognitionSample.Views
             IReadOnlyList<double[,]> source = xn.Concat(on).ToArray();
             _Network = await Task.Run(() =>
             {
-                return NetworkTrainer.ComputeTrainedNetwork(source, App.SharedPipeline, expectation, 200, CancellationToken.None, null,
+                return NetworkTrainer.ComputeTrainedNetwork(source, App.SharedPipeline, expectation, 200, cts.Token, null,
                     new Progress<CNNOptimizationProgress>(p =>
                     {
                         Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
@@ -83,6 +94,9 @@ namespace DigitsRecognitionSample.Views
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            // Token cancellation
+            _Cts?.Cancel();
+
             if (_Network == null || App.SharedPipeline == null) return;
             OpenFileDialog picker = new OpenFileDialog
             {
