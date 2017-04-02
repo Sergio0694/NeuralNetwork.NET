@@ -18,6 +18,7 @@ using ConvolutionalNeuralNetworkLibrary;
 using ConvolutionalNeuralNetworkLibrary.Convolution;
 using ConvolutionalNeuralNetworkLibrary.ImageProcessing;
 using JetBrains.Annotations;
+using DigitsRecognitionSample.Views;
 
 namespace DigitsRecognitionSample
 {
@@ -42,6 +43,8 @@ namespace DigitsRecognitionSample
         private void CloseButton_Clicked(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 
         #region Navigation
+
+        private void Button_Click_1(object sender, RoutedEventArgs e) => NavigatePage<XYWindow>();
 
         /// <summary>
         /// Manages the navigation by making sure no double instances are created
