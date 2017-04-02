@@ -1,0 +1,169 @@
+﻿<Window x:Class="DigitsRecognitionSample.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:userControls="clr-namespace:DigitsRecognitionSample.UserControls"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        Background="{StaticResource BackgroundDarkBrush}"
+        Title="Neural networks sample" 
+        MinHeight="400" 
+        MinWidth="400" 
+        Height="400" 
+        Width="400">
+
+    <Border BorderBrush="#FF0064A8" 
+            BorderThickness="1">
+        <Grid>
+
+            <!--Window maagement buttons-->
+            <Grid Height="30"
+                  VerticalAlignment="Top"
+                  Canvas.ZIndex="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+                <userControls:CustomToggleButton x:Name="onTopToggle" 
+                                          Grid.Column="1" 
+                                          Style="{DynamicResource DarkButtonStyleNotPressed}"
+                                          OnToggled="OnTopToggle_OnOnToggled">
+                    <Button.Content>
+                        <Viewbox Margin="7">
+                            <Polygon Points="10,0 0,0 5,10" 
+                                     Fill="White" />
+                        </Viewbox>
+                    </Button.Content>
+                </userControls:CustomToggleButton>
+                <Button Grid.Column="2"
+                        Grid.Row="0"
+                        Style="{DynamicResource DarkButtonStyleThemeColor}"
+                        Click="MinimizeButton_Clicked">
+                    <Button.Content>
+                        <Viewbox Margin="7">
+                            <Rectangle Height="2" 
+                                       Width="8" 
+                                       Fill="White" 
+                                       Margin="0,5,0,0"/>
+                        </Viewbox>
+                    </Button.Content>
+                </Button>
+                <Button Grid.Column="3" 
+                        Grid.Row="0"
+                        Style="{DynamicResource DarkButtonStyleThemeColor}"
+                        Click="CloseButton_Clicked">
+                    <Button.Content>
+                        <Viewbox Margin="3">
+                            <TextBlock Text="X" 
+                                       FontWeight="SemiBold"/>
+                        </Viewbox>
+                    </Button.Content>
+                </Button>
+            </Grid>
+
+            <!--App content-->
+            <Grid Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!--Title and menu items-->
+                <StackPanel Margin="10,0,0,0">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!--Logo-->
+                        <TextBlock Text="&#xEC26;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   Foreground="#FFC0C0C0"
+                                   FontSize="20"
+                                   Margin="0,5,0,0"/>
+
+                        <!--Title-->
+                        <TextBlock Text="CNN digits recognition" 
+                                   Grid.Column="1"
+                                   Margin="10,0,0,0"
+                                   Foreground="#FF6C6C6E"
+                                   VerticalAlignment="Center" 
+                                   FontWeight="Light"
+                                   FontSize="22"/>
+                    </Grid>
+
+                    <!--Top menu items-->
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                        <Button Style="{DynamicResource DarkButtonStyle}">
+                            <Button.Content>
+                                <TextBlock Text="Guide" 
+                                           FontSize="14" 
+                                           Width="50" 
+                                           Style="{DynamicResource TextBlockMenu}"/>
+                            </Button.Content>
+                        </Button>
+                        <Button Style="{DynamicResource DarkButtonStyle}">
+                            <Button.Content>
+                                <TextBlock Text="Info" 
+                                           FontSize="14" 
+                                           Width="50" 
+                                           Style="{DynamicResource TextBlockMenu}"/>
+                            </Button.Content>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <!--Navigation buttons-->
+                <StackPanel Grid.Row="1"
+                            Margin="0,10,0,0">
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/network.png"
+                                       Width="36"
+                                       Height="36"/>
+                                <TextBlock Text="Train network" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/image.png"
+                                       Width="36"
+                                       Height="36"/>
+                                <TextBlock Text="Pick image" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
