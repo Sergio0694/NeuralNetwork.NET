@@ -172,5 +172,12 @@ namespace ConvolutionalNeuralNetworkLibrary
             // Return the results
             return (dJdW1, dJdW2);
         }
+
+        /// <summary>
+        /// Serializes the current weights into a linear array of (W1.h*W1.w) + (W2.h*W2.w) elements
+        /// </summary>
+        [Pure]
+        [NotNull]
+        public double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
     }
 }

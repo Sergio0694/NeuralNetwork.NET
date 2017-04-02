@@ -14,7 +14,7 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
     /// <summary>
     /// A class that represents a convolution pipeline with a series of sequential operations
     /// </summary>
-    public class ConvolutionPipeline
+    public sealed class ConvolutionPipeline
     {
         /// <summary>
         /// Gets the pipeline in use in the current instance
@@ -54,7 +54,7 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public IList<double[][,]> Process([NotNull] IList<double[,]> inputs)
+        public IReadOnlyList<double[][,]> Process([NotNull] IReadOnlyList<double[,]> inputs)
         {
             double[][][,] results = new double[inputs.Count][][,];
             ParallelLoopResult result = Parallel.For(0, inputs.Count, i => results[i] = Process(inputs[i]));

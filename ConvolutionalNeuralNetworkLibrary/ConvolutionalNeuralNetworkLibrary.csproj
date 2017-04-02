@@ -59,6 +59,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConvolutionalNeuralNetwork.cs" />
     <Compile Include="Convolution\ConvolutionPipeline.cs" />
     <Compile Include="KernelsCollection.cs" />
     <Compile Include="MatrixHelper.cs" />
