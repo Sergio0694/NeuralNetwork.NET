@@ -291,11 +291,37 @@ namespace ConvolutionalNeuralNetworkLibrary
 
         #endregion
 
+        #region Tools
+
+        /// <summary>
+        /// Deserializes a neural network from the input weights and parameters
+        /// </summary>
+        /// <param name="inputs">The number of input nodes</param>
+        /// <param name="size">The number of nodes in the hidden layer</param>
+        /// <param name="outputs">The number of output nodes</param>
+        /// <param name="w1w2">The serialized network weights</param>
+        [Pure]
+        [NotNull]
+        internal static NeuralNetwork Deserialize(int inputs, int size, int outputs, double[] w1w2)
+        {
+            double[,]
+                    w1 = new double[inputs, size],
+                    w2 = new double[size, outputs];
+            int w1length = sizeof(double) * w1.Length;
+            Buffer.BlockCopy(w1w2, 0, w1, 0, w1length);
+            Buffer.BlockCopy(w1w2, w1length, w2, 0, sizeof(double) * w2.Length);
+
+            // Create the new network to use
+            return new NeuralNetwork(inputs, outputs, size, w1, w2);
+        }
+
         /// <summary>
         /// Serializes the current weights into a linear array of (W1.h*W1.w) + (W2.h*W2.w) elements
         /// </summary>
         [Pure]
         [NotNull]
         internal double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
+
+        #endregion
     }
 }

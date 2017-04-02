@@ -1,46 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using ConvolutionalNeuralNetworkLibrary.Convolution;
 
 namespace ConvolutionalNeuralNetworkLibrary
 {
-    public class NetworkTrainer
+    /// <summary>
+    /// A static class that create and trains a neural network for the input data and expected results
+    /// </summary>
+    public static class NetworkTrainer
     {
-        private readonly NeuralNetwork InitialNetwork;
-
-        private readonly Func<double[], double> CostFunction;
-
         /// <summary>
-        /// Initializes a new instance for the input network
+        /// Generates and trains a neural network suited for the input data and results
         /// </summary>
-        /// <param name="network">The neural network to train</param>
-        private NetworkTrainer([NotNull] NeuralNetwork network,
-            [NotNull] Func<double[], double> costFunction)
-        {
-            InitialNetwork = network;
-            CostFunction = costFunction;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="pipeline"></param>
-        /// <param name="ys"></param>
-        /// <param name="size"></param>
+        /// <param name="data">The raw input data for the supervised training</param>
+        /// <param name="pipeline">The convolution pipeline to apply to the input data</param>
+        /// <param name="ys">The results vector</param>
+        /// <param name="size">The number of nodes in the hidden layer of the network</param>
         [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static NeuralNetwork New(
+        public static NeuralNetwork ComputeTrainedNetwork(
             [NotNull] IReadOnlyList<double[,]> data, 
             [NotNull] ConvolutionPipeline pipeline, 
-            [NotNull] double[,] ys, int size)
+            [NotNull] double[,] ys, int size,
+            [CanBeNull] IProgress<CNNOptimizationProgress> progress = null)
         {
             // Preliminary checks
             if (data.Count == 0) throw new ArgumentOutOfRangeException("The input set is empty");
@@ -70,32 +57,17 @@ namespace ConvolutionalNeuralNetworkLibrary
                 inputs = x.GetLength(1),
                 outputs = ys.GetLength(1);
 
-            // Function to reconstruct a network from the input serialized weights
-            NeuralNetwork DeserializeNetwork(double[] w1w2)
-            {
-                // Reconstruct the matrices for the network
-                double[,]
-                    w1 = new double[inputs, size],
-                    w2 = new double[size, outputs];
-                int w1length = sizeof(double) * w1.Length;
-                Buffer.BlockCopy(w1w2, 0, w1, 0, w1length);
-                Buffer.BlockCopy(w1w2, w1length, w2, 0, sizeof(double) * w2.Length);
-
-                // Create the new network to use
-                return new NeuralNetwork(inputs, outputs, size, w1, w2);
-            }
-
             // Calculates the cost for a network with the input weights
             double CostFunction(double[] w1w2)
             {
-                NeuralNetwork network = DeserializeNetwork(w1w2);
+                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size, outputs, w1w2);
                 return network.CalculateCost(x, ys);
             }
 
             // Calculates the gradient for a network with the input weights
             double[] GradientFunction(double[] w1w2)
             {
-                NeuralNetwork network = DeserializeNetwork(w1w2);
+                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size, outputs, w1w2);
                 (double[,] dJdW1, double[,] dJdW2) gradient = network.CostFunctionPrime(x, ys);
                 return gradient.dJdW1.Cast<double>().Concat(gradient.dJdW2.Cast<double>()).ToArray();
             }
@@ -105,10 +77,15 @@ namespace ConvolutionalNeuralNetworkLibrary
                 inputs * size + size * outputs, // Number of free variables in the function to optimize
                 CostFunction, GradientFunction);
 
-            // TODO
-            bfgs.Progress += (s, e) => System.Diagnostics.Debug.WriteLine($"# {e.Iteration} ---> {e.Value}");
+            // TODO// Handle the progress if necessary
+            if (progress != null) bfgs.Progress += (s, e) =>
+            {
+                progress.Report(new CNNOptimizationProgress((inputs, size, outputs, e.Solution), e.Iteration, e.Value));
+            };
             bfgs.Minimize();
-            return null;
+
+            // Return the result network
+            return NeuralNetwork.Deserialize(inputs, size, outputs, bfgs.Solution);
         }
     }
 }

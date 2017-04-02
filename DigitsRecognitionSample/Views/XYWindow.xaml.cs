@@ -130,7 +130,8 @@ namespace DigitsRecognitionSample.Views
             }
 
             IReadOnlyList<double[,]> source = xn.Concat(yn).ToArray();
-            NetworkTrainer.New(source, pipeline, expectation, 50);
+            NeuralNetwork network = NetworkTrainer.ComputeTrainedNetwork(source, pipeline, expectation, 100, 
+                new Progress<CNNOptimizationProgress>(p => System.Diagnostics.Debug.WriteLine($"#{p.Iteration} >> {p.Cost}")));
         }
     }
 }

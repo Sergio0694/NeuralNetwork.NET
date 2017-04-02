@@ -60,7 +60,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConvolutionalNeuralNetwork.cs" />
+    <Compile Include="CNNOptimizationProgress.cs" />
     <Compile Include="Convolution\ConvolutionPipeline.cs" />
     <Compile Include="ImageProcessing\ImageToolkit.cs" />
     <Compile Include="KernelsCollection.cs" />
