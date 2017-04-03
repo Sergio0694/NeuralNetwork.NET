@@ -224,17 +224,24 @@ namespace ConvolutionalNeuralNetworkLibrary
             double[,] yHat = Forward(input);
 
             // Calculate the cost (half the squared difference)
-            double cost = 0, h = y.GetLength(0), w = y.GetLength(1);
-            for (int i = 0; i < h; i++)
+            int h = y.GetLength(0), w = y.GetLength(1);
+            double[] v = new double[h];
+            ParallelLoopResult result = Parallel.For(0, h, i =>
             {
                 for (int j = 0; j < w; j++)
                 {
                     double
                         delta = y[i, j] - yHat[i, j],
                         square = delta * delta;
-                    cost += square;
+                    v[i] += square;
                 }
-            }
+            });
+            if (!result.IsCompleted) throw new Exception("Error while runnig the parallel loop");
+
+            // Sum the partial costs
+            double cost = 0;
+            for (int i = 0; i < h; i++)
+                cost += v[i];
             return cost / 2;
         }
 
@@ -255,17 +262,37 @@ namespace ConvolutionalNeuralNetworkLibrary
             // Calculate the negative delta for later use
             int h = y.GetLength(0), w = y.GetLength(1);
             double[,] negativeDelta = new double[h, w];
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                    negativeDelta[i, j] = -(y[i, j] - yHat[i, j]);
+            ParallelLoopResult result = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    // Fix the pointers
+                    fixed (double* nd = negativeDelta, py = y, pyHat = yHat)
+                    {
+                        for (int j = 0; j < w; j++)
+                            nd[i * w + j] = -(py[i * w + j] - pyHat[i * w + j]);
+                    }
+                }
+            });
+            if (!result.IsCompleted) throw new Exception("Error while runnig the parallel loop");
 
             // Derivative with respect to W2
             double[,]
                 z3prime = MatrixHelper.SigmoidPrime(_Z3),
                 delta3 = new double[h, w];
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                    delta3[i, j] = negativeDelta[i, j] * z3prime[i, j];
+            result = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    // Fix the pointers
+                    fixed (double* d3 = delta3, nd = negativeDelta, z3p = z3prime)
+                    {
+                        for (int j = 0; j < w; j++)
+                            d3[i * w + j] = nd[i * w + j] * z3p[i * w + j];
+                    }
+                }
+            });
+            if (!result.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             double[,]
                 a2t = MatrixHelper.Transpose(_A2),
                 dJdW2 = MatrixHelper.Multiply(a2t, delta3);

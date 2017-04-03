@@ -111,7 +111,8 @@
                           Height="44">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"
+                                              MinWidth="80"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
@@ -133,11 +134,12 @@
                                    Margin="16,0,0,0"/>
                         <Viewbox Margin="10,0,16,0"
                                  Grid.Column="3"
-                                 HorizontalAlignment="Left">
+                                 HorizontalAlignment="Left"
+                                 StretchDirection="DownOnly">
                             <TextBlock Text="/"
                                        x:Name="ValueBlock"                                   
                                        Foreground="White"
-                                       FontSize="32"
+                                       FontSize="20"
                                        VerticalAlignment="Center"
                                        FontWeight="Light"/>
                         </Viewbox>
