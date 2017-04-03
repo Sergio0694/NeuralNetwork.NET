@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace ConvolutionalNeuralNetworkLibrary
@@ -152,12 +153,14 @@ namespace ConvolutionalNeuralNetworkLibrary
             // Initialize the parameters and the result vector
             int w = m.GetLength(1);
             double[] result = new double[w];
-            unsafe
+
+            // Loop in parallel
+            ParallelLoopResult loopResult = Parallel.For(0, w, j =>
             {
-                // Get the pointers and iterate fo each column
-                fixed (double* pm = result, p1 = v, p2 = m)
+                unsafe
                 {
-                    for (int j = 0; j < w; j++)
+                    // Get the pointers and iterate fo each column
+                    fixed (double* pm = result, p1 = v, p2 = m)
                     {
                         // Perform the multiplication
                         int j2 = j;
@@ -169,7 +172,8 @@ namespace ConvolutionalNeuralNetworkLibrary
                         pm[j] = res;
                     }
                 }
-            }
+            });
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 
@@ -188,12 +192,14 @@ namespace ConvolutionalNeuralNetworkLibrary
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
             double[,] result = new double[h, w];
-            unsafe
+
+            // Execute the multiplication in parallel
+            ParallelLoopResult loopResult = Parallel.For(0, h, i =>
             {
-                // Get the pointers and iterate fo each row
-                fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                unsafe
                 {
-                    for (int i = 0; i < h; i++)
+                    // Get the pointers and iterate fo each row
+                    fixed (double* pm = result, pm1 = m1, pm2 = m2)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
@@ -210,7 +216,8 @@ namespace ConvolutionalNeuralNetworkLibrary
                         }
                     }
                 }
-            }
+            });
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 
@@ -223,11 +230,23 @@ namespace ConvolutionalNeuralNetworkLibrary
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Transpose([NotNull] double[,] m)
         {
+            // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] result = new double[w, h];
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                    result[j, i] = m[i, j];
+
+            // Execute the transposition in parallel
+            ParallelLoopResult loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm = m)
+                    {
+                        for (int j = 0; j < w; j++)
+                            pr[j * h + i] = pm[i * w + j];
+                    }
+                }
+            });
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 
@@ -255,11 +274,23 @@ namespace ConvolutionalNeuralNetworkLibrary
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Sigmoid([NotNull] double[,] m)
         {
+            // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] result = new double[h, w];
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                    result[i, j] = 1 / (1 + Math.Exp(-m[i, j]));
+
+            // Execute the sigmoid in parallel
+            ParallelLoopResult loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm = m)
+                    {
+                        for (int j = 0; j < w; j++)
+                            pr[i * w + j] = 1 / (1 + Math.Exp(-pm[i * w + j]));
+                    }
+                }
+            });
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 
@@ -294,20 +325,30 @@ namespace ConvolutionalNeuralNetworkLibrary
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] SigmoidPrime([NotNull] double[,] m)
         {
+            // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] result = new double[h, w];
-            for (int i = 0; i < h; i++)
+
+            // Execute the sigmoid prime in parallel
+            ParallelLoopResult loopResult = Parallel.For(0, h, i =>
             {
-                for (int j = 0; j < w; j++)
+                unsafe
                 {
-                    double
-                        exp = Math.Exp(-m[i, j]),
-                        sum = 1 + exp,
-                        square = sum * sum,
-                        div = exp / square;
-                    result[i, j] = div;
+                    fixed (double* pr = result, pm = m)
+                    {
+                        for (int j = 0; j < w; j++)
+                        {
+                            double
+                                exp = Math.Exp(-pm[i * w + j]),
+                                sum = 1 + exp,
+                                square = sum * sum,
+                                div = exp / square;
+                            pr[i * w + j] = div;
+                        }
+                    }
                 }
-            }
+            });
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 
@@ -328,24 +369,22 @@ namespace ConvolutionalNeuralNetworkLibrary
                 w = volume[0].GetLength(1);
             double[] result = new double[h * w * depth];
 
-            // Copy the volume data
-            unsafe
+            // Execute the copy in parallel
+            ParallelLoopResult loopResult = Parallel.For(0, h, i =>
             {
-                fixed (double* r = result)
+                // Copy the volume data
+                unsafe
                 {
-                    // Iterate for each depth layer
-                    for (int i = 0; i < depth; i++)
+                    fixed (double* r = result, p = volume[i])
                     {
-                        fixed (double* p = volume[i])
-                        {
-                            // Copy each 2D matrix
-                            for (int j = 0; j < h; j++)
-                                for (int z = 0; z < w; z++)
-                                    r[h * w * i + j * w + z] = p[j * w + z];
-                        }
+                        // Copy each 2D matrix
+                        for (int j = 0; j < h; j++)
+                            for (int z = 0; z < w; z++)
+                                r[h * w * i + j * w + z] = p[j * w + z];
                     }
                 }
-            }
+            });
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 
