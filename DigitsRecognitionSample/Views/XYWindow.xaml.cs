@@ -78,18 +78,15 @@ namespace DigitsRecognitionSample.Views
             }
 
             IReadOnlyList<double[,]> source = xn.Concat(on).ToArray();
-            _Network = await Task.Run(() =>
+            _Network = await NetworkTrainer.ComputeTrainedNetworkAsync(source, App.SharedPipeline, expectation, 200, cts.Token, null,
+            new Progress<CNNOptimizationProgress>(p =>
             {
-                return NetworkTrainer.ComputeTrainedNetwork(source, App.SharedPipeline, expectation, 200, cts.Token, null,
-                    new Progress<CNNOptimizationProgress>(p =>
-                    {
-                        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                        {
-                            GenBlock.Text = $"#{p.Iteration}";
-                            ValueBlock.Text = p.Cost.ToString();
-                        }));
-                    }));
-            });
+                Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    GenBlock.Text = $"#{p.Iteration}";
+                    ValueBlock.Text = p.Cost.ToString();
+                }));
+            }));
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)

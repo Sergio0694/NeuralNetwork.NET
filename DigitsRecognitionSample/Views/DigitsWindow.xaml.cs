@@ -84,18 +84,15 @@ namespace DigitsRecognitionSample.Views
 
             // Get the optimized network
             double[] solution = _Network?.SerializeWeights();
-            _Network = await Task.Run(() =>
+            _Network = await NetworkTrainer.ComputeTrainedNetworkAsync(source, App.SharedPipeline, y, 100, cts.Token, solution,
+            new Progress<CNNOptimizationProgress>(p =>
             {
-                return NetworkTrainer.ComputeTrainedNetwork(source, App.SharedPipeline, y, 100, cts.Token, solution,
-                    new Progress<CNNOptimizationProgress>(p =>
-                    {
-                        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                        {
-                            GenBlock.Text = $"#{p.Iteration}";
-                            ValueBlock.Text = p.Cost.ToString();
-                        }));
-                    }));
-            });
+                Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    GenBlock.Text = $"#{p.Iteration}";
+                    ValueBlock.Text = p.Cost.ToString();
+                }));
+            }));
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)

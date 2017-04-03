@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using ConvolutionalNeuralNetworkLibrary.Convolution;
@@ -25,9 +26,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="progress">An optional progress callback</param>
         [PublicAPI]
         [Pure]
-        [NotNull]
+        [ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static NeuralNetwork ComputeTrainedNetwork(
+        public static async Task<NeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] IReadOnlyList<double[,]> data, 
             [NotNull] ConvolutionPipeline pipeline, 
             [NotNull] double[,] ys, [CanBeNull] int? size,
@@ -94,8 +95,11 @@ namespace ConvolutionalNeuralNetworkLibrary
             };
 
             // Minimize the cost function
-            if (solution != null) bfgs.Minimize(solution);
-            else bfgs.Minimize();
+            await Task.Run(() =>
+            {
+                if (solution != null) bfgs.Minimize(solution);
+                else bfgs.Minimize();
+            }, token);
 
             // Return the result network
             return NeuralNetwork.Deserialize(inputs, size.Value, outputs, bfgs.Solution);
