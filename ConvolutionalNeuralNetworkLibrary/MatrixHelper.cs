@@ -150,6 +150,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[] Multiply([NotNull] double[] v, [NotNull] double[,] m)
         {
+            // Check
+            if (v.Length != m.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid inputs sizes");
+
             // Initialize the parameters and the result vector
             int w = m.GetLength(1);
             double[] result = new double[w];
@@ -187,6 +190,9 @@ namespace ConvolutionalNeuralNetworkLibrary
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Multiply([NotNull] double[,] m1, [NotNull] double[,] m2)
         {
+            // Checks
+            if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+
             // Initialize the parameters and the result matrix
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
@@ -319,7 +325,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <summary>
         /// Returns the result of the input after the activation function primed has been applied
         /// </summary>
-        /// <param name="v">The input to process</param>
+        /// <param name="m">The input to process</param>
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]

@@ -29,8 +29,8 @@ namespace ConvolutionalNeuralNetworkLibrary
         [ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static async Task<NeuralNetwork> ComputeTrainedNetworkAsync(
-            [NotNull] IReadOnlyList<double[,]> data, 
-            [NotNull] ConvolutionPipeline pipeline, 
+            [NotNull] IReadOnlyList<double[,]> data,
+            [NotNull] ConvolutionPipeline pipeline,
             [NotNull] double[,] ys, [CanBeNull] int? size,
             CancellationToken token,
             [CanBeNull] double[] solution = null,
