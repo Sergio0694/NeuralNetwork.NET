@@ -38,6 +38,32 @@ namespace ConvolutionalNeuralNetworkLibrary.Unit
             Assert.True(t.ContentEquals(r));
         }
 
+        /// <summary>
+        /// Pool 2x2 test
+        /// </summary>
+        [Test]
+        [Category(nameof(MatrixHelper))]
+        [Category("CNN")]
+        public static void Pool2x2()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { -1, 0, 1, 2 },
+                    { 1, 1, 1, 1 },
+                    { 0, -0.3, -5, -0.5 },
+                    { -1, 10, -2, -1 }
+                },
+                r =
+                {
+                    { 1, 2 },
+                    { 10, -0.5 }
+                },
+                t = m.Pool2x2();
+            Assert.True(t.ContentEquals(r));
+        }
+
         #endregion
 
         #region Misc
@@ -60,12 +86,12 @@ namespace ConvolutionalNeuralNetworkLibrary.Unit
             double[]
                 v = { 1, 2, 0.1, -2 },
                 r = { 1.1, 5.1, 1.1, -0.9 },
-                t = MatrixHelper.Multiply(v, m);
+                t = v.Multiply(m);
             Assert.True(t.ContentEquals(r));
 
             // Exception test
             double[] f = { 1, 2, 3, 4, 5, 6 };
-            Assert.Throws<ArgumentOutOfRangeException>(() => MatrixHelper.Multiply(f, m));
+            Assert.Throws<ArgumentOutOfRangeException>(() => f.Multiply(m));
         }
 
         /// <summary>
@@ -93,7 +119,7 @@ namespace ConvolutionalNeuralNetworkLibrary.Unit
                     { -4.7, 6.6, -15.3, 10.8 },
                     { 24.3, 9.7999, -5.5, 11.09 }
                 },
-                t = MatrixHelper.Multiply(m1, m2);
+                t = m1.Multiply(m2);
             Assert.True(t.ContentEquals(r));
 
             // Exception test
@@ -102,8 +128,8 @@ namespace ConvolutionalNeuralNetworkLibrary.Unit
                     { 1, 2, 1, 0, 0 },
                     { 5, 0.1, 0, 0, 0 }
                 };
-            Assert.Throws<ArgumentOutOfRangeException>(() => MatrixHelper.Multiply(f, m1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => MatrixHelper.Multiply(m2, f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => f.Multiply(m1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => m2.Multiply(f));
         }
 
         /// <summary>
@@ -127,7 +153,7 @@ namespace ConvolutionalNeuralNetworkLibrary.Unit
                     { 1, -1 },
                     { 1, 0 }
                 },
-                t = MatrixHelper.Transpose(m);
+                t = m.Transpose();
             Assert.True(t.ContentEquals(r));
         }
 

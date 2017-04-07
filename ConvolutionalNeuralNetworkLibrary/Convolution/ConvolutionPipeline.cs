@@ -41,7 +41,7 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
         [CollectionAccess(CollectionAccessType.Read)]
         public double[][,] Process([NotNull] double[,] input)
         {
-            double[][,] result = new double[][,] { input };
+            double[][,] result = { input };
             foreach (VolumicProcessor p in Pipeline)
                 result = p(result);
             return result;
@@ -50,7 +50,7 @@ namespace ConvolutionalNeuralNetworkLibrary.Convolution
         /// <summary>
         /// Processes the input vector sthrough the current pipeline and returns a series of results
         /// </summary>
-        /// <param name="input">The inputs to process</param>
+        /// <param name="inputs">The inputs to process</param>
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]

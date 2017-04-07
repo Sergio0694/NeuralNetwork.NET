@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -69,8 +67,6 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="hiddenSize">The size of the first hidden layer</param>
         /// <param name="w1">The weights from the inputs to the first hidden layer</param>
         /// <param name="w2">The weights from the first hidden layer</param>
-        /// <param name="z1Th">Threshold for the hidden neurons layer</param>
-        /// <param name="z2Th">Threshold for the second layer of neurons</param>
         public NeuralNetwork(int input, int output, int hiddenSize, 
             [NotNull] double[,] w1, [NotNull] double[,] w2)
         {
@@ -97,12 +93,12 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="input">The input to process</param>
         /// <remarks>This methods processes a single input row and outputs a single result</remarks>
         [PublicAPI]
-        [MustUseReturnValue]
+        [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public double[] Forward([NotNull] double[] input)
         {
-            double[] 
+            double[]
                 z2 = MatrixHelper.Multiply(input, W1), // Input >> hidden layer
                 a2 = MatrixHelper.Sigmoid(z2), // Hidden layer activation
                 z3 = MatrixHelper.Multiply(a2, W2), // Hidden >> output layer
@@ -117,7 +113,6 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="y">The expected result to use to calculate the error</param>
         [PublicAPI]
         [Pure]
-        [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public double CalculateCost([NotNull] double[] input, [NotNull] double[] y)
         {
@@ -143,7 +138,6 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="y">The expected result to use to calculate the error</param>
         [PublicAPI]
         [Pure]
-        [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public (double[], double[]) CostFunctionPrime([NotNull] double[] input, [NotNull] double[] y)
         {
@@ -216,7 +210,6 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="y">The expected result to use to calculate the error</param>
         [PublicAPI]
         [Pure]
-        [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public double CalculateCost([NotNull] double[,] input, [NotNull] double[,] y)
         {
@@ -252,7 +245,6 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// <param name="y">The expected result to use to calculate the error</param>
         [PublicAPI]
         [Pure]
-        [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public (double[,], double[,]) CostFunctionPrime([NotNull] double[,] input, [NotNull] double[,] y)
         {

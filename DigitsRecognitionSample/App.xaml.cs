@@ -1,5 +1,4 @@
-﻿using System.Data;
-using System.Linq;
+﻿using System.Linq;
 using System.Windows;
 using ConvolutionalNeuralNetworkLibrary;
 using ConvolutionalNeuralNetworkLibrary.Convolution;

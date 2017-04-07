@@ -29,9 +29,12 @@ namespace ConvolutionalNeuralNetworkLibrary
             {
                 fixed(double* p = m, r = result)
                 {
+                    // Get the max value
                     double max = 0;
                     for (int i = 0; i < m.Length; i++)
                         if (p[i] > max) max = p[i];
+
+                    // Normalize the matrix content
                     for (int i = 0; i < m.Length; i++)
                         r[i] = p[i] / max;
                 }
@@ -148,7 +151,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Multiply([NotNull] double[] v, [NotNull] double[,] m)
+        public static double[] Multiply([NotNull] this double[] v, [NotNull] double[,] m)
         {
             // Check
             if (v.Length != m.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid inputs sizes");
@@ -188,7 +191,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Multiply([NotNull] double[,] m1, [NotNull] double[,] m2)
+        public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -234,7 +237,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Transpose([NotNull] double[,] m)
+        public static double[,] Transpose([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -263,7 +266,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Sigmoid([NotNull] double[] v)
+        public static double[] Sigmoid([NotNull] this double[] v)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
@@ -278,7 +281,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Sigmoid([NotNull] double[,] m)
+        public static double[,] Sigmoid([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -307,7 +310,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] SigmoidPrime([NotNull] double[] v)
+        public static double[] SigmoidPrime([NotNull] this double[] v)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
@@ -329,7 +332,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] SigmoidPrime([NotNull] double[,] m)
+        public static double[,] SigmoidPrime([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);

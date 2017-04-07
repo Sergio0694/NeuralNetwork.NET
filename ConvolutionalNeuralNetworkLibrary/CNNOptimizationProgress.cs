@@ -16,7 +16,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Gets the current neural network for the reached optimization progress
         /// </summary>
         [NotNull]
-        public NeuralNetwork Network => _Network 
+        public NeuralNetwork Network => _Network
             ?? (_Network = NeuralNetwork.Deserialize(Parameters.In, Parameters.Size, Parameters.Out, Parameters.Weights));
 
         /// <summary>
