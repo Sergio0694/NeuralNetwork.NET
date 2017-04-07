@@ -5,9 +5,9 @@ using System.Windows;
 using System.Drawing;
 using System.Windows.Input;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Windows.Threading;
 using System.Threading;
-using System.Threading.Tasks;
 using ConvolutionalNeuralNetworkLibrary;
 using ConvolutionalNeuralNetworkLibrary.ImageProcessing;
 using JetBrains.Annotations;
@@ -67,7 +67,7 @@ namespace DigitsRecognitionSample.Views
                 on = obmp.Select(b => b.ToNormalizedPixelData()).ToArray();
 
             // Get the results matrix (number of samples by output nodes)
-            int 
+            int
                 _10 = x.Length,
                 results = _10 + o.Length;
             double[,] expectation = new double[results, 2];
@@ -84,7 +84,7 @@ namespace DigitsRecognitionSample.Views
                 Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
                     GenBlock.Text = $"#{p.Iteration}";
-                    ValueBlock.Text = p.Cost.ToString();
+                    ValueBlock.Text = p.Cost.ToString(CultureInfo.InvariantCulture);
                 }));
             }));
         }

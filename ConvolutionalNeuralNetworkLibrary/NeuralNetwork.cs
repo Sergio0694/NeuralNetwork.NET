@@ -82,7 +82,7 @@ namespace ConvolutionalNeuralNetworkLibrary
             HiddenLayerSize = hiddenSize;
             W1 = w1;
             W2 = w2;
-            W2T = MatrixHelper.Transpose(W2);
+            W2T = W2.Transpose();
         }
 
         #region Single processing
@@ -99,10 +99,10 @@ namespace ConvolutionalNeuralNetworkLibrary
         public double[] Forward([NotNull] double[] input)
         {
             double[]
-                z2 = MatrixHelper.Multiply(input, W1), // Input >> hidden layer
-                a2 = MatrixHelper.Sigmoid(z2), // Hidden layer activation
-                z3 = MatrixHelper.Multiply(a2, W2), // Hidden >> output layer
-                yHat = MatrixHelper.Sigmoid(z3); // Output layer activation
+                z2 = input.Multiply(W1), // Input >> hidden layer
+                a2 = z2.Sigmoid(), // Hidden layer activation
+                z3 = a2.Multiply(W2), // Hidden >> output layer
+                yHat = z3.Sigmoid(); // Output layer activation
             return yHat;
         }
 
@@ -143,10 +143,10 @@ namespace ConvolutionalNeuralNetworkLibrary
         {
             // Locally forward the input to hold a references to the intermediate values
             double[]
-                z2 = MatrixHelper.Multiply(input, W1), // Input >> hidden layer
-                a2 = MatrixHelper.Sigmoid(z2), // Hidden layer activation
-                z3 = MatrixHelper.Multiply(a2, W2), // Hidden >> output layer
-                yHat = MatrixHelper.Sigmoid(z3); // Output layer activation
+                z2 = input.Multiply(W1), // Input >> hidden layer
+                a2 = z2.Sigmoid(), // Hidden layer activation
+                z3 = a2.Multiply(W2), // Hidden >> output layer
+                yHat = z3.Sigmoid(); // Output layer activation
 
             // Calculate the negative delta for later use
             double[] negativeDelta = new double[y.Length];
@@ -155,7 +155,7 @@ namespace ConvolutionalNeuralNetworkLibrary
 
             // Derivative with respect to W2
             double[]
-                z3prime = MatrixHelper.SigmoidPrime(z3),
+                z3prime = z3.SigmoidPrime(),
                 delta3 = new double[y.Length];
             for (int i = 0; i < y.Length; i++)
                 delta3[i] = negativeDelta[i] * z3prime[i];
@@ -165,8 +165,8 @@ namespace ConvolutionalNeuralNetworkLibrary
 
             // Derivative with respect to W1
             double[]
-                delta3w2t = MatrixHelper.Multiply(delta3, W2T),
-                z2prime = MatrixHelper.SigmoidPrime(z2),
+                delta3w2t = delta3.Multiply(W2T),
+                z2prime = z2.SigmoidPrime(),
                 delta2 = new double[delta3w2t.Length];
             for (int i = 0; i < delta2.Length; i++)
                 delta2[i] = delta3w2t[i] * z2prime[i];
@@ -194,12 +194,12 @@ namespace ConvolutionalNeuralNetworkLibrary
         public double[,] Forward([NotNull] double[,] input)
         {
             // Perform the batch processing
-            _Z2 = MatrixHelper.Multiply(input, W1);
-            _A2 = MatrixHelper.Sigmoid(_Z2);
-            _Z3 = MatrixHelper.Multiply(_A2, W2);
+            _Z2 = input.Multiply(W1);
+            _A2 = _Z2.Sigmoid();
+            _Z3 = _A2.Multiply(W2);
 
             // Hidden layer >> output (with activation)
-            double[,] yHat = MatrixHelper.Sigmoid(_Z3);
+            double[,] yHat = _Z3.Sigmoid();
             return yHat;
         }
 
@@ -270,7 +270,7 @@ namespace ConvolutionalNeuralNetworkLibrary
 
             // Derivative with respect to W2
             double[,]
-                z3prime = MatrixHelper.SigmoidPrime(_Z3),
+                z3prime = _Z3.SigmoidPrime(),
                 delta3 = new double[h, w];
             result = Parallel.For(0, h, i =>
             {
@@ -286,13 +286,13 @@ namespace ConvolutionalNeuralNetworkLibrary
             });
             if (!result.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             double[,]
-                a2t = MatrixHelper.Transpose(_A2),
-                dJdW2 = MatrixHelper.Multiply(a2t, delta3);
+                a2t = _A2.Transpose(),
+                dJdW2 = a2t.Multiply(delta3);
 
             // Derivative with respect to W1
             double[,]
-                delta3w2t = MatrixHelper.Multiply(delta3, W2T),
-                z2prime = MatrixHelper.SigmoidPrime(_Z2);
+                delta3w2t = delta3.Multiply(W2T),
+                z2prime = _Z2.SigmoidPrime();
             int
                 delta3w2th = delta3w2t.GetLength(0),
                 delta3w2tw = delta3w2t.GetLength(1);
@@ -301,8 +301,8 @@ namespace ConvolutionalNeuralNetworkLibrary
                 for (int j = 0; j < delta3w2tw; j++)
                     delta2[i, j] = delta3w2t[i, j] * z2prime[i, j];
             double[,]
-                xt = MatrixHelper.Transpose(input),
-                dJdW1 = MatrixHelper.Multiply(xt, delta2);
+                xt = input.Transpose(),
+                dJdW1 = xt.Multiply(delta2);
 
             // Return the results
             return (dJdW1, dJdW2);

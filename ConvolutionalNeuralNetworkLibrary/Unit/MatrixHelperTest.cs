@@ -157,6 +157,38 @@ namespace ConvolutionalNeuralNetworkLibrary.Unit
             Assert.True(t.ContentEquals(r));
         }
 
+        /// <summary>
+        /// Matrix array flattening
+        /// </summary>
+        [Test]
+        [Category("Misc")]
+        public static void Flattening()
+        {
+            // Test values
+            double[][,] mv =
+            {
+                new[,]
+                {
+                    { 1.0, 2.0 },
+                    { 3.0, 4.0 }
+                },
+                new[,]
+                {
+                    { 0.1, 0.2 },
+                    { 0.3, 0.4 }
+                },
+                new[,]
+                {
+                    { -1.0, -2.0 },
+                    { -3.0, -4.0 }
+                }
+            };
+            double[]
+                r = { 1.0, 2.0, 3.0, 4.0, 0.1, 0.2, 0.3, 0.4, -1.0, -2.0, -3.0, -4.0 },
+                t = mv.Flatten();
+            Assert.True(t.ContentEquals(r));
+        }
+
         #endregion
 
         #region Helpers

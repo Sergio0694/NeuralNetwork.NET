@@ -379,7 +379,7 @@ namespace ConvolutionalNeuralNetworkLibrary
             double[] result = new double[h * w * depth];
 
             // Execute the copy in parallel
-            ParallelLoopResult loopResult = Parallel.For(0, h, i =>
+            ParallelLoopResult loopResult = Parallel.For(0, depth, i =>
             {
                 // Copy the volume data
                 unsafe
