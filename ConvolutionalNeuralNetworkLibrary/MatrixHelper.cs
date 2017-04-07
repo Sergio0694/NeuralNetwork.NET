@@ -15,6 +15,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Returns the normalized matrix with a max value of 1
         /// </summary>
         /// <param name="m">The input matrix to normalize</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -46,6 +47,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Pools the input matrix with a window of 2 and a stride of 2
         /// </summary>
         /// <param name="m">The input matrix to pool</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -77,6 +79,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Performs the Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
         /// </summary>
         /// <param name="m">The input matrix to edit</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -95,6 +98,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// </summary>
         /// <param name="m">The input matrix</param>
         /// <param name="kernel">The 3x3 convolution kernel to use</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -148,6 +152,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// </summary>
         /// <param name="v">The input vector</param>
         /// <param name="m">The matrix to multiply</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -188,6 +193,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -234,6 +240,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Transposes the input matrix
         /// </summary>
         /// <param name="m">The matrix to transpose</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -263,6 +270,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Returns the result of the input after the activation function has been applied
         /// </summary>
         /// <param name="v">The input to process</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -278,6 +286,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Returns the result of the input after the activation function has been applied
         /// </summary>
         /// <param name="m">The input to process</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -307,6 +316,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Returns the result of the input after the activation function primed has been applied
         /// </summary>
         /// <param name="v">The input to process</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -329,6 +339,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Returns the result of the input after the activation function primed has been applied
         /// </summary>
         /// <param name="m">The input to process</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -365,6 +376,7 @@ namespace ConvolutionalNeuralNetworkLibrary
         /// Flattens the input volume in a linear array
         /// </summary>
         /// <param name="volume">The volume to flatten</param>
+        [PublicAPI]
         [Pure]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -395,6 +407,76 @@ namespace ConvolutionalNeuralNetworkLibrary
             });
             if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
+        }
+
+        /// <summary>
+        /// Randomizes part of the content of a matrix
+        /// </summary>
+        /// <param name="m">The matrix to randomize</param>
+        /// <param name="probability">The probabiity of each matrix element to be randomized</param>
+        [PublicAPI]
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Randomize([NotNull] this double[,] m, double probability)
+        {
+            if (probability < 0 || probability > 1) throw new ArgumentOutOfRangeException("The probability must be in the [0, 1] range");
+            double inverse = 1.0 - probability;
+            int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] randomized = new double[h, w];
+            ParallelLoopResult result = Parallel.For(0, m.GetLength(0), i =>
+            {
+                // Get the random instance and fix the pointers
+                Random random = new Random();
+                unsafe
+                {
+                    fixed (double* r = randomized, pm = m)
+                    {
+                        // Populate the resulting matrix
+                        for (int j = 0; j < w; j++)
+                        {
+                            if (random.NextDouble() >= inverse)
+                                r[i * w + j] = random.NextDouble();
+                            else r[i * w + j] = pm[i * w + j];
+                        }
+                    }
+                }
+            });
+            if (!result.IsCompleted) throw new Exception("Error while runnig the parallel loop");
+            return randomized;
+        }
+
+        /// <summary>
+        /// Randomizes part of the content of a vector
+        /// </summary>
+        /// <param name="v">The vector to randomize</param>
+        /// <param name="probability">The probabiity of each vector element to be randomized</param>
+        [PublicAPI]
+        [Pure]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] Randomize([NotNull] this double[] v, double probability)
+        {
+            // Checks
+            if (probability < 0 || probability > 1) throw new ArgumentOutOfRangeException("The probability must be in the [0, 1] range");
+            double inverse = 1.0 - probability;
+            double[] randomized = new double[v.Length];
+
+            // Populate the resulting vector
+            unsafe
+            {
+                fixed (double* r = randomized, pv = v)
+                {
+                    for (int i = 0; i < v.Length; i++)
+                    {
+                        Random random = new Random();
+                        if (random.NextDouble() >= inverse)
+                            r[i] = random.NextDouble();
+                        else r[i] = pv[i];
+                    }
+                }
+            }
+            return randomized;
         }
 
         #endregion
