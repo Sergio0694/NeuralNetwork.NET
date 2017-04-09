@@ -46,7 +46,7 @@ namespace ConvolutionalNeuralNetworkLibrary
             IReadOnlyList<double[][,]> convolutions = pipeline.Process(data);
 
             // Prepare the base network and the input data
-            int 
+            int
                 depth = convolutions[0].Length, // Depth of each convolution volume
                 lsize = convolutions[0][0].Length, // Size of each 2D layer
                 ch = convolutions[0][0].GetLength(0), // Height of each convolution layer
