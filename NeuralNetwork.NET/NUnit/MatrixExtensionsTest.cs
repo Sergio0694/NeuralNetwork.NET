@@ -1,20 +1,17 @@
 ﻿using System;
+using System.Diagnostics;
 using NeuralNetworkNET.Helpers;
-using NUnit.Framework;
 
 namespace NeuralNetworkNET.NUnit
 {
     /// <summary>
     /// Test class for the <see cref="MatrixExtensions"/> class
     /// </summary>
-    [TestFixture]
-    [Category(nameof(MatrixExtensionsTest))]
     internal static class MatrixExtensionsTest
     {
         /// <summary>
         /// Vector-matrix multiplication test
         /// </summary>
-        [Test]
         public static void LinearMultiplication()
         {
             // Test values
@@ -29,17 +26,16 @@ namespace NeuralNetworkNET.NUnit
                 v = { 1, 2, 0.1, -2 },
                 r = { 1.1, 5.1, 1.1, -0.9 },
                 t = v.Multiply(m);
-            Assert.True(t.ContentEquals(r));
+            Debug.Assert(t.ContentEquals(r));
 
             // Exception test
             double[] f = { 1, 2, 3, 4, 5, 6 };
-            Assert.Throws<ArgumentOutOfRangeException>(() => f.Multiply(m));
+            NUnitHelpers.AssertThrows<ArgumentOutOfRangeException>(() => f.Multiply(m));
         }
 
         /// <summary>
         /// Matrix-matrix multiplication test
         /// </summary>
-        [Test]
         public static void SpatialMultiplication()
         {
             // Test values
@@ -61,7 +57,7 @@ namespace NeuralNetworkNET.NUnit
                     { 24.3, 9.7999, -5.5, 11.09 }
                 },
                 t = m1.Multiply(m2);
-            Assert.True(t.ContentEquals(r));
+            Debug.Assert(t.ContentEquals(r));
 
             // Exception test
             double[,] f =
@@ -69,14 +65,13 @@ namespace NeuralNetworkNET.NUnit
                 { 1, 2, 1, 0, 0 },
                 { 5, 0.1, 0, 0, 0 }
             };
-            Assert.Throws<ArgumentOutOfRangeException>(() => f.Multiply(m1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => m2.Multiply(f));
+            NUnitHelpers.AssertThrows<ArgumentOutOfRangeException>(() => f.Multiply(m1));
+            NUnitHelpers.AssertThrows<ArgumentOutOfRangeException>(() => m2.Multiply(f));
         }
 
         /// <summary>
         /// Matrix transposition
         /// </summary>
-        [Test]
         public static void Transposition()
         {
             // Test values
@@ -94,13 +89,12 @@ namespace NeuralNetworkNET.NUnit
                     { 1, 0 }
                 },
                 t = m.Transpose();
-            Assert.True(t.ContentEquals(r));
+            Debug.Assert(t.ContentEquals(r));
         }
 
         /// <summary>
         /// Matrix array flattening
         /// </summary>
-        [Test]
         public static void Flattening()
         {
             // Test values
@@ -125,7 +119,7 @@ namespace NeuralNetworkNET.NUnit
             double[]
                 r = { 1.0, 2.0, 3.0, 4.0, 0.1, 0.2, 0.3, 0.4, -1.0, -2.0, -3.0, -4.0 },
                 t = mv.Flatten();
-            Assert.True(t.ContentEquals(r));
+            Debug.Assert(t.ContentEquals(r));
         }
     }
 }

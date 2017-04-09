@@ -27,10 +27,10 @@ namespace NeuralNetworkNET
         public static void Initialize([NotNull] LBFGSFactory instance) => Instance = instance;
 
         /// <summary>
-        /// The LBFGSFactory instance to use in the library (until .NET Standard 2.0 is released)
+        /// The LBFGSFactory instance to use in the library
         /// </summary>
         [NotNull]
-        internal static LBFGSFactory Instance { get; private set; } = (n, cost, gradient) => throw new NotImplementedException();
+        internal static LBFGSFactory Instance { get; private set; } = (n, cost, gradient) => throw new Exception("The library hasn't been initialized");
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ namespace NeuralNetworkNET
     public class IAccordNETGradientOptimizationMethodProgressRelayEventArgs : EventArgs
     {
         /// <summary>
-        /// Creates a new instance of the arguments with the given parameters (to get from 
+        /// Creates a new instance of the arguments with the given parameters (to get from
         /// the OptimizationProgressEventArgs arguments in the LBFGS Progress event)
         /// </summary>
         /// <param name="solution">The current solution found</param>

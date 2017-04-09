@@ -1,19 +1,16 @@
-﻿using NeuralNetworkNET.Convolution.Misc;
-using NUnit.Framework;
+﻿using System.Diagnostics;
+using NeuralNetworkNET.Convolution.Misc;
 
 namespace NeuralNetworkNET.NUnit
 {
     /// <summary>
     /// Test class for the <see cref="ConvolutionExtensions"/> class
     /// </summary>
-    [TestFixture]
-    [Category(nameof(ConvolutionExtensionsTest))]
     internal static class ConvolutionExtensionsTest
     {
         /// <summary>
         /// ReLU test
         /// </summary>
-        [Test]
         public static void ReLU()
         {
             // Test values
@@ -31,13 +28,12 @@ namespace NeuralNetworkNET.NUnit
                     { 0, 0, 99 }
                 },
                 t = m.ReLU();
-            Assert.True(t.ContentEquals(r));
+            Debug.Assert(t.ContentEquals(r));
         }
 
         /// <summary>
         /// Pool 2x2 test
         /// </summary>
-        [Test]
         public static void Pool2x2()
         {
             // Test values
@@ -55,7 +51,7 @@ namespace NeuralNetworkNET.NUnit
                     { 10, -0.5 }
                 },
                 t = m.Pool2x2();
-            Assert.True(t.ContentEquals(r));
+            Debug.Assert(t.ContentEquals(r));
         }
     }
 }

@@ -27,6 +27,6 @@ namespace NeuralNetworkNET
         /// The Parallel.For wrapper instance to use in the library (until .NET Standard 2.0 is released)
         /// </summary>
         [NotNull]
-        internal static ParallelFor Instance { get; private set; } = (start, end, body) => throw new NotImplementedException();
+        internal static ParallelFor Instance { get; private set; } = (start, end, body) => throw new Exception("The library hasn't been initialized");
     }
 }
