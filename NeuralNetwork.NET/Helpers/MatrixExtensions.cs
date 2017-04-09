@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -14,8 +15,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="v">The input vector</param>
         /// <param name="m">The matrix to multiply</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[] Multiply([NotNull] this double[] v, [NotNull] double[,] m)
         {
@@ -55,8 +55,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
@@ -102,8 +101,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The matrix to transpose</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Transpose([NotNull] this double[,] m)
         {
@@ -132,8 +130,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The input to process</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[] Sigmoid([NotNull] this double[] v)
         {
@@ -148,8 +145,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The input to process</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Sigmoid([NotNull] this double[,] m)
         {
@@ -178,8 +174,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The input to process</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[] SigmoidPrime([NotNull] this double[] v)
         {
@@ -201,8 +196,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The input to process</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] SigmoidPrime([NotNull] this double[,] m)
         {
@@ -265,8 +259,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The input matrix to normalize</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         public static double[,] Normalize([NotNull] this double[,] m)
         {
             // Setup
@@ -300,15 +293,14 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="volume">The volume to flatten</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Flatten([NotNull] this double[][,] volume)
+        public static double[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<double[,]> volume)
         {
             // Preliminary checks and declarations
-            if (volume.Length == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
+            if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
             int
-                depth = volume.Length,
+                depth = volume.Count,
                 h = volume[0].GetLength(0),
                 w = volume[0].GetLength(1);
             double[] result = new double[h * w * depth];

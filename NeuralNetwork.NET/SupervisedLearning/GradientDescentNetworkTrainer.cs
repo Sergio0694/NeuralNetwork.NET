@@ -29,7 +29,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             [NotNull] double[,] ys, [CanBeNull] int? size,
             CancellationToken token,
             [CanBeNull] double[] solution = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs<NeuralNetwork>> progress = null)
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress = null)
         {
             // Preliminary checks
             if (x.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
@@ -66,7 +66,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             // Handle the progress if necessary
             if (progress != null) bfgs.ProgressRelay += (s, e) =>
             {
-                progress.Report(new BackpropagationProgressEventArgs<NeuralNetwork>(
+                progress.Report(new BackpropagationProgressEventArgs(
                     () => NeuralNetwork.Deserialize(inputs, size.Value, outputs, e.Solution), e.Iteration, e.Value));
             };
 

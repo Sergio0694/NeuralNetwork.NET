@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Convolution
@@ -8,7 +9,7 @@ namespace NeuralNetworkNET.Convolution
     /// <summary>
     /// A class that represents a volume of data resulting from a convolution pipeline executed on a 2D input
     /// </summary>
-    public sealed class ConvolutionsStack : IEnumerable<double>
+    public sealed class ConvolutionsStack : IReadOnlyList<double[,]>
     {
         #region Parameters
 
@@ -19,7 +20,7 @@ namespace NeuralNetworkNET.Convolution
         /// Gets the depth of the convolutions volume
         /// </summary>
         [PublicAPI]
-        public int Depth { get; }
+        public int Count { get; }
 
         /// <summary>
         /// Gets the height of the convolutions volume
@@ -40,7 +41,7 @@ namespace NeuralNetworkNET.Convolution
         {
             if (stack.Count == 0 || stack[0].Length == 0) throw new ArgumentOutOfRangeException("The volume can't be empty");
             Stack = stack;
-            Depth = stack.Count;
+            Count = stack.Count;
             Height = stack[0].GetLength(0);
             Width = stack[0].GetLength(1);
         }
@@ -62,6 +63,17 @@ namespace NeuralNetworkNET.Convolution
         public static implicit operator ConvolutionsStack([NotNull, ItemNotNull] double[][,] data) => new ConvolutionsStack(data);
 
         /// <summary>
+        /// Implicitly converts an series of arrays of 2D layers to a volume (used to make the class easier to use externally)
+        /// </summary>
+        /// <param name="data">The source data</param>
+        [PublicAPI]
+        [NotNull]
+        public static implicit operator ConvolutionsStack([NotNull, ItemNotNull] double[][][,] data)
+        {
+            return new ConvolutionsStack(data.SelectMany(volume => volume).ToArray());
+        }
+
+        /// <summary>
         /// Gets the value in the target position inside the data volume
         /// </summary>
         /// <param name="z">The target depth, that is, the index of the target 2D layer</param>
@@ -78,19 +90,8 @@ namespace NeuralNetworkNET.Convolution
         [NotNull]
         public double[,] this[int z] => Stack[z];
 
-        // Iterates over all the entries in each layer
-        public IEnumerator<double> GetEnumerator()
-        {
-            // Iterate over all the 2D layers
-            foreach (double[,] layer in Stack)
-            {
-                // 2D layer enumeration
-                int h = layer.GetLength(0), w = layer.GetLength(1);
-                for (int i = 0; i < h; i++)
-                    for (int j = 0; j < w; j++)
-                        yield return layer[i, j];
-            }
-        }
+        // Forwards the stack iterator
+        public IEnumerator<double[,]> GetEnumerator() => Stack.GetEnumerator();
 
         // Default enumerator
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

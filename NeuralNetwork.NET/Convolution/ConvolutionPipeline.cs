@@ -21,9 +21,9 @@ namespace NeuralNetworkNET.Convolution
         /// </summary>
         /// <param name="pipeline">The convolution pipeline to execute</param>
         [PublicAPI]
-        public ConvolutionPipeline([NotNull, ItemNotNull] IReadOnlyList<ConvolutionsStackProcessor> pipeline)
+        public ConvolutionPipeline([NotNull, ItemNotNull] params ConvolutionsStackProcessor[] pipeline)
         {
-            if (pipeline.Count == 0) throw new ArgumentOutOfRangeException("The pipeline must contain at least a function");
+            if (pipeline.Length == 0) throw new ArgumentOutOfRangeException("The pipeline must contain at least a function");
             Pipeline = pipeline;
         }
 
@@ -63,21 +63,21 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="data">The data to convert</param>
         [PublicAPI]
         [Pure]
-        private static double[,] ConvertToMatrix([NotNull, ItemNotNull] params ConvolutionsStack[] data)
+        public static double[,] ConvertToMatrix([NotNull, ItemNotNull] params ConvolutionsStack[] data)
         {
             // Checks
             if (data.Length == 0) throw new ArgumentOutOfRangeException("The data array can't be empty");
 
             // Prepare the base network and the input data
             int
-                depth = data[0].Depth, // Depth of each convolution volume
+                depth = data[0].Count, // Depth of each convolution volume
                 ch = data[0].Height, // Height of each convolution layer
                 cw = data[0].Width, // Width of each convolution layer
                 lsize = ch * cw,
                 volume = depth * lsize;
 
             // Additional checks
-            if (data.Any(stack => stack.Depth != depth || stack.Height != ch || stack.Width != cw))
+            if (data.Any(stack => stack.Count != depth || stack.Height != ch || stack.Width != cw))
                 throw new ArgumentException("The input data isn't coherent");
 
             // Setup the matrix with all the batched inputs

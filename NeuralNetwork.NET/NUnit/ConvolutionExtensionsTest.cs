@@ -1,4 +1,4 @@
-﻿using NeuralNetworkNET.Convolution;
+﻿using NeuralNetworkNET.Convolution.Misc;
 using NUnit.Framework;
 
 namespace NeuralNetworkNET.NUnit

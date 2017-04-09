@@ -8,10 +8,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Threading;
 using System.Threading;
-using ConvolutionalNeuralNetworkLibrary;
-using ConvolutionalNeuralNetworkLibrary.ImageProcessing;
+using DigitsRecognitionSample.Helpers;
 using JetBrains.Annotations;
 using Microsoft.Win32;
+using NeuralNetworkNET.Convolution;
+using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.SupervisedLearning;
 
 namespace DigitsRecognitionSample.Views
 {
@@ -40,7 +43,7 @@ namespace DigitsRecognitionSample.Views
         }
 
         [CanBeNull]
-        private NeuralNetwork _Network;
+        private INeuralNetwork _Network;
 
         private CancellationTokenSource _Cts;
 
@@ -77,9 +80,14 @@ namespace DigitsRecognitionSample.Views
                 expectation[i, 1] = i < _10 ? 0.0 : 1.0;
             }
 
+            // Convolution
             IReadOnlyList<double[,]> source = xn.Concat(on).ToArray();
-            _Network = await NetworkTrainer.ComputeTrainedNetworkAsync(source, App.SharedPipeline, expectation, 200, cts.Token, null,
-            new Progress<CNNOptimizationProgress>(p =>
+            IReadOnlyList<ConvolutionsStack> convolutions = App.SharedPipeline.Process(source);
+            double[,] inputs = ConvolutionPipeline.ConvertToMatrix(convolutions.ToArray());
+
+            // Training
+            _Network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, expectation, 200, cts.Token, null,
+            new Progress<BackpropagationProgressEventArgs>(p =>
             {
                 Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
@@ -107,7 +115,7 @@ namespace DigitsRecognitionSample.Views
                     image = new Bitmap(picker.FileName),
                     grayscale = image.ToGrayscale();
                 double[,] normalized = grayscale.ToNormalizedPixelData();
-                double[][,] data = App.SharedPipeline.Process(normalized);
+                ConvolutionsStack data = App.SharedPipeline.Process(normalized);
                 double[] flat = data.Flatten();
                 double[] yHat = _Network.Forward(flat);
                 int index = yHat[0] > yHat[1] ? 0 : 1;

@@ -1,13 +1,13 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks;
+using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.SupervisedLearning
 {
     /// <summary>
     /// A structure that contains the base progress data while optimizing a network
     /// </summary>
-    public sealed class BackpropagationProgressEventArgs<T> : EventArgs where T : NeuralNetworkBase
+    public sealed class BackpropagationProgressEventArgs
     {
         /// <summary>
         /// Gets the current iteration number
@@ -21,16 +21,16 @@ namespace NeuralNetworkNET.SupervisedLearning
 
         // Factory for the network lazy evaluation
         [NotNull]
-        private readonly Func<T> NetworkFactory;
+        private readonly Func<INeuralNetwork> NetworkFactory;
 
         [CanBeNull]
-        private T _Network;
+        private INeuralNetwork _Network;
 
         /// <summary>
         /// Gets the current network for the optimization iteration (lazy evaluation)
         /// </summary>
         [NotNull]
-        public T Network => _Network ?? (_Network = NetworkFactory());
+        public INeuralNetwork Network => _Network ?? (_Network = NetworkFactory());
 
         /// <summary>
         /// Internal constructor for the event args base
@@ -38,7 +38,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="networkFactory">The factory that will produce a lazy-evaluated neural network for the current iteration</param>
         /// <param name="iteration">The current iteration</param>
         /// <param name="cost">The current function cost</param>
-        internal BackpropagationProgressEventArgs([NotNull] Func<T> networkFactory, int iteration, double cost)
+        internal BackpropagationProgressEventArgs([NotNull] Func<INeuralNetwork> networkFactory, int iteration, double cost)
         {
             NetworkFactory = networkFactory;
             Iteration = iteration;
