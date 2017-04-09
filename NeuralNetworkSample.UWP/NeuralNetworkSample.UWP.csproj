@@ -7,7 +7,7 @@
     <ProjectGuid>{BB345133-B237-436F-87C0-8E6D3168DB75}</ProjectGuid>
     <OutputType>AppContainerExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NeuralNetworkSample.UWP</RootNamespace>
+    <RootNamespace>NeuralNetworkSampleUWP</RootNamespace>
     <AssemblyName>NeuralNetworkSample.UWP</AssemblyName>
     <DefaultLanguage>it-IT</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
