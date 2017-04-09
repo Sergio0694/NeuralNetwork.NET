@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Networks.Implementations;
 
 namespace NeuralNetworkNET.SupervisedLearning
@@ -16,8 +14,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <summary>
         /// Generates and trains a neural network suited for the input data and results
         /// </summary>
-        /// <param name="data">The raw input data for the supervised training</param>
-        /// <param name="pipeline">The convolution pipeline to apply to the input data</param>
+        /// <param name="x">The input data</param>
         /// <param name="ys">The results vector</param>
         /// <param name="size">The number of nodes in the hidden layer of the network (it will be decided automatically if null)</param>
         /// <param name="token">The cancellation token for the training session</param>
@@ -28,35 +25,17 @@ namespace NeuralNetworkNET.SupervisedLearning
         [ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static async Task<NeuralNetwork> ComputeTrainedNetworkAsync(
-            [NotNull] IReadOnlyList<double[,]> data,
-            [NotNull] ConvolutionPipeline pipeline,
+            [NotNull] double[,] x,
             [NotNull] double[,] ys, [CanBeNull] int? size,
             CancellationToken token,
             [CanBeNull] double[] solution = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs<NeuralNetwork>> progress = null)
         {
             // Preliminary checks
-            if (data.Count == 0) throw new ArgumentOutOfRangeException("The input set is empty");
+            if (x.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
             if (ys.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
-            if (data.Count != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
+            if (x.Length != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
             if (size <= 0) throw new ArgumentOutOfRangeException("The hidden layer must have a positive number of nodes");
-
-            // Process the data through the convolution pipeline
-            IReadOnlyList<double[][,]> convolutions = pipeline.Process(data);
-
-            // Prepare the base network and the input data
-            int
-                depth = convolutions[0].Length, // Depth of each convolution volume
-                lsize = convolutions[0][0].Length, // Size of each 2D layer
-                ch = convolutions[0][0].GetLength(0), // Height of each convolution layer
-                cw = convolutions[0][0].GetLength(1), // Width of each convolution layer
-                volume = depth * lsize;
-            double[,] x = new double[convolutions.Count, volume]; // Matrix with all the batched inputs
-            for (int i = 0; i < convolutions.Count; i++) // Iterate over all the volumes
-            for (int j = 0; j < depth; j++) // Iterate over all the depth layer in each volume
-            for (int z = 0; z < ch; z++) // Height of each layer
-            for (int w = 0; w < cw; w++) // Width of each layer
-                x[i, j * lsize + z * ch + w] = convolutions[i][j][z, w];
 
             // Calculate the target network size
             int
