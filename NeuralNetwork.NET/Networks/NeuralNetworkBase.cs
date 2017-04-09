@@ -61,7 +61,22 @@ namespace NeuralNetworkNET.Networks
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public abstract double CalculateCost(double[] input, double[] y);
+        public double CalculateCost(double[] input, double[] y)
+        {
+            // Forward the input
+            double[] yHat = Forward(input);
+
+            // Calculate the cost (half the squared difference)
+            double cost = 0;
+            for (int i = 0; i < y.Length; i++)
+            {
+                double
+                    delta = y[i] - yHat[i],
+                    square = delta * delta;
+                cost += square;
+            }
+            return cost / 2;
+        }
 
         #endregion
 
@@ -97,7 +112,32 @@ namespace NeuralNetworkNET.Networks
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal abstract double CalculateCost([NotNull] double[,] input, [NotNull] double[,] y);
+        internal double CalculateCost([NotNull] double[,] input, [NotNull] double[,] y)
+        {
+            // Forward the input
+            double[,] yHat = Forward(input);
+
+            // Calculate the cost (half the squared difference)
+            int h = y.GetLength(0), w = y.GetLength(1);
+            double[] v = new double[h];
+            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            {
+                for (int j = 0; j < w; j++)
+                {
+                    double
+                        delta = y[i, j] - yHat[i, j],
+                        square = delta * delta;
+                    v[i] += square;
+                }
+            });
+            if (!result) throw new Exception("Error while runnig the parallel loop");
+
+            // Sum the partial costs
+            double cost = 0;
+            for (int i = 0; i < h; i++)
+                cost += v[i];
+            return cost / 2;
+        }
 
         /// <summary>
         /// Computes the derivative with respect to W1 and W2 for a given input and result

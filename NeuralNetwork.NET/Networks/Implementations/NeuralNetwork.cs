@@ -9,7 +9,7 @@ namespace NeuralNetworkNET.Networks.Implementations
     /// <summary>
     /// A class that represents a neural network with a single hidden layer
     /// </summary>
-    public class NeuralNetwork : NeuralNetworkBase
+    public class NeuralNetwork : LinearPerceptron
     {
         #region Fields and parameters
 
@@ -19,12 +19,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public override IReadOnlyList<int> HiddenLayers { get; }
 
         /// <summary>
-        /// Gets the weights from the inputs to the first hidden layer
-        /// </summary>
-        protected readonly double[,] W1;
-
-        /// <summary>
-        /// Gets the weights from the first hidden layer
+        /// Gets the weights from the second layer
         /// </summary>
         protected readonly double[,] W2;
 
@@ -34,17 +29,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         protected readonly double[,] W2T;
 
         /// <summary>
-        /// Gets the latest hidden layer values, before the sigmoid is applied
-        /// </summary>
-        protected double[,] _Z2;
-
-        /// <summary>
-        /// Gets the hidden layer activated values
+        /// Gets the activated values in the second layer
         /// </summary>
         protected double[,] _A2;
 
         /// <summary>
-        /// Gets the latest output layer values, before the sigmoid is applied
+        /// Gets the values in the third layer, before the sigmoid is applied
         /// </summary>
         protected double[,] _Z3;
 
@@ -55,7 +45,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="w1">The weights from the inputs to the first hidden layer</param>
         /// <param name="w2">The weights from the first hidden layer</param>
-        protected internal NeuralNetwork([NotNull] double[,] w1, [NotNull] double[,] w2) : base(w1.GetLength(0), w2.GetLength(1))
+        internal NeuralNetwork([NotNull] double[,] w1, [NotNull] double[,] w2) : base(w1.GetLength(0), w2.GetLength(1), w1)
         {
             // Input check
             if (w1.GetLength(1) != w2.GetLength(0))
@@ -63,18 +53,12 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Parameters setup
             HiddenLayers = new[] { w1.GetLength(1) };
-            W1 = w1;
             W2 = w2;
             W2T = W2.Transpose();
         }
 
         #region Single processing
 
-        /// <summary>
-        /// Forwards the input through the network
-        /// </summary>
-        /// <param name="input">The input to process</param>
-        /// <remarks>This methods processes a single input row and outputs a single result</remarks>
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -88,36 +72,6 @@ namespace NeuralNetworkNET.Networks.Implementations
             return yHat;
         }
 
-        /// <summary>
-        /// Calculates the cost function for the current instance and the input values
-        /// </summary>
-        /// <param name="input">The input values for the network</param>
-        /// <param name="y">The expected result to use to calculate the error</param>
-        [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public override double CalculateCost(double[] input, double[] y)
-        {
-            // Forward the input
-            double[] yHat = Forward(input);
-
-            // Calculate the cost (half the squared difference)
-            double cost = 0;
-            for (int i = 0; i < y.Length; i++)
-            {
-                double
-                    delta = y[i] - yHat[i],
-                    square = delta * delta;
-                cost += square;
-            }
-            return cost / 2;
-        }
-
-        /// <summary>
-        /// Computes the derivative with respect to W1 and W2 for a given input and result
-        /// </summary>
-        /// <param name="input">The input values for the network</param>
-        /// <param name="y">The expected result to use to calculate the error</param>
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -164,11 +118,6 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Batch processing
 
-        /// <summary>
-        /// Forwards the input through the network
-        /// </summary>
-        /// <param name="input">The input to process</param>
-        /// <remarks>This methods forwards multiple inputs in batch and returns a matrix of results</remarks>
         [PublicAPI]
         [MustUseReturnValue]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -184,46 +133,6 @@ namespace NeuralNetworkNET.Networks.Implementations
             return yHat;
         }
 
-        /// <summary>
-        /// Calculates the cost function for the current instance and the input values
-        /// </summary>
-        /// <param name="input">The input values for the network</param>
-        /// <param name="y">The expected result to use to calculate the error</param>
-        [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal override double CalculateCost(double[,] input, double[,] y)
-        {
-            // Forward the input
-            double[,] yHat = Forward(input);
-
-            // Calculate the cost (half the squared difference)
-            int h = y.GetLength(0), w = y.GetLength(1);
-            double[] v = new double[h];
-            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
-            {
-                for (int j = 0; j < w; j++)
-                {
-                    double
-                        delta = y[i, j] - yHat[i, j],
-                        square = delta * delta;
-                    v[i] += square;
-                }
-            });
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial costs
-            double cost = 0;
-            for (int i = 0; i < h; i++)
-                cost += v[i];
-            return cost / 2;
-        }
-
-        /// <summary>
-        /// Computes the derivative with respect to W1 and W2 for a given input and result
-        /// </summary>
-        /// <param name="input">The input values for the network</param>
-        /// <param name="y">The expected result to use to calculate the error</param>
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -303,8 +212,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure]
         [NotNull]
-        internal static NeuralNetwork Deserialize(int inputs, int size, int outputs, double[] w1w2)
+        internal static NeuralNetwork Deserialize(int inputs, int size, int outputs, [NotNull] double[] w1w2)
         {
+            // Checks
+            if (inputs <= 0 || size <= 0 || outputs <= 0 || w1w2.Length < inputs * size + size * outputs)
+                throw new ArgumentOutOfRangeException("The inputs are invalid");
+
+            // Parse the data
             double[,]
                 w1 = new double[inputs, size],
                 w2 = new double[size, outputs];
@@ -316,9 +230,6 @@ namespace NeuralNetworkNET.Networks.Implementations
             return new NeuralNetwork(w1, w2);
         }
 
-        /// <summary>
-        /// Serializes the current weights into a linear array of (W1.h*W1.w) + (W2.h*W2.w) elements
-        /// </summary>
         [PublicAPI]
         [Pure]
         internal override double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
