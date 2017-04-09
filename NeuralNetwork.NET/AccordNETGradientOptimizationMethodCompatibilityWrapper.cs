@@ -16,6 +16,24 @@ namespace NeuralNetworkNET
         [NotNull] Func<double[], double[]> gradientFunction);
 
     /// <summary>
+    /// COMPATIBILITY LAYER: static class to store a reference to the factory to use in the library
+    /// </summary>
+    public static class AccordNETGradientOptimizationMethodCompatibilityWrapper
+    {
+        /// <summary>
+        /// Initializes the wrapper with the input delegate that produces LBFGS implementation instances
+        /// </summary>
+        /// <param name="instance">The delegate instance</param>
+        public static void Initialize([NotNull] LBFGSFactory instance) => Instance = instance;
+
+        /// <summary>
+        /// The LBFGSFactory instance to use in the library (until .NET Standard 2.0 is released)
+        /// </summary>
+        [NotNull]
+        internal static LBFGSFactory Instance { get; private set; } = (n, cost, gradient) => throw new NotImplementedException();
+    }
+
+    /// <summary>
     /// COMPATIBILITY LAYER: interface to wrap an (Accord.NET).Math.Optimization.BoundedBroydenFletcherGoldfarbShanno instance.
     /// This interface will be removed once .NET Standard 2.0 is released and the library will be able to reference the Accord.Math
     /// library internally (this is a temporary workaround to mantain platform/framework independence)
@@ -37,6 +55,11 @@ namespace NeuralNetworkNET
         /// The cancellation token to pass to the LBFGS instance in use
         /// </summary>
         CancellationToken Token { get; set; }
+
+        /// <summary>
+        /// Gets the current solution for the instance in use
+        /// </summary>
+        double[] Solution { get; }
 
         /// <summary>
         /// An event that relays the Progress event of the LBFGS instance in use

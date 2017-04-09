@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.Networks
         /// </summary>
         /// <param name="inputs">The number of input nodes</param>
         /// <param name="outputs">The number of output nodes</param>
-        protected NeuralNetworkBase(int inputs, int outputs)
+        protected internal NeuralNetworkBase(int inputs, int outputs)
         {
             if (inputs <= 0 || outputs <= 0) throw new ArgumentOutOfRangeException("The inputs and outputs must be positive numbers");
             InputLayerSize = inputs;
@@ -122,10 +122,10 @@ namespace NeuralNetworkNET.Networks
         /// <summary>
         /// Serializes the weights of the current instance into a linear array
         /// </summary>
-        //[PublicAPI]
-        //[Pure]
-        //[NotNull]
-        //internal abstract byte[] SerializeWeights();
+        [PublicAPI]
+        [Pure]
+        [NotNull]
+        internal abstract double[] SerializeWeights();
 
         //protected abstract IReadOnlyList<XNode> SerializeToXML();
 

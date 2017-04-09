@@ -272,7 +272,7 @@ namespace NeuralNetworkNET.Helpers
             // Setup
             if (m.Length == 0) return new double[0, 0];
             int h = m.GetLength(0), w = m.GetLength(1);
-            (int _, int _, double max) = m.Max();
+            (_, _, double max) = m.Max();
             double[,] normalized = new double[h, w];
 
             // Populate the normalized matrix

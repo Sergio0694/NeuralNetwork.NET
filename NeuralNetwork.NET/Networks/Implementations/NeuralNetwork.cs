@@ -55,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="w1">The weights from the inputs to the first hidden layer</param>
         /// <param name="w2">The weights from the first hidden layer</param>
-        public NeuralNetwork([NotNull] double[,] w1, [NotNull] double[,] w2) : base(w1.GetLength(0), w2.GetLength(1))
+        protected internal NeuralNetwork([NotNull] double[,] w1, [NotNull] double[,] w2) : base(w1.GetLength(0), w2.GetLength(1))
         {
             // Input check
             if (w1.GetLength(1) != w2.GetLength(0))
@@ -321,7 +321,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         [PublicAPI]
         [Pure]
-        internal double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
+        internal override double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
 
         #endregion
     }
