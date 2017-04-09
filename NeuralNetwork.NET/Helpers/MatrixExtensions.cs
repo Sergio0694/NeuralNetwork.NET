@@ -261,6 +261,41 @@ namespace NeuralNetwork.NET.Helpers
         }
 
         /// <summary>
+        /// Normalizes the values in a matrix in the [0..1] range
+        /// </summary>
+        /// <param name="m">The input matrix to normalize</param>
+        [PublicAPI]
+        [Pure]
+        [NotNull]
+        public static double[,] Normalize([NotNull] this double[,] m)
+        {
+            // Setup
+            if (m.Length == 0) return new double[0, 0];
+            int h = m.GetLength(0), w = m.GetLength(1);
+            (int _, int _, double max) = m.Max();
+            double[,] normalized = new double[h, w];
+
+            // Populate the normalized matrix
+            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            {
+                unsafe
+                {
+                    // Fix the pointers and iterate on the current row
+                    fixed (double* pn = normalized, pm = m)
+                    {
+                        for (int j = 0; j < w; j++)
+                        {
+                            int index = i * w + j;
+                            pn[index] = pm[index] / max;
+                        }
+                    }
+                }
+            });
+            if (!result) throw new Exception("Error while runnig the parallel loop");
+            return normalized;
+        }
+
+        /// <summary>
         /// Flattens the input volume in a linear array
         /// </summary>
         /// <param name="volume">The volume to flatten</param>
