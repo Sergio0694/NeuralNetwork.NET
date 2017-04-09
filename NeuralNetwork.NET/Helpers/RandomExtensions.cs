@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET.Helpers
+namespace NeuralNetworkNET.Helpers
 {
     /// <summary>
     /// Some static extension methods for the random class

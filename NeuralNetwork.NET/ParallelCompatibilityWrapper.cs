@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET
+namespace NeuralNetworkNET
 {
     /// <summary>
     /// A delegate that forwards the call to the Parallel.For method and returns the value of

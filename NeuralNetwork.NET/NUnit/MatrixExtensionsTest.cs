@@ -1,8 +1,8 @@
 ﻿using System;
-using NeuralNetwork.NET.Helpers;
+using NeuralNetworkNET.Helpers;
 using NUnit.Framework;
 
-namespace NeuralNetwork.NET.NUnit
+namespace NeuralNetworkNET.NUnit
 {
     /// <summary>
     /// Test class for the <see cref="MatrixExtensions"/> class

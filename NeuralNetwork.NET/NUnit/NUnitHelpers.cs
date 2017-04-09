@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET.NUnit
+namespace NeuralNetworkNET.NUnit
 {
     internal static class NUnitHelpers
     {

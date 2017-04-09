@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET.Convolution
+namespace NeuralNetworkNET.Convolution
 {
     public static class ConvolutionExtensions
     {

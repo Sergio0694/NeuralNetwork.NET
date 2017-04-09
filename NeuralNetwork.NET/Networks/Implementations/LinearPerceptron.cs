@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using JetBrains.Annotations;
+﻿using System.Collections.Generic;
 
-namespace NeuralNetwork.NET.Networks.Implementations
+namespace NeuralNetworkNET.Networks.Implementations
 {
     public class LinearPerceptron
     {

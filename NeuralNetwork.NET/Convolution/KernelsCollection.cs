@@ -1,4 +1,4 @@
-﻿namespace NeuralNetwork.NET.Convolution
+﻿namespace NeuralNetworkNET.Convolution
 {
     /// <summary>
     /// A class that contains a collection of 3x3 kernels

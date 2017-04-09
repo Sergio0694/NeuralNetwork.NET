@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using NeuralNetwork.NET.Networks.PublicAPIs;
+using NeuralNetworkNET.Networks.PublicAPIs;
 
-namespace NeuralNetwork.NET.Networks
+namespace NeuralNetworkNET.Networks
 {
     /// <summary>
     /// The base class for every neural network implementation

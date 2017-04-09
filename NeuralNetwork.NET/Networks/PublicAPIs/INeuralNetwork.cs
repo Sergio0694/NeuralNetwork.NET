@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET.Networks.PublicAPIs
+namespace NeuralNetworkNET.Networks.PublicAPIs
 {
     /// <summary>
     /// An interface to mask a neural network implementation

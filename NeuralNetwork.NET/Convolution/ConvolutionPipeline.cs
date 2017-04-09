@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET.Convolution
+namespace NeuralNetworkNET.Convolution
 {
     /// <summary>
     /// A delegate that processes a volume of data (a stack of rectangular matrices) and returns a new data volume

@@ -1,7 +1,7 @@
-﻿using NeuralNetwork.NET.Convolution;
+﻿using NeuralNetworkNET.Convolution;
 using NUnit.Framework;
 
-namespace NeuralNetwork.NET.NUnit
+namespace NeuralNetworkNET.NUnit
 {
     /// <summary>
     /// Test class for the <see cref="ConvolutionExtensions"/> class

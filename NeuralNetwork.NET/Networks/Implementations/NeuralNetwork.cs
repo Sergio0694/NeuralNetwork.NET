@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
-using NeuralNetwork.NET.Helpers;
+using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetwork.NET.Networks.Implementations
+namespace NeuralNetworkNET.Networks.Implementations
 {
     /// <summary>
     /// A class that represents a neural network with a single hidden layer

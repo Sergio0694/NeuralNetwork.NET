@@ -2,7 +2,7 @@
 using System.Threading;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET
+namespace NeuralNetworkNET
 {
     /// <summary>
     /// A delegate that takes the number of variables in a function to optimize and returns an instance of the LBFGS method
