@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Accord.Math.Optimization;
+using NeuralNetworkNET;
 
 namespace NeuralNetworkSampleWPF.Helpers
 {

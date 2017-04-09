@@ -1,5 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using NeuralNetworkNET;
+using NeuralNetworkNET.Convolution;
+using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkSampleWPF.Helpers;
 
 namespace NeuralNetworkSampleWPF

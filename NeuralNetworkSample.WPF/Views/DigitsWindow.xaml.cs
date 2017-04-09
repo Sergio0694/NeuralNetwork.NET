@@ -9,6 +9,10 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using JetBrains.Annotations;
 using Microsoft.Win32;
+using NeuralNetworkNET.Convolution;
+using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.SupervisedLearning;
 using NeuralNetworkSampleWPF.Helpers;
 
 namespace NeuralNetworkSampleWPF.Views

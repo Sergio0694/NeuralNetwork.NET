@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             // Preliminary checks
             if (x.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
             if (ys.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
-            if (x.Length != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
+            if (x.GetLength(0) != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
             if (size <= 0) throw new ArgumentOutOfRangeException("The hidden layer must have a positive number of nodes");
 
             // Calculate the target network size

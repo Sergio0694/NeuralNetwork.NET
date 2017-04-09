@@ -9,8 +9,8 @@
     <Grid Background="#FFFCFECF"
           x:Name="RootGrid">
         <InkCanvas x:Name="DrawingCanvas"
-                   VerticalAlignment="Top"
-                   HorizontalAlignment="Left"/>
+                   VerticalAlignment="Stretch"
+                   HorizontalAlignment="Stretch"/>
         <InkToolbar VerticalAlignment="Top"
                     HorizontalAlignment="Right"
                     TargetInkCanvas="{Binding ElementName=DrawingCanvas}"/>
