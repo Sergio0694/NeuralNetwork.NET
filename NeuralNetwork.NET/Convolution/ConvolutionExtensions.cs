@@ -10,8 +10,7 @@ namespace NeuralNetworkNET.Convolution
         /// </summary>
         /// <param name="m">The input matrix to normalize</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Normalize([NotNull] this double[,] m)
         {
@@ -42,8 +41,7 @@ namespace NeuralNetworkNET.Convolution
         /// </summary>
         /// <param name="m">The input matrix to pool</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Pool2x2([NotNull] this double[,] m)
         {
@@ -74,16 +72,15 @@ namespace NeuralNetworkNET.Convolution
         /// </summary>
         /// <param name="m">The input matrix to edit</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] ReLU([NotNull] this double[,] m)
         {
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] result = new double[h, w];
             for (int i = 0; i < h; i++)
-            for (int j = 0; j < w; j++)
-                result[i, j] = m[i, j] >= 0 ? m[i, j] : 0;
+                for (int j = 0; j < w; j++)
+                    result[i, j] = m[i, j] >= 0 ? m[i, j] : 0;
             return result;
         }
 
@@ -93,8 +90,7 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="m">The input matrix</param>
         /// <param name="kernel">The 3x3 convolution kernel to use</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Convolute3x3([NotNull] this double[,] m, [NotNull] double[,] kernel)
         {
@@ -108,8 +104,8 @@ namespace NeuralNetworkNET.Convolution
             double Abs(double value) => value >= 0 ? value : -value;
             double factor = 0;
             for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                factor += Abs(kernel[i, j]);
+                for (int j = 0; j < 3; j++)
+                    factor += Abs(kernel[i, j]);
 
             // Process the convolution
             int x = 0;
