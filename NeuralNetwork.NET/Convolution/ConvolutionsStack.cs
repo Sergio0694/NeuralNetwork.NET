@@ -55,6 +55,38 @@ namespace NeuralNetworkNET.Convolution
         public static ConvolutionsStack From2DLayer([NotNull] double[,] data) => new ConvolutionsStack(new[] { data });
 
         /// <summary>
+        /// Gets the value in the target position inside the data volume
+        /// </summary>
+        /// <param name="z">The target depth, that is, the index of the target 2D layer</param>
+        /// <param name="x">The horizontal offset in the 2D layer</param>
+        /// <param name="y">The vertical offset in the target 2D layer</param>
+        [PublicAPI]
+        public double this[int z, int x, int y] => Stack[z][x, y];
+
+        /// <summary>
+        /// Gets the 2D layer at the target depth in the data volume
+        /// </summary>
+        /// <param name="z">The depth of the target 2D layer to retrieve</param>
+        [PublicAPI]
+        [NotNull]
+        public double[,] this[int z] => Stack[z];
+
+        /// <summary>
+        /// Expands the curret data volume with the input convolution function and a series of convolution kernels
+        /// </summary>
+        /// <param name="func">The convolution function to use</param>
+        /// <param name="kernels">The convolution kernels</param>
+        /// <remarks>The resulting volume will have a depth equals to the current one multiplied by the number of kernels used</remarks>
+        [PublicAPI]
+        [Pure, NotNull]
+        public ConvolutionsStack Expand([NotNull] ConvolutionFunction func, params double[][,] kernels)
+        {
+            return this.Select(layer => kernels.Select(k => func(layer, k)).ToArray()).ToArray();
+        }
+
+        #region Implicit operators
+
+        /// <summary>
         /// Implicitly converts an array of 2D layers to a volume (used to make the class easier to use externally)
         /// </summary>
         /// <param name="data">The source data</param>
@@ -73,27 +105,16 @@ namespace NeuralNetworkNET.Convolution
             return new ConvolutionsStack(data.SelectMany(volume => volume).ToArray());
         }
 
-        /// <summary>
-        /// Gets the value in the target position inside the data volume
-        /// </summary>
-        /// <param name="z">The target depth, that is, the index of the target 2D layer</param>
-        /// <param name="x">The horizontal offset in the 2D layer</param>
-        /// <param name="y">The vertical offset in the target 2D layer</param>
-        [PublicAPI]
-        public double this[int z, int x, int y] => Stack[z][x, y];
+        #endregion
 
-        /// <summary>
-        /// Gets the 2D layer at the target depth in the data volume
-        /// </summary>
-        /// <param name="z">The depth of the target 2D layer to retrieve</param>
-        [PublicAPI]
-        [NotNull]
-        public double[,] this[int z] => Stack[z];
+        #region IEnumerable
 
         // Forwards the stack iterator
         public IEnumerator<double[,]> GetEnumerator() => Stack.GetEnumerator();
 
         // Default enumerator
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        #endregion
     }
 }

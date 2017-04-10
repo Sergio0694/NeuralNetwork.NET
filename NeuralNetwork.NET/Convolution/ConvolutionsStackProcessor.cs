@@ -6,6 +6,6 @@ namespace NeuralNetworkNET.Convolution
     /// A delegate that processes a volume of data (a stack of rectangular matrices) and returns a new data volume
     /// </summary>
     /// <param name="stack">The data volume (width*height*depth) to process, layer by layer</param>
-    [NotNull, ItemNotNull]
+    [NotNull]
     public delegate ConvolutionsStack ConvolutionsStackProcessor([NotNull] ConvolutionsStack stack);
 }
