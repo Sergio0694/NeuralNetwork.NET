@@ -39,6 +39,18 @@ namespace NeuralNetworkNET.Networks.Implementations
             HiddenLayers = layers.Take(layers.Count - 1).Select(l => l.GetLength(1)).ToArray();
         }
 
+        /// <summary>
+        /// Creates a new random instance with the given number of inputs and outputs
+        /// </summary>
+        /// <param name="inputs">The number of input nodes</param>
+        /// <param name="outputs">The number of output nodes</param>
+        /// <param name="layers">The number of nodes in each hidden layer</param>
+        [NotNull]
+        internal static MultilayerPerceptron NewRandom(int inputs, int outputs, [NotNull] IReadOnlyList<int> layers)
+        {
+            throw new NotImplementedException();
+        }
+
         #region Single processing
 
         // Execute the multiplication + sigmoid activation for each layer

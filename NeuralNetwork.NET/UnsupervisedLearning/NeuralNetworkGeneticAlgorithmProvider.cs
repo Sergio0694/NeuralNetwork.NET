@@ -214,7 +214,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
         [PublicAPI]
         [ItemNotNull]
-        public static Task<NeuralNetworkGeneticAlgorithmProvider> NewSingleLayerNetworkProviderAsync(
+        public static Task<NeuralNetworkGeneticAlgorithmProvider> NewSingleLayerPerceptronProviderAsync(
             [NotNull] FitnessDelegate fitnessFunction,
             int input, int output, int size,
             int population, int weightsMutationRate, int eliteSamples)
@@ -256,58 +256,6 @@ namespace NeuralNetworkNET.UnsupervisedLearning
 
         #region Pre-initialized providers
 
-        /* 
-        
-        // Helper method to get a provider instance
-        private static NeuralNetworkGeneticAlgorithmProvider ReconstructInstance(
-            FitnessDelegate fitnessFunction, INeuralNetwork network,
-            int population, int weightsMutationRate, int eliteSamples)
-        {
-            // Reconstruct the original data
-            NeuralNetworkGeneticAlgorithmProvider provider;
-            if (network is TwoLayersNeuralNetwork)
-            {
-                TwoLayersNeuralNetwork twoLayers = (TwoLayersNeuralNetwork)network;
-                provider = new NeuralNetworkGeneticAlgorithmProvider(
-                    fitnessFunction, twoLayers.InputLayerSize, twoLayers.OutputLayerSize, twoLayers.HiddenLayerSize,
-                    twoLayers.SecondHiddenLayerSize, twoLayers.Z1Threshold, twoLayers.Z2Threshold,
-                    twoLayers.Z3Threshold,
-                    population, weightsMutationRate, eliteSamples);
-            }
-            else
-            {
-                provider = new NeuralNetworkGeneticAlgorithmProvider(
-                    fitnessFunction, network.InputLayerSize, network.OutputLayerSize, network.HiddenLayerSize,
-                    0, network.Z1Threshold, network.Z2Threshold, null, population, weightsMutationRate, eliteSamples);
-            }
-
-            // Randomize the population
-            NeuralNetworkBase[] initialPopulation = new NeuralNetworkBase[population];
-            initialPopulation[0] = network;
-            for (int i = 1; i < population - 1; i++) initialPopulation[i] = provider.MutateNetwork(network);
-            return provider;
-        }
-
-        /// <summary>
-        /// Creates a new instance from a serialized neural network
-        /// </summary>
-        /// <param name="fitnessFunction">The fitness function used to evaluate the neural networks</param>
-        /// <param name="networkData">The serialized neural network to use to initialize the provider</param>
-        /// <param name="population">Number of networks in the population</param>
-        /// <param name="weightsMutationRate">Probability for each weight mutation</param>
-        /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
-        public static Task<NeuralNetworkGeneticAlgorithmProvider> FromSerializedNetworkAsync(
-            FitnessDelegate fitnessFunction, byte[] networkData,
-            int population, int weightsMutationRate, int eliteSamples)
-        {
-            return Task.Run(() =>
-            {
-                // Try to deserialize the original network
-                NeuralNetworkBase network = NeuralNetworkDeserializer.TryGetInstance(networkData) as NeuralNetworkBase;
-                return network == null ? null : ReconstructInstance(fitnessFunction, network, population, weightsMutationRate, eliteSamples);
-            });
-        }
-
         /// <summary>
         /// Creates a new instance from a serialized neural network
         /// </summary>
@@ -320,8 +268,24 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             FitnessDelegate fitnessFunction, INeuralNetwork network,
             int population, int weightsMutationRate, int eliteSamples)
         {
-            return Task.Run(() => ReconstructInstance(fitnessFunction, (NeuralNetworkBase)network, population, weightsMutationRate, eliteSamples));
-        } */
+            // Helper method to get a provider instance
+            NeuralNetworkGeneticAlgorithmProvider ReconstructInstance()
+            {
+                // Reconstruct the original data
+                NeuralNetworkBase @base = (NeuralNetworkBase)network;
+                NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction, @base.InputLayerSize,
+                    @base.OutputLayerSize, @base.HiddenLayers, population, weightsMutationRate, eliteSamples);
+                NeuralNetworkBase[] initialPopulation = new NeuralNetworkBase[population];
+                initialPopulation[0] = @base;
+                for (int i = 1; i < population - 1; i++)
+                    initialPopulation[i] = MutateNetwork(@base);
+                provider._Population = initialPopulation;
+                return provider;
+            }
+
+            // Execute the function on a background thread
+            return Task.Run(() => ReconstructInstance());
+        }
 
         #endregion
 
@@ -390,14 +354,11 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             else if (HiddenLayers.Count == 1)
                 for (int i = 0; i < PopulationSize; i++)
                     population[i] = SingleLayerPerceptron.NewRandom(InputLayerSize, HiddenLayers[0], OutputLayerSize);
-            {
-                // Two layers if needed
+
+            // Multilayer perceptron
+            else
                 for (int i = 0; i < PopulationSize; i++)
-                {
-                   // population[i] = new TwoLayersNeuralNetwork(InputLayerSize, OutputLayerSize, FirstHiddenLayerSize,
-                   //     SecondHiddenLayerSize, Z1Threshold, Z2Threshold, Z3Threshold, RandomProvider);
-                }
-            }
+                    population[i] = MultilayerPerceptron.NewRandom(InputLayerSize, OutputLayerSize, HiddenLayers);
             return population;
         }
 
@@ -410,6 +371,8 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         {
             switch (network)
             {
+                case MultilayerPerceptron _:
+                    throw new NotImplementedException();
                 case SingleLayerPerceptron _:
                     double[]
                         w1w2 = network.SerializeWeights(),
@@ -421,7 +384,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                         w1r = w1.Randomize(0.5);
                     return LinearPerceptron.Deserialize(network.InputLayerSize, network.OutputLayerSize, w1r);
                 default:
-                    throw new NotImplementedException();
+                    throw new ArgumentException();
             }
         }
 
