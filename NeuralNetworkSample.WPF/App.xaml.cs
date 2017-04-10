@@ -39,9 +39,9 @@ namespace NeuralNetworkSampleWPF
                 KernelsCollection.TopRightEmboss,
                 KernelsCollection.TopLeftEmboss,
                 KernelsCollection.BottomRightEmboss),
-            v => v.Select(ConvolutionExtensions.ReLU).ToArray(), // Set minimum threshold
-            v => v.Select(ConvolutionExtensions.Pool2x2).ToArray(), // 26*26*10 >> 13*13*10
-            v => v.Select(ConvolutionExtensions.Normalize).ToArray(),
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*10 >> 13*13*10
+            v => v.Process(ConvolutionExtensions.Normalize),
             v => v.Expand(ConvolutionExtensions.Convolute3x3,
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
@@ -49,9 +49,9 @@ namespace NeuralNetworkSampleWPF
                 KernelsCollection.BottomSobel,
                 KernelsCollection.Outline,
                 KernelsCollection.Sharpen),// 13*13*10 >> 11*11*60
-            v => v.Select(ConvolutionExtensions.ReLU).ToArray(), // Set minimum threshold
-            v => v.Select(ConvolutionExtensions.Pool2x2).ToArray(), // 11*11*60 >> 5*5*60
-            v => v.Select(ConvolutionExtensions.Normalize).ToArray(),
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 11*11*60 >> 5*5*60
+            v => v.Process(ConvolutionExtensions.Normalize),
             v => v.Expand(ConvolutionExtensions.Convolute3x3,
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
@@ -61,7 +61,7 @@ namespace NeuralNetworkSampleWPF
                 KernelsCollection.Sharpen,
                 KernelsCollection.BottomRightEmboss,
                 KernelsCollection.TopLeftEmboss), // 5*5*60 >> 3*3*480
-            v => v.Select(ConvolutionExtensions.ReLU).ToArray(), // Set minimum threshold
-            v => v.Select(ConvolutionExtensions.Pool2x2).ToArray()); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2)); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
     }
 }

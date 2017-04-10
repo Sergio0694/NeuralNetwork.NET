@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Convolution
+namespace NeuralNetworkNET.Convolution.Delegates
 {
     /// <summary>
     /// A delegate that wraps a function to perform a kernel convolution on the input data

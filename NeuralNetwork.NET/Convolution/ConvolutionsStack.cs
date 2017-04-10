@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Convolution.Delegates;
 
 namespace NeuralNetworkNET.Convolution
 {
@@ -81,31 +82,22 @@ namespace NeuralNetworkNET.Convolution
         [Pure, NotNull]
         public ConvolutionsStack Expand([NotNull] ConvolutionFunction func, params double[][,] kernels)
         {
-            return this.Select(layer => kernels.Select(k => func(layer, k)).ToArray()).ToArray();
+            double[][][,] expansion = this.Select(layer => kernels.Select(k => func(layer, k)).ToArray()).ToArray();
+            double[][,] stack = expansion.SelectMany(volume => volume).ToArray();
+            return new ConvolutionsStack(stack);
         }
 
-        #region Implicit operators
-
         /// <summary>
-        /// Implicitly converts an array of 2D layers to a volume (used to make the class easier to use externally)
+        /// Processes each depth layer in the current stack with the given function and returns a new data volume
         /// </summary>
-        /// <param name="data">The source data</param>
+        /// <param name="processor">The data processor to use for each data layer in the stack</param>
         [PublicAPI]
-        [NotNull]
-        public static implicit operator ConvolutionsStack([NotNull, ItemNotNull] double[][,] data) => new ConvolutionsStack(data);
-
-        /// <summary>
-        /// Implicitly converts an series of arrays of 2D layers to a volume (used to make the class easier to use externally)
-        /// </summary>
-        /// <param name="data">The source data</param>
-        [PublicAPI]
-        [NotNull]
-        public static implicit operator ConvolutionsStack([NotNull, ItemNotNull] double[][][,] data)
+        [Pure, NotNull]
+        public ConvolutionsStack Process([NotNull] LayerProcessor processor)
         {
-            return new ConvolutionsStack(data.SelectMany(volume => volume).ToArray());
+            double[][,] data = this.Select(layer => processor(layer)).ToArray();
+            return new ConvolutionsStack(data);
         }
-
-        #endregion
 
         #region IEnumerable
 
