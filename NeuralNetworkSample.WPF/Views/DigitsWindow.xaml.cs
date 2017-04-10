@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -132,6 +133,53 @@ namespace NeuralNetworkSampleWPF.Views
                     }
                 }
                 MessageBox.Show($"The number is {index}");
+            }
+        }
+
+        private void SaveNetworkButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_Network == null) return;
+            SaveFileDialog picker = new SaveFileDialog
+            {
+                DefaultExt = ".snn",
+                Filter = "Serialized Neural Network (.snn)|*.snn"
+            };
+            bool? result = picker.ShowDialog();
+            if (result.HasValue && result.Value)
+            {
+                using (Stream stream = picker.OpenFile())
+                {
+                    String json = _Network.SerializeAsJSON();
+                    byte[] bytes = Encoding.UTF8.GetBytes(json);
+                    stream.Write(bytes, 0, bytes.Length);
+                    MessageBox.Show("Network saved successfully");
+                }
+            }
+        }
+
+        private void LoadNetworkButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog picker = new OpenFileDialog
+            {
+                DefaultExt = ".snn",
+                Filter = "Serialized Neural Network (.snn)|*.snn"
+            };
+            bool? result = picker.ShowDialog();
+            if (result.HasValue && result.Value)
+            {
+                using (Stream stream = picker.OpenFile())
+                {
+                    byte[] bytes = new byte[stream.Length];
+                    stream.Read(bytes, 0, bytes.Length);
+                    String json = Encoding.UTF8.GetString(bytes);
+                    INeuralNetwork network = NeuralNetworkDeserializer.TryDeserialize(json);
+                    if (network != null)
+                    {
+                        _Network = network;
+                        MessageBox.Show("Network loaded successfully");
+                    }
+                    else MessageBox.Show("Error while loading the network");
+                }
             }
         }
     }

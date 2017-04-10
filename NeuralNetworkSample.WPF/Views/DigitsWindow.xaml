@@ -8,9 +8,9 @@
         ResizeMode="NoResize"
         Background="{StaticResource BackgroundDarkBrush}"
         Title="StackViewer" 
-        MinHeight="240" 
+        MinHeight="400" 
         MinWidth="400" 
-        Height="240" 
+        Height="400" 
         Width="400">
 
     <Border BorderBrush="#FF0064A8" 
@@ -104,6 +104,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <!--First row content-->
@@ -183,6 +185,54 @@
                                 <Image Source="/Assets/gamepad.png"
                                        Width="48"
                                        Height="48"/>
+                                <TextBlock Text="Play" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+
+                    <!--Load-->
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch"
+                            Click="LoadNetworkButton_Click"
+                            Grid.Row="3">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/load.png"
+                                       Width="56"
+                                       Height="56"/>
+                                <TextBlock Text="Play" 
+                                           FontWeight="Thin"
+                                           FontSize="22"
+                                           Margin="20,0,0,0"
+                                           Grid.Column="1" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+
+                    <!--Save-->
+                    <Button Style="{DynamicResource DarkButtonStyleThemeColor}"
+                            HorizontalAlignment="Stretch"
+                            Click="SaveNetworkButton_Click"
+                            Grid.Row="4">
+                        <Button.Content>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Source="/Assets/save.png"
+                                       Width="56"
+                                       Height="56"/>
                                 <TextBlock Text="Play" 
                                            FontWeight="Thin"
                                            FontSize="22"
