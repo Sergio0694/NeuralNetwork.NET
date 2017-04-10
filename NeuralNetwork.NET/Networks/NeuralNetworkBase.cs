@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using Newtonsoft.Json;
 
@@ -88,6 +90,18 @@ namespace NeuralNetworkNET.Networks
                 cost += square;
             }
             return cost / 2;
+        }
+
+        [PublicAPI]
+        [Pure]
+        public bool Equals([CanBeNull] INeuralNetwork other)
+        {
+            return other != null &&
+                   InputLayerSize == other.InputLayerSize &&
+                   OutputLayerSize == other.OutputLayerSize &&
+                   HiddenLayers.Count == other.HiddenLayers.Count &&
+                   !HiddenLayers.Where((t, i) => t != other.HiddenLayers[i]).Any() &&
+                   SerializeWeights().ContentEquals(((NeuralNetworkBase)other).SerializeWeights());
         }
 
         [PublicAPI]

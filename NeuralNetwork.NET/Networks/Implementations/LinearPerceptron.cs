@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {

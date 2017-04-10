@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using NeuralNetworkNET.Convolution.Misc;
+using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.NUnit
 {

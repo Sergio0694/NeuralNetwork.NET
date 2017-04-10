@@ -9,6 +9,8 @@ namespace NeuralNetworkNET.Helpers
     /// </summary>
     public static class MatrixExtensions
     {
+        #region Multiplication
+
         /// <summary>
         /// Performs the multiplication between a vector and a matrix
         /// </summary>
@@ -96,34 +98,9 @@ namespace NeuralNetworkNET.Helpers
             return result;
         }
 
-        /// <summary>
-        /// Transposes the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to transpose</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Transpose([NotNull] this double[,] m)
-        {
-            // Setup
-            int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[w, h];
+        #endregion
 
-            // Execute the transposition in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
-            {
-                unsafe
-                {
-                    fixed (double* pr = result, pm = m)
-                    {
-                        for (int j = 0; j < w; j++)
-                            pr[j * h + i] = pm[i * w + j];
-                    }
-                }
-            });
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
-        }
+        #region Sigmoid
 
         /// <summary>
         /// Returns the result of the input after the activation function has been applied
@@ -227,6 +204,39 @@ namespace NeuralNetworkNET.Helpers
             return result;
         }
 
+        #endregion
+
+        #region Misc
+
+        /// <summary>
+        /// Transposes the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to transpose</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Transpose([NotNull] this double[,] m)
+        {
+            // Setup
+            int h = m.GetLength(0), w = m.GetLength(1);
+            double[,] result = new double[w, h];
+
+            // Execute the transposition in parallel
+            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm = m)
+                    {
+                        for (int j = 0; j < w; j++)
+                            pr[j * h + i] = pm[i * w + j];
+                    }
+                }
+            });
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
         /// <summary>
         /// Calculates the position and the value of the biggest item in a matrix
         /// </summary>
@@ -240,7 +250,7 @@ namespace NeuralNetworkNET.Helpers
                 h = m.GetLength(0),
                 w = m.GetLength(1),
                 x = 0, y = 0;
-            double max = double.MinValue;
+            double max = Double.MinValue;
 
             // Find the maximum value and its position
             for (int i = 0; i < h; i++)
@@ -323,5 +333,43 @@ namespace NeuralNetworkNET.Helpers
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
+
+        #endregion
+
+        #region Content check
+
+        /// <summary>
+        /// Checks if two matrices have the same size and content
+        /// </summary>
+        /// <param name="m">The first matrix to test</param>
+        /// <param name="o">The second matrix to test</param>
+        internal static bool ContentEquals([CanBeNull] this double[,] m, [CanBeNull] double[,] o)
+        {
+            if (m == null && o == null) return true;
+            if (m == null || o == null) return false;
+            if (m.GetLength(0) != o.GetLength(0) ||
+                m.GetLength(1) != o.GetLength(1)) return false;
+            for (int i = 0; i < m.GetLength(0); i++)
+                for (int j = 0; j < m.GetLength(1); j++)
+                    if (Math.Abs(m[i, j] - o[i, j]) > 0.0001) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if two vectors have the same size and content
+        /// </summary>
+        /// <param name="v">The first vector to test</param>
+        /// <param name="o">The second vector to test</param>
+        internal static bool ContentEquals([CanBeNull] this double[] v, [CanBeNull] double[] o)
+        {
+            if (v == null && o == null) return true;
+            if (v == null || o == null) return false;
+            if (v.Length != o.Length) return false;
+            for (int i = 0; i < v.Length; i++)
+                if (Math.Abs(v[i] - o[i]) > 0.0001) return false;
+            return true;
+        }
+
+        #endregion
     }
 }

@@ -7,7 +7,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
     /// <summary>
     /// An interface to mask a neural network implementation
     /// </summary>
-    public interface INeuralNetwork
+    public interface INeuralNetwork : IEquatable<INeuralNetwork>
     {
         /// <summary>
         /// Gets the size of the input layer
