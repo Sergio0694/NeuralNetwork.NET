@@ -6,25 +6,25 @@ using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
-    public class LinearPerceptron : NeuralNetworkBase
+    /// <summary>
+    /// A linear neural network with no hidden layers
+    /// </summary>
+    public sealed class LinearPerceptron : NeuralNetworkBase
     {
         #region Fields and parameters
 
-        /// <summary>
-        /// Gets the description of the network hidden layers
-        /// </summary>
         public override IReadOnlyList<int> HiddenLayers { get; } = new int[0];
 
         /// <summary>
         /// Gets the weights from the inputs to the following layer
         /// </summary>
         [NotNull]
-        protected readonly double[,] W1;
+        private readonly double[,] W1;
 
         /// <summary>
         /// Gets the values in the second layer, before the sigmoid is applied
         /// </summary>
-        protected double[,] _Z2;
+        private double[,] _Z2;
 
         protected internal override double[][,] Weights => new[] { W1 };
 

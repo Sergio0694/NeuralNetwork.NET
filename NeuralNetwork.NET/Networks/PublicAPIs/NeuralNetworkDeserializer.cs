@@ -39,7 +39,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                 if (weights.Length == 1)
                     return new LinearPerceptron(inputs, outputs, weights[0]);
                 if (weights.Length == 2)
-                    return new NeuralNetwork(weights[0], weights[1]);
+                    return new SingleLayerPerceptron(weights[0], weights[1]);
                 return null;
             }
             catch

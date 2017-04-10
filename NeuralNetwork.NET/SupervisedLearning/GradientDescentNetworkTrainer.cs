@@ -24,7 +24,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         [Pure]
         [ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static async Task<NeuralNetwork> ComputeTrainedNetworkAsync(
+        public static async Task<SingleLayerPerceptron> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
             [NotNull] double[,] ys, [CanBeNull] int? size,
             CancellationToken token,
@@ -46,14 +46,14 @@ namespace NeuralNetworkNET.SupervisedLearning
             // Calculates the cost for a network with the input weights
             double CostFunction(double[] w1w2)
             {
-                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size.Value, outputs, w1w2);
+                SingleLayerPerceptron network = SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, w1w2);
                 return network.CalculateCost(x, ys);
             }
 
             // Calculates the gradient for a network with the input weights
             double[] GradientFunction(double[] w1w2)
             {
-                NeuralNetwork network = NeuralNetwork.Deserialize(inputs, size.Value, outputs, w1w2);
+                SingleLayerPerceptron network = SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, w1w2);
                 return network.CostFunctionPrime(x, ys);
             }
 
@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             if (progress != null) bfgs.ProgressRelay += (s, e) =>
             {
                 progress.Report(new BackpropagationProgressEventArgs(
-                    () => NeuralNetwork.Deserialize(inputs, size.Value, outputs, e.Solution), e.Iteration, e.Value));
+                    () => SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, e.Solution), e.Iteration, e.Value));
             };
 
             // Minimize the cost function
@@ -78,7 +78,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             }, token);
 
             // Return the result network
-            return NeuralNetwork.Deserialize(inputs, size.Value, outputs, bfgs.Solution);
+            return SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, bfgs.Solution);
         }
     }
 }

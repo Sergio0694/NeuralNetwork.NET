@@ -118,10 +118,6 @@ namespace NeuralNetworkSampleWPF.Views
                 ConvolutionsStack data = App.SharedPipeline.Process(normalized);
                 double[] flat = data.Flatten();
                 double[] yHat = _Network.Forward(flat);
-
-                String json = _Network.SerializeAsJSON();
-                INeuralNetwork test = NeuralNetworkDeserializer.TryDeserialize(json);
-                double[] yHat2 = test?.Forward(flat);
                 int index = yHat[0] > yHat[1] ? 0 : 1;
                 MessageBox.Show($"The symbol is {(index == 0 ? "X" : "O")}");
             }

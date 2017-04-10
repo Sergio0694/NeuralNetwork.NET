@@ -9,36 +9,44 @@ namespace NeuralNetworkNET.Networks.Implementations
     /// <summary>
     /// A class that represents a neural network with a single hidden layer
     /// </summary>
-    public class NeuralNetwork : LinearPerceptron
+    public sealed class SingleLayerPerceptron : NeuralNetworkBase
     {
         #region Fields and parameters
 
-        /// <summary>
-        /// Gets the number of neurons in the first hidden layer of the network
-        /// </summary>
         public override IReadOnlyList<int> HiddenLayers { get; }
+
+        /// <summary>
+        /// Gets the weights from the inputs to the following layer
+        /// </summary>
+        [NotNull]
+        private readonly double[,] W1;
+
+        /// <summary>
+        /// Gets the values in the second layer, before the sigmoid is applied
+        /// </summary>
+        private double[,] _Z2;
 
         /// <summary>
         /// Gets the weights from the second layer
         /// </summary>
         [NotNull]
-        protected readonly double[,] W2;
+        private readonly double[,] W2;
 
         /// <summary>
         /// Gets the transposed W2 weights (used in the gradient calculation)
         /// </summary>
         [NotNull]
-        protected readonly double[,] W2T;
+        private readonly double[,] W2T;
 
         /// <summary>
         /// Gets the activated values in the second layer
         /// </summary>
-        protected double[,] _A2;
+        private double[,] _A2;
 
         /// <summary>
         /// Gets the values in the third layer, before the sigmoid is applied
         /// </summary>
-        protected double[,] _Z3;
+        private double[,] _Z3;
 
         protected internal override double[][,] Weights => new[] { W1, W2 };
 
@@ -49,7 +57,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="w1">The weights from the inputs to the first hidden layer</param>
         /// <param name="w2">The weights from the first hidden layer</param>
-        internal NeuralNetwork([NotNull] double[,] w1, [NotNull] double[,] w2) : base(w1.GetLength(0), w2.GetLength(1), w1)
+        internal SingleLayerPerceptron([NotNull] double[,] w1, [NotNull] double[,] w2) : base(w1.GetLength(0), w2.GetLength(1))
         {
             // Input check
             if (w1.GetLength(1) != w2.GetLength(0))
@@ -57,6 +65,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Parameters setup
             HiddenLayers = new[] { w1.GetLength(1) };
+            W1 = w1;
             W2 = w2;
             W2T = W2.Transpose();
         }
@@ -68,13 +77,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="size">The number of nodes in the hidden layer</param>
         /// <param name="outputs">The number of output nodes</param>
         [NotNull]
-        internal static NeuralNetwork NewRandom(int inputs, int size, int outputs)
+        internal static SingleLayerPerceptron NewRandom(int inputs, int size, int outputs)
         {
             Random random = new Random();
             double[,]
                 w1 = random.NextMatrix(inputs, size),
                 w2 = random.NextMatrix(size, outputs);
-            return new NeuralNetwork(w1, w2);
+            return new SingleLayerPerceptron(w1, w2);
         }
 
         #region Single processing
@@ -231,7 +240,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="w1w2">The serialized network weights</param>
         [PublicAPI]
         [Pure, NotNull]
-        internal static NeuralNetwork Deserialize(int inputs, int size, int outputs, [NotNull] double[] w1w2)
+        internal static SingleLayerPerceptron Deserialize(int inputs, int size, int outputs, [NotNull] double[] w1w2)
         {
             // Checks
             if (inputs <= 0 || size <= 0 || outputs <= 0 || w1w2.Length < inputs * size + size * outputs)
@@ -246,7 +255,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             Buffer.BlockCopy(w1w2, w1length, w2, 0, sizeof(double) * w2.Length);
 
             // Create the new network to use
-            return new NeuralNetwork(w1, w2);
+            return new SingleLayerPerceptron(w1, w2);
         }
 
         [PublicAPI]
@@ -258,14 +267,14 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal override NeuralNetworkBase Crossover(NeuralNetworkBase other, Random random)
         {
             // Input check
-            NeuralNetwork net = other as NeuralNetwork;
+            SingleLayerPerceptron net = other as SingleLayerPerceptron;
             if (net == null) throw new ArgumentException();
 
             // Crossover
             double[,]
                 w1 = random.TwoPointsCrossover(W1, net.W1),
                 w2 = random.TwoPointsCrossover(W2, net.W2);
-            return new NeuralNetwork(w1, w2);
+            return new SingleLayerPerceptron(w1, w2);
         }
 
         #endregion
