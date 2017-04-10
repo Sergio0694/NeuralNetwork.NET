@@ -1,18 +1,80 @@
 # NeuralNetworkLibrary
 
-A simple library that implements a genetic algorithm to produce neural networks to perform various tasks.
-This library provides simple APIs to create and train neural networks given a user defined fitness function.
+A .NET Standard 1.4 library that implements various types of neural networks (linear and with different hidden layers) as well as multiple training methods, both for supervised and unsupervised learning.
+This library provides simple APIs to create and train neural networks given a cost and gradient function (supervised learning through backpropagation) or a user defined fitness function (unsupervised learning).
 
 ## Usage
 
+### Setup and compatibility
+
+The library needs to be initialized with a wrapper for the `System.Threading.Tasks.Parallel.For` method, since it can't be referenced from a .NET Standard 1.4 project. To do so, just pass a `ParallelFor` delegate to the library, that will forward the call to the actual `Parallel.For` method:
+
+```C#
+ParallelCompatibilityWrapper.Initialize((start, end, body) => Parallel.For(start, end, body).IsCompleted);
+```
+
+Then, since the library can't reference the `Accord.Math` or the `portable.accord.math` NuGet packages on its own, a wrapper for the LBFGS method is also needed. You'll need to implement a class with the `IAccordNETGradientOptimizationMethod` interface (you'll find additional info in the file) and then call:
+
+```C#
+AccordNETGradientOptimizationMethodCompatibilityWrapper.Initialize(myLBFGSwrapperInstance);
+```
+
+### Supervised learning (backpropagation)
+
+Training a neural network is pretty straightforward - just use the methods in the `GradientDescentNetworkTrainer` class. For example, here's how to create and train a `SingleLayerPerceptron` network instance:
+
+```C#
+INeuralNetwork network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(
+  inputs, // A [nsamples*hiddenlayersize] matrix
+  y, // The expected results to calculate the cost, a [nsamples*outputsize] matrix
+  90, // The number of neurons in the hidden layer (will be calculated automatically if null)
+  token, // A cancellation token for the training session 
+  null, // The optional starting solution for the training (the serialized weights from another network)
+  new Progress<BackpropagationProgressEventArgs>(p =>
+  {
+      // Some callback code here
+  }));
+```
+
+### Kernel convolutions
+
+This library includes a customizable kernel convolution pipeline to process raw data before using it to train a neural network. Different kernel convolutions are available, as well as normalization methods, ReLU methods and more.
+In order to process some data, first setup a pipeline:
+
+```C#
+ConvolutionPipeline pipeline = new ConvolutionPipeline( // Let's assume the source data matrix is 28*28
+    v => v.Expand(ConvolutionExtensions.Convolute3x3, 
+        KernelsCollection.TopSobel,
+        KernelsCollection.Outline,
+        KernelsCollection.Sharpen,
+        KernelsCollection.BottomLeftEmboss), // 4 3*3 kernels: 28*28*1 pixels >> 26*26*4
+    v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+    v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*4 >> 13*13*4
+    v => v.Process(ConvolutionExtensions.Normalize), // Normalize all the values in the [0..1] range
+    v => v.Expand(ConvolutionExtensions.Convolute3x3, 
+        KernelsCollection.TopSobel,
+        KernelsCollection.Outline)); // And so on...
+```
+
+Then use the pipeline to process data and get a single data matrix with all the results (each `ConvolutionsStack` entry in the processed list will be a single row in the final data matrix, and all of its values will be flattened in the matrix columns):
+
+```C#
+IReadOnlyList<ConvolutionsStack> convolutions = pipeline.Process(source);
+double[,] inputs = ConvolutionPipeline.ConvertToMatrix(convolutions.ToArray());
+```
+
+This `double[,]` object can now be used as data to train a network using the backpropagation APIs.
+
+### Unsupervised learning (genetic algorithm)
+
 The library provides a `NeuralNetworkGeneticAlgorithmProvider` class that implements a genetic algorithm. This class can be initialized using different parameters and will run the algorithm to create and train the neural networks.
-First, declare a fitness function using the `NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate` delegate.
+First, declare a fitness function using the `FitnessDelegate` delegate.
 This delegate takes as arguments an identifier for the current network and its forward function, and returns the fitness score for the tested species.
 It also provides a list of the forward functions for the other species in the current generation: this can be used to test each network against all the other ones to get some sort of competition.
 The list is created using the lazy evaluation of the LINQ library, so it doesn't use CPU time if it's not used in the body of the fitness function.
 
 ```C#
-NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate fitnessFunction = (uid, f, opponents) =>
+FitnessDelegate fitnessFunction = (uid, f, opponents) =>
 {
   // The uid parameter is a unique uid for the current neural network calling the fitness function
   double[,] testData = PrepareTestData(); // Prepare your own data to feed the neural network
@@ -26,13 +88,11 @@ NeuralNetworkGeneticAlgorithmProvider.FitnessDelegate fitnessFunction = (uid, f,
 Then get a neural network provider using one of the available methods:
 
 ```C#
-NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.NewSingleLayerAsync(
+NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.NewSingleLayerPerceptronProviderAsync(
   fitnessFunction, // The fitness function to test the networks
   16, // Number of inputs
   4, // Number of outputs
   16, // Number of neurons in the hidden layer
-  null, // Optional threshold for the activation function of the hidden layer neurons
-  0.5, // Optiona threshold for the activation function of the output neurons
   100, // Size of the population for the genetic algorithm
   5, // Percentage of random mutations for each weight in the networks
   10); // Number of best networks to carry over each generation
@@ -41,11 +101,11 @@ NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgor
 You can also use a callback action to monitor the provider feedback:
 
 ```C#
-Action<GeneticAlgorithmProgress> callback = p =>
+IProgress<GeneticAlgorithmProgress> callback = new Progress<GeneticAlgorithmProgress>(p =>
 {
   // Display the progress
   Console.Writeline($"Generation {p.Generation}, best: {p.Best}, average: {p.Average}, all time best score: {p.AllTimeBest}");
-};
+});
 provider.ProgressCallback = callback;
 ```
     
@@ -70,18 +130,8 @@ The `INeuralNetwork` interface has a `Forward` method that can be used to proces
 ```C#
 double[,] result = network.Forward(input);
 ```
-    
-It is also possible to serialize a network and restore it:
 
-```C#
-byte[] serialized = network.Serialize();
+### Serialization and deserialization
 
-// The serialized data can be used to recreate the network or another provider
-INeuralNetwork deserialized = NeuralNetworkDeserializer.TryGetInstance(serialized);
-NeuralNetworkGeneticAlgorithmProvider provider = await NeuralNetworkGeneticAlgorithmProvider.FromSerializedNetworkAsync(
-  fitnessFunction, // Use the same fitness function used to obtain the serialized network
-  deserialized, // The serialized network (all the provider parameters will be extracted from the network info)
-  100, // Population size
-  5, // Random mutations probability
-  10); // Elite samples mantained over each generation
-```
+The `INeuralNetwork` interface exposes a `SerializeAsJSON` method that can be used to serialize any network at any given time.
+In order to get a new network instance from a serialized JSON string, just use the `NeuralNetworkDeserializer.TryDeserialize` method: it will parse the input text and automatically return a neural network with the original parameters.
