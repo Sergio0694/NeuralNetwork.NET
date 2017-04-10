@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
@@ -42,5 +43,11 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         double CalculateCost([NotNull] double[] input, [NotNull] double[] y);
+
+        /// <summary>
+        /// Serializes the network as a JSON string
+        /// </summary>
+        [Pure, NotNull]
+        String SerializeAsJSON();
     }
 }

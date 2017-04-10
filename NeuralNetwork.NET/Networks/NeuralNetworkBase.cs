@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.PublicAPIs;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks
 {
     /// <summary>
     /// The base class for every neural network implementation
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     public abstract class NeuralNetworkBase : INeuralNetwork
     {
         #region Fields and parameters
@@ -15,17 +17,27 @@ namespace NeuralNetworkNET.Networks
         /// <summary>
         /// Gets the size of the input layer
         /// </summary>
+        [JsonProperty("Inputs", Required = Required.Always)]
         public int InputLayerSize { get; }
 
         /// <summary>
         /// Gets the size of the output layer
         /// </summary>
+        [JsonProperty("Outputs", Required = Required.Always)]
         public int OutputLayerSize { get; }
 
         /// <summary>
         /// Gets the description of the network hidden layers
         /// </summary>
+        [JsonProperty(nameof(HiddenLayers), Required = Required.Always)]
         public abstract IReadOnlyList<int> HiddenLayers { get; }
+
+        /// <summary>
+        /// Gets a list of all the weight matrices for the current network
+        /// </summary>
+        [NotNull, ItemNotNull]
+        [JsonProperty(nameof(Weights), Required = Required.Always)]
+        protected internal abstract double[][,] Weights { get; }
 
         #endregion
 
@@ -77,6 +89,10 @@ namespace NeuralNetworkNET.Networks
             }
             return cost / 2;
         }
+
+        [PublicAPI]
+        [Pure]
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this);
 
         #endregion
 
@@ -166,9 +182,5 @@ namespace NeuralNetworkNET.Networks
         [Pure]
         [NotNull]
         internal abstract double[] SerializeWeights();
-
-        //protected abstract IReadOnlyList<XNode> SerializeToXML();
-
-        //
     }
 }

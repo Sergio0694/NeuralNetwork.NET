@@ -21,11 +21,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Gets the weights from the second layer
         /// </summary>
+        [NotNull]
         protected readonly double[,] W2;
 
         /// <summary>
         /// Gets the transposed W2 weights (used in the gradient calculation)
         /// </summary>
+        [NotNull]
         protected readonly double[,] W2T;
 
         /// <summary>
@@ -37,6 +39,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Gets the values in the third layer, before the sigmoid is applied
         /// </summary>
         protected double[,] _Z3;
+
+        protected internal override double[][,] Weights => new[] { W1, W2 };
 
         #endregion
 

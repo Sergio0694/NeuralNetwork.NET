@@ -88,7 +88,7 @@ namespace NeuralNetworkSampleWPF.Views
             double[,] inputs = ConvolutionPipeline.ConvertToMatrix(convolutions.ToArray());
 
             // Get the optimized network
-            _Network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 100, cts.Token, null,
+            _Network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 90, cts.Token, null,
             new Progress<BackpropagationProgressEventArgs>(p =>
             {
                 Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>

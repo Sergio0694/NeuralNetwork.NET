@@ -18,12 +18,15 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Gets the weights from the inputs to the following layer
         /// </summary>
+        [NotNull]
         protected readonly double[,] W1;
 
         /// <summary>
         /// Gets the values in the second layer, before the sigmoid is applied
         /// </summary>
         protected double[,] _Z2;
+
+        protected internal override double[][,] Weights => new[] { W1 };
 
         #endregion
 
