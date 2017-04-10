@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26403.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetworkLibrary", "NeuralNetworkLibrary\NeuralNetworkLibrary.csproj", "{B0812186-B9C8-4D4D-8180-46D176DB9653}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetworkSample.WPF", "NeuralNetworkSample.WPF\NeuralNetworkSample.WPF.csproj", "{0963C4A5-6DA5-4530-993C-FCB478266A7C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET", "NeuralNetwork.NET\NeuralNetwork.NET.csproj", "{DB944C09-55F9-49E1-8F0D-BBFDE51914DE}"
@@ -23,22 +21,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|ARM.Build.0 = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|x64.Build.0 = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Debug|x86.Build.0 = Debug|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|ARM.ActiveCfg = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|ARM.Build.0 = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|x64.ActiveCfg = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|x64.Build.0 = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|x86.ActiveCfg = Release|Any CPU
-		{B0812186-B9C8-4D4D-8180-46D176DB9653}.Release|x86.Build.0 = Release|Any CPU
 		{0963C4A5-6DA5-4530-993C-FCB478266A7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0963C4A5-6DA5-4530-993C-FCB478266A7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0963C4A5-6DA5-4530-993C-FCB478266A7C}.Debug|ARM.ActiveCfg = Debug|Any CPU

@@ -106,7 +106,7 @@ namespace NeuralNetworkNET.Networks
 
         [PublicAPI]
         [Pure]
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this);
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented);
 
         #endregion
 
