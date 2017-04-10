@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
@@ -42,6 +41,17 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (w1.Length == 0) throw new ArgumentOutOfRangeException("The weights can't be empty");
             if (w1.GetLength(0) != inputs) throw new ArgumentOutOfRangeException("The size of the weights matrix isn't valid");
             W1 = w1;
+        }
+
+        /// <summary>
+        /// Creates a new random instance with the given number of inputs and outputs
+        /// </summary>
+        /// <param name="inputs">The number of input nodes</param>
+        /// <param name="outputs">The number of output nodes</param>
+        [NotNull]
+        internal static LinearPerceptron NewRandom(int inputs, int outputs)
+        {
+            return new LinearPerceptron(inputs, outputs, new Random().NextMatrix(inputs, outputs));
         }
 
         #region Single processing
@@ -122,6 +132,19 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure]
         internal override double[] SerializeWeights() => W1.Cast<double>().ToArray();
+
+        // Creates a new instance from another network with the same structure
+        [Pure]
+        internal override NeuralNetworkBase Crossover(NeuralNetworkBase other, Random random)
+        {
+            // Input check
+            LinearPerceptron net = other as LinearPerceptron;
+            if (net == null) throw new ArgumentException();
+
+            // Crossover
+            double[,] w1 = random.TwoPointsCrossover(W1, net.W1);
+            return new LinearPerceptron(InputLayerSize, OutputLayerSize, w1);
+        }
 
         #endregion
     }

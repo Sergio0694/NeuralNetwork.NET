@@ -61,6 +61,22 @@ namespace NeuralNetworkNET.Networks.Implementations
             W2T = W2.Transpose();
         }
 
+        /// <summary>
+        /// Creates a new random instance with the given number of inputs and outputs
+        /// </summary>
+        /// <param name="inputs">The number of input nodes</param>
+        /// <param name="size">The number of nodes in the hidden layer</param>
+        /// <param name="outputs">The number of output nodes</param>
+        [NotNull]
+        internal static NeuralNetwork NewRandom(int inputs, int size, int outputs)
+        {
+            Random random = new Random();
+            double[,]
+                w1 = random.NextMatrix(inputs, size),
+                w2 = random.NextMatrix(size, outputs);
+            return new NeuralNetwork(w1, w2);
+        }
+
         #region Single processing
 
         [PublicAPI]
@@ -214,8 +230,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="outputs">The number of output nodes</param>
         /// <param name="w1w2">The serialized network weights</param>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         internal static NeuralNetwork Deserialize(int inputs, int size, int outputs, [NotNull] double[] w1w2)
         {
             // Checks
@@ -237,6 +252,21 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure]
         internal override double[] SerializeWeights() => W1.Cast<double>().Concat(W2.Cast<double>()).ToArray();
+
+        // Creates a new instance from another network with the same structure
+        [Pure]
+        internal override NeuralNetworkBase Crossover(NeuralNetworkBase other, Random random)
+        {
+            // Input check
+            NeuralNetwork net = other as NeuralNetwork;
+            if (net == null) throw new ArgumentException();
+
+            // Crossover
+            double[,]
+                w1 = random.TwoPointsCrossover(W1, net.W1),
+                w2 = random.TwoPointsCrossover(W2, net.W2);
+            return new NeuralNetwork(w1, w2);
+        }
 
         #endregion
     }

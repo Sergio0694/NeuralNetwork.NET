@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
@@ -68,7 +69,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// Gets or sets the callback action used to report the progress
         /// </summary>
         [CanBeNull]
-        public Action<GeneticAlgorithmProgress> ProgressCallback { get; set; }
+        public IProgress<GeneticAlgorithmProgress> ProgressCallback { get; set; }
 
         /// <summary>
         /// Gets the number of the current generation since the provider instance was created
@@ -143,7 +144,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         public INeuralNetwork BestNetwork => BestResult.Item1;
 
         /// <summary>
-        /// Raised whenever the genetic algorithm produces a better neural network for the current fitness function
+        /// Callback called whenever the genetic algorithm produces a better neural network for the current fitness function
         /// </summary>
         public event EventHandler<GeneticAlgorithmBestNetworkChangedEventArgs> BestNetworkChanged;
 
@@ -153,8 +154,8 @@ namespace NeuralNetworkNET.UnsupervisedLearning
 
         // Private constructor
         private NeuralNetworkGeneticAlgorithmProvider(
-            FitnessDelegate fitnessFunction,
-            int input, int output, int firstHiddenSize, int secondHiddenSize, double? z1Th, double? z2Th, double? z3Th,
+            [NotNull] FitnessDelegate fitnessFunction,
+            int input, int output, int firstHiddenSize, int secondHiddenSize,
             int population, int weightsMutationRate, int eliteSamples)
         {
             // Input checks
@@ -163,12 +164,6 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                 throw new ArgumentOutOfRangeException("The input layer, the output layer and the first hidden layer must have at least one neuron each");
             }
             if (secondHiddenSize < 0) throw new ArgumentOutOfRangeException("The size of the second hidden layer can't be negative");
-            if ((z1Th.HasValue && (z1Th >= 1 || z1Th <= 0)) ||
-                (z2Th.HasValue && (z2Th >= 1 || z2Th <= 0)) ||
-                (z3Th.HasValue && (z3Th >= 1 || z3Th <= 0)))
-            {
-                throw new ArgumentOutOfRangeException("Each threshold value must be between 0 and 1");
-            }
             if (population <= 0) throw new ArgumentOutOfRangeException("The population must have at least one element");
             if (weightsMutationRate <= 0 || weightsMutationRate > 99) throw new ArgumentOutOfRangeException("The mutation rate must be between 0 and 100");
             if (eliteSamples < 0 || eliteSamples >= population)
@@ -185,7 +180,6 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             PopulationSize = population;
             WeightsMutationRate = weightsMutationRate;
             EliteSamples = eliteSamples;
-
         }
 
         /// <summary>
@@ -195,20 +189,20 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <param name="input">Number of inputs in the neural network</param>
         /// <param name="output">Number of outputs in the neural network</param>
         /// <param name="size">Number of neurons in the hidden layer</param>
-        /// <param name="z1Threshold">Optional threshold in the hidden layer neurons</param>
-        /// <param name="z2Threshold">Optional threshold in the output layer</param>
         /// <param name="population">Number of networks in the population</param>
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
+        [PublicAPI]
+        [ItemNotNull]
         public static Task<NeuralNetworkGeneticAlgorithmProvider> NewSingleLayerAsync(
-            FitnessDelegate fitnessFunction,
-            int input, int output, int size, double? z1Threshold, double? z2Threshold,
+            [NotNull] FitnessDelegate fitnessFunction,
+            int input, int output, int size,
             int population, int weightsMutationRate, int eliteSamples)
         {
             return Task.Run(() =>
             {
                 NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction,
-                    input, output, size, 0, z1Threshold, z2Threshold, null, population, weightsMutationRate, eliteSamples);
+                    input, output, size, 0, population, weightsMutationRate, eliteSamples);
                 provider._Population = provider.InitializePopulation();
                 return provider;
             });
@@ -222,21 +216,20 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <param name="output">Number of outputs in the neural network</param>
         /// <param name="firstHiddenSize">Number of neurons in the first hidden layer</param>
         /// <param name="secondHiddenSize">Number of neurons in the second hidden layer</param>
-        /// <param name="z1Threshold">Optional threshold in the first hidden layer neurons</param>
-        /// <param name="z2Threshold">Optional threshold in the second hidden layer</param>
-        /// <param name="z3Threshold">Optional threshold in the output layer</param>
         /// <param name="population">Number of networks in the population</param>
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
+        [PublicAPI]
+        [ItemNotNull]
         public static Task<NeuralNetworkGeneticAlgorithmProvider> NewTwoLayersLayerAsync(
-            FitnessDelegate fitnessFunction,
-            int input, int output, int firstHiddenSize, int secondHiddenSize, double? z1Threshold, double? z2Threshold, double? z3Threshold,
+            [NotNull] FitnessDelegate fitnessFunction,
+            int input, int output, int firstHiddenSize, int secondHiddenSize,
             int population, int weightsMutationRate, int eliteSamples)
         {
             return Task.Run(() =>
             {
                 NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction,
-                    input, output, firstHiddenSize, secondHiddenSize, z1Threshold, z2Threshold, z3Threshold, population, weightsMutationRate, eliteSamples);
+                    input, output, firstHiddenSize, secondHiddenSize, population, weightsMutationRate, eliteSamples);
                 provider._Population = provider.InitializePopulation();
                 return provider;
             });
@@ -320,6 +313,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <summary>
         /// Starts the provider, returns true if the operation is successful
         /// </summary>
+        [PublicAPI]
         public async Task<bool> StartAsync()
         {
             // Wait and check the current status
@@ -340,6 +334,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <summary>
         /// Stops the provider, returns false if it wasn't running when the method was called
         /// </summary>
+        [PublicAPI]
         public async Task<bool> StopAsync()
         {
             // Wait and check if the provider was running
@@ -372,7 +367,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             {
                 for (int i = 0; i < PopulationSize; i++)
                 {
-                    //population[i] = new NeuralNetwork(InputLayerSize, OutputLayerSize, FirstHiddenLayerSize, Z1Threshold, Z2Threshold, RandomProvider);
+                    population[i] = NeuralNetwork.NewRandom(InputLayerSize, FirstHiddenLayerSize, OutputLayerSize);
                 }
             }
             else
@@ -391,34 +386,23 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// Returns a new mutated network from the input network
         /// </summary>
         /// <param name="network">The input network</param>
-        private NeuralNetworkBase MutateNetwork(NeuralNetworkBase network)
+        [NotNull]
+        private static NeuralNetworkBase MutateNetwork([NotNull] NeuralNetworkBase network)
         {
-            /*
             // Iterate over all the layers
-            Random r = new Random(network.GetHashCode());
             if (network.GetType() == typeof(NeuralNetwork))
             {
-                Tuple<double[,], double[,]> weights = ((NeuralNetwork)network).Weights;
-                foreach (double[,] weight in new[] { weights.Item1, weights.Item2 })
-                {
-                    MatrixHelper.RandomMutate(weight, WeightsMutationRate, r);
-                }
-                return new NeuralNetwork(network.InputLayerSize, network.OutputLayerSize, network.HiddenLayerSize, weights.Item1, weights.Item2, Z1Threshold, Z2Threshold);
+                double[]
+                    w1w2 = ((NeuralNetwork)network).SerializeWeights(),
+                    w1w2r = w1w2.Randomize(0.5);
+                return NeuralNetwork.Deserialize(network.InputLayerSize, network.HiddenLayers[0], network.OutputLayerSize, w1w2r);
             }
             else
             {
                 // Double neural network
-                TwoLayersNeuralNetwork twoLayersNet = (TwoLayersNeuralNetwork)network;
-                Tuple<double[,], double[,], double[,]> weights = twoLayersNet.Weights;
-                foreach (double[,] weight in new[] { weights.Item1, weights.Item2, weights.Item3 })
-                {
-                    MatrixHelper.RandomMutate(weight, WeightsMutationRate, r);
-                }
-                return new TwoLayersNeuralNetwork(network.InputLayerSize, network.OutputLayerSize, network.HiddenLayerSize,
-                    twoLayersNet.SecondHiddenLayerSize, weights.Item1, weights.Item2, weights.Item3,
-                    Z1Threshold, Z2Threshold, Z3Threshold);
-            } */
-            return null;
+                throw new NotImplementedException();
+            }
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -431,35 +415,36 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             while (!token.IsCancellationRequested)
             {
                 // Test the current generation
-                IEnumerable<Task<Tuple<NeuralNetworkBase, double>>> testing = _Population.Select(async (net, i) =>
+                IEnumerable<Task<(NeuralNetworkBase, double)>> testing = _Population.Select(async (net, i) =>
                 {
                     IEnumerable<ForwardFunction> opponents = _Population.Where((entry, pos) => pos != i).Select<NeuralNetworkBase, ForwardFunction>(entry => entry.Forward);
-                    double fitness = await Task.Run(() => FitnessFunction(net.GetHashCode(), net.Forward, opponents));
-                    return Tuple.Create(net, fitness);
+                    double fitness = await Task.Run(() => FitnessFunction(net.GetHashCode(), net.Forward, opponents), token);
+                    return (net, fitness);
                 });
-                Tuple<NeuralNetworkBase, double>[] result = await Task.WhenAll(testing);
+                (NeuralNetworkBase, double)[] result = await Task.WhenAll(testing);
 
                 // Iterate over all the results
                 double tot = 0;
-                Tuple<NeuralNetworkBase, double> bestResult = null;
-                foreach (Tuple<NeuralNetworkBase, double> res in result)
+                (NeuralNetworkBase, double) bestResult = (null, 0);
+                foreach ((NeuralNetworkBase net, double score) in result)
                 {
                     // Get the best score and the total
-                    if (bestResult == null || res.Item2 > bestResult.Item2)
+                    (NeuralNetworkBase previous, double previousScore) = bestResult;
+                    if (previous == null || score > previousScore)
                     {
-                        bestResult = res;
+                        bestResult = (net, score);
                     }
-                    tot += res.Item2;
+                    tot += score;
                 }
-                if (bestResult == null) throw new InvalidOperationException();
-              //  if (bestResult.Item2 > BestFitness) BestResult = bestResult;
+                if (bestResult.Item1 == null) throw new InvalidOperationException();
+                if (bestResult.Item2 > BestFitness) BestResult = bestResult;
 
                 // Invoke the callback if possible
-                ProgressCallback?.Invoke(new GeneticAlgorithmProgress(Generation, bestResult.Item2, tot / PopulationSize, BestFitness));
+                ProgressCallback?.Report(new GeneticAlgorithmProgress(Generation, bestResult.Item2, tot / PopulationSize, BestFitness));
                 Generation++;
 
                 // Iterate over the results and populate the mating pool
-                Tuple<NeuralNetworkBase, double>[] matingPool = new Tuple<NeuralNetworkBase, double>[PopulationSize];
+                (NeuralNetworkBase, double)[] matingPool = new (NeuralNetworkBase, double)[PopulationSize];
                 for (int i = 0; i < PopulationSize; i++)
                 {
                     // Pick a random mate
@@ -490,12 +475,12 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                     } while (a == b);
 
                     // Two points crossover
-                   // children.Add(filtered[a].Crossover(filtered[b], RandomProvider));
+                    children.Add(filtered[a].Crossover(filtered[b], RandomProvider));
                 }
                 if (children.Count != PopulationSize) Debugger.Break();
 
                 // Queue and run all the current mutation
-                IEnumerable<Task<NeuralNetworkBase>> mutation = children.Select(child => Task.Run(() => MutateNetwork(child)));
+                IEnumerable<Task<NeuralNetworkBase>> mutation = children.Select(child => Task.Run(() => MutateNetwork(child), token));
                 _Population = await Task.WhenAll(mutation);
             }
         }

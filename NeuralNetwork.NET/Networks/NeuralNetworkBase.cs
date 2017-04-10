@@ -182,19 +182,23 @@ namespace NeuralNetworkNET.Networks
 
         #endregion
 
-        /// <summary>
-        /// Performs the random crossover with another neural network
-        /// </summary>
-        /// <param name="other">The other network to use for the crossover</param>
-        /// <param name="random">The random instance</param>
-        //public abstract NeuralNetworkBase Crossover(NeuralNetworkBase other, Random random);
+        #region Internal methods
 
         /// <summary>
         /// Serializes the weights of the current instance into a linear array
         /// </summary>
         [PublicAPI]
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         internal abstract double[] SerializeWeights();
+
+        /// <summary>
+        /// Performs a random crossover with another neural network
+        /// </summary>
+        /// <param name="other">The other network to use for the crossover</param>
+        /// <param name="random">The random instance to use</param>
+        [Pure, NotNull]
+        internal abstract NeuralNetworkBase Crossover([NotNull] NeuralNetworkBase other, [NotNull] Random random);
+
+        #endregion
     }
 }
