@@ -344,7 +344,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
-        internal static bool ContentEquals([CanBeNull] this double[,] m, [CanBeNull] double[,] o)
+        public static bool ContentEquals([CanBeNull] this double[,] m, [CanBeNull] double[,] o)
         {
             if (m == null && o == null) return true;
             if (m == null || o == null) return false;
@@ -361,7 +361,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The first vector to test</param>
         /// <param name="o">The second vector to test</param>
-        internal static bool ContentEquals([CanBeNull] this double[] v, [CanBeNull] double[] o)
+        public static bool ContentEquals([CanBeNull] this double[] v, [CanBeNull] double[] o)
         {
             if (v == null && o == null) return true;
             if (v == null || o == null) return false;

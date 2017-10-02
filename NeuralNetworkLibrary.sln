@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.0
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetworkSample.WPF", "NeuralNetworkSample.WPF\NeuralNetworkSample.WPF.csproj", "{0963C4A5-6DA5-4530-993C-FCB478266A7C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET", "NeuralNetwork.NET\NeuralNetwork.NET.csproj", "{DB944C09-55F9-49E1-8F0D-BBFDE51914DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET", "NeuralNetwork.NET\NeuralNetwork.NET.csproj", "{DB944C09-55F9-49E1-8F0D-BBFDE51914DE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetworkSample.UWP", "NeuralNetworkSample.UWP\NeuralNetworkSample.UWP.csproj", "{BB345133-B237-436F-87C0-8E6D3168DB75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET.Unit", "NeuralNetwork.NET.Unit\NeuralNetwork.NET.Unit.csproj", "{765CDBE7-1755-467F-AAC1-18B85E394DAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,8 +75,27 @@ Global
 		{BB345133-B237-436F-87C0-8E6D3168DB75}.Release|x86.ActiveCfg = Release|x86
 		{BB345133-B237-436F-87C0-8E6D3168DB75}.Release|x86.Build.0 = Release|x86
 		{BB345133-B237-436F-87C0-8E6D3168DB75}.Release|x86.Deploy.0 = Release|x86
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|ARM.Build.0 = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|x64.Build.0 = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Debug|x86.Build.0 = Debug|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|ARM.ActiveCfg = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|ARM.Build.0 = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|x64.ActiveCfg = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|x64.Build.0 = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|x86.ActiveCfg = Release|Any CPU
+		{765CDBE7-1755-467F-AAC1-18B85E394DAE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8684D12-614F-431C-80F6-09FC9B5E51ED}
 	EndGlobalSection
 EndGlobal
