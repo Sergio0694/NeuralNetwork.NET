@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
@@ -150,7 +151,7 @@ namespace NeuralNetworkNET.Networks
             // Calculate the cost (half the squared difference)
             int h = y.GetLength(0), w = y.GetLength(1);
             double[] v = new double[h];
-            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool result = Parallel.For(0, h, i =>
             {
                 for (int j = 0; j < w; j++)
                 {
@@ -159,7 +160,7 @@ namespace NeuralNetworkNET.Networks
                         square = delta * delta;
                     v[i] += square;
                 }
-            });
+            }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
 
             // Sum the partial costs

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -68,7 +69,7 @@ namespace NeuralNetworkNET.Helpers
                 seeds[i] = random.Next();
 
             // Populate the matrix in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, x, i =>
+            bool loopResult = Parallel.For(0, x, i =>
             {
                 Random localRandom = new Random(seeds[i]);
                 unsafe
@@ -78,7 +79,7 @@ namespace NeuralNetworkNET.Helpers
                         for (int j = 0; j < y; j++)
                             r[i * x + j] = localRandom.NextGaussian();
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while running the parallel loop");
             return result;
         }
@@ -97,7 +98,7 @@ namespace NeuralNetworkNET.Helpers
             double inverse = 1.0 - probability;
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] randomized = new double[h, w];
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, m.GetLength(0), i =>
+            bool loopResult = Parallel.For(0, m.GetLength(0), i =>
             {
                 // Get the random instance and fix the pointers
                 Random random = new Random();
@@ -114,7 +115,7 @@ namespace NeuralNetworkNET.Helpers
                         }
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return randomized;
         }
@@ -168,7 +169,7 @@ namespace NeuralNetworkNET.Helpers
             double[,] result = new double[h, w];
 
             // Populate the matrix in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -184,7 +185,7 @@ namespace NeuralNetworkNET.Helpers
                             else r[i * w + j] = p1[i * w + j];
                         }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while running the parallel loop");
             return result;
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 
@@ -173,7 +174,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Calculate the negative delta for later use
             int h = y.GetLength(0), w = y.GetLength(1);
             double[,] negativeDelta = new double[h, w];
-            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool result = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -184,14 +185,14 @@ namespace NeuralNetworkNET.Networks.Implementations
                             nd[i * w + j] = -(py[i * w + j] - pyHat[i * w + j]);
                     }
                 }
-            });
+            }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
 
             // Derivative with respect to W2
             double[,]
                 z3prime = _Z3.SigmoidPrime(),
                 delta3 = new double[h, w];
-            result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            result = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -202,7 +203,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             d3[i * w + j] = nd[i * w + j] * z3p[i * w + j];
                     }
                 }
-            });
+            }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
             double[,]
                 a2t = _A2.Transpose(),

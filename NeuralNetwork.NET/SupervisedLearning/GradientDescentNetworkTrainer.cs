@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 
@@ -41,33 +42,35 @@ namespace NeuralNetworkNET.SupervisedLearning
             int
                 inputs = x.GetLength(1),
                 outputs = ys.GetLength(1);
-            if (size == null) size = (inputs + outputs) / 2;
+            int iSize = size ?? (inputs + outputs) / 2;
 
             // Calculates the cost for a network with the input weights
             double CostFunction(double[] w1w2)
             {
-                SingleLayerPerceptron network = SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, w1w2);
+                SingleLayerPerceptron network = SingleLayerPerceptron.Deserialize(inputs, iSize, outputs, w1w2);
                 return network.CalculateCost(x, ys);
             }
 
             // Calculates the gradient for a network with the input weights
             double[] GradientFunction(double[] w1w2)
             {
-                SingleLayerPerceptron network = SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, w1w2);
+                SingleLayerPerceptron network = SingleLayerPerceptron.Deserialize(inputs, iSize, outputs, w1w2);
                 return network.CostFunctionPrime(x, ys);
             }
 
             // Initialize the optimization function
-            IAccordNETGradientOptimizationMethod bfgs = AccordNETGradientOptimizationMethodCompatibilityWrapper.Instance.Invoke(
-                inputs * size.Value + size.Value * outputs, // Number of free variables in the function to optimize
-                CostFunction, GradientFunction);
-            bfgs.Token = token;
+            BoundedBroydenFletcherGoldfarbShanno bfgs = new BoundedBroydenFletcherGoldfarbShanno(
+                inputs * iSize + iSize * outputs, // Number of free variables in the function to optimize
+                CostFunction, GradientFunction)
+            {
+                Token = token
+            };
 
             // Handle the progress if necessary
-            if (progress != null) bfgs.ProgressRelay += (s, e) =>
+            if (progress != null) bfgs.Progress += (s, e) =>
             {
                 progress.Report(new BackpropagationProgressEventArgs(
-                    () => SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, e.Solution), e.Iteration, e.Value));
+                    () => SingleLayerPerceptron.Deserialize(inputs, iSize, outputs, e.Solution), e.Iteration, e.Value));
             };
 
             // Minimize the cost function
@@ -78,7 +81,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             }, token);
 
             // Return the result network
-            return SingleLayerPerceptron.Deserialize(inputs, size.Value, outputs, bfgs.Solution);
+            return SingleLayerPerceptron.Deserialize(inputs, iSize, outputs, bfgs.Solution);
         }
     }
 }

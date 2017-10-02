@@ -1,10 +1,6 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
-using NeuralNetworkNET;
+﻿using System.Windows;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkSampleWPF.Helpers;
 
 namespace NeuralNetworkSampleWPF
 {
@@ -13,15 +9,6 @@ namespace NeuralNetworkSampleWPF
     /// </summary>
     public partial class App : Application
     {
-        // Library initialization
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-            ParallelCompatibilityWrapper.Initialize((start, end, body) => Parallel.For(start, end, body).IsCompleted);
-            AccordNETGradientOptimizationMethodCompatibilityWrapper.Initialize(
-                (variables, function, gradient) => new LBFGSWrapper(variables, function, gradient));
-        }
-
         /// <summary>
         /// Gets the shared convolution pipeline that takes a 28*28 image and returns 480 node values
         /// </summary>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Convolution.Delegates;
 
@@ -53,7 +54,7 @@ namespace NeuralNetworkNET.Convolution
         public IReadOnlyList<ConvolutionsStack> Process([NotNull, ItemNotNull] IReadOnlyList<double[,]> inputs)
         {
             ConvolutionsStack[] results = new ConvolutionsStack[inputs.Count];
-            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, inputs.Count, i => results[i] = Process(inputs[i]));
+            bool result = Parallel.For(0, inputs.Count, i => results[i] = Process(inputs[i])).IsCompleted;
             if (!result) throw new Exception("Error executing the parallel loop");
             return results;
         }
@@ -85,7 +86,7 @@ namespace NeuralNetworkNET.Convolution
             double[,] x = new double[data.Length, volume];
 
             // Populate the matrix, iterate over all the volumes
-            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, data.Length, i =>
+            bool result = Parallel.For(0, data.Length, i =>
             {
                 unsafe
                 {
@@ -99,7 +100,7 @@ namespace NeuralNetworkNET.Convolution
                                     px[i * volume + j * lsize + z * ch + w] = stack[j, z, w];
                     }
                 }
-            });
+            }).IsCompleted;
             if (!result) throw new Exception("Error while running the parallel loop");
             return x;
         }

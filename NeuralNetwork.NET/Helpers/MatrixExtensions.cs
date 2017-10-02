@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -29,7 +30,7 @@ namespace NeuralNetworkNET.Helpers
             double[] result = new double[w];
 
             // Loop in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, w, j =>
+            bool loopResult = Parallel.For(0, w, j =>
             {
                 unsafe
                 {
@@ -46,7 +47,7 @@ namespace NeuralNetworkNET.Helpers
                         pm[j] = res;
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
@@ -71,7 +72,7 @@ namespace NeuralNetworkNET.Helpers
             double[,] result = new double[h, w];
 
             // Execute the multiplication in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -93,7 +94,7 @@ namespace NeuralNetworkNET.Helpers
                         }
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
@@ -131,7 +132,7 @@ namespace NeuralNetworkNET.Helpers
             double[,] result = new double[h, w];
 
             // Execute the sigmoid in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -141,7 +142,7 @@ namespace NeuralNetworkNET.Helpers
                             pr[i * w + j] = 1 / (1 + Math.Exp(-pm[i * w + j]));
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
@@ -182,7 +183,7 @@ namespace NeuralNetworkNET.Helpers
             double[,] result = new double[h, w];
 
             // Execute the sigmoid prime in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -199,7 +200,7 @@ namespace NeuralNetworkNET.Helpers
                         }
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
@@ -222,7 +223,7 @@ namespace NeuralNetworkNET.Helpers
             double[,] result = new double[w, h];
 
             // Execute the transposition in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -232,7 +233,7 @@ namespace NeuralNetworkNET.Helpers
                             pr[j * h + i] = pm[i * w + j];
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
@@ -279,7 +280,7 @@ namespace NeuralNetworkNET.Helpers
             double[,] normalized = new double[h, w];
 
             // Populate the normalized matrix
-            bool result = ParallelCompatibilityWrapper.Instance.Invoke(0, h, i =>
+            bool result = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
@@ -293,7 +294,7 @@ namespace NeuralNetworkNET.Helpers
                         }
                     }
                 }
-            });
+            }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
             return normalized;
         }
@@ -316,7 +317,7 @@ namespace NeuralNetworkNET.Helpers
             double[] result = new double[h * w * depth];
 
             // Execute the copy in parallel
-            bool loopResult = ParallelCompatibilityWrapper.Instance.Invoke(0, depth, i =>
+            bool loopResult = Parallel.For(0, depth, i =>
             {
                 // Copy the volume data
                 unsafe
@@ -329,7 +330,7 @@ namespace NeuralNetworkNET.Helpers
                             r[h * w * i + j * w + z] = p[j * w + z];
                     }
                 }
-            });
+            }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
