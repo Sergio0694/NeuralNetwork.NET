@@ -18,9 +18,9 @@ namespace NeuralNetworkSampleUWP
             DrawingCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Touch | CoreInputDeviceTypes.Pen;
 
             // Request a nice small, sticky note sized grid to start.
-            ApplicationView.PreferredLaunchViewSize = new Size { Height = 400, Width = 600 };
+            ApplicationView.PreferredLaunchViewSize = new Size { Height = 600, Width = 600 };
             ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.PreferredLaunchViewSize;
-            ApplicationView.GetForCurrentView().SetPreferredMinSize(new Size { Height = 400, Width = 600 });
+            ApplicationView.GetForCurrentView().SetPreferredMinSize(new Size { Height = 600, Width = 600 });
         }
     }
 }
