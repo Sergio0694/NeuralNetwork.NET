@@ -1,10 +1,13 @@
 ﻿using System;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using Windows.ApplicationModel.Core;
+using Windows.UI;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
-using NeuralNetworkNET;
+using NeuralNetworkNET.Convolution;
+using NeuralNetworkNET.Convolution.Misc;
 
 namespace NeuralNetworkSampleUWP
 {
@@ -30,34 +33,43 @@ namespace NeuralNetworkSampleUWP
         /// <param name="e">Dettagli sulla richiesta e sul processo di avvio.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
-            Frame rootFrame = Window.Current.Content as Frame;
-
-            // Non ripetere l'inizializzazione dell'applicazione se la finestra già dispone di contenuto,
-            // assicurarsi solo che la finestra sia attiva
-            if (rootFrame == null)
+            // Initialize the UI if needed
+            if (!(Window.Current.Content is Shell shell))
             {
                 // Creare un frame che agisca da contesto di navigazione e passare alla prima pagina
-                rootFrame = new Frame();
-
-                rootFrame.NavigationFailed += OnNavigationFailed;
-
-                if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
-                {
-                    //TODO: caricare lo stato dall'applicazione sospesa in precedenza
-                }
+                shell = new Shell();
+                shell.NavigationFrame.NavigationFailed += OnNavigationFailed;
 
                 // Posizionare il frame nella finestra corrente
-                Window.Current.Content = rootFrame;
+                Window.Current.Content = shell;
+
+                // Tweak the colors of the title bar
+                ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
+                titleBar.ForegroundColor = Colors.White;
+                titleBar.BackgroundColor = Colors.Transparent;
+                titleBar.ButtonForegroundColor = Colors.White;
+                titleBar.ButtonBackgroundColor = Colors.Transparent;
+                titleBar.ButtonHoverForegroundColor = Colors.White;
+                titleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x50, 0, 0, 0);
+                titleBar.ButtonPressedForegroundColor = Colors.White;
+                titleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF);
+                titleBar.InactiveBackgroundColor = Colors.Transparent;
+                titleBar.ButtonInactiveForegroundColor = Colors.White;
+                titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+                // Handle the title bar state
+                CoreApplicationViewTitleBar coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+                coreTitleBar.ExtendViewIntoTitleBar = true;
             }
 
             if (e.PrelaunchActivated == false)
             {
-                if (rootFrame.Content == null)
+                if (shell.NavigationFrame.Content == null)
                 {
                     // Quando lo stack di esplorazione non viene ripristinato, passare alla prima pagina
                     // e configurare la nuova pagina passando le informazioni richieste come parametro
                     // parametro
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    shell.NavigationFrame.Navigate(typeof(DigitsPage), e.Arguments);
                 }
                 // Assicurarsi che la finestra corrente sia attiva
                 Window.Current.Activate();
@@ -87,5 +99,48 @@ namespace NeuralNetworkSampleUWP
             //TODO: salvare lo stato dell'applicazione e arrestare eventuali attività eseguite in background
             deferral.Complete();
         }
+
+        /// <summary>
+        /// Gets the shared convolution pipeline that takes a 28*28 image and returns 480 node values
+        /// </summary>
+        public static ConvolutionPipeline SharedPipeline { get; } = new ConvolutionPipeline(
+
+            // 10 kernels, 28*28*1 pixels >> 26*26*10
+            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen,
+                KernelsCollection.BottomLeftEmboss,
+                KernelsCollection.TopRightEmboss,
+                KernelsCollection.TopLeftEmboss,
+                KernelsCollection.BottomRightEmboss),
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*10 >> 13*13*10
+            v => v.Process(ConvolutionExtensions.Normalize),
+            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen),// 13*13*10 >> 11*11*60
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 11*11*60 >> 5*5*60
+            v => v.Process(ConvolutionExtensions.Normalize),
+            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen,
+                KernelsCollection.BottomRightEmboss,
+                KernelsCollection.TopLeftEmboss), // 5*5*60 >> 3*3*480
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2)); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
     }
+}
 }
