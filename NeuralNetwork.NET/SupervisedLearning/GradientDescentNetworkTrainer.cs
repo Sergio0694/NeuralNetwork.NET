@@ -69,6 +69,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             // Handle the progress if necessary
             if (progress != null) bfgs.Progress += (s, e) =>
             {
+                if (double.IsNaN(e.Value)) return;
                 progress.Report(new BackpropagationProgressEventArgs(
                     () => SingleLayerPerceptron.Deserialize(inputs, iSize, outputs, e.Solution), e.Iteration, e.Value));
             };

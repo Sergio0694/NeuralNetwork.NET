@@ -101,8 +101,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 yHat = z3.Sigmoid(); // Output layer activation
             return yHat;
         }
-
-        [PublicAPI]
+        
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         internal override double[] CostFunctionPrime(double[] input, double[] y)
@@ -151,7 +150,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [MustUseReturnValue]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal override double[,] Forward(double[,] input)
+        public override double[,] Forward(double[,] input)
         {
             // Perform the batch processing
             _Z2 = input.Multiply(W1);
@@ -162,8 +161,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[,] yHat = _Z3.Sigmoid();
             return yHat;
         }
-
-        [PublicAPI]
+        
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         internal override double[] CostFunctionPrime(double[,] input, double[,] y)

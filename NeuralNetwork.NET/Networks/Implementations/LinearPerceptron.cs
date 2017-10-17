@@ -82,7 +82,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [MustUseReturnValue]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal override double[,] Forward(double[,] input)
+        public override double[,] Forward(double[,] input)
         {
             // Perform the batch processing
             _Z2 = input.Multiply(W1);

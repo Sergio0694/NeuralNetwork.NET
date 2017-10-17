@@ -69,6 +69,17 @@ namespace NeuralNetworkNET.Networks
         public abstract double[] Forward(double[] input);
 
         /// <summary>
+        /// Forwards the input through the network
+        /// </summary>
+        /// <param name="input">The input to process</param>
+        /// <remarks>This methods forwards multiple inputs in batch and returns a matrix of results</remarks>
+        [PublicAPI]
+        [MustUseReturnValue]
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public abstract double[,] Forward([NotNull] double[,] input);
+
+        /// <summary>
         /// Calculates the cost function for the current instance and the input values
         /// </summary>
         /// <param name="input">The input values for the network</param>
@@ -123,17 +134,6 @@ namespace NeuralNetworkNET.Networks
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         internal abstract double[] CostFunctionPrime([NotNull] double[] input, [NotNull] double[] y);
-
-        /// <summary>
-        /// Forwards the input through the network
-        /// </summary>
-        /// <param name="input">The input to process</param>
-        /// <remarks>This methods forwards multiple inputs in batch and returns a matrix of results</remarks>
-        [PublicAPI]
-        [MustUseReturnValue]
-        [NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal abstract double[,] Forward([NotNull] double[,] input);
 
         /// <summary>
         /// Calculates the cost function for the current instance and the input values

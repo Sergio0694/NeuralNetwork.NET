@@ -71,7 +71,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Batch processing
 
-        internal override double[,] Forward(double[,] input)
+        public override double[,] Forward(double[,] input)
         {
             throw new NotImplementedException();
         }
