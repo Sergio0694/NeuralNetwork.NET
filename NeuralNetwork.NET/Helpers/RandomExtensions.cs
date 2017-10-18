@@ -77,7 +77,7 @@ namespace NeuralNetworkNET.Helpers
                     // Iterate over each row
                     fixed (double* r = result)
                         for (int j = 0; j < y; j++)
-                            r[i * x + j] = localRandom.NextGaussian();
+                            r[i * y + j] = localRandom.NextGaussian();
                 }
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while running the parallel loop");

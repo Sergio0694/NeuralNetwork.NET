@@ -216,8 +216,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 delta3w2tw = delta3w2t.GetLength(1);
             double[,] delta2 = new double[delta3w2th, delta3w2tw];
             for (int i = 0; i < delta3w2th; i++)
-            for (int j = 0; j < delta3w2tw; j++)
-                delta2[i, j] = delta3w2t[i, j] * z2prime[i, j];
+                for (int j = 0; j < delta3w2tw; j++)
+                    delta2[i, j] = delta3w2t[i, j] * z2prime[i, j];
             double[,]
                 xt = input.Transpose(),
                 dJdW1 = xt.Multiply(delta2);
