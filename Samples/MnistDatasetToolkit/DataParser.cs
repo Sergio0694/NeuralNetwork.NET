@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -32,10 +35,51 @@ namespace MnistDatasetToolkit
             return raw;
         }
 
-        public static (double[,], double[,]) ParseDataset(
-            [NotNull] String datasetValuesPath,
-            [NotNull] String datasetLabelsPath,
-            int? limit = null) => (ParseDataset(datasetValuesPath, limit), ParseY(datasetLabelsPath, limit));
+        private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
+
+        private const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
+
+        private const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
+
+        private const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
+
+        private const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
+
+        private static String GetDecompressedDatasetFilename([NotNull] String filename) => filename.Split('.')[0].Replace("-idx", ".idx");
+
+        private static void TryDownloadDataset()
+        {
+            IEnumerable<String> folders = Directory.EnumerateDirectories(Directory.GetCurrentDirectory());
+            if (!folders.Any(folder => folder.Equals("MNIST")))
+            {
+                String path = Path.Combine(Directory.GetCurrentDirectory(), "MNIST");
+                Directory.CreateDirectory(path);
+                using (HttpClient client = new HttpClient())
+                {
+                    foreach (String name in new[] { TrainingSetValuesFilename, TrainingSetLabelsFilename, TestSetValuesFilename, TestSetLabelsFilename })
+                    {
+                        using (Stream raw = client.GetStreamAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}").Result)
+                        using (GZipStream gzip = new GZipStream(raw, CompressionMode.Decompress))
+                        using (FileStream file = File.Create(Path.Combine(path, GetDecompressedDatasetFilename(name))))
+                        {
+                            byte[] block = new byte[1024];
+                            int read;
+                            while ((read = gzip.Read(block, 0, 1024)) > 0)
+                            {
+                                file.Write(block, 0, read);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public static (double[,], double[,]) ParseDataset(DatasetType type, int? limit = null)
+        {
+            TryDownloadDataset();
+            if (type == DatasetType.Training) return (ParseDataset(GetDecompressedDatasetFilename(TrainingSetValuesFilename), limit), ParseY(GetDecompressedDatasetFilename(TrainingSetLabelsFilename), limit));
+            else return (ParseDataset(GetDecompressedDatasetFilename(TestSetValuesFilename), limit), ParseY(GetDecompressedDatasetFilename(TestSetLabelsFilename), limit));
+        }
 
         [NotNull]
         private static unsafe double[,] ParseDataset([NotNull] String path, int? limit = null)
