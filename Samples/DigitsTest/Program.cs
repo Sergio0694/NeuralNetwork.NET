@@ -16,13 +16,9 @@ namespace DigitsTest
     {
         static async Task Main(String[] args)
         {
-            if (args.Length != 2) args = new[] { @"C:\Users\Sergi\Documents\Digits", "100" };
+            if (args.Length != 3) args = new[] { @"C:\Users\Sergi\Documents\Digits", "100" , "32"};
             Printf("Loading sample data");
-            (double[,] dataset, double[,] y) = DataParser.ParseDataset(
-                $@"{args[0]}\train-images.idx3-ubyte", $@"{args[0]}\train-labels.idx1-ubyte", int.Parse(args[1]));
-            Printf("Loading test data");
-            (double[,] test, double[,] yHat) = DataParser.ParseDataset(
-                $@"{args[0]}\t10k-images.idx3-ubyte", $@"{args[0]}\t10k-labels.idx1-ubyte");
+            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(int.Parse(args[1]));
 
             Printf("Preparing 2D data for the convolution layer");
             IReadOnlyList<double[,]> raw = DataParser.ConvertDatasetTo2dImages(dataset);
@@ -34,7 +30,7 @@ namespace DigitsTest
             // Get the optimized network
             Printf("Training");
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            SingleLayerPerceptron network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 16, cts.Token, null,
+            SingleLayerPerceptron network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, int.Parse(args[2]), cts.Token, null,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");

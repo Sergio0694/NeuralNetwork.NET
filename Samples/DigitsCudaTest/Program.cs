@@ -60,11 +60,7 @@ namespace DigitsCudaTest
         {
             if (args.Length != 2) args = new[] { @"C:\Users\Sergi\Documents\Digits", "100" };
             Printf("Loading sample data");
-            (double[,] dataset, double[,] y) = DataParser.ParseDataset(
-                $@"{args[0]}\train-images.idx3-ubyte", $@"{args[0]}\train-labels.idx1-ubyte", int.Parse(args[1]));
-            Printf("Loading test data");
-            (double[,] test, double[,] yHat) = DataParser.ParseDataset(
-                $@"{args[0]}\t10k-images.idx3-ubyte", $@"{args[0]}\t10k-labels.idx1-ubyte");
+            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(int.Parse(args[1]));
 
             Printf("Preparing 2D data for the convolution layer");
             IReadOnlyList<double[,]> raw = DataParser.ConvertDatasetTo2dImages(dataset);
