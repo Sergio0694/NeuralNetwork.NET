@@ -62,7 +62,7 @@ namespace MnistDatasetToolkit
                 Parallel.ForEach(new[] { TrainingSetValuesFilename, TrainingSetLabelsFilename, TestSetValuesFilename, TestSetLabelsFilename }, (name, state) =>
                 {
                     using (HttpClient client = new HttpClient())
-                    using (Stream raw = client.GetStreamAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}").Result)
+                    using (Stream raw = client.GetStreamAsync($"{MnistHttpRootPath}{name}").Result)
                     using (GZipStream gzip = new GZipStream(raw, CompressionMode.Decompress))
                     using (FileStream file = File.Create(Path.Combine(path, GetDecompressedDatasetFilename(name))))
                     {
