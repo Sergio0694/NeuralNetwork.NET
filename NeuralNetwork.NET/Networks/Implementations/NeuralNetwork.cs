@@ -111,34 +111,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Single processing
 
         /// <inheritdoc/>
-        public double[] Forward(double[] x)
-        {
-            if (x.Length == 0) throw new ArgumentException(nameof(x), "The input array can't be empty");
-            double[,] temp = new double[1, x.Length];
-            Buffer.BlockCopy(x, 0, temp, 0, sizeof(double) * x.Length);
-            double[,] yHat = Forward(temp);
-            double[] output = new double[yHat.GetLength(1)];
-            Buffer.BlockCopy(yHat, 0, output, 0, sizeof(double) * output.Length);
-            return output;
-        }
+        public double[] Forward(double[] x) => Forward(x.ToMatrix()).Flatten();
 
         /// <inheritdoc/>
-        public double CalculateCost(double[] input, double[] y)
-        {
-            // Forward the input
-            double[] yHat = Forward(input);
-
-            // Calculate the cost: 1/2((yHat - y)^2)
-            double cost = 0;
-            for (int i = 0; i < y.Length; i++)
-            {
-                double
-                    delta = yHat[i] - y[i],
-                    square = delta * delta;
-                cost += square;
-            }
-            return cost / 2;
-        }
+        public double CalculateCost(double[] x, double[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
 
         /// <summary>
         /// Calculates the gradient of the cost function with respect to the individual weights and biases
@@ -148,16 +124,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[] x, [NotNull] double[] y)
-        {
-            if (x.Length == 0 || y.Length == 0) throw new ArgumentException(nameof(x), "The input arrays can't be empty");
-            double[,] 
-                input = new double[1, x.Length],
-                output = new double[1, y.Length];
-            Buffer.BlockCopy(x, 0, input, 0, sizeof(double) * x.Length);
-            Buffer.BlockCopy(y, 0, output, 0, sizeof(double) * y.Length);
-            return ComputeGradient(input, output);
-        }
+        internal double[] ComputeGradient([NotNull] double[] x, [NotNull] double[] y) => ComputeGradient(x.ToMatrix(), y.ToMatrix());
 
         #endregion
 
@@ -200,8 +167,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Sum the partial costs
             double cost = 0;
-            for (int i = 0; i < h; i++)
-                cost += v[i];
+            for (int i = 0; i < h; i++) cost += v[i];
             return cost / 2;
         }
 
@@ -216,7 +182,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
         {
             // Feedforward
-            int steps = Weights.Count - 1;  // Number of forward hops through the network
+            int steps = Weights.Count;  // Number of forward hops through the network
             double[][,] 
                 zList = new double[steps][,],
                 aList = new double[steps][,];
@@ -236,33 +202,35 @@ namespace NeuralNetworkNET.Networks.Implementations
                 dL = gA.HadamardProduct(zLPrime);                   // dL, Hadamard product of the gradient and the sigmoid prime for L
 
             // Backpropagation
-            double[][,] deltas = new double[steps][,];
-            for (int l = Weights.Count - 2; l >= 1; l--)    // Loop for l = L - 1, L - 2, ..., 2
+            double[][,] deltas = new double[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
+            deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
+            for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
                 double[,]
-                    dleft = TransposedWeights[l].Multiply(l == Weights.Count - 2 ? dL : deltas[l - 1]),
-                    dPrime = zList[l].SigmoidPrime(),
-                    dl = dleft.HadamardProduct(dPrime);
+                    dleft = TransposedWeights[l].Multiply(deltas[l + 1]),   // W(l) * delta(l + 1)
+                    dPrime = zList[l].SigmoidPrime(),                       // Compute the sigmoid prime of the current activation
+                    dl = dleft.HadamardProduct(dPrime);                     // Element-wise product between the sigmoid prime and the precedent delta
                 deltas[l] = dl;
             }
 
             // Compute the gradient
-            int dLength = Weights.Count + deltas.Sum(d => d.Length) + 1;
+            int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.Length);
             double[] gradient = new double[dLength];
             int position = 0;
             for (int i = 0; i < Weights.Count; i++)
             {
+                // Store the target delta
+                double[,] di = deltas[deltas.Length - 1 - i];
+
                 // Compute dJdw(l)
-                double[,] dJdw;
-                if (i == 0) dJdw = x.Multiply(deltas[i]);
-                else if (i == Weights.Count - 1) dJdw = aList[i - 1].Multiply(dL);
-                else dJdw = aList[i - 1].Multiply(deltas[i]);
+                double[,] dJdw = i == 0 
+                    ? x.Transpose().Multiply(di)    // dJdW1, transposed input * first delta
+                    : aList[i - 1].Multiply(di);    // dJdWi, previous activation * current delta
 
                 // Populate the gradient vector
                 int bytes = sizeof(double) * dJdw.Length;
                 Buffer.BlockCopy(dJdw, 0, gradient, position, bytes);
                 position += bytes;
-                double[,] di = i == Weights.Count - 1 ? dL : deltas[i];
                 bytes = sizeof(double) * di.Length;
                 Buffer.BlockCopy(di, 0, gradient, position, bytes);
                 position += bytes;

@@ -473,6 +473,44 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Copies the input array into a matrix with a single row
+        /// </summary>
+        /// <param name="v">The array to copy</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] ToMatrix([NotNull] this double[] v)
+        {
+            // Preliminary checks and declarations
+            if (v.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
+            int length = v.Length;
+            double[,] result = new double[1, length];
+
+            // Copy the content
+            Buffer.BlockCopy(v, 0, result, 0, sizeof(double) * length);
+            return result;
+        }
+
+        /// <summary>
+        /// Flattens the input matrix into a linear array
+        /// </summary>
+        /// <param name="m">The matrix to flatten</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] Flatten([NotNull] this double[,] m)
+        {
+            // Preliminary checks and declarations
+            if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
+            int length = m.Length;
+            double[] result = new double[length];
+
+            // Copy the content
+            Buffer.BlockCopy(m, 0, result, 0, sizeof(double) * length);
+            return result;
+        }
+
+        /// <summary>
         /// Flattens the input volume in a linear array
         /// </summary>
         /// <param name="volume">The volume to flatten</param>
@@ -485,24 +523,15 @@ namespace NeuralNetworkNET.Helpers
             if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
             int
                 depth = volume.Count,
-                h = volume[0].GetLength(0),
-                w = volume[0].GetLength(1);
-            double[] result = new double[h * w * depth];
+                length = volume[0].Length,
+                bytes = sizeof(double) * length;
+            double[] result = new double[depth * length];
 
             // Execute the copy in parallel
             bool loopResult = Parallel.For(0, depth, i =>
             {
                 // Copy the volume data
-                unsafe
-                {
-                    fixed (double* r = result, p = volume[i])
-                    {
-                        // Copy each 2D matrix
-                        for (int j = 0; j < h; j++)
-                        for (int z = 0; z < w; z++)
-                            r[h * w * i + j * w + z] = p[j * w + z];
-                    }
-                }
+                Buffer.BlockCopy(volume[i], 0, result, bytes * i, bytes);
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
@@ -511,6 +540,9 @@ namespace NeuralNetworkNET.Helpers
         #endregion
 
         #region Content check
+
+        // Constant value used to compare two double values
+        private const double EqualsThreshold = 0.000000001;
 
         /// <summary>
         /// Checks if two matrices have the same size and content
@@ -525,7 +557,7 @@ namespace NeuralNetworkNET.Helpers
                 m.GetLength(1) != o.GetLength(1)) return false;
             for (int i = 0; i < m.GetLength(0); i++)
                 for (int j = 0; j < m.GetLength(1); j++)
-                    if (Math.Abs(m[i, j] - o[i, j]) > 0.0001) return false;
+                    if (Math.Abs(m[i, j] - o[i, j]) > EqualsThreshold) return false;
             return true;
         }
 
@@ -540,7 +572,7 @@ namespace NeuralNetworkNET.Helpers
             if (v == null || o == null) return false;
             if (v.Length != o.Length) return false;
             for (int i = 0; i < v.Length; i++)
-                if (Math.Abs(v[i] - o[i]) > 0.0001) return false;
+                if (Math.Abs(v[i] - o[i]) > EqualsThreshold) return false;
             return true;
         }
 

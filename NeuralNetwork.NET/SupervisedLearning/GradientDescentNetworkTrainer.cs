@@ -1,9 +1,11 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.SupervisedLearning
 {
@@ -83,6 +85,69 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Return the result network
             return SingleLayerPerceptron.Deserialize(inputs, iSize, outputs, bfgs.Solution);
+        }
+
+        /// <summary>
+        /// Generates and trains a neural network suited for the input data and results
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="ys">The results vector</param>
+        /// <param name="solution">An optional starting solution to resume a previous training session</param>
+        /// <param name="token">The cancellation token for the training session</param>
+        /// <param name="progress">An optional progress callback</param>
+        /// <param name="neurons">The number of neurons in each network layer</param>
+        [PublicAPI]
+        [Pure]
+        [ItemNotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
+            [NotNull] double[,] x,
+            [NotNull] double[,] ys,
+            [CanBeNull] double[] solution,
+            CancellationToken token,
+            [CanBeNull] IProgress<ProgressChangedEventArgs> progress,
+            [NotNull] params int[] neurons)
+        {
+            // Preliminary checks
+            if (x.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
+            if (ys.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
+            if (x.GetLength(0) != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
+            if (neurons.Length < 2) throw new ArgumentOutOfRangeException("The network must have at least two layers");
+
+            // Calculates the cost for a network with the input weights
+            double CostFunction(double[] weights)
+            {
+                NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
+                return network.CalculateCost(x, ys);
+            }
+
+            // Calculates the gradient for a network with the input weights
+            double[] GradientFunction(double[] weights)
+            {
+                NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
+                return network.ComputeGradient(x, ys);
+            }
+
+            // Initialize the optimization function
+            GradientDescent gd = new GradientDescent
+            {
+                Function = CostFunction,
+                Gradient = GradientFunction,
+                Token = token
+            };
+
+            // Handle the progress if necessary
+            if (progress != null) gd.ProgressChanged += (s, e) => progress.Report(e);
+
+            // Minimize the cost function
+            await Task.Run(() =>
+            {
+                if (solution != null) gd.Minimize(solution);
+                else gd.Minimize();
+            }, token);
+
+            // Return the result network
+            return NeuralNetwork.Deserialize(gd.Solution, neurons);
         }
     }
 }
