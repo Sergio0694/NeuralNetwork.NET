@@ -10,6 +10,104 @@ namespace NeuralNetworkNET.Helpers
     /// </summary>
     public static class MatrixExtensions
     {
+        #region Sum
+
+        /// <summary>
+        /// Sums a row vector to all the rows in the input matrix
+        /// </summary>
+        /// <param name="m">The input matrix</param>
+        /// <param name="v">The vector to sum</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Sum([NotNull] this double[,] m, [NotNull] double[] v)
+        {
+            // Execute the transposition in parallel
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            double[,] result = new double[h, w];
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm = m, pv = v)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                            pr[offset + j] = pm[offset + j] + pv[j];
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        /// <summary>
+        /// Sums a row vector to all the rows in the input matrix, with side effect
+        /// </summary>
+        /// <param name="m">The input matrix</param>
+        /// <param name="v">The vector to sum</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void SumSE([NotNull] this double[,] m, [NotNull] double[] v)
+        {
+            // Execute the transposition in parallel
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pm = m, pv = v)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                            pm[offset + j] += pv[j];
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+        }
+
+        /// <summary>
+        /// Subtracts two matrices, element wise
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Subtract([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Execute the transposition in parallel
+            int
+                h = m1.GetLength(0),
+                w = m1.GetLength(1);
+            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+            double[,] result = new double[h, w];
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm1 = m1, pm2 = m2)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int position = offset + j;
+                            pr[position] = pm1[position] - pm2[position];
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        #endregion
+
         #region Multiplication
 
         /// <summary>
@@ -45,6 +143,45 @@ namespace NeuralNetworkNET.Helpers
                             res += p1[k] * p2[j2];
                         }
                         pm[j] = res;
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        /// <summary>
+        /// Performs the Hadamard product between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] HadamardProduct([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Check
+            int
+                h = m1.GetLength(0),
+                w = m1.GetLength(1);
+            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+            double[,] result = new double[h, w];
+
+            // Loop in parallel
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    // Get the pointers and iterate fo each column
+                    fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                    {
+                        // Perform the product
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int position = offset + j;
+                            pm[position] = pm1[position] - pm2[position];
+                        }
                     }
                 }
             }).IsCompleted;
@@ -152,6 +289,35 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
+        }
+
+        /// <summary>
+        /// Applies the activation function to the input matrix
+        /// </summary>
+        /// <param name="m">The input to process</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void SigmoidSE([NotNull] this double[,] m)
+        {
+            // Setup
+            int h = m.GetLength(0), w = m.GetLength(1);
+
+            // Execute the sigmoid in parallel
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pm = m)
+                    {
+                        for (int j = 0; j < w; j++)
+                        {
+                            int offset = i * w + j;
+                            pm[offset] = 1 / (1 + Math.Exp(-pm[offset]));
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
         }
 
         /// <summary>
