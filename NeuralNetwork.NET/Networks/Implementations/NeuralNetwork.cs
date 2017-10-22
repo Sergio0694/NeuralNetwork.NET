@@ -45,6 +45,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// The precalculated list of transposed weight matrices to use inthe gradient function
         /// </summary>
+        /// <remarks>The first item is always null (to save space), as it isn't needed to calculate the gradient</remarks>
         [NotNull, ItemNotNull]
         private readonly IReadOnlyList<double[,]> TransposedWeights;
 
@@ -79,7 +80,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Parameters setup
             Weights = weights;
-            TransposedWeights = Weights.Select(m => m.Transpose()).ToArray();
+            TransposedWeights = Weights.Select((m, i) => i == 0 ? null : m.Transpose()).ToArray();
             Biases = biases;
         }
 
@@ -207,9 +208,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
                 double[,]
-                    dleft = TransposedWeights[l].Multiply(deltas[l + 1]),   // W(l) * delta(l + 1)
-                    dPrime = zList[l].SigmoidPrime(),                       // Compute the sigmoid prime of the current activation
-                    dl = dleft.HadamardProduct(dPrime);                     // Element-wise product between the sigmoid prime and the precedent delta
+                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),   // W(l + 1) * delta(l + 1)
+                    dPrime = zList[l].SigmoidPrime(),                           // Compute the sigmoid prime of the current activation
+                    dl = dleft.HadamardProduct(dPrime);                         // Element-wise product between the sigmoid prime and the precedent delta
                 deltas[l] = dl;
             }
 
@@ -220,12 +221,12 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Store the target delta
-                double[,] di = deltas[deltas.Length - 1 - i];
+                double[,] di = deltas[i];
 
                 // Compute dJdw(l)
                 double[,] dJdw = i == 0 
-                    ? x.Transpose().Multiply(di)    // dJdW1, transposed input * first delta
-                    : aList[i - 1].Multiply(di);    // dJdWi, previous activation * current delta
+                    ? x.Transpose().Multiply(di)                // dJdW1, transposed input * first delta
+                    : aList[i - 1].Transpose().Multiply(di);    // dJdWi, previous activation transposed * current delta
 
                 // Populate the gradient vector
                 int bytes = sizeof(double) * dJdw.Length;
