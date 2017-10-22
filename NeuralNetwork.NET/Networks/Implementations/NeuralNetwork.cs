@@ -97,8 +97,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < weights.Length; i++)
             {
                 weights[i] = random.NextMatrix(neurons[i], neurons[i + 1]);
-                double[] bias = new double[neurons[i]];
-                for (int j = 0; j < neurons[i]; j++)
+                int next = neurons[i + 1];
+                double[] bias = new double[next];
+                for (int j = 0; j < next; j++)
                     bias[j] = random.NextGaussian();
                 biases[i] = bias;
             }
@@ -306,6 +307,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 position += bytes;
                 biases[i] = bias;
             }
+            if (position / sizeof(double) != data.Length) throw new InvalidOperationException("Invalid network requested size");
 
             // Create the new network to use
             return new NeuralNetwork(weights, biases);

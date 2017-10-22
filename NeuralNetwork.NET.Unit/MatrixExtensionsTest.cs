@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetwork.NET.Unit
+namespace NeuralNetworkNET.Unit
 {
     /// <summary>
     /// Test class for the <see cref="MatrixExtensions"/> class

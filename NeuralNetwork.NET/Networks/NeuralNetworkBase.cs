@@ -143,7 +143,7 @@ namespace NeuralNetworkNET.Networks
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double CalculateCost([NotNull] double[,] input, [NotNull] double[,] y)
+        public double CalculateCost([NotNull] double[,] input, [NotNull] double[,] y)
         {
             // Forward the input
             double[,] yHat = Forward(input);

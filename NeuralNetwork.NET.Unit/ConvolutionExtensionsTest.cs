@@ -2,7 +2,7 @@
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetwork.NET.Unit
+namespace NeuralNetworkNET.Unit
 {
     /// <summary>
     /// Test class for the <see cref="ConvolutionExtensions"/> class

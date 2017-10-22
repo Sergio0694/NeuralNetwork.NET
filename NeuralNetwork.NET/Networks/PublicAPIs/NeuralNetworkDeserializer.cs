@@ -24,11 +24,11 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
             try
             {
                 // Get the general parameters and the hidden layers info
-                IDictionary<String, object> deserialized = (IDictionary<String, object>)JsonConvert.DeserializeObject(json);
-                int inputs = (int)deserialized[nameof(INeuralNetwork.InputLayerSize)], outputs = (int)deserialized[nameof(INeuralNetwork.OutputLayerSize)];
-                int[] layersInfo = ((JToken)deserialized[nameof(INeuralNetwork.HiddenLayers)]).ToObject<int[]>();
-                double[][,] weights = ((JToken)deserialized["Weights"]).ToObject<double[][,]>();
-                double[][] biases = ((JToken)deserialized["Biases"]).ToObject<double[][]>();
+                JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
+                int inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
+                int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
+                double[][,] weights = jObject["Weights"].ToObject<double[][,]>();
+                double[][] biases = jObject["Biases"].ToObject<double[][]>();
 
                 // Input checks
                 if (weights.Length < 1 ||
