@@ -30,10 +30,13 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         /// <param name="input">The input to process</param>
         /// <remarks>This methods processes a single input row and outputs a single result</remarks>
-        [Pure]
-        [NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         double[] Forward([NotNull] double[] input);
+
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        double[,] Forward([NotNull] double[,] x);
 
         /// <summary>
         /// Calculates the cost function for the current instance and the input values
@@ -43,6 +46,15 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         double CalculateCost([NotNull] double[] input, [NotNull] double[] y);
+
+        /// <summary>
+        /// Calculates the cost function for the current instance and the input values
+        /// </summary>
+        /// <param name="input">The input values for the network</param>
+        /// <param name="y">The expected result to use to calculate the error</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        double CalculateCost([NotNull] double[,] input, [NotNull] double[,] y);
 
         /// <summary>
         /// Serializes the network as a JSON string

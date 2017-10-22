@@ -1,22 +1,63 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.PublicAPIs;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
-    internal sealed class NeuralNetwork
+    /// <summary>
+    /// A complete and fully connected neural network with an arbitrary number of hidden layers
+    /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class NeuralNetwork : INeuralNetwork
     {
-        #region Fields and parameters
+        #region Public parameters
 
-        private readonly IReadOnlyList<double[,]> Weights;
+        /// <inheritdoc/>
+        [JsonProperty(nameof(InputLayerSize), Required = Required.Always)]
+        public int InputLayerSize => Weights[0].GetLength(0);
 
-        private readonly IReadOnlyList<double[]> Biases;
+        /// <inheritdoc/>
+        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
+        public int OutputLayerSize => Weights[Weights.Count - 1].GetLength(1);
 
-        private readonly IReadOnlyList<double[,]> TransposedWeights;
+        private int[] _HiddenLayers;
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(HiddenLayers), Required = Required.Always)]
+        public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Biases.Take(Biases.Count - 1).Select(bias => bias.Length).ToArray());
 
         #endregion
+
+        #region Local fields
+
+        /// <summary>
+        /// The list of weight matrices for the network
+        /// </summary>
+        [NotNull, ItemNotNull]
+        [JsonProperty(nameof(Weights), Required = Required.Always)]
+        private readonly IReadOnlyList<double[,]> Weights;
+
+        /// <summary>
+        /// The precalculated list of transposed weight matrices to use inthe gradient function
+        /// </summary>
+        [NotNull, ItemNotNull]
+        private readonly IReadOnlyList<double[,]> TransposedWeights;
+
+        /// <summary>
+        /// The list of bias vectors for the network
+        /// </summary>
+        [NotNull, ItemNotNull]
+        [JsonProperty(nameof(Biases), Required = Required.Always)]
+        private readonly IReadOnlyList<double[]> Biases;
+
+        #endregion
+
+        #region Initialization
 
         /// <summary>
         /// Initializes a new instance with the given parameters
@@ -64,12 +105,12 @@ namespace NeuralNetworkNET.Networks.Implementations
             return new NeuralNetwork(weights, biases);
         }
 
+        #endregion
+
         #region Single processing
 
-        [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public double[] Forward([NotNull] double[] x)
+        /// <inheritdoc/>
+        public double[] Forward(double[] x)
         {
             if (x.Length == 0) throw new ArgumentException(nameof(x), "The input array can't be empty");
             double[,] temp = new double[1, x.Length];
@@ -80,22 +121,49 @@ namespace NeuralNetworkNET.Networks.Implementations
             return output;
         }
 
-        [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] CostFunctionPrime(double[] input, double[] y)
+        /// <inheritdoc/>
+        public double CalculateCost(double[] input, double[] y)
         {
-            throw new NotImplementedException();
+            // Forward the input
+            double[] yHat = Forward(input);
+
+            // Calculate the cost: 1/2((yHat - y)^2)
+            double cost = 0;
+            for (int i = 0; i < y.Length; i++)
+            {
+                double
+                    delta = yHat[i] - y[i],
+                    square = delta * delta;
+                cost += square;
+            }
+            return cost / 2;
+        }
+
+        /// <summary>
+        /// Calculates the gradient of the cost function with respect to the individual weights and biases
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="y">The expected result</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        internal double[] ComputeGradient([NotNull] double[] x, [NotNull] double[] y)
+        {
+            if (x.Length == 0 || y.Length == 0) throw new ArgumentException(nameof(x), "The input arrays can't be empty");
+            double[,] 
+                input = new double[1, x.Length],
+                output = new double[1, y.Length];
+            Buffer.BlockCopy(x, 0, input, 0, sizeof(double) * x.Length);
+            Buffer.BlockCopy(y, 0, output, 0, sizeof(double) * y.Length);
+            return ComputeGradient(input, output);
         }
 
         #endregion
 
         #region Batch processing
 
-        [PublicAPI]
-        [MustUseReturnValue]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public double[,] Forward([NotNull] double[,] x)
+        /// <inheritdoc/>
+        public double[,] Forward(double[,] x)
         {
             double[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
@@ -108,10 +176,43 @@ namespace NeuralNetworkNET.Networks.Implementations
             return a0; // At least one weight matrix, so a0 != x
         }
 
+        /// <inheritdoc/>
+        public double CalculateCost(double[,] input, double[,] y)
+        {
+            // Forward the input
+            double[,] yHat = Forward(input);
+
+            // Calculate the cost (half the squared difference)
+            int h = y.GetLength(0), w = y.GetLength(1);
+            double[] v = new double[h];
+            bool result = Parallel.For(0, h, i =>
+            {
+                for (int j = 0; j < w; j++)
+                {
+                    double
+                        delta = yHat[i, j] - y[i, j],
+                        square = delta * delta;
+                    v[i] += square;
+                }
+            }).IsCompleted;
+            if (!result) throw new Exception("Error while runnig the parallel loop");
+
+            // Sum the partial costs
+            double cost = 0;
+            for (int i = 0; i < h; i++)
+                cost += v[i];
+            return cost / 2;
+        }
+
+        /// <summary>
+        /// Calculates the gradient of the cost function with respect to the individual weights and biases
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="y">The expected results</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] CostFunctionPrime(double[,] x, double[,] y)
+        internal double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
         {
             // Feedforward
             int steps = Weights.Count - 1;  // Number of forward hops through the network
@@ -210,15 +311,21 @@ namespace NeuralNetworkNET.Networks.Implementations
             return new NeuralNetwork(weights, biases);
         }
 
+        /// <summary>
+        /// Serializes the current network into a binary representation
+        /// </summary>
+        /// <returns>A <see cref="double"/> array containing all the weights and biases of the network</returns>
         [PublicAPI]
         [Pure]
-        internal double[] SerializeWeights()
+        internal double[] Serialize()
         {
+            // Allocate the output array
             int length = Weights.Sum(layer => layer.Length) + Biases.Sum(bias => bias.Length);
             double[] weights = new double[length];
             int position = 0;
             for (int i = 0; i < Weights.Count; i++)
             {
+                // Populate the return array with the weights and biases for each layer
                 int bytes = sizeof(double) * Weights[i].Length;
                 Buffer.BlockCopy(Weights[i], 0, weights, position, bytes);
                 position += bytes;
@@ -229,11 +336,32 @@ namespace NeuralNetworkNET.Networks.Implementations
             return weights;
         }
 
+        /// <inheritdoc/>
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented);
+
         // Creates a new instance from another network with the same structure
-        [Pure]
-        internal NeuralNetwork Crossover(NeuralNetwork other, Random random)
+        [Pure, NotNull]
+        internal NeuralNetwork Crossover([NotNull] NeuralNetwork other, [NotNull] Random random)
         {
             throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public bool Equals(INeuralNetwork other)
+        {
+            // Compare general features
+            if (other is NeuralNetwork network &&
+                other.InputLayerSize == InputLayerSize &&
+                other.OutputLayerSize == OutputLayerSize &&
+                other.HiddenLayers.SequenceEqual(HiddenLayers))
+            {
+                // Compare each weight and bias value
+                for (int i = 0; i < Weights.Count; i++)
+                    if (!(network.Weights[i].ContentEquals(Weights[i]) &&
+                          network.Biases[i].ContentEquals(Biases[i]))) return false;
+                return true;
+            }
+            return false;
         }
 
         #endregion
