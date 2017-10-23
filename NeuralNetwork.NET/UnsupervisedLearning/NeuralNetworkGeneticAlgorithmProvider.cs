@@ -5,8 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.UnsupervisedLearning.Misc;
@@ -89,7 +87,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <summary>
         /// Gets the current population for the genetic algorithm
         /// </summary>
-        private NeuralNetworkBase[] _Population;
+        private NeuralNetwork[] _Population;
 
 
         /// <summary>
@@ -106,12 +104,12 @@ namespace NeuralNetworkNET.UnsupervisedLearning
 
         #region Best network
 
-        private (INeuralNetwork, double) _BestResult;
+        private (NeuralNetwork, double) _BestResult;
 
         /// <summary>
         /// Gets or sets the current best result produced by the genetic algorithm
         /// </summary>
-        private (INeuralNetwork, double) BestResult
+        private (NeuralNetwork, double) BestResult
         {
             get => _BestResult;
             set
@@ -183,64 +181,13 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <param name="fitnessFunction">The fitness function used to evaluate the neural networks</param>
         /// <param name="input">Number of inputs in the neural network</param>
         /// <param name="output">Number of outputs in the neural network</param>
+        /// <param name="hiddenLayers">The neurons in each network hidden layer</param>
         /// <param name="population">Number of networks in the population</param>
         /// <param name="weightsMutationRate">Probability for each weight mutation</param>
         /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
         [PublicAPI]
         [ItemNotNull]
         public static Task<NeuralNetworkGeneticAlgorithmProvider> NewLinearPerceptronProviderAsync(
-            [NotNull] FitnessDelegate fitnessFunction,
-            int input, int output,
-            int population, int weightsMutationRate, int eliteSamples)
-        {
-            return Task.Run(() =>
-            {
-                NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction,
-                    input, output, new int[0], population, weightsMutationRate, eliteSamples);
-                provider._Population = provider.InitializePopulation();
-                return provider;
-            });
-        }
-
-        /// <summary>
-        /// Creates a new provider instance with a single hidden neurons layer
-        /// </summary>
-        /// <param name="fitnessFunction">The fitness function used to evaluate the neural networks</param>
-        /// <param name="input">Number of inputs in the neural network</param>
-        /// <param name="output">Number of outputs in the neural network</param>
-        /// <param name="size">Number of neurons in the hidden layer</param>
-        /// <param name="population">Number of networks in the population</param>
-        /// <param name="weightsMutationRate">Probability for each weight mutation</param>
-        /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
-        [PublicAPI]
-        [ItemNotNull]
-        public static Task<NeuralNetworkGeneticAlgorithmProvider> NewSingleLayerPerceptronProviderAsync(
-            [NotNull] FitnessDelegate fitnessFunction,
-            int input, int output, int size,
-            int population, int weightsMutationRate, int eliteSamples)
-        {
-            return Task.Run(() =>
-            {
-                NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction,
-                    input, output, new[] { size }, population, weightsMutationRate, eliteSamples);
-                provider._Population = provider.InitializePopulation();
-                return provider;
-            });
-        }
-
-        /// <summary>
-        /// Creates a new provider instance with multiple hidden layers
-        /// </summary>
-        /// <param name="fitnessFunction">The fitness function used to evaluate the neural networks</param>
-        /// <param name="input">Number of inputs in the neural network</param>
-        /// <param name="output">Number of outputs in the neural network</param>
-        /// <param name="hiddenLayers">Number of neurons in each hidden layer</param>
-        /// <param name="population">Number of networks in the population</param>
-        /// <param name="weightsMutationRate">Probability for each weight mutation</param>
-        /// <param name="eliteSamples">Number of best networks to copy in each generation</param>
-        [PublicAPI]
-        [ItemNotNull]
-        public static Task<NeuralNetworkGeneticAlgorithmProvider> NewMultilayerPerceptronProviderAsync(
             [NotNull] FitnessDelegate fitnessFunction,
             int input, int output, [NotNull] IReadOnlyList<int> hiddenLayers,
             int population, int weightsMutationRate, int eliteSamples)
@@ -253,8 +200,6 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                 return provider;
             });
         }
-
-        #region Pre-initialized providers
 
         /// <summary>
         /// Creates a new instance from a serialized neural network
@@ -272,13 +217,13 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             NeuralNetworkGeneticAlgorithmProvider ReconstructInstance()
             {
                 // Reconstruct the original data
-                NeuralNetworkBase @base = (NeuralNetworkBase)network;
-                NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction, @base.InputLayerSize,
-                    @base.OutputLayerSize, @base.HiddenLayers, population, weightsMutationRate, eliteSamples);
-                NeuralNetworkBase[] initialPopulation = new NeuralNetworkBase[population];
-                initialPopulation[0] = @base;
+                NeuralNetworkGeneticAlgorithmProvider provider = new NeuralNetworkGeneticAlgorithmProvider(fitnessFunction, network.InputLayerSize,
+                    network.OutputLayerSize, network.HiddenLayers, population, weightsMutationRate, eliteSamples);
+                NeuralNetwork[] initialPopulation = new NeuralNetwork[population];
+                if (!(network is NeuralNetwork neuralNetwork)) throw new ArgumentException("Invalid input network");
+                initialPopulation[0] = neuralNetwork;
                 for (int i = 1; i < population - 1; i++)
-                    initialPopulation[i] = MutateNetwork(@base);
+                    initialPopulation[i] = MutateNetwork(neuralNetwork);
                 provider._Population = initialPopulation;
                 return provider;
             }
@@ -286,8 +231,6 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             // Execute the function on a background thread
             return Task.Run(() => ReconstructInstance());
         }
-
-        #endregion
 
         #endregion
 
@@ -342,23 +285,12 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// <summary>
         /// Initializes a new random population with the current parameters
         /// </summary>
-        private NeuralNetworkBase[] InitializePopulation()
+        private NeuralNetwork[] InitializePopulation()
         {
             // Linear perceptron
-            NeuralNetworkBase[] population = new NeuralNetworkBase[PopulationSize];
-            if (HiddenLayers.Count == 0)
-                for (int i = 0; i < PopulationSize; i++)
-                    population[i] = LinearPerceptron.NewRandom(InputLayerSize, OutputLayerSize);
-
-            // Single layer neural network
-            else if (HiddenLayers.Count == 1)
-                for (int i = 0; i < PopulationSize; i++)
-                    population[i] = SingleLayerPerceptron.NewRandom(InputLayerSize, HiddenLayers[0], OutputLayerSize);
-
-            // Multilayer perceptron
-            else
-                for (int i = 0; i < PopulationSize; i++)
-                    population[i] = MultilayerPerceptron.NewRandom(InputLayerSize, OutputLayerSize, HiddenLayers);
+            NeuralNetwork[] population = new NeuralNetwork[PopulationSize];
+            for (int i = 0; i < PopulationSize; i++)
+                population[i] = NeuralNetwork.NewRandom(new[] { InputLayerSize }.Concat(HiddenLayers).Concat(new[] { OutputLayerSize }).ToArray());
             return population;
         }
 
@@ -367,25 +299,9 @@ namespace NeuralNetworkNET.UnsupervisedLearning
         /// </summary>
         /// <param name="network">The input network</param>
         [NotNull]
-        private static NeuralNetworkBase MutateNetwork([NotNull] NeuralNetworkBase network)
+        private static NeuralNetwork MutateNetwork([NotNull] NeuralNetwork network)
         {
-            switch (network)
-            {
-                case MultilayerPerceptron _:
-                    throw new NotImplementedException();
-                case SingleLayerPerceptron _:
-                    double[]
-                        w1w2 = network.SerializeWeights(),
-                        w1w2r = w1w2.Randomize(0.5);
-                    return LinearPerceptron.Deserialize(network.InputLayerSize, network.OutputLayerSize, w1w2r);
-                case LinearPerceptron _:
-                    double[]
-                        w1 = network.SerializeWeights(),
-                        w1r = w1.Randomize(0.5);
-                    return LinearPerceptron.Deserialize(network.InputLayerSize, network.OutputLayerSize, w1r);
-                default:
-                    throw new ArgumentException();
-            }
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -398,21 +314,21 @@ namespace NeuralNetworkNET.UnsupervisedLearning
             while (!token.IsCancellationRequested)
             {
                 // Test the current generation
-                IEnumerable<Task<(NeuralNetworkBase, double)>> testing = _Population.Select(async (net, i) =>
+                IEnumerable<Task<(NeuralNetwork, double)>> testing = _Population.Select(async (net, i) =>
                 {
-                    IEnumerable<ForwardFunction> opponents = _Population.Where((entry, pos) => pos != i).Select<NeuralNetworkBase, ForwardFunction>(entry => entry.Forward);
+                    IEnumerable<ForwardFunction> opponents = _Population.Where((entry, pos) => pos != i).Select<NeuralNetwork, ForwardFunction>(entry => entry.Forward);
                     double fitness = await Task.Run(() => FitnessFunction(net.GetHashCode(), net.Forward, opponents), token);
                     return (net, fitness);
                 });
-                (NeuralNetworkBase, double)[] result = await Task.WhenAll(testing);
+                (NeuralNetwork, double)[] result = await Task.WhenAll(testing);
 
                 // Iterate over all the results
                 double tot = 0;
-                (NeuralNetworkBase, double) bestResult = (null, 0);
-                foreach ((NeuralNetworkBase net, double score) in result)
+                (NeuralNetwork, double) bestResult = (null, 0);
+                foreach ((NeuralNetwork net, double score) in result)
                 {
                     // Get the best score and the total
-                    (NeuralNetworkBase previous, double previousScore) = bestResult;
+                    (NeuralNetwork previous, double previousScore) = bestResult;
                     if (previous == null || score > previousScore)
                     {
                         bestResult = (net, score);
@@ -427,7 +343,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                 Generation++;
 
                 // Iterate over the results and populate the mating pool
-                (NeuralNetworkBase, double)[] matingPool = new (NeuralNetworkBase, double)[PopulationSize];
+                (NeuralNetwork, double)[] matingPool = new (NeuralNetwork, double)[PopulationSize];
                 for (int i = 0; i < PopulationSize; i++)
                 {
                     // Pick a random mate
@@ -442,11 +358,11 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                 }
 
                 // Initialize the children list and select the elite
-                List<NeuralNetworkBase> children = new List<NeuralNetworkBase>();
+                List<NeuralNetwork> children = new List<NeuralNetwork>();
                 children.AddRange(matingPool.OrderByDescending(r => r.Item2).Take(EliteSamples).Select(r => r.Item1));
 
                 // Filter the mating pool to skip the worst results
-                NeuralNetworkBase[] filtered = matingPool.OrderBy(r => r.Item2).Skip(EliteSamples).Select(r => r.Item1).ToArray();
+                NeuralNetwork[] filtered = matingPool.OrderBy(r => r.Item2).Skip(EliteSamples).Select(r => r.Item1).ToArray();
                 for (int i = 0; i < filtered.Length; i++)
                 {
                     // Select the parents for the new child
@@ -463,7 +379,7 @@ namespace NeuralNetworkNET.UnsupervisedLearning
                 if (children.Count != PopulationSize) Debugger.Break();
 
                 // Queue and run all the current mutation
-                IEnumerable<Task<NeuralNetworkBase>> mutation = children.Select(child => Task.Run(() => MutateNetwork(child), token));
+                IEnumerable<Task<NeuralNetwork>> mutation = children.Select(child => Task.Run(() => MutateNetwork(child), token));
                 _Population = await Task.WhenAll(mutation);
             }
         }

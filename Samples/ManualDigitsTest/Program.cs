@@ -56,12 +56,18 @@ namespace ManualDigitsTest
 
             // Get the optimized network
             Printf("Training");
-            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            _Network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 90, cts.Token, null,
+            CancellationTokenSource cts = new CancellationTokenSource();
+            void CancelToken(object sender, ConsoleCancelEventArgs e)
+            {
+                cts.Cancel();
+                Console.CancelKeyPress -= CancelToken;
+            }
+            Console.CancelKeyPress += CancelToken;
+            _Network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");
-                }));
+                }), 480, 32, 16, 10);
 
             // Test the network
             while (Console.ReadLine() is String input)
