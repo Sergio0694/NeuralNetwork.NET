@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Cuda
                             MatrixExtensions.MultiplyOverride = null;
                             break;
                         case ProcessingMode.Gpu:
-                            MatrixExtensions.MultiplyOverride = CudaMultiply;
+                         //   MatrixExtensions.MultiplyOverride = CudaMultiply;
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value), value, null);
@@ -32,28 +32,54 @@ namespace NeuralNetworkNET.Cuda
                 }
             }
         }
-        
-        private static double[,] CudaMultiply(double[,] m1, double[,] m2)
+
+        /// <summary>
+        /// Performs the multiplication between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
-            int m = m1.GetLength(0);
-            int n = m2.GetLength(1);
-            int p = m2.GetLength(1);
-            double[,] result = new double[m, p];
-            
+            // Checks
+            if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
 
-            Gpu.Default.For(0, m * p, index =>
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+            double[,]
+                m1_gpu = Gpu.Default.Allocate(m1),
+                m2_gpu = Gpu.Default.Allocate(m2),
+                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
+
+            // Wrapper
+            void Kernel(int index)
             {
+                // Calculate the current indexes
                 int
-                    i = index / p,
-                    j = index % p;
+                    i = index / w,
+                    j = index % w;
 
+                // Perform the multiplication
                 double sum = 0;
-                for (int k = 0; k < n; k++)
+                for (int k = 0; k < l; k++)
                 {
-                    sum += m1[i, k] * m2[k, j];
+                    sum += m1_gpu[i, k] * m2_gpu[k, j];
                 }
-                result[i, j] = sum;
-            });
+                mresult_gpu[i, j] = sum;
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h * w, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(m1_gpu);
+            Gpu.Free(m2_gpu);
+            double[,] result = Gpu.CopyToHost(mresult_gpu);
+            Gpu.Free(mresult_gpu);
             return result;
         }
 
@@ -63,9 +89,111 @@ namespace NeuralNetworkNET.Cuda
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         [PublicAPI]
-        [System.Diagnostics.Contracts.Pure, NotNull]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] MultiplyAndSigmoid([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Checks
+            if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+            double[,]
+                m1_gpu = Gpu.Default.Allocate(m1),
+                m2_gpu = Gpu.Default.Allocate(m2),
+                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
+
+            // Wrapper
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    i = index / w,
+                    j = index % w;
+
+                // Perform the multiplication
+                double sum = 0;
+                for (int k = 0; k < l; k++)
+                {
+                    sum += m1_gpu[i, k] * m2_gpu[k, j];
+                }
+                double sigmoid = 1 / (1 + Math.Exp(-sum));
+                mresult_gpu[i, j] = sigmoid;
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h * w, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(m1_gpu);
+            Gpu.Free(m2_gpu);
+            double[,] result = Gpu.CopyToHost(mresult_gpu);
+            Gpu.Free(mresult_gpu);
+            return result;
+        }
+
+        /// <summary>
+        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the sigmoid prime of z
+        /// </summary>
+        /// <param name="a">The estimated y</param>
+        /// <param name="y">The expected y</param>
+        /// <param name="z">The activity on the last layer</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static void InPlaceSubtractAndHadamardProductWithSigmoidPrime(
+            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z)
+        {
+            // Checks
+            int
+                h = a.GetLength(0),
+                w = a.GetLength(1);
+            if (h != y.GetLength(0) || w != y.GetLength(1) ||
+                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
+
+            // Initialize the parameters and the result matrix
+            double[,] 
+                a_gpu = Gpu.Default.Allocate(a),
+                y_gpu = Gpu.Default.Allocate(y),
+                z_gpu = Gpu.Default.Allocate(z);
+
+            // Wrapper
+            void Kernel(int i)
+            {
+                // Save the index and iterate for each column
+                for (int j = 0; j < w; j++)
+                {
+                    double
+                        difference = a_gpu[i, j] - y_gpu[i, j],
+                        exp = Math.Exp(-z_gpu[i, j]),
+                        sum = 1 + exp,
+                        square = sum * sum,
+                        zPrime = exp / square,
+                        hProduct = difference * zPrime;
+                    a_gpu[i, j] = hProduct;
+                }
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(y_gpu);
+            Gpu.Free(z_gpu);
+            Gpu.Copy(a_gpu, a);
+            Gpu.Free(a_gpu);
+        }
+
+        /// <summary>
+        /// Performs the multiplication between two matrices and then applies the sigmoid function
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] MultiplyAndSigmoidOnDeviceMemory([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -96,12 +224,14 @@ namespace NeuralNetworkNET.Cuda
 
                     // Perform the multiplication
                     double sum = 0;
+                    int im1 = i * l;
                     for (int k = 0; k < l; k++)
                     {
-                        sum += pm1[i * w + k] * pm2[k * l + j];
+                        // m1[i, k] * m2[k, j]
+                        sum += pm1[im1 + k] * pm2[k * w + j];
                     }
-                    double sigmoid = 1 / (1 + Math.Exp(-sum));
-                    pmresult[i * w + j] = sigmoid;
+                    double sigmoid = 1 / (1 + Math.Exp(-sum)); // Apply the sigmoid
+                    pmresult[i * w + j] = sigmoid; // result[i, j]
                 }
 
                 // Get the pointers and iterate fo each row
@@ -110,54 +240,6 @@ namespace NeuralNetworkNET.Cuda
                 // Return the result
                 return Gpu.Copy2DToHost(mresult_device);
             }
-        }
-
-        /// <summary>
-        /// Performs the multiplication between two matrices and then applies the sigmoid function
-        /// </summary>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
-        [PublicAPI]
-        [System.Diagnostics.Contracts.Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndSigmoid2([NotNull] this double[,] m1, [NotNull] double[,] m2)
-        {
-            // Checks
-            if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
-
-            // Initialize the parameters and the result matrix
-            int m = m1.GetLength(0);
-            int n = m2.GetLength(1);
-            int p = m1.GetLength(1);
-            double[,]
-                m1_gpu = Gpu.Default.Allocate(m1),
-                m2_gpu = Gpu.Default.Allocate(m2),
-                mresult_gpu = Gpu.Default.Allocate<double>(m, p);
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, m * p, index =>
-            {
-                // Calculate the current indexes
-                int
-                    i = index / p,
-                    j = index % p;
-
-                // Perform the multiplication
-                double sum = 0;
-                for (int k = 0; k < n; k++)
-                {
-                    sum += m1_gpu[i, k] * m2_gpu[k, j];
-                }
-                double sigmoid = 1 / (1 + Math.Exp(-sum));
-                mresult_gpu[i, j] = sigmoid;
-            });
-
-            // Free memory and copy the result back
-            Gpu.Free(m1_gpu);
-            Gpu.Free(m2_gpu);
-            double[,] result = Gpu.CopyToHost(mresult_gpu);
-            Gpu.Free(mresult_gpu);
-            return result;
         }
     }
 }

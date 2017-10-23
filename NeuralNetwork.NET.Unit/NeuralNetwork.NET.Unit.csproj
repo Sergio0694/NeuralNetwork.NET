@@ -6,6 +6,12 @@
     <IsPackable>false</IsPackable>
 
     <RootNamespace>NeuralNetworkNET.Unit</RootNamespace>
+
+    <ApplicationIcon />
+
+    <OutputType>Library</OutputType>
+
+    <StartupObject />
   </PropertyGroup>
 
   <ItemGroup>
