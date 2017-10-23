@@ -10,7 +10,7 @@ using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
 
 namespace DigitsCudaTest
@@ -72,11 +72,11 @@ namespace DigitsCudaTest
             // Get the optimized network
             Printf("Training");
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            SingleLayerPerceptron network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 16, cts.Token, null,
+            INeuralNetwork network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");
-                }));
+                }), 480, 48, 32, 10);
 
             Printf("Preparing test data");
             IReadOnlyList<double[,]> _2dTest = DataParser.ConvertDatasetTo2dImages(test);
