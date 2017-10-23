@@ -45,7 +45,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                         outputs != biases[biases.Length - 1].Length) return null;
                     for (int i = 0; i < layersInfo.Length; i++)
                         if (layersInfo[i] != biases[i].Length) return null;
-                    return new NeuralNetwork(weights); // TODO: include biased network
+                    return new BiasedNeuralNetwork(weights, biases);
                 }
 
                 // Try to reconstruct the network

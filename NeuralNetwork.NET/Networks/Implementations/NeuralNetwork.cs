@@ -40,14 +40,14 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Weights), Required = Required.Always)]
-        private readonly IReadOnlyList<double[,]> Weights;
+        protected readonly IReadOnlyList<double[,]> Weights;
 
         /// <summary>
         /// The precalculated list of transposed weight matrices to use inthe gradient function
         /// </summary>
         /// <remarks>The first item is always null (to save space), as it isn't needed to calculate the gradient</remarks>
         [NotNull, ItemNotNull]
-        private readonly IReadOnlyList<double[,]> TransposedWeights;
+        protected readonly IReadOnlyList<double[,]> TransposedWeights;
 
         #endregion
 
@@ -114,7 +114,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Batch processing
 
         /// <inheritdoc/>
-        public double[,] Forward(double[,] x)
+        public virtual double[,] Forward(double[,] x)
         {
             double[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
@@ -159,7 +159,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
+        internal virtual double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
         {
             // Feedforward
             int steps = Weights.Count;  // Number of forward hops through the network
@@ -265,7 +265,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <returns>A <see cref="double"/> array containing all the weights of the network</returns>
         [PublicAPI]
         [Pure]
-        internal double[] Serialize()
+        internal virtual double[] Serialize()
         {
             // Allocate the output array
             int length = Weights.Sum(layer => layer.Length);
@@ -286,13 +286,13 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         // Creates a new instance from another network with the same structure
         [Pure, NotNull]
-        internal NeuralNetwork Crossover([NotNull] NeuralNetwork other, [NotNull] Random random)
+        internal virtual NeuralNetwork Crossover([NotNull] NeuralNetwork other, [NotNull] Random random)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc/>
-        public bool Equals(INeuralNetwork other)
+        public virtual bool Equals(INeuralNetwork other)
         {
             // Compare general features
             if (other.GetType() == typeof(NeuralNetwork) &&

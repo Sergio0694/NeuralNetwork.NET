@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using Newtonsoft.Json;
+#pragma warning disable 162 // TODO: remove after implementing the gradient function
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
-    /* 
     /// <summary>
     /// A complete and fully connected neural network with an arbitrary number of hidden layers
     /// </summary>
@@ -76,44 +75,15 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Batch processing
 
         /// <inheritdoc/>
-        public double[,] Forward(double[,] x)
+        public override double[,] Forward(double[,] x)
         {
             double[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
-                double[,] zi = a0.Multiply(Weights[i]); // W(l) * A(l - 1)
-                zi.SumSE(Biases[i]);                    // Z(l) =  W(l) * A(l - 1) + B(l)
-                zi.SigmoidSE();                         // A(l) = sigm(Z(l))
-                a0 = zi;
+                // A(l) = sigm(W(l) * A(l - 1) + b(l))
+                a0 = a0.MultiplyWithSumAndSigmoid(Weights[i], Biases[i]);
             }
             return a0; // At least one weight matrix, so a0 != x
-        }
-
-        /// <inheritdoc/>
-        public double CalculateCost(double[,] input, double[,] y)
-        {
-            // Forward the input
-            double[,] yHat = Forward(input);
-
-            // Calculate the cost (half the squared difference)
-            int h = y.GetLength(0), w = y.GetLength(1);
-            double[] v = new double[h];
-            bool result = Parallel.For(0, h, i =>
-            {
-                for (int j = 0; j < w; j++)
-                {
-                    double
-                        delta = yHat[i, j] - y[i, j],
-                        square = delta * delta;
-                    v[i] += square;
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial costs
-            double cost = 0;
-            for (int i = 0; i < h; i++) cost += v[i];
-            return cost / 2;
         }
 
         /// <summary>
@@ -122,39 +92,49 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="x">The input data</param>
         /// <param name="y">The expected results</param>
         [PublicAPI]
-        [Pure, NotNull]
+        [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
+        internal override double[] ComputeGradient(double[,] x, double[,] y)
         {
             // Feedforward
             int steps = Weights.Count;  // Number of forward hops through the network
-            double[][,] 
+            double[][,]
                 zList = new double[steps][,],
                 aList = new double[steps][,];
             double[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
-                double[,] zi = a0.Multiply(Weights[i]);
-                zi.SumSE(Biases[i]);
+                // Save the intermediate steps to be able to reuse them later
+                double[,] zi = a0.MultiplyWithSum(Weights[i], Biases[i]);
                 zList[i] = zi;
                 aList[i] = a0 = zi.Sigmoid();
             }
 
-            // Output error d(L)
-            double[,]
-                zLPrime = zList[zList.Length - 1].SigmoidPrime(),   // Sigmoid prime of zL
-                gA = aList[aList.Length - 1].Subtract(y),           // Gradient of C with respect to a, so (yHat - y)
-                dL = gA.HadamardProduct(zLPrime);                   // dL, Hadamard product of the gradient and the sigmoid prime for L
+            /* ============================
+             * Calculate delta(L) in place
+             * ============================
+             * Perform the sigmoid prime of zL, the activity on the last layer
+             * Calculate the gradient of C with respect to a, so (yHat - y)
+             * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
+            double[,] dL = aList[aList.Length - 1];
+            dL.InPlaceSubtractAndHadamardProductWithSigmoidPrime(y, zList[zList.Length - 1]);
 
             // Backpropagation
             double[][,] deltas = new double[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
             deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
+                // Precompute  W(l + 1) * delta(l + 1)
                 double[,]
-                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),   // W(l + 1) * delta(l + 1)
-                    dPrime = zList[l].SigmoidPrime(),                           // Compute the sigmoid prime of the current activation
-                    dl = dleft.HadamardProduct(dPrime);                         // Element-wise product between the sigmoid prime and the precedent delta
+                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),
+                    dl = zList[l]; // Local reference on the delta to calculate in place
+
+                /* ============================
+                 * Calculate delta(l) in place
+                 * ============================
+                 * Perform the sigmoid prime of z(l), the activity on the previous layer
+                 * Compute d(l), the Hadamard product of z'(l) and W(l + 1) * delta(l + 1) */
+                dl.InPlaceSigmoidPrimeAndHadamardProduct(dleft);
                 deltas[l] = dl;
             }
 
@@ -176,9 +156,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 int bytes = sizeof(double) * dJdw.Length;
                 Buffer.BlockCopy(dJdw, 0, gradient, position, bytes);
                 position += bytes;
-                bytes = sizeof(double) * di.Length;
-                Buffer.BlockCopy(di, 0, gradient, position, bytes);
-                position += bytes;
+                
+                // Handle the gradient with respect to the current bias vector
+                throw new NotImplementedException();
             }
             return gradient;
         }
@@ -194,7 +174,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="neurons">The number of nodes in each network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        internal static NeuralNetwork Deserialize([NotNull] double[] data, [NotNull] params int[] neurons)
+        internal new static BiasedNeuralNetwork Deserialize([NotNull] double[] data, [NotNull] params int[] neurons)
         {
             // Checks
             if (neurons.Length < 2) throw new ArgumentException("The network must have at least 2 layers");
@@ -223,7 +203,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (position / sizeof(double) != data.Length) throw new InvalidOperationException("Invalid network requested size");
 
             // Create the new network to use
-            return new NeuralNetwork(weights, biases);
+            return new BiasedNeuralNetwork(weights, biases);
         }
 
         /// <summary>
@@ -232,7 +212,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <returns>A <see cref="double"/> array containing all the weights and biases of the network</returns>
         [PublicAPI]
         [Pure]
-        internal double[] Serialize()
+        internal override double[] Serialize()
         {
             // Allocate the output array
             int length = Weights.Sum(layer => layer.Length) + Biases.Sum(bias => bias.Length);
@@ -251,21 +231,18 @@ namespace NeuralNetworkNET.Networks.Implementations
             return weights;
         }
 
-        /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented);
-
         // Creates a new instance from another network with the same structure
-        [Pure, NotNull]
-        internal NeuralNetwork Crossover([NotNull] NeuralNetwork other, [NotNull] Random random)
+        [Pure]
+        internal override NeuralNetwork Crossover(NeuralNetwork other, Random random)
         {
             throw new NotImplementedException();
         }
 
         /// <inheritdoc/>
-        public bool Equals(INeuralNetwork other)
+        public override bool Equals(INeuralNetwork other)
         {
             // Compare general features
-            if (other is NeuralNetwork network &&
+            if (other is BiasedNeuralNetwork network &&
                 other.InputLayerSize == InputLayerSize &&
                 other.OutputLayerSize == OutputLayerSize &&
                 other.HiddenLayers.SequenceEqual(HiddenLayers))
@@ -281,5 +258,4 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
     }
-    */
 }
