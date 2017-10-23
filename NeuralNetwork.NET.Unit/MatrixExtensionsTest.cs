@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.Unit
                 r =
                 {
                     { -4.7, 6.6, -15.3, 10.8 },
-                    { 24.3, 9.7999, -5.5, 11.09 }
+                    { 24.3, 9.7999999999999989, -5.5, 11.09 }
                 },
                 t = m1.Multiply(m2);
             Assert.IsTrue(t.ContentEquals(r));

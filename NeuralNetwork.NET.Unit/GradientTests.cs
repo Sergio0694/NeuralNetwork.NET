@@ -35,6 +35,7 @@ namespace NeuralNetworkNET.Unit
             var gs = single.CostFunctionPrime(x, y);
 
             Assert.IsTrue(gs.ContentEquals(gnn));
+            Assert.IsTrue(fnn.ContentEquals(fs));
         }
     }
 }

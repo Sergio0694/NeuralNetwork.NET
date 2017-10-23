@@ -380,6 +380,103 @@ namespace NeuralNetworkNET.Helpers
 
         #endregion
 
+        #region Combined
+
+        /// <summary>
+        /// Performs the multiplication between two matrices and then applies the sigmoid function
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] MultiplyAndSigmoid([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Checks
+            if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+            double[,] result = new double[h, w];
+
+            // Execute the multiplication in parallel
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    // Get the pointers and iterate fo each row
+                    fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                    {
+                        // Save the index and iterate for each column
+                        int i1 = i * l;
+                        for (int j = 0; j < w; j++)
+                        {
+                            // Perform the multiplication
+                            int i2 = j;
+                            double res = 0;
+                            for (int k = 0; k < l; k++, i2 += w)
+                            {
+                                res += pm1[i1 + k] * pm2[i2];
+                            }
+                            pm[i * w + j] = 1 / (1 + Math.Exp(-res)); // Store the result and apply the sigmoid
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        /// <summary>
+        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the sigmoid prime of z
+        /// </summary>
+        /// <param name="a">The estimated y</param>
+        /// <param name="y">The expected y</param>
+        /// <param name="z">The activity on the last layer</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static void InPlaceSubtractAndHadamardProductWithSigmoidPrime(
+            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z)
+        {
+            // Checks
+            int
+                h = a.GetLength(0),
+                w = a.GetLength(1);
+            if (h != y.GetLength(0) || w != y.GetLength(1) ||
+                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
+
+            // Execute the multiplication in parallel
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    // Get the pointers and iterate fo each row
+                    fixed (double* pa = a, py = y, pz = z)
+                    {
+                        // Save the index and iterate for each column
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int index = offset + j;
+                            double
+                                difference = pa[index] - py[index],
+                                exp = Math.Exp(-pz[index]),
+                                sum = 1 + exp,
+                                square = sum * sum,
+                                zPrime = exp / square,
+                                hProduct = difference * zPrime;
+                            pa[index] = hProduct;
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+        }
+
+        #endregion
+
         #region Misc
 
         /// <summary>
