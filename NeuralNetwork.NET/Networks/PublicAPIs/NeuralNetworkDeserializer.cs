@@ -34,6 +34,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                 if (weights.Length < 1 || 
                     inputs != weights[0].GetLength(0) ||
                     outputs != weights[weights.Length - 1].GetLength(1)) return null;
+                for (int i = 0; i < layersInfo.Length; i++)
+                    if (layersInfo[i] != weights[i].GetLength(1)) return null;
 
                 // Additional bias
                 if (jObject.TryGetValue("Biases", out JToken biasToken))
