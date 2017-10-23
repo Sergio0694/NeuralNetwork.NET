@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +30,8 @@ namespace DigitsTest
 
             // Get the optimized network
             Printf("Training");
-            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            CancellationTokenSource cts = new CancellationTokenSource();
+
             INeuralNetwork network = false
                 ? await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 90, cts.Token, null,
                     new Progress<BackpropagationProgressEventArgs>(p =>

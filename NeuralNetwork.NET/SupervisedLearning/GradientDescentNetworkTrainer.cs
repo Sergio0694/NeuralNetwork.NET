@@ -92,6 +92,81 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// </summary>
         /// <param name="x">The input data</param>
         /// <param name="ys">The results vector</param>
+        /// <param name="type">The type of learning algorithm to use to train the network</param>
+        /// <param name="token">The cancellation token for the training session</param>
+        /// <param name="solution">An optional starting solution to resume a previous training session</param>
+        /// <param name="progress">An optional progress callback</param>
+        /// <param name="neurons">The number of neurons in each network layer</param>
+        [PublicAPI]
+        [Pure]
+        [ItemNotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
+            [NotNull] double[,] x,
+            [NotNull] double[,] ys,
+            LearningAlgorithmType type,
+            CancellationToken token,
+            [CanBeNull] double[] solution,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress,
+            [NotNull] params int[] neurons)
+        {
+            // Preliminary checks
+            if (x.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
+            if (ys.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
+            if (x.GetLength(0) != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
+            if (neurons.Length < 2) throw new ArgumentOutOfRangeException("The network must have at least two layers");
+
+            // Calculate the target network size
+            int size = 0;
+            for (int i = 0; i < neurons.Length - 1; i++)
+                size += neurons[i] * neurons[i + 1];
+
+            // Calculates the cost for a network with the input weights
+            double CostFunction(double[] weights)
+            {
+                NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
+                return network.CalculateCost(x, ys);
+            }
+
+            // Calculates the gradient for a network with the input weights
+            double[] GradientFunction(double[] weights)
+            {
+                NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
+                return network.ComputeGradient(x, ys);
+            }
+
+            // Initialize the optimization function
+            BoundedBroydenFletcherGoldfarbShanno bfgs = new BoundedBroydenFletcherGoldfarbShanno(
+                size, // Number of free variables in the function to optimize
+                CostFunction, GradientFunction)
+            {
+                Token = token
+            };
+
+            // Handle the progress if necessary
+            if (progress != null) bfgs.Progress += (s, e) =>
+            {
+                if (double.IsNaN(e.Value)) return;
+                progress.Report(new BackpropagationProgressEventArgs(
+                    () => NeuralNetwork.Deserialize(e.Solution, neurons), e.Iteration, e.Value));
+            };
+
+            // Minimize the cost function
+            await Task.Run(() =>
+            {
+                if (solution != null) bfgs.Minimize(solution);
+                else bfgs.Minimize();
+            }, token);
+
+            // Return the result network
+            return NeuralNetwork.Deserialize(bfgs.Solution, neurons);
+        }
+
+        /// <summary>
+        /// Generates and trains a neural network suited for the input data and results
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="ys">The results vector</param>
         /// <param name="token">The cancellation token for the training session</param>
         /// <param name="solution">An optional starting solution to resume a previous training session</param>
         /// <param name="progress">An optional progress callback</param>
@@ -191,7 +266,9 @@ namespace NeuralNetworkNET.SupervisedLearning
             double CostFunction(double[] weights)
             {
                 NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
-                return network.CalculateCost(x, ys);
+                var c = network.CalculateCost(x, ys);
+                Console.WriteLine($"cost: {c}");
+                return c;
             }
 
             // Calculates the gradient for a network with the input weights
@@ -202,27 +279,21 @@ namespace NeuralNetworkNET.SupervisedLearning
             }
 
             // Initialize the optimization function
+            double[] start = solution ?? NeuralNetwork.NewRandom(neurons).Serialize();
             GradientDescent gd = new GradientDescent
             {
+                NumberOfVariables = start.Length,
                 Function = CostFunction,
                 Gradient = GradientFunction,
-                Token = token
+                Token = token,
+                Solution = start
             };
 
             // Handle the progress if necessary
             if (progress != null) gd.ProgressChanged += (s, e) => progress.Report(e);
 
             // Minimize the cost function
-            await Task.Run(() =>
-            {
-                if (solution != null) gd.Minimize(solution);
-                else
-                {
-                    NeuralNetwork network = NeuralNetwork.NewRandom(neurons);
-                    double[] start = network.Serialize();
-                    gd.Minimize(start);
-                }
-            }, token);
+            await Task.Run(() => gd.Minimize(start), token);
 
             // Return the result network
             return NeuralNetwork.Deserialize(gd.Solution, neurons);
