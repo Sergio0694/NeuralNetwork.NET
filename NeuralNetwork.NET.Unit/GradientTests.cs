@@ -15,18 +15,26 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void GradientTest1()
         {
-            SingleLayerPerceptron single = SingleLayerPerceptron.NewRandom(2, 2, 2);
-            var gradient = single.CostFunctionPrime(new[,] { { 1.0, 2.0 } }, new[,] { { 3.0, 4.0 } });
-            SingleLayerPerceptron second = SingleLayerPerceptron.NewRandom(3, 2, 2);
-            var gradient2 = second.CostFunctionPrime(new[,] { { 7.0, 1.0, 2.0 } }, new[,] { { 3.0, 4.0 } });
-            var gradient2_1 = second.CostFunctionPrime(new[,] { { 7.0, 1.0, 2.0 }, {1,2,3} }, new[,] { { 3.0, 4.0 },{0.6, 0.7} });
-
-            NeuralNetwork test = NeuralNetwork.NewRandom(2, 3, 2, 1);
+            NeuralNetwork test = NeuralNetwork.NewRandom(2, 3, 1);
             Random d = new Random();
-            var g = test.ComputeGradient(d.NextMatrix(3, 2), d.NextMatrix(3, 1));
+            var x = d.NextMatrix(3, 2);
+            var y = d.NextMatrix(3, 1);
+            var gnn = test.ComputeGradient(x, y);
 
-            NeuralNetwork dnn = NeuralNetwork.NewRandom(3, 2, 2);
-            var gdnn = dnn.ComputeGradient(new[,] { { 1.0, 2.0, 4.2 } }, new[,] { { 3.0, 4.0 } });
+            double[] weights = test.Serialize();
+            double[,] 
+                w1 = new double[2, 3],
+                w2 = new double[3, 1];
+            Buffer.BlockCopy(weights, 0, w1, 0, sizeof(double) * w1.Length);
+            Buffer.BlockCopy(weights, sizeof(double) * w1.Length, w2, 0, sizeof(double) * w2.Length);
+            SingleLayerPerceptron single = new SingleLayerPerceptron(w1, w2);
+
+            var fnn = test.Forward(x);
+            var fs = single.Forward(x);
+
+            var gs = single.CostFunctionPrime(x, y);
+
+            Assert.IsTrue(gs.ContentEquals(gnn));
         }
     }
 }

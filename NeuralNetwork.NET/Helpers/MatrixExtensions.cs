@@ -180,7 +180,7 @@ namespace NeuralNetworkNET.Helpers
                         for (int j = 0; j < w; j++)
                         {
                             int position = offset + j;
-                            pm[position] = pm1[position] - pm2[position];
+                            pm[position] = pm1[position] * pm2[position];
                         }
                     }
                 }

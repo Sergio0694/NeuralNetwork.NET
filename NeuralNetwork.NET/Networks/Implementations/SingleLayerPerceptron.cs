@@ -166,6 +166,22 @@ namespace NeuralNetworkNET.Networks.Implementations
         [CollectionAccess(CollectionAccessType.Read)]
         internal override double[] CostFunctionPrime(double[,] input, double[,] y)
         {
+            // Test
+            var z2 = input.Multiply(W1);
+            var a2 = z2.Sigmoid();
+            var z3 = a2.Multiply(W2);
+            var a3 = z3.Sigmoid();
+
+            var dC = a3.Subtract(y);
+            var z3pr = z3.SigmoidPrime();
+            var d3_test = dC.HadamardProduct(z3pr);
+            var a2trasposed = a2.Transpose();
+            var djdw2 = a2trasposed.Multiply(d3_test);
+
+            var d2 = d3_test.Multiply(W2.Transpose()).HadamardProduct(z2.SigmoidPrime());
+            var djdw1 = input.Transpose().Multiply(d2);
+
+
             // Forward the input
             double[,] yHat = Forward(input);
 

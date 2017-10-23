@@ -74,6 +74,45 @@ namespace NeuralNetworkNET.Unit
         }
 
         /// <summary>
+        /// Element-wise matrix-matrix multiplication test
+        /// </summary>
+        [TestMethod]
+        public void HadamardProductTest()
+        {
+            // Test values
+            double[,]
+                m1 =
+                {
+                    { 1, 2, 3 },
+                    { 5, 1, -2 },
+                    { 1, 2, 3 },
+                },
+                m2 =
+                {
+                    { 5, 2, -1 },
+                    { -5, 2, -7 },
+                    { 1, 2, 2 }
+                },
+                r =
+                {
+                    { 5, 4, -3 },
+                    { -25, 2, 14 },
+                    { 1, 4, 6 }
+                },
+                t = m1.HadamardProduct(m2);
+            Assert.IsTrue(t.ContentEquals(r));
+
+            // Exception test
+            double[,] f =
+            {
+                { 1, 2, 1, 0, 0 },
+                { 5, 0.1, 0, 0, 0 }
+            };
+            Assert.ThrowsException<ArgumentException>(() => f.HadamardProduct(m1));
+            Assert.ThrowsException<ArgumentException>(() => m2.HadamardProduct(f));
+        }
+
+        /// <summary>
         /// Matrix transposition
         /// </summary>
         [TestMethod]
