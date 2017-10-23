@@ -41,7 +41,7 @@ namespace DigitsTest
                     null, new Progress<BackpropagationProgressEventArgs>(p =>
                     {
                         Printf($"Iteration #{p.Iteration} >> {p.Cost}");
-                    }), 480, 32, 16, 10);
+                    }), 480, 160, 16, 10);
 
             Printf("Preparing test data");
             IReadOnlyList<double[,]> _2dTest = DataParser.ConvertDatasetTo2dImages(test);

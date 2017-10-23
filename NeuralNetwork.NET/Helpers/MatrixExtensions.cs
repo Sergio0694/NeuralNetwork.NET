@@ -50,7 +50,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="v">The vector to sum</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void SumSE([NotNull] this double[,] m, [NotNull] double[] v)
+        public static void InPlaceSum([NotNull] this double[,] m, [NotNull] double[] v)
         {
             // Execute the transposition in parallel
             int
