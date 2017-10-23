@@ -186,6 +186,53 @@ namespace NeuralNetworkNET.Cuda
         }
 
         /// <summary>
+        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the sigmoid prime of z
+        /// </summary>
+        /// <param name="z">The activity on the previous layer</param>
+        /// <param name="delta">The precomputed delta to use in the Hadamard product</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static void InPlaceSigmoidPrimeAndHadamardProduct(
+            [NotNull] this double[,] z, [NotNull] double[,] delta)
+        {
+            // Checks
+            int
+                h = z.GetLength(0),
+                w = z.GetLength(1);
+            if (h != delta.GetLength(0) || w != delta.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
+
+            // Initialize the parameters and the result matrix
+            double[,]
+                z_gpu = Gpu.Default.Allocate(z),
+                d_gpu = Gpu.Default.Allocate(delta);
+
+            // Wrapper
+            void Kernel(int i)
+            {
+                // Save the index and iterate for each column
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                {
+                    int index = offset + j;
+                    double
+                        exp = Math.Exp(-z_gpu[i, j]),
+                        sum = 1 + exp,
+                        square = sum * sum,
+                        zPrime = exp / square;
+                    z_gpu[i, j] = zPrime * d_gpu[i, j];
+                }
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(d_gpu);
+            Gpu.Copy(z_gpu, z);
+            Gpu.Free(z_gpu);
+        }
+
+        /// <summary>
         /// Performs the multiplication between two matrices and then applies the sigmoid function
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
