@@ -34,6 +34,40 @@ namespace NeuralNetworkNET.Cuda
         }
 
         /// <summary>
+        /// Transposes the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to transpose</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Transpose([NotNull] this double[,] m)
+        {
+            // Setup
+            int 
+                h = m.GetLength(0), 
+                w = m.GetLength(1);
+            double[,]
+                m_gpu = Gpu.Default.Allocate(m),
+                mresult_gpu = Gpu.Default.Allocate<double>(w, h);
+
+            // Wrapper
+            void Kernel(int ki)
+            {
+                for (int j = 0; j < w; j++)
+                    mresult_gpu[j, ki] = m_gpu[ki, j];
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h, Kernel);
+
+            // Return the results
+            Gpu.Free(m_gpu);
+            double[,] result = Gpu.CopyToHost(mresult_gpu);
+            Gpu.Free(mresult_gpu);
+            return result;
+        }
+
+        /// <summary>
         /// Performs the multiplication between two matrices
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>

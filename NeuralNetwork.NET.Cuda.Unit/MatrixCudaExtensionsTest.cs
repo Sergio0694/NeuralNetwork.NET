@@ -34,6 +34,19 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
+        public void Transpose()
+        {
+            Random r = new Random();
+            double[,]
+                m1 = r.NextMatrix(7, 3),
+                m2 = r.NextMatrix(25, 180),
+                m3 = r.NextMatrix(1428, 3811);
+            Assert.IsTrue(MatrixExtensions.Transpose(m1).ContentEquals(m1.Transpose()));
+            Assert.IsTrue(MatrixExtensions.Transpose(m2).ContentEquals(m2.Transpose()));
+            Assert.IsTrue(MatrixExtensions.Transpose(m3).ContentEquals(m3.Transpose()));
+        }
+
+        [TestMethod]
         public void Multiply()
         {
             Random r = new Random();
