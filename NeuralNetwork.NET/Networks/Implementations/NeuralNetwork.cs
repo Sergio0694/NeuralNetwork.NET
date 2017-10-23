@@ -180,7 +180,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * ============================
              * Perform the sigmoid prime of zL, the activity on the last layer
              * Calculate the gradient of C with respect to a, so (yHat - y)
-             * Compute dL, Hadamard product of the gradient and the sigmoid prime for L */
+             * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             double[,] dL = aList[aList.Length - 1];
             dL.InPlaceSubtractAndHadamardProductWithSigmoidPrime(y, zList[zList.Length - 1]);
 
@@ -189,10 +189,17 @@ namespace NeuralNetworkNET.Networks.Implementations
             deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
-                double[,]
-                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),   // W(l + 1) * delta(l + 1)
-                    dPrime = zList[l].SigmoidPrime(),                           // Compute the sigmoid prime of the current activation
-                    dl = dleft.HadamardProduct(dPrime);                         // Element-wise product between the sigmoid prime and the precedent delta
+                // Precompute  W(l + 1) * delta(l + 1)
+                double[,] 
+                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),
+                    dl = zList[l]; // Local reference on the delta to calculate in place
+
+                /* ============================
+                 * Calculate delta(l) in place
+                 * ============================
+                 * Perform the sigmoid prime of z(l), the activity on the previous layer
+                 * Compute d(l), the Hadamard product of z'(l) and W(l + 1) * delta(l + 1) */
+                dl.InPlaceSigmoidPrimeAndHadamardProduct(dleft);
                 deltas[l] = dl;
             }
 
