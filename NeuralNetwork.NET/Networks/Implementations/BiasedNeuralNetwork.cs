@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 namespace NeuralNetworkNET.Networks.Implementations
 {
     /// <summary>
-    /// A complete and fully connected neural network with an arbitrary number of hidden layers
+    /// A complete and fully connected neural network with an arbitrary number of hidden layers, with additional bias vectors
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     internal sealed class BiasedNeuralNetwork : NeuralNetwork
