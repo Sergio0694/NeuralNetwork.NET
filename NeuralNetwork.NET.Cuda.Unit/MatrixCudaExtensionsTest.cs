@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
 
@@ -11,6 +13,26 @@ namespace NeuralNetworkNET.Cuda.Unit
     [TestCategory(nameof(MatrixCudaExtensionsTest))]
     public class MatrixCudaExtensionsTest
     {
+        [TestMethod]
+        [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
+        public void StopwatchTest()
+        {
+            Random r = new Random();
+            double[,]
+                m1 = r.NextMatrix(20000, 1000),
+                m2 = r.NextMatrix(1000, 800);
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            m1.MultiplyAndSigmoid(m2);
+            timer.Stop();
+            var t1 = timer.ElapsedMilliseconds;
+            timer.Restart();
+            MatrixExtensions.MultiplyAndSigmoid(m1, m2);
+            timer.Stop();
+            var t2 = timer.ElapsedMilliseconds;
+            Debug.WriteLine($"GPU: {t1}ms, CPU: {t2}ms");
+        }
+
         [TestMethod]
         public void Multiply()
         {
@@ -25,6 +47,23 @@ namespace NeuralNetworkNET.Cuda.Unit
             m2 = r.NextMatrix(800, 40);
             check = MatrixExtensions.Multiply(m1, m2);
             test = m1.Multiply(m2);
+            Assert.IsTrue(test.ContentEquals(check));
+        }
+
+        [TestMethod]
+        public void TransposeAndMultiply()
+        {
+            Random r = new Random();
+            double[,]
+                m1 = r.NextMatrix(5, 13),
+                m2 = r.NextMatrix(5, 4),
+                check = MatrixExtensions.Multiply(m1.Transpose(), m2);
+            double[,] test = m1.TransposeAndMultiply(m2);
+            Assert.IsTrue(test.ContentEquals(check));
+            m1 = r.NextMatrix(800, 1500);
+            m2 = r.NextMatrix(800, 40);
+            check = MatrixExtensions.Multiply(m1.Transpose(), m2);
+            test = m1.TransposeAndMultiply(m2);
             Assert.IsTrue(test.ContentEquals(check));
         }
 

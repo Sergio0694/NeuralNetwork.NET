@@ -83,6 +83,57 @@ namespace NeuralNetworkNET.Cuda
             return result;
         }
 
+
+        /// <summary>
+        /// Performs the multiplication between two matrices after transposing the first one
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] TransposeAndMultiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Checks
+            if (m1.GetLength(0) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+            double[,]
+                m1_gpu = Gpu.Default.Allocate(m1),
+                m2_gpu = Gpu.Default.Allocate(m2),
+                mresult_gpu = Gpu.Default.Allocate<double>(l, w);   // l because the first matrix will be transposed
+
+            // Wrapper
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    i = index / w,
+                    j = index % w;
+
+                // Perform the multiplication
+                double sum = 0;
+                for (int k = 0; k < h; k++)
+                {
+                    sum += m1_gpu[k, i] * m2_gpu[k, j];
+                }
+                mresult_gpu[i, j] = sum;
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, l * w, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(m1_gpu);
+            Gpu.Free(m2_gpu);
+            double[,] result = Gpu.CopyToHost(mresult_gpu);
+            Gpu.Free(mresult_gpu);
+            return result;
+        }
+
         /// <summary>
         /// Performs the multiplication between two matrices and then applies the sigmoid function
         /// </summary>
@@ -213,7 +264,6 @@ namespace NeuralNetworkNET.Cuda
                 int offset = i * w;
                 for (int j = 0; j < w; j++)
                 {
-                    int index = offset + j;
                     double
                         exp = Math.Exp(-z_gpu[i, j]),
                         sum = 1 + exp,
