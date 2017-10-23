@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +8,7 @@ using JetBrains.Annotations;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
 
 namespace DigitsTest
@@ -16,7 +17,7 @@ namespace DigitsTest
     {
         static async Task Main(String[] args)
         {
-            if (args.Length != 3) args = new[] { @"C:\Users\Sergi\Documents\Digits", "100" , "32"};
+            if (args.Length != 2) args = new[] { @"C:\Users\Sergi\Documents\Digits", "1000"};
             Printf("Loading sample data");
             (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(int.Parse(args[1]));
 
@@ -30,11 +31,17 @@ namespace DigitsTest
             // Get the optimized network
             Printf("Training");
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            SingleLayerPerceptron network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, int.Parse(args[2]), cts.Token, null,
-                new Progress<BackpropagationProgressEventArgs>(p =>
-                {
-                    Printf($"Iteration #{p.Iteration} >> {p.Cost}");
-                }));
+            INeuralNetwork network = true
+                ? await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, 90, cts.Token, null,
+                    new Progress<BackpropagationProgressEventArgs>(p =>
+                    {
+                        Printf($"Iteration #{p.Iteration} >> {p.Cost}");
+                    }))
+                : await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, cts.Token, null,
+                    new Progress<BackpropagationProgressEventArgs>(p =>
+                    {
+                        Printf($"Iteration #{p.Iteration} >> {p.Cost}");
+                    }), 480, 90, 10);
 
             Printf("Preparing test data");
             IReadOnlyList<double[,]> _2dTest = DataParser.ConvertDatasetTo2dImages(test);

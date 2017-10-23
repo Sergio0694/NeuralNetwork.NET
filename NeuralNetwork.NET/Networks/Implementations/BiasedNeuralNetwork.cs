@@ -9,45 +9,21 @@ using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
+    /* 
     /// <summary>
     /// A complete and fully connected neural network with an arbitrary number of hidden layers
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal class NeuralNetwork : INeuralNetwork
+    internal sealed class BiasedNeuralNetwork : NeuralNetwork
     {
-        #region Public parameters
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(InputLayerSize), Required = Required.Always)]
-        public int InputLayerSize => Weights[0].GetLength(0);
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
-        public int OutputLayerSize => Weights[Weights.Count - 1].GetLength(1);
-
-        private int[] _HiddenLayers;
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(HiddenLayers), Required = Required.Always)]
-        public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Weights.Take(Weights.Count - 1).Select(w => w.GetLength(1)).ToArray());
-
-        #endregion
-
         #region Local fields
 
         /// <summary>
-        /// The list of weight matrices for the network
+        /// The list of bias vectors for the network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Weights), Required = Required.Always)]
-        private readonly IReadOnlyList<double[,]> Weights;
-
-        /// <summary>
-        /// The precalculated list of transposed weight matrices to use inthe gradient function
-        /// </summary>
-        /// <remarks>The first item is always null (to save space), as it isn't needed to calculate the gradient</remarks>
-        [NotNull, ItemNotNull]
-        private readonly IReadOnlyList<double[,]> TransposedWeights;
+        [JsonProperty(nameof(Biases), Required = Required.Always)]
+        private readonly IReadOnlyList<double[]> Biases;
 
         #endregion
 
@@ -57,19 +33,19 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Initializes a new instance with the given parameters
         /// </summary>
         /// <param name="weights">The weights in all the network layers</param>
-        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights)
+        /// <param name="biases">The bias vectors to use in the network</param>
+        internal BiasedNeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<double[]> biases) : base(weights)
         {
             // Input check
-            if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
+            if (biases.Count != weights.Count) throw new ArgumentException(nameof(biases), "The bias vector has an invalid size");
             for (int i = 0; i < weights.Count; i++)
             {
-                if (i > 0 && weights[i - 1].GetLength(1) != weights[i].GetLength(0))
-                    throw new ArgumentOutOfRangeException(nameof(weights), "Some weight matrix doesn't have the right size");
+                if (weights[i].GetLength(1) != biases[i].Length)
+                    throw new ArgumentException(nameof(biases), $"The bias vector #{i} doesn't have the right size");
             }
 
             // Parameters setup
-            Weights = weights;
-            TransposedWeights = Weights.Select((m, i) => i == 0 ? null : m.Transpose()).ToArray();
+            Biases = biases;
         }
 
         /// <summary>
@@ -77,37 +53,23 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="neurons">The number of neurons from the input to the output layer</param>
         [NotNull]
-        internal static NeuralNetwork NewRandom([NotNull] params int[] neurons)
+        internal new static BiasedNeuralNetwork NewRandom([NotNull] params int[] neurons)
         {
             if (neurons.Length < 2) throw new ArgumentOutOfRangeException(nameof(neurons), "The network must have at least two layers");
             Random random = new Random();
             double[][,] weights = new double[neurons.Length - 1][,];
+            double[][] biases = new double[neurons.Length - 1][];
             for (int i = 0; i < weights.Length; i++)
             {
                 weights[i] = random.NextMatrix(neurons[i], neurons[i + 1]);
+                int next = neurons[i + 1];
+                double[] bias = new double[next];
+                for (int j = 0; j < next; j++)
+                    bias[j] = random.NextGaussian();
+                biases[i] = bias;
             }
-            return new NeuralNetwork(weights);
+            return new BiasedNeuralNetwork(weights, biases);
         }
-
-        #endregion
-
-        #region Single processing
-
-        /// <inheritdoc/>
-        public double[] Forward(double[] x) => Forward(x.ToMatrix()).Flatten();
-
-        /// <inheritdoc/>
-        public double CalculateCost(double[] x, double[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
-
-        /// <summary>
-        /// Calculates the gradient of the cost function with respect to the individual weights and biases
-        /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="y">The expected result</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[] x, [NotNull] double[] y) => ComputeGradient(x.ToMatrix(), y.ToMatrix());
 
         #endregion
 
@@ -120,6 +82,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 double[,] zi = a0.Multiply(Weights[i]); // W(l) * A(l - 1)
+                zi.SumSE(Biases[i]);                    // Z(l) =  W(l) * A(l - 1) + B(l)
                 zi.SigmoidSE();                         // A(l) = sigm(Z(l))
                 a0 = zi;
             }
@@ -172,6 +135,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 double[,] zi = a0.Multiply(Weights[i]);
+                zi.SumSE(Biases[i]);
                 zList[i] = zi;
                 aList[i] = a0 = zi.Sigmoid();
             }
@@ -195,7 +159,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Compute the gradient
-            double[] gradient = new double[Weights.Sum(w => w.Length)]; // One gradient item for each weight
+            int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.Length);
+            double[] gradient = new double[dLength];
             int position = 0;
             for (int i = 0; i < Weights.Count; i++)
             {
@@ -211,6 +176,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 int bytes = sizeof(double) * dJdw.Length;
                 Buffer.BlockCopy(dJdw, 0, gradient, position, bytes);
                 position += bytes;
+                bytes = sizeof(double) * di.Length;
+                Buffer.BlockCopy(di, 0, gradient, position, bytes);
+                position += bytes;
             }
             return gradient;
         }
@@ -222,7 +190,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Deserializes a neural network from the input weights and parameters
         /// </summary>
-        /// <param name="data">The data representing the weights of the network</param>
+        /// <param name="data">The data representing the weights and the biases of the network</param>
         /// <param name="neurons">The number of nodes in each network layer</param>
         [PublicAPI]
         [Pure, NotNull]
@@ -234,6 +202,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Parse the input data
             int depth = neurons.Length - 1;
             double[][,] weights = new double[depth][,];
+            double[][] biases = new double[depth][];
             int position = 0;
             for (int i = 0; i < depth; i++)
             {
@@ -243,23 +212,30 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Buffer.BlockCopy(data, position, wi, 0, bytes);
                 position += bytes;
                 weights[i] = wi;
+
+                // Unpack the current bias vector
+                double[] bias = new double[neurons[i + 1]];
+                bytes = sizeof(double) * bias.Length;
+                Buffer.BlockCopy(data, position, bias, 0, bytes);
+                position += bytes;
+                biases[i] = bias;
             }
             if (position / sizeof(double) != data.Length) throw new InvalidOperationException("Invalid network requested size");
 
             // Create the new network to use
-            return new NeuralNetwork(weights);
+            return new NeuralNetwork(weights, biases);
         }
 
         /// <summary>
         /// Serializes the current network into a binary representation
         /// </summary>
-        /// <returns>A <see cref="double"/> array containing all the weights of the network</returns>
+        /// <returns>A <see cref="double"/> array containing all the weights and biases of the network</returns>
         [PublicAPI]
         [Pure]
         internal double[] Serialize()
         {
             // Allocate the output array
-            int length = Weights.Sum(layer => layer.Length);
+            int length = Weights.Sum(layer => layer.Length) + Biases.Sum(bias => bias.Length);
             double[] weights = new double[length];
             int position = 0;
             for (int i = 0; i < Weights.Count; i++)
@@ -267,6 +243,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Populate the return array with the weights and biases for each layer
                 int bytes = sizeof(double) * Weights[i].Length;
                 Buffer.BlockCopy(Weights[i], 0, weights, position, bytes);
+                position += bytes;
+                bytes = sizeof(double) * Biases[i].Length;
+                Buffer.BlockCopy(Biases[i], 0, weights, position, bytes);
                 position += bytes;
             }
             return weights;
@@ -286,15 +265,15 @@ namespace NeuralNetworkNET.Networks.Implementations
         public bool Equals(INeuralNetwork other)
         {
             // Compare general features
-            if (other.GetType() == typeof(NeuralNetwork) &&
+            if (other is NeuralNetwork network &&
                 other.InputLayerSize == InputLayerSize &&
                 other.OutputLayerSize == OutputLayerSize &&
                 other.HiddenLayers.SequenceEqual(HiddenLayers))
             {
                 // Compare each weight and bias value
-                NeuralNetwork network = (NeuralNetwork)other;
                 for (int i = 0; i < Weights.Count; i++)
-                    if (!network.Weights[i].ContentEquals(Weights[i])) return false;
+                    if (!(network.Weights[i].ContentEquals(Weights[i]) &&
+                          network.Biases[i].ContentEquals(Biases[i]))) return false;
                 return true;
             }
             return false;
@@ -302,4 +281,5 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
     }
+    */
 }

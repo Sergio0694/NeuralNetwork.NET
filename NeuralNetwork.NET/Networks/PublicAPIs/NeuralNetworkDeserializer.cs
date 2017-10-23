@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 using Newtonsoft.Json;
@@ -25,21 +24,30 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
             {
                 // Get the general parameters and the hidden layers info
                 JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
-                int inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
+                int 
+                    inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), 
+                    outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
                 int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
                 double[][,] weights = jObject["Weights"].ToObject<double[][,]>();
-                double[][] biases = jObject["Biases"].ToObject<double[][]>();
 
                 // Input checks
-                if (weights.Length < 1 ||
-                    biases.Length < 1 ||
+                if (weights.Length < 1 || 
                     inputs != weights[0].GetLength(0) ||
-                    outputs != biases[biases.Length - 1].Length) return null;
-                for (int i = 0; i < layersInfo.Length; i++)
-                    if (layersInfo[i] != biases[i].Length) return null;
+                    outputs != weights[weights.Length - 1].GetLength(1)) return null;
+
+                // Additional bias
+                if (jObject.TryGetValue("Biases", out JToken biasToken))
+                {
+                    double[][] biases = biasToken.ToObject<double[][]>();
+                    if (biases.Length < 1 ||
+                        outputs != biases[biases.Length - 1].Length) return null;
+                    for (int i = 0; i < layersInfo.Length; i++)
+                        if (layersInfo[i] != biases[i].Length) return null;
+                    return new NeuralNetwork(weights); // TODO: include biased network
+                }
 
                 // Try to reconstruct the network
-                return new NeuralNetwork(weights, biases);
+                return new NeuralNetwork(weights);
             }
             catch
             {
