@@ -38,11 +38,12 @@ namespace DigitsTest
                     {
                         Printf($"Iteration #{p.Iteration} >> {p.Cost}");
                     }))
-                : await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, cts.Token, null,
-                    new Progress<BackpropagationProgressEventArgs>(p =>
+                : await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
+                    LearningAlgorithmType.GradientDescend, cts.Token,
+                    null, new Progress<BackpropagationProgressEventArgs>(p =>
                     {
                         Printf($"Iteration #{p.Iteration} >> {p.Cost}");
-                    }), 784, 16, 10);
+                    }), 480, 32, 16, 10);
 
             Printf("Preparing test data");
             IReadOnlyList<double[,]> _2dTest = DataParser.ConvertDatasetTo2dImages(test);
