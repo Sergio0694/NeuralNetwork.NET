@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -143,7 +144,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 test = m1.HalfSquaredDifference(m2);
             Assert.IsTrue(Math.Abs(check - test) < 0.0000001);
             m1 = r.NextMatrix(1500, 800);
-            m2 = r.NextMatrix(1500, 500);
+            m2 = r.NextMatrix(1500, 800);
             check = MatrixExtensions.HalfSquaredDifference(m1, m2);
             test = m1.HalfSquaredDifference(m2);
             Assert.IsTrue(Math.Abs(check - test) < 0.0000001);
