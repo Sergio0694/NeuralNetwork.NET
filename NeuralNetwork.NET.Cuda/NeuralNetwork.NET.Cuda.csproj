@@ -59,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GpuPreferences.cs" />
+    <Compile Include="MatrixGpuExtensions.cs" />
     <Compile Include="ProcessingMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

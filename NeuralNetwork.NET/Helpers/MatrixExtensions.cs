@@ -189,7 +189,15 @@ namespace NeuralNetworkNET.Helpers
             return result;
         }
 
-        private static double[,] CpuMultiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        /// <summary>
+        /// Performs the multiplication between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -226,21 +234,6 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
-        }
-
-        internal static Func<double[,], double[,], double[,]> MultiplyOverride { get; set; }
-
-        /// <summary>
-        /// Performs the multiplication between two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
-        {
-            return MultiplyOverride?.Invoke(m1, m2) ?? CpuMultiply(m1, m2);
         }
 
         #endregion
@@ -297,7 +290,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m">The input to process</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void SigmoidSE([NotNull] this double[,] m)
+        public static void InPlaceSigmoid([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
