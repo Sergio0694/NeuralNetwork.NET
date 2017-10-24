@@ -23,7 +23,6 @@
 //    License along with this library; if not, write to the Free Software
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-using System;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies;
 
@@ -39,17 +38,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         
         // Optimization parameter during the minimization
         private readonly int NumberOfUpdatesBeforeConvergenceCheck = 1;
-
-        private double _LearningRate = 1e-3;
-
-        /// <summary>
-        ///   Gets or sets the learning rate. Default is 1e-3
-        /// </summary>
-        public double LearningRate
-        {
-            get => _LearningRate;
-            set => _LearningRate = value <= 0 ? throw new ArgumentOutOfRangeException(nameof(LearningRate), "Learning rate should be higher than 0") : value;
-        }
 
         /// <summary>
         ///   Gets or sets the maximum change in the average log-likelihood
@@ -81,6 +69,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             Tolerance = 1e-5;
         }
 
+        // The current learning rate index
+        private int _ToleranceIndex;
+
+        // Private vector with the range of learning rates to use
+        private readonly double[] ToleranceVector = { 1e-3, 2e-3, 5e-3, 1e-2 };
+
         /// <summary>
         ///   Implements the actual optimization algorithm. This
         ///   method should try to minimize the objective function
@@ -89,15 +83,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         {
             Convergence.Clear();
             int updates = 0;
-            do
+            while (true)
             {
                 // Check the cancellation
                 if (Token.IsCancellationRequested) break;
 
                 // Perform the gradient descent
                 double[] gradient = Gradient(Solution);
+                double rate = ToleranceVector[_ToleranceIndex];
                 for (int i = 0; i < Solution.Length; i++)
-                    Solution[i] -= _LearningRate * gradient[i];
+                    Solution[i] -= rate * gradient[i];
 
                 // Check the progress
                 updates++;
@@ -106,8 +101,15 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     Convergence.NewValue = Function(Solution);
                     updates = 0;
                 }
+
+                // Convergence check
+                if (Convergence.HasConverged)
+                {
+                    if (_ToleranceIndex < ToleranceVector.Length - 1) _ToleranceIndex++;
+                    else break;
+                }
+                else if (_ToleranceIndex > 0) _ToleranceIndex--;
             }
-            while (!Convergence.HasConverged);
             return true;
         }
     }
