@@ -30,158 +30,93 @@ using NeuralNetworkNET.Helpers;
 namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
 {
     /// <summary>
-    ///   Base class for optimization methods.
+    ///   Base class for optimization methods
     /// </summary>
     public abstract class OptimizationMethodBase
     {
-        private int numberOfVariables;
-        private double[] x;
-        private double value;
-
-        [NonSerialized]
-        private CancellationToken token = new CancellationToken();
-
         /// <summary>
         ///   Gets or sets a cancellation token that can be used to
-        ///   stop the learning algorithm while it is running.
+        ///   stop the learning algorithm while it is running
         /// </summary>
-        /// 
-        public CancellationToken Token
-        {
-            get { return token; }
-            set { token = value; }
-        }
+        public CancellationToken Token { get; set; } = new CancellationToken();
 
         /// <summary>
-        ///   Gets or sets the function to be optimized.
+        ///   Gets or sets the function to be optimized
         /// </summary>
         /// 
-        /// <value>The function to be optimized.</value>
-        /// 
+        /// <value>The function to be optimized</value>
         public Func<double[], double> Function { get; set; }
+
+        private int _NumberOfVariables;
 
         /// <summary>
         ///   Gets the number of variables (free parameters)
-        ///   in the optimization problem.
+        ///   in the optimization problem
         /// </summary>
         /// 
-        /// <value>The number of parameters.</value>
-        /// 
+        /// <value>The number of parameters</value>
         public virtual int NumberOfVariables
         {
-            get { return numberOfVariables; }
+            get => _NumberOfVariables;
             set
             {
-                this.numberOfVariables = value;
+                _NumberOfVariables = value;
                 OnNumberOfVariablesChanged(value);
             }
         }
 
         /// <summary>
-        ///   Gets the current solution found, the values of 
-        ///   the parameters which optimizes the function.
+        /// Called when the <see cref="NumberOfVariables"/> property has changed
         /// </summary>
-        /// 
-        public double[] Solution
-        {
-            get { return x; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-
-                if (value.Length != NumberOfVariables)
-                    throw new ArgumentException("value");
-
-                x = value;
-            }
-        }
-
-        /// <summary>
-        ///   Gets the output of the function at the current <see cref="Solution"/>.
-        /// </summary>
-        /// 
-        public double Value
-        {
-            get { return value; }
-            protected set { this.value = value; }
-        }
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="BaseOptimizationMethod"/> class.
-        /// </summary>
-        /// 
-        protected OptimizationMethodBase()
-        {
-        }
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="BaseOptimizationMethod"/> class.
-        /// </summary>
-        /// 
-        /// <param name="numberOfVariables">The number of free parameters in the optimization problem.</param>
-        /// 
-        protected OptimizationMethodBase(int numberOfVariables)
-        {
-            if (numberOfVariables <= 0)
-                throw new ArgumentOutOfRangeException("numberOfVariables");
-
-            this.NumberOfVariables = numberOfVariables;
-        }
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="BaseOptimizationMethod"/> class.
-        /// </summary>
-        /// 
-        /// <param name="numberOfVariables">The number of free parameters in the optimization problem.</param>
-        /// <param name="function">The objective function whose optimum values should be found.</param>
-        /// 
-        protected OptimizationMethodBase(int numberOfVariables, Func<double[], double> function)
-        {
-            if (function == null)
-                throw new ArgumentNullException("function");
-
-            this.NumberOfVariables = numberOfVariables;
-            this.Function = function;
-        }
-
-        /// <summary>
-        /// Called when the <see cref="NumberOfVariables"/> property has changed.
-        /// </summary>
-        /// 
-        protected virtual void OnNumberOfVariablesChanged(int numberOfVariables)
+        private void OnNumberOfVariablesChanged(int numberOfVariables)
         {
             Random random = new Random();
-            if (this.Solution == null || this.Solution.Length != numberOfVariables)
+            if (Solution == null || Solution.Length != numberOfVariables)
             {
-                this.Solution = new double[numberOfVariables];
+                Solution = new double[numberOfVariables];
                 for (int i = 0; i < Solution.Length; i++)
                     Solution[i] = random.NextGaussian();
             }
         }
 
+        private double[] _Solution;
+
+        /// <summary>
+        ///   Gets the current solution found, the values of 
+        ///   the parameters which optimizes the function
+        /// </summary>
+        public double[] Solution
+        {
+            get => _Solution;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(Solution));
+                if (value.Length != NumberOfVariables) throw new ArgumentException(nameof(Solution), "Invalid solution size");
+                _Solution = value;
+            }
+        }
+
+        /// <summary>
+        ///   Gets the output of the function at the current <see cref="Solution"/>
+        /// </summary>
+        public double Value { get; protected set; }
 
         /// <summary>
         ///   Finds the minimum value of a function. The solution vector
-        ///   will be made available at the <see cref="Solution"/> property.
+        ///   will be made available at the <see cref="Solution"/> property
         /// </summary>
         /// 
-        /// <returns>Returns <c>true</c> if the method converged to a <see cref="Solution"/>.
-        ///   In this case, the found value will also be available at the <see cref="Value"/>
-        ///   property.</returns>
-        ///  
+        /// <returns>
+        ///   Returns <c>true</c> if the method converged to a <see cref="Solution"/>.
+        ///   In this case, the found value will also be available at the <see cref="Value"/> property
+        /// </returns>
         public virtual bool Minimize()
         {
-            if (Function == null)
-                throw new InvalidOperationException("function");
-
+            if (Function == null) throw new InvalidOperationException("function");
             bool success = Optimize();
-
-            value = Function(Solution);
-
+            Value = Function(Solution);
             return success;
         }
-
 
         /// <summary>
         ///   Implements the actual optimization algorithm. This
