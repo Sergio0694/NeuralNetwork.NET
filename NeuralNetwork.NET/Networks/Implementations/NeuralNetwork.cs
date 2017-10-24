@@ -213,7 +213,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 double[,] di = deltas[i];
 
                 // Compute dJdw(l)
-                double[,] dJdw = i == 0 
+                double[,] dJdw = i == 0
                     ? x.Transpose().Multiply(di)                // dJdW1, transposed input * first delta
                     : aList[i - 1].Transpose().Multiply(di);    // dJdWi, previous activation transposed * current delta
 
