@@ -64,14 +64,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
     /// </example>
     public class RelativeConvergence
     {
-
-        private double tolerance = 0;
-        private int maxIterations = 100;
-        private double newValue;
-        private double startValue = 0;
-
-        private int checks;
-        private int maxChecks = 1;
+        private double _Tolerance;
 
         /// <summary>
         ///   Gets or sets the maximum relative change in the watched value
@@ -80,9 +73,11 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         /// </summary>
         public double Tolerance
         {
-            get => tolerance;
-            set => tolerance = value < 0 ? throw new ArgumentOutOfRangeException("value", "Tolerance should be positive") : value;
+            get => _Tolerance;
+            set => _Tolerance = value < 0 ? throw new ArgumentOutOfRangeException("value", "Tolerance should be positive") : value;
         }
+
+        private int _MaxIterations = 100;
 
         /// <summary>
         ///   Gets or sets the maximum number of iterations
@@ -91,84 +86,84 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         /// </summary>
         public int MaxIterations
         {
-            get => maxIterations;
-            set => maxIterations = value < 0 ? throw new ArgumentOutOfRangeException("value", "The maximum number of iterations should be positive") : value;
+            get => _MaxIterations;
+            set => _MaxIterations = value < 0 ? throw new ArgumentOutOfRangeException("value", "The maximum number of iterations should be positive") : value;
         }
 
+        // The initial value for the function to minimize
+        private readonly double StartValue;
+
+        // The maximum number of consecutive function evaluations
+        private readonly int MaxChecks;
+
         /// <summary>
-        ///   Initializes a new instance of the <see cref="RelativeConvergence"/> class.
+        ///   Initializes a new instance of the <see cref="RelativeConvergence"/> class
         /// </summary>
-        /// 
         public RelativeConvergence()
         {
-            this.MaxIterations = 100;
-            this.tolerance = 0;
-            this.maxChecks = 1;
-            this.startValue = 0;
-
+            MaxIterations = 100;
+            Tolerance = 0;
+            MaxChecks = 1;
+            StartValue = 0;
             Clear();
         }
 
         /// <summary>
-        ///   Gets or sets the watched value before the iteration.
+        ///   Gets or sets the watched value before the iteration
         /// </summary>
-        /// 
         public double OldValue { get; private set; }
 
+        private double _NewValue;
+
         /// <summary>
-        ///   Gets or sets the watched value after the iteration.
+        ///   Gets or sets the watched value after the iteration
         /// </summary>
-        /// 
         public double NewValue
         {
-            get => newValue;
+            get => _NewValue;
             set
             {
-                OldValue = newValue;
-                newValue = value;
+                OldValue = _NewValue;
+                _NewValue = value;
                 CurrentIteration++;
             }
         }
 
         /// <summary>
-        ///   Gets the current iteration number.
+        ///   Gets the current iteration number
         /// </summary>
-        /// 
         public int CurrentIteration { get; set; }
 
+        // Local counter
+        private int _Checks;
+
         /// <summary>
-        ///   Gets whether the algorithm has converged.
+        ///   Gets whether the algorithm has converged
         /// </summary>
-        /// 
         public bool HasConverged
         {
             get
             {
-                bool converged = checkConvergence();
-
-                checks = converged ? checks + 1 : 0;
-
-                return checks >= maxChecks;
+                bool converged = CheckConvergence();
+                _Checks = converged ? _Checks + 1 : 0;
+                return _Checks >= MaxChecks;
             }
         }
 
-        private bool checkConvergence()
+        // Simple function that checks the function convergence given the current parameters
+        private bool CheckConvergence()
         {
-            if (maxIterations > 0 && CurrentIteration >= maxIterations)
-                return true;
+            // Iterations count
+            if (MaxIterations > 0 && CurrentIteration >= MaxIterations) return true;
 
-            if (tolerance > 0)
+            // Stopping criteria is likelihood convergence
+            if (Tolerance > 0)
             {
-                // Stopping criteria is likelihood convergence
-                if (Delta <= tolerance * Math.Abs(OldValue))
-                    return true;
+                if (Delta <= Tolerance * Math.Abs(OldValue)) return true;
             }
 
             // Check if we have reached an invalid or perfectly separable answer
-            if (Double.IsNaN(NewValue) || Double.IsInfinity(NewValue))
-                return true;
-
-            return false;
+            return double.IsNaN(NewValue) || double.IsInfinity(NewValue);
         }
 
         /// <summary>
@@ -183,10 +178,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         /// </summary>
         public void Clear()
         {
-            NewValue = startValue;
-            OldValue = startValue;
+            NewValue = StartValue;
+            OldValue = StartValue;
             CurrentIteration = 0;
-            checks = 0;
+            _Checks = 0;
         }
     }
 }
