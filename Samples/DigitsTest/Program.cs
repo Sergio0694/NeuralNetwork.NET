@@ -11,6 +11,7 @@ using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
+using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace DigitsTest
 {

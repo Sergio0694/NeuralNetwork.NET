@@ -2,7 +2,7 @@
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.PublicAPIs;
 
-namespace NeuralNetworkNET.SupervisedLearning
+namespace NeuralNetworkNET.SupervisedLearning.Misc
 {
     /// <summary>
     /// A structure that contains the base progress data while optimizing a network

@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.SupervisedLearning
+﻿namespace NeuralNetworkNET.SupervisedLearning.Misc
 {
     /// <summary>
     /// Indicates the type of learning algorithm to use to train a neural network

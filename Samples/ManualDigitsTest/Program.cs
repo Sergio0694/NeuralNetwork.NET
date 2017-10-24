@@ -11,6 +11,7 @@ using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
+using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace ManualDigitsTest
 {

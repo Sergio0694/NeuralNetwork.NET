@@ -6,6 +6,7 @@ using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace NeuralNetworkNET.SupervisedLearning
 {
