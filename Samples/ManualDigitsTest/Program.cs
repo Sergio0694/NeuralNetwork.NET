@@ -64,7 +64,7 @@ namespace ManualDigitsTest
                 Console.CancelKeyPress -= CancelToken;
             }
             Console.CancelKeyPress += CancelToken;
-            _Network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
+            _Network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");

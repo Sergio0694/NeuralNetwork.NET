@@ -2,11 +2,12 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Abstract;
 
 namespace NeuralNetworkNET.SupervisedLearning
 {
@@ -86,12 +87,11 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Get the optimization algorithm instance
             int iteration = 1;
-            BaseGradientOptimizationMethod optimizer;
+            GradientOptimizationMethodBase optimizer;
             switch (type)
             {
                 case LearningAlgorithmType.BoundedFGS:
-                    optimizer = new BoundedBroydenFletcherGoldfarbShanno(start.Length);
-                    break;
+                    throw new NotImplementedException();
                 case LearningAlgorithmType.GradientDescend:
                     optimizer = new GradientDescent { NumberOfVariables = start.Length };
                     break;
