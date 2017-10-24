@@ -33,9 +33,9 @@ namespace DigitsTest
 
         static async Task Main(String[] args)
         {
-            if (args.Length != 3) args = new[] { @"C:\Users\Sergi\Documents\Digits", "1000", "-Backup"};
+            if (args.Length != 2) args = new[] { "1000"};
             Printf("Loading sample data");
-            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(int.Parse(args[1]));
+            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(int.Parse(args[0]));
 
             Printf("Preparing 2D data for the convolution layer");
             IReadOnlyList<double[,]> raw = DataParser.ConvertDatasetTo2dImages(dataset);
@@ -45,7 +45,7 @@ namespace DigitsTest
             double[,] inputs = ConvolutionPipeline.ConvertToMatrix(processed.ToArray());
 
             INeuralNetwork previous;
-            if (args.Length == 3 && args[2].Equals("-Backup"))
+            if (args.Length == 2 && args[1].Equals("-Backup"))
             {
                 Printf("Retrieving previous network");
                 try
@@ -81,7 +81,7 @@ namespace DigitsTest
                 : await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
                     previous, LearningAlgorithmType.GradientDescend, cts.Token, progress);
 
-            if (args.Length == 3 && args[2].Equals("-Backup"))
+            if (args.Length == 2 && args[1].Equals("-Backup"))
             {
                 Printf("Storing computed network");
                 using (StreamWriter stream = File.CreateText(Path.Combine(ExecutingPath, "MNIST", "Network.json")))
