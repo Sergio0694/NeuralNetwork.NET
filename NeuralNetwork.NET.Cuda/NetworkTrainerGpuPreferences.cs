@@ -31,6 +31,7 @@ namespace NeuralNetworkNET.Cuda
                                 MatrixGpuExtensions.TransposeAndMultiply,
                                 MatrixGpuExtensions.MultiplyAndSigmoid,
                                 MatrixGpuExtensions.Sigmoid,
+                                MatrixGpuExtensions.HalfSquaredDifference,
                                 MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithSigmoidPrime,
                                 MatrixGpuExtensions.InPlaceSigmoidPrimeAndHadamardProduct);
                             break;

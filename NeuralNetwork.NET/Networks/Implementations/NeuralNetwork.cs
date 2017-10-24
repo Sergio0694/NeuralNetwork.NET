@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
@@ -131,24 +130,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[,] yHat = Forward(input);
 
             // Calculate the cost (half the squared difference)
-            int h = y.GetLength(0), w = y.GetLength(1);
-            double[] v = new double[h];
-            bool result = Parallel.For(0, h, i =>
-            {
-                for (int j = 0; j < w; j++)
-                {
-                    double
-                        delta = yHat[i, j] - y[i, j],
-                        square = delta * delta;
-                    v[i] += square;
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial costs
-            double cost = 0;
-            for (int i = 0; i < h; i++) cost += v[i];
-            return cost / 2;
+            return MatrixServiceProvider.HalfSquaredDifference(yHat, y);
         }
 
         /// <summary>

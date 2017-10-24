@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Implementations;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {
@@ -17,20 +18,38 @@ namespace NeuralNetworkNET.Cuda.Unit
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void StopwatchTest()
         {
-            Random r = new Random();
-            double[,]
-                m1 = r.NextMatrix(20000, 1000),
-                m2 = r.NextMatrix(1000, 800);
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-            m1.MultiplyAndSigmoid(m2);
-            timer.Stop();
-            var t1 = timer.ElapsedMilliseconds;
-            timer.Restart();
-            MatrixExtensions.MultiplyAndSigmoid(m1, m2);
-            timer.Stop();
-            var t2 = timer.ElapsedMilliseconds;
-            Debug.WriteLine($"GPU: {t1}ms, CPU: {t2}ms");
+            // Helper
+            void Benchmark(Action a1, Action a2, int iterations = 1)
+            {
+                while (iterations-- > 0)
+                {
+                    Stopwatch timer = new Stopwatch();
+                    timer.Start();
+                    a1();
+                    timer.Stop();
+                    var t1 = timer.ElapsedMilliseconds;
+                    timer.Restart();
+                    a2();
+                    timer.Stop();
+                    var t2 = timer.ElapsedMilliseconds;
+                    Debug.WriteLine($"GPU: {t1}ms, CPU: {t2}ms");
+                }
+            }
+
+            var network = NeuralNetwork.NewRandom(200, 100, 32, 10);
+            var r = new Random();
+            var input = r.NextMatrix(2000, 200);
+            var y = r.NextMatrix(2000, 10);
+            Benchmark(() =>
+            {
+                NetworkTrainerGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
+                network.ComputeGradient(input, y);
+            },
+            () =>
+            {
+                NetworkTrainerGpuPreferences.ProcessingMode = ProcessingMode.Cpu;
+                network.ComputeGradient(input, y);
+            }, 10);
         }
 
         [TestMethod]
@@ -110,6 +129,24 @@ namespace NeuralNetworkNET.Cuda.Unit
             check = MatrixExtensions.Sigmoid(m);
             test = m.Sigmoid();
             Assert.IsTrue(test.ContentEquals(check));
+        }
+
+        [TestMethod]
+        public void HalfSquaredDifference()
+        {
+            Random r = new Random();
+            double[,]
+                m1 = r.NextMatrix(7, 3),
+                m2 = r.NextMatrix(7, 3);
+            double
+                check = MatrixExtensions.HalfSquaredDifference(m1, m2),
+                test = m1.HalfSquaredDifference(m2);
+            Assert.IsTrue(Math.Abs(check - test) < 0.0000001);
+            m1 = r.NextMatrix(1500, 800);
+            m2 = r.NextMatrix(1500, 500);
+            check = MatrixExtensions.HalfSquaredDifference(m1, m2);
+            test = m1.HalfSquaredDifference(m2);
+            Assert.IsTrue(Math.Abs(check - test) < 0.0000001);
         }
 
         [TestMethod]

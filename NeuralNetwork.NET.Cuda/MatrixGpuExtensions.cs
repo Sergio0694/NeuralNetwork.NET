@@ -337,6 +337,49 @@ namespace NeuralNetworkNET.Cuda
             return result;
         }
 
+        /// <summary>
+        /// Calculates half the sum of the squared difference of each value pair in the two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double HalfSquaredDifference([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Detect the size of the inputs
+            int h = m1.GetLength(0), w = m1.GetLength(1);
+            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
+
+            // Allocate parameters
+            double[,]
+                m1_gpu = Gpu.Default.Allocate(m1),
+                m2_gpu = Gpu.Default.Allocate(m2);
+            var result_gpu = Gpu.Default.Allocate(h);
+
+            // Wrapper
+            void Kernel(int i)
+            {
+                // Local sum over each row
+                double row = 0;
+                for (int j = 0; j < w; j++)
+                {
+                    double delta = m1_gpu[i, j] - m2_gpu[i, j];
+                    row += delta * delta;
+                }
+                result_gpu[i] = row;
+            }
+
+            // Run the first kernel and compute the sum vector
+            Gpu.Default.For(0, h, Kernel);
+            Gpu.Free(m1_gpu);
+            Gpu.Free(m2_gpu);
+
+            // Aggregate the results in the sum vector
+            double cost = Gpu.Default.Aggregate(result_gpu, (n1, n2) => n1 + n2);
+            Gpu.Free(result_gpu);
+            return cost / 2;
+        }
+
         #endregion
 
         /// <summary>

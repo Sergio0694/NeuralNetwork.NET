@@ -19,6 +19,7 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Func<double[,], double[,], double[,]> transposeMultiply,
             [NotNull] Func<double[,], double[,], double[,]> multiplySigmoid,
             [NotNull] Func<double[,], double[,]> sigmoid,
+            [NotNull] Func<double[,], double[,], double> halfSquaredDifference,
             [NotNull] Action<double[,], double[,], double[,]> inPlaceSubtractHadamardSigmoidPrime,
             [NotNull] Action<double[,], double[,]> inPlaceSigmoidPrimeHadamard)
         {
@@ -26,6 +27,7 @@ namespace NeuralNetworkNET.Helpers
             _TransposeAndMultiplyOverride = transposeMultiply;
             _MultiplyAndSigmoidOverride = multiplySigmoid;
             _SigmoidOverride = sigmoid;
+            _HalfSquaredDifferenceOverride = halfSquaredDifference;
             _InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride = inPlaceSubtractHadamardSigmoidPrime;
             _InPlaceSigmoidPrimeAndHadamardProductOverride = inPlaceSigmoidPrimeHadamard;
         }
@@ -37,6 +39,7 @@ namespace NeuralNetworkNET.Helpers
         {
             _MultiplyOverride = _TransposeAndMultiplyOverride = _MultiplyAndSigmoidOverride = null;
             _SigmoidOverride = null;
+            _HalfSquaredDifferenceOverride = null;
             _InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride = null;
             _InPlaceSigmoidPrimeAndHadamardProductOverride = null;
         }
@@ -100,6 +103,21 @@ namespace NeuralNetworkNET.Helpers
         public static double[,] MultiplyAndSigmoid([NotNull] double[,] m1, [NotNull] double[,] m2)
         {
             return _MultiplyAndSigmoidOverride?.Invoke(m1, m2) ?? m1.MultiplyAndSigmoid(m2);
+        }
+
+        /// <summary>
+        /// A <see cref="Func{T1, T2, TResult}"/> that calculates half the squared difference of two matrices
+        /// </summary>
+        [CanBeNull]
+        private static Func<double[,], double[,], double> _HalfSquaredDifferenceOverride;
+
+        /// <summary>
+        /// Forwards the base <see cref="MatrixExtensions.HalfSquaredDifference"/> method
+        /// </summary>
+        [Pure]
+        public static double HalfSquaredDifference([NotNull] double[,] m1, [NotNull] double[,] m2)
+        {
+            return _HalfSquaredDifferenceOverride?.Invoke(m1, m2) ?? m1.HalfSquaredDifference(m2);
         }
 
         #endregion
