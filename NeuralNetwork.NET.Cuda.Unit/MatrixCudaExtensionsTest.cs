@@ -98,6 +98,21 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
+        public void Sigmoid()
+        {
+            Random r = new Random();
+            double[,]
+                m = r.NextMatrix(7, 3),
+                check = MatrixExtensions.Sigmoid(m);
+            double[,] test = m.Sigmoid();
+            Assert.IsTrue(test.ContentEquals(check));
+            m = r.NextMatrix(1500, 800);
+            check = MatrixExtensions.Sigmoid(m);
+            test = m.Sigmoid();
+            Assert.IsTrue(test.ContentEquals(check));
+        }
+
+        [TestMethod]
         public void InPlaceSubtractAndHadamardProductWithSigmoidPrime()
         {
             Random r = new Random();
