@@ -24,6 +24,7 @@
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 using System;
+using System.Threading;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 
@@ -32,8 +33,22 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
     /// <summary>
     ///   Base class for gradient-based optimization methods
     /// </summary>
-    public abstract class GradientOptimizationMethodBase : OptimizationMethodBase
+    public abstract class GradientOptimizationMethodBase
     {
+        #region Parameters
+
+        /// <summary>
+        ///   Gets or sets a cancellation token that can be used to
+        ///   stop the learning algorithm while it is running
+        /// </summary>
+        public CancellationToken Token { get; set; } = new CancellationToken();
+
+        /// <summary>
+        ///   Gets or sets the function to be optimized
+        /// </summary>
+        /// 
+        /// <value>The function to be optimized</value>
+        public Func<double[], double> Function { get; set; }
 
         /// <summary>
         ///   Gets or sets a function returning the gradient
@@ -43,6 +58,62 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
         /// 
         /// <value>The gradient function</value>
         public Func<double[], double[]> Gradient { get; set; }
+
+        private int _NumberOfVariables;
+
+        /// <summary>
+        ///   Gets the number of variables (free parameters)
+        ///   in the optimization problem
+        /// </summary>
+        /// 
+        /// <value>The number of parameters</value>
+        public virtual int NumberOfVariables
+        {
+            get => _NumberOfVariables;
+            set
+            {
+                _NumberOfVariables = value;
+                OnNumberOfVariablesChanged(value);
+            }
+        }
+
+        /// <summary>
+        /// Called when the <see cref="NumberOfVariables"/> property has changed
+        /// </summary>
+        private void OnNumberOfVariablesChanged(int numberOfVariables)
+        {
+            Random random = new Random();
+            if (Solution == null || Solution.Length != numberOfVariables)
+            {
+                Solution = new double[numberOfVariables];
+                for (int i = 0; i < Solution.Length; i++)
+                    Solution[i] = random.NextGaussian();
+            }
+        }
+
+        private double[] _Solution;
+
+        /// <summary>
+        ///   Gets the current solution found, the values of 
+        ///   the parameters which optimizes the function
+        /// </summary>
+        public double[] Solution
+        {
+            get => _Solution;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(Solution));
+                if (value.Length != NumberOfVariables) throw new ArgumentException(nameof(Solution), "Invalid solution size");
+                _Solution = value;
+            }
+        }
+
+        /// <summary>
+        ///   Gets the output of the function at the current <see cref="Solution"/>
+        /// </summary>
+        public double Value { get; protected set; }
+
+        #endregion
 
         // A small function to validate the gradient function
         private static void CheckGradient([NotNull] Func<double[], double[]> value, [NotNull] double[] probe)
@@ -70,11 +141,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
         ///   Returns <c>true</c> if the method converged to a <see cref="Solution"/>.
         ///   In this case, the found value will also be available at the <see cref="Value"/> property
         /// </returns>  
-        public override bool Minimize()
+        public bool Minimize()
         {
             if (Gradient == null) throw new ArgumentNullException("The gradient function can't be null");
             CheckGradient(Gradient, Solution);
-            return base.Minimize();
+            if (Function == null) throw new InvalidOperationException("function");
+            bool success = Optimize();
+            Value = Function(Solution);
+            return success;
         }
+
+        /// <summary>
+        ///   Implements the actual optimization algorithm. This
+        ///   method should try to minimize the objective function.
+        /// </summary>
+        protected abstract bool Optimize();
     }
 }
