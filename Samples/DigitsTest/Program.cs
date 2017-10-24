@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -14,9 +16,24 @@ namespace DigitsTest
 {
     class Program
     {
+        /// <summary>
+        /// Gets the path of the executing dll
+        /// </summary>
+        private static String ExecutingPath
+        {
+            get
+            {
+                String
+                    code = Assembly.GetExecutingAssembly().Location,
+                    dll = Path.GetFullPath(code),
+                    root = Path.GetDirectoryName(dll);
+                return root;
+            }
+        }
+
         static async Task Main(String[] args)
         {
-            if (args.Length != 2) args = new[] { @"C:\Users\Sergi\Documents\Digits", "1000"};
+            if (args.Length != 3) args = new[] { @"C:\Users\Sergi\Documents\Digits", "1000", "-Backup"};
             Printf("Loading sample data");
             (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(int.Parse(args[1]));
 
@@ -27,6 +44,24 @@ namespace DigitsTest
             IReadOnlyList<ConvolutionsStack> processed = SharedPipeline.Process(raw);
             double[,] inputs = ConvolutionPipeline.ConvertToMatrix(processed.ToArray());
 
+            INeuralNetwork previous;
+            if (args.Length == 3 && args[2].Equals("-Backup"))
+            {
+                Printf("Retrieving previous network");
+                try
+                {
+                    String json = File.ReadAllText(Path.Combine(ExecutingPath, "MNIST", "Network.json"));
+                    previous = NeuralNetworkDeserializer.TryDeserialize(json);
+                }
+                catch (FileNotFoundException)
+                {
+                    // Skip!
+                    Printf("Previous network not found");
+                    previous = null;
+                }
+            }
+            else previous = null;
+
             // Get the optimized network
             Printf("Training");
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -36,12 +71,24 @@ namespace DigitsTest
                 Console.CancelKeyPress -= CancelToken;
             }
             Console.CancelKeyPress += CancelToken;
-            INeuralNetwork network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
-                    LearningAlgorithmType.GradientDescend, cts.Token,
-                    null, new Progress<BackpropagationProgressEventArgs>(p =>
-                    {
-                        Printf($"Iteration #{p.Iteration} >> {p.Cost}");
-                    }), 480, 160, 16, 10);
+            IProgress<BackpropagationProgressEventArgs> progress = new Progress<BackpropagationProgressEventArgs>(p =>
+            {
+                Printf($"Iteration #{p.Iteration} >> {p.Cost}");
+            });
+            INeuralNetwork network = previous == null
+                ? await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
+                    LearningAlgorithmType.GradientDescend, cts.Token, progress, 480, 160, 16, 10)
+                : await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
+                    previous, LearningAlgorithmType.GradientDescend, cts.Token, progress);
+
+            if (args.Length == 3 && args[2].Equals("-Backup"))
+            {
+                Printf("Storing computed network");
+                using (StreamWriter stream = File.CreateText(Path.Combine(ExecutingPath, "MNIST", "Network.json")))
+                {
+                    stream.Write(network.SerializeAsJSON());
+                }
+            }
 
             Printf("Preparing test data");
             IReadOnlyList<double[,]> _2dTest = DataParser.ConvertDatasetTo2dImages(test);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Accord.Math.Optimization;
@@ -20,14 +21,51 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="ys">The results vector</param>
         /// <param name="type">The type of learning algorithm to use to train the network</param>
         /// <param name="token">The cancellation token for the training session</param>
-        /// <param name="solution">An optional starting solution to resume a previous training session</param>
         /// <param name="progress">An optional progress callback</param>
         /// <param name="neurons">The number of neurons in each network layer</param>
         [PublicAPI]
         [Pure]
         [ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
+        public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
+            [NotNull] double[,] x,
+            [NotNull] double[,] ys,
+            LearningAlgorithmType type,
+            CancellationToken token,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress,
+            [NotNull] params int[] neurons)
+        {
+            return ComputeTrainedNetworkAsync(x, ys, type, token, null, progress, neurons);
+        }
+
+        /// <summary>
+        /// Generates and trains a neural network suited for the input data and results
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="ys">The results vector</param>
+        /// <param name="network">The previous network to use as a starting point, to continue a training session</param>
+        /// <param name="type">The type of learning algorithm to use to train the network</param>
+        /// <param name="token">The cancellation token for the training session</param>
+        /// <param name="progress">An optional progress callback</param>
+        [PublicAPI]
+        [Pure]
+        [ItemNotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
+            [NotNull] double[,] x,
+            [NotNull] double[,] ys,
+            [NotNull] INeuralNetwork network,
+            LearningAlgorithmType type,
+            CancellationToken token,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress)
+        {
+            double[] solution = (network as NeuralNetwork)?.Serialize() ?? throw new ArgumentException(nameof(network), "Invalid network instance");
+            int[] neurons = new[] { network.InputLayerSize }.Concat(network.HiddenLayers).Concat(new[] { network.OutputLayerSize }).ToArray();
+            return ComputeTrainedNetworkAsync(x, ys, type, token, solution, progress, neurons);
+        }
+
+        // Private implementation
+        private static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
             [NotNull] double[,] ys,
             LearningAlgorithmType type,
