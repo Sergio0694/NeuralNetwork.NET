@@ -72,7 +72,7 @@ namespace DigitsCudaTest
             // Get the optimized network
             Printf("Training");
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            INeuralNetwork network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
+            INeuralNetwork network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");

@@ -11,7 +11,7 @@ namespace NeuralNetworkNET.SupervisedLearning
     /// <summary>
     /// A static class that create and trains a neural network for the input data and expected results
     /// </summary>
-    public static class GradientDescentNetworkTrainer
+    public static class BackpropagationNetworkTrainer
     {
         /// <summary>
         /// Generates and trains a neural network suited for the input data and results

@@ -36,7 +36,7 @@ namespace DigitsTest
                 Console.CancelKeyPress -= CancelToken;
             }
             Console.CancelKeyPress += CancelToken;
-            INeuralNetwork network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
+            INeuralNetwork network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
                     LearningAlgorithmType.GradientDescend, cts.Token,
                     null, new Progress<BackpropagationProgressEventArgs>(p =>
                     {

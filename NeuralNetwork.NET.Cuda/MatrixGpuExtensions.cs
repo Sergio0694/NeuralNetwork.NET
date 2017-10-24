@@ -299,6 +299,46 @@ namespace NeuralNetworkNET.Cuda
 
         #endregion
 
+        #region Misc
+
+        /// <summary>
+        /// Performs the sigmoid function on the input matrix
+        /// </summary>
+        /// <param name="m">The input matrix</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Sigmoid([NotNull] this double[,] m)
+        {
+            // Initialize the parameters and the result matrix
+            int h = m.GetLength(0);
+            int w = m.GetLength(1);
+            double[,]
+                m_gpu = Gpu.Default.Allocate(m),
+                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
+
+            // Wrapper
+            void Kernel(int ki)
+            {
+                // Apply the sigmoid to the current row
+                for (int j = 0; j < w; j++)
+                {
+                    mresult_gpu[ki, j] = 1 / (1 + Math.Exp(-m_gpu[ki, j]));
+                }
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(m_gpu);
+            double[,] result = Gpu.CopyToHost(mresult_gpu);
+            Gpu.Free(mresult_gpu);
+            return result;
+        }
+
+        #endregion
+
         /// <summary>
         /// Performs the multiplication between two matrices and then applies the sigmoid function
         /// </summary>
