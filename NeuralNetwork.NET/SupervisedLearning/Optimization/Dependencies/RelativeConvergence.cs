@@ -1,4 +1,8 @@
-﻿// Accord Math Library
+﻿// ===================================
+// Credits for the base of this code
+// ===================================
+//
+// Accord Math Library
 // The Accord.NET Framework
 // http://accord-framework.net
 //
@@ -18,14 +22,11 @@
 //    You should have received a copy of the GNU Lesser General Public
 //    License along with this library; if not, write to the Free Software
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-//
 
 using System;
 
 namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
 {
-    
-
     /// <summary>
     ///   Relative convergence criteria.
     /// </summary>
@@ -61,7 +62,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
     ///   double value = criteria.OldValue; // 1234.56
     /// </code>
     /// </example>
-    /// 
     public class RelativeConvergence
     {
 
@@ -73,53 +73,26 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         private int checks;
         private int maxChecks = 1;
 
-
         /// <summary>
         ///   Gets or sets the maximum relative change in the watched value
         ///   after an iteration of the algorithm used to detect convergence.
-        ///   Default is zero.
+        ///   Default is zero
         /// </summary>
-        /// 
         public double Tolerance
         {
-            get { return tolerance; }
-            set
-            {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException("value", "Tolerance should be positive.");
-
-                tolerance = value;
-            }
+            get => tolerance;
+            set => tolerance = value < 0 ? throw new ArgumentOutOfRangeException("value", "Tolerance should be positive") : value;
         }
 
         /// <summary>
         ///   Gets or sets the maximum number of iterations
-        ///   performed by the iterative algorithm. Default
-        ///   is 100.
+        ///   performed by the iterative algorithm. 
+        ///   Default is 100
         /// </summary>
-        /// 
         public int MaxIterations
         {
-            get { return maxIterations; }
-            set
-            {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException("value",
-                        "The maximum number of iterations should be positive.");
-
-                maxIterations = value;
-            }
-        }
-
-        /// <summary>
-        ///   Please use MaxIterations instead.
-        /// </summary>
-        /// 
-        [Obsolete("Please use MaxIterations instead.")]
-        public int Iterations
-        {
-            get { return MaxIterations; }
-            set { MaxIterations = value; }
+            get => maxIterations;
+            set => maxIterations = value < 0 ? throw new ArgumentOutOfRangeException("value", "The maximum number of iterations should be positive") : value;
         }
 
         /// <summary>
@@ -128,71 +101,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         /// 
         public RelativeConvergence()
         {
-            init();
-        }
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="RelativeConvergence"/> class.
-        /// </summary>
-        /// 
-        /// <param name="iterations">The maximum number of iterations which should be
-        ///   performed by the iterative algorithm. Setting to zero indicates there
-        ///   is no maximum number of iterations. Default is 100.</param>
-        /// <param name="tolerance">The maximum relative change in the watched value
-        ///   after an iteration of the algorithm used to detect convergence.
-        ///   Default is 0.</param>
-        /// 
-        public RelativeConvergence(int iterations, double tolerance)
-        {
-            init(iterations, tolerance);
-        }
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="RelativeConvergence"/> class.
-        /// </summary>
-        /// 
-        /// <param name="iterations">The maximum number of iterations which should be
-        ///   performed by the iterative algorithm. Setting to zero indicates there
-        ///   is no maximum number of iterations. Default is 0.</param>
-        /// <param name="tolerance">The maximum relative change in the watched value
-        ///   after an iteration of the algorithm used to detect convergence.
-        ///   Default is 0.</param>
-        /// <param name="checks">The minimum number of convergence checks that the
-        ///   iterative algorithm should pass before convergence can be declared
-        ///   reached.</param>
-        /// 
-        public RelativeConvergence(int iterations, double tolerance, int checks)
-        {
-            init(iterations, tolerance, checks);
-        }
-
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="RelativeConvergence"/> class.
-        /// </summary>
-        /// 
-        /// <param name="iterations">The maximum number of iterations which should be
-        ///   performed by the iterative algorithm. Setting to zero indicates there
-        ///   is no maximum number of iterations. Default is 0.</param>
-        /// <param name="tolerance">The maximum relative change in the watched value
-        ///   after an iteration of the algorithm used to detect convergence.
-        ///   Default is 0.</param>
-        /// <param name="checks">The minimum number of convergence checks that the
-        ///   iterative algorithm should pass before convergence can be declared
-        ///   reached.</param>
-        /// <param name="startValue">The initial value for the <see cref="NewValue"/> and
-        ///   <see cref="OldValue"/> properties.</param>
-        /// 
-        public RelativeConvergence(int iterations = 100, double tolerance = 0, int checks = 1, double startValue = 0)
-        {
-            init(iterations, tolerance, checks, startValue);
-        }
-
-        private void init(int iterations = 100, double tolerance = 0, int checks = 1, double startValue = 0)
-        {
-            this.MaxIterations = iterations;
-            this.tolerance = tolerance;
-            this.maxChecks = checks;
-            this.startValue = startValue;
+            this.MaxIterations = 100;
+            this.tolerance = 0;
+            this.maxChecks = 1;
+            this.startValue = 0;
 
             Clear();
         }
@@ -209,7 +121,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         /// 
         public double NewValue
         {
-            get { return newValue; }
+            get => newValue;
             set
             {
                 OldValue = newValue;
@@ -261,39 +173,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
 
         /// <summary>
         ///   Gets the absolute difference between the <see cref="NewValue"/> and <see cref="OldValue"/>
-        ///   as as <c>Math.Abs(OldValue - NewValue)</c>.
+        ///   as as <c>Math.Abs(OldValue - NewValue)</c>
         /// </summary>
-        /// 
-        public double Delta
-        {
-            get { return Math.Abs(OldValue - NewValue); }
-        }
-
-        /// <summary>
-        ///   Gets the relative difference between the <see cref="NewValue"/> and <see cref="OldValue"/>
-        ///   as <c>Math.Abs(OldValue - NewValue) / Math.Abs(OldValue)</c>.
-        /// </summary>
-        /// 
-        public double RelativeDelta
-        {
-            get { return Delta / Math.Abs(OldValue); }
-        }
-
-        /// <summary>
-        ///   Gets the initial value for the <see cref="NewValue"/> 
-        ///   and <see cref="OldValue"/> properties.
-        /// </summary>
-        /// 
-        public double StartValue
-        {
-            get { return startValue; }
-        }
+        public double Delta => Math.Abs(OldValue - NewValue);
 
         /// <summary>
         ///   Resets this instance, reverting all iteration statistics
-        ///   statistics (number of iterations, last error) back to zero.
+        ///   statistics (number of iterations, last error) back to zero
         /// </summary>
-        /// 
         public void Clear()
         {
             NewValue = startValue;
@@ -301,18 +188,5 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
             CurrentIteration = 0;
             checks = 0;
         }
-
-
-        /// <summary>
-        /// Returns a <see cref="System.String" /> that represents this instance.
-        /// </summary>
-        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
-        public override string ToString()
-        {
-            if (HasConverged)
-                return String.Format("Converged: {0} < {1}", RelativeDelta, tolerance);
-            return String.Format("Running: {0} > {1}", RelativeDelta, Tolerance);
-        }
-
     }
 }
