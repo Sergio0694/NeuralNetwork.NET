@@ -46,8 +46,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The precalculated list of transposed weight matrices to use inthe gradient function
         /// </summary>
         /// <remarks>The first item is always null (to save space), as it isn't needed to calculate the gradient</remarks>
-        [NotNull, ItemNotNull]
-        protected readonly IReadOnlyList<double[,]> TransposedWeights;
+        [NotNull, ItemCanBeNull]
+        protected readonly double[][,] TransposedWeights;
 
         #endregion
 
@@ -69,7 +69,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Parameters setup
             Weights = weights;
-            TransposedWeights = Weights.Select((m, i) => i == 0 ? null : m.Transpose()).ToArray();
+            TransposedWeights = new double[weights.Count][,];
         }
 
         /// <summary>
@@ -190,8 +190,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
                 // Precompute  W(l + 1) * delta(l + 1)
-                double[,] 
-                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),
+                double[,]
+                    transposed = TransposedWeights[l + 1] ?? (TransposedWeights[l + 1] = Weights[l + 1].Transpose()), // Calculate W[l + 1]T if needed
+                    dleft = deltas[l + 1].Multiply(transposed),
                     dl = zList[l]; // Local reference on the delta to calculate in place
 
                 /* ============================
