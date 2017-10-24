@@ -65,41 +65,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
         {
         }
 
-        /// <summary>
-        ///   Initializes a new instance of the <see cref="BaseGradientOptimizationMethod"/> class.
-        /// </summary>
-        /// 
-        /// <param name="numberOfVariables">The number of free parameters in the optimization problem.</param>
-        /// <param name="function">The objective function whose optimum values should be found.</param>
-        /// <param name="gradient">The gradient of the objective <paramref name="function"/>.</param>
-        /// 
-        protected GradientOptimizationMethodBase(int numberOfVariables,
-            Func<double[], double> function, Func<double[], double[]> gradient)
-            : base(numberOfVariables, function)
-        {
-            if (gradient == null)
-                throw new ArgumentNullException("gradient");
-
-            this.Gradient = gradient;
-        }
-
-        /// <summary>
-        ///   Finds the maximum value of a function. The solution vector
-        ///   will be made available at the <see cref="IOptimizationMethod{TInput, TOutput}.Solution"/> property.
-        /// </summary>
-        /// 
-        /// <returns>Returns <c>true</c> if the method converged to a <see cref="IOptimizationMethod{TInput, TOutput}.Solution"/>.
-        ///   In this case, the found value will also be available at the <see cref="IOptimizationMethod{TInput, TOutput}.Value"/>
-        ///   property.</returns>
-        ///  
-        public override bool Maximize()
-        {
-            if (Gradient == null)
-                throw new ArgumentNullException("The gradient function can't be null");
-
-            throw new InvalidOperationException("Maximizing isn't supported");
-        }
-
         private static void CheckGradient(Func<double[], double[]> value, double[] probe)
         {
             double[] original = (double[])probe.Clone();

@@ -28,12 +28,12 @@ using System;
 namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
 {
     /// <summary>
-    ///   Relative convergence criteria.
+    ///   Relative convergence criteria
     /// </summary>
     /// 
     /// <remarks>
     ///   This class can be used to track progress and convergence
-    ///   of methods which rely on the relative change of a value.
+    ///   of methods which rely on the relative change of a value
     /// </remarks>
     /// 
     /// <example>

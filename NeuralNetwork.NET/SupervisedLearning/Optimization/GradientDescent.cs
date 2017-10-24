@@ -1,4 +1,8 @@
-﻿// Accord Math Library
+﻿// ===================================
+// Credits for the base of this code
+// ===================================
+//
+// Accord Math Library
 // The Accord.NET Framework
 // http://accord-framework.net
 //
@@ -18,134 +22,93 @@
 //    You should have received a copy of the GNU Lesser General Public
 //    License along with this library; if not, write to the Free Software
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-//
 
 using System;
-using System.ComponentModel;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies;
-using System.Threading.Tasks;
 
 namespace NeuralNetworkNET.SupervisedLearning.Optimization
 {
-    
-
     /// <summary>
-    ///   Gradient Descent (GD) for unconstrained optimization.
+    ///   Gradient Descent (GD) for unconstrained optimization
     /// </summary>
-    /// 
-    /// <seealso cref="ConjugateGradient"/>
-    /// <seealso cref="BoundedBroydenFletcherGoldfarbShanno"/>
-    /// <seealso cref="BroydenFletcherGoldfarbShanno"/>
-    /// <seealso cref="TrustRegionNewtonMethod"/>
-    /// 
     public class GradientDescent : GradientOptimizationMethodBase
     {
+        // Gets the current convergence instance to monitor the progress
+        private readonly RelativeConvergence Convergence = new RelativeConvergence();
+        
+        // Optimization parameter during the minimization
+        private readonly int NumberOfUpdatesBeforeConvergenceCheck = 1;
 
-        private RelativeConvergence convergence = new RelativeConvergence();
-
-        private double eta = 1e-3;
-        private int numberOfUpdatesBeforeConvergenceCheck = 1;
-
-        /// <summary>
-        ///   Occurs when the current learning progress has changed.
-        /// </summary>
-        /// 
-        public event EventHandler<ProgressChangedEventArgs> ProgressChanged;
+        private double _LearningRate = 1e-3;
 
         /// <summary>
-        ///   Gets or sets the learning rate. Default is 1e-3.
+        ///   Gets or sets the learning rate. Default is 1e-3
         /// </summary>
-        /// 
         public double LearningRate
         {
-            get { return eta; }
-            set
-            {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value", "Learning rate should be higher than 0.");
-                eta = value;
-            }
+            get => _LearningRate;
+            set => _LearningRate = value <= 0 ? throw new ArgumentOutOfRangeException(nameof(LearningRate), "Learning rate should be higher than 0") : value;
         }
 
         /// <summary>
         ///   Gets or sets the maximum change in the average log-likelihood
         ///   after an iteration of the algorithm used to detect convergence.
-        ///   Default is 1e-5.
-        /// </summary>
-        /// 
+        ///   Default is 1e-5
+        /// </summary> 
         public double Tolerance
         {
-            get { return convergence.Tolerance; }
-            set { convergence.Tolerance = value; }
+            get => Convergence.Tolerance;
+            set => Convergence.Tolerance = value;
         }
 
         /// <summary>
         ///   Gets or sets the maximum number of iterations
-        ///   performed by the learning algorithm. Default is 0.
+        ///   performed by the learning algorithm. Default is 0
         /// </summary>
-        /// 
         public int Iterations
         {
-            get { return convergence.MaxIterations; }
-            set { convergence.MaxIterations = value; }
+            get => Convergence.MaxIterations;
+            set => Convergence.MaxIterations = value;
         }
 
         /// <summary>
-        ///   Creates a new instance of the GD optimization algorithm.
+        ///   Creates a new instance of the GD optimization algorithm
         /// </summary>
-        /// 
         public GradientDescent()
         {
-            this.Iterations = 0;
-            this.Tolerance = 1e-5;
+            Iterations = 0;
+            Tolerance = 1e-5;
         }
-
 
         /// <summary>
         ///   Implements the actual optimization algorithm. This
-        ///   method should try to minimize the objective function.
+        ///   method should try to minimize the objective function
         /// </summary>
-        /// 
         protected override bool Optimize()
         {
-            convergence.Clear();
-
+            Convergence.Clear();
             int updates = 0;
-
             do
             {
-                if (Token.IsCancellationRequested)
-                    break;
+                // Check the cancellation
+                if (Token.IsCancellationRequested) break;
 
+                // Perform the gradient descent
                 double[] gradient = Gradient(Solution);
                 for (int i = 0; i < Solution.Length; i++)
-                    Solution[i] -= eta * gradient[i];
+                    Solution[i] -= _LearningRate * gradient[i];
 
+                // Check the progress
                 updates++;
-
-                if (updates >= numberOfUpdatesBeforeConvergenceCheck)
+                if (updates >= NumberOfUpdatesBeforeConvergenceCheck)
                 {
-                    convergence.NewValue = Function(Solution);
+                    Convergence.NewValue = Function(Solution);
                     updates = 0;
                 }
             }
-            while (!convergence.HasConverged);
-
+            while (!Convergence.HasConverged);
             return true;
         }
-
-        /// <summary>
-        ///   Raises the <see cref="E:ProgressChanged"/> event.
-        /// </summary>
-        /// 
-        /// <param name="args">The ProgressChangedEventArgs instance containing the event data.</param>
-        /// 
-        protected void OnProgressChanged(ProgressChangedEventArgs args)
-        {
-            if (ProgressChanged != null)
-                ProgressChanged(this, args);
-        }
-
     }
 }

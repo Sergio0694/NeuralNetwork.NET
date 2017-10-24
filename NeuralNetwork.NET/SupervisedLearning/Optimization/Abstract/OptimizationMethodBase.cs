@@ -160,68 +160,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
             }
         }
 
-        /// <summary>
-        ///   Finds the maximum value of a function. The solution vector
-        ///   will be made available at the <see cref="Solution"/> property.
-        /// </summary>
-        /// 
-        /// <param name="values">The initial solution vector to start the search.</param>
-        /// 
-        /// <returns>Returns <c>true</c> if the method converged to a <see cref="Solution"/>.
-        ///   In this case, the found value will also be available at the <see cref="Value"/>
-        ///   property.</returns>
-        ///  
-        public bool Maximize(double[] values)
-        {
-            Solution = values;
-            return Maximize();
-        }
-
-
-        /// <summary>
-        ///   Finds the minimum value of a function. The solution vector
-        ///   will be made available at the <see cref="Solution"/> property.
-        /// </summary>
-        /// 
-        /// <param name="values">The initial solution vector to start the search.</param>
-        /// 
-        /// <returns>Returns <c>true</c> if the method converged to a <see cref="Solution"/>.
-        ///   In this case, the found value will also be available at the <see cref="Value"/>
-        ///   property.</returns>
-        ///  
-        public bool Minimize(double[] values)
-        {
-            Solution = values;
-            return Minimize();
-        }
-
-        /// <summary>
-        ///   Finds the maximum value of a function. The solution vector
-        ///   will be made available at the <see cref="Solution"/> property.
-        /// </summary>
-        /// 
-        /// <returns>Returns <c>true</c> if the method converged to a <see cref="Solution"/>.
-        ///   In this case, the found value will also be available at the <see cref="Value"/>
-        ///   property.</returns>
-        ///  
-        public virtual bool Maximize()
-        {
-            if (Function == null)
-                throw new InvalidOperationException("function");
-
-            var f = Function;
-
-            Function = (x) => -f(x);
-
-            bool success = Optimize();
-
-            Function = f;
-
-            value = Function(Solution);
-
-            return success;
-        }
-
 
         /// <summary>
         ///   Finds the minimum value of a function. The solution vector
@@ -251,28 +189,5 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
         /// </summary>
         /// 
         protected abstract bool Optimize();
-
-
-        /// <summary>
-        ///   Creates an exception with a given inner optimization algorithm code (for debugging purposes).
-        /// </summary>
-        /// 
-        protected static ArgumentOutOfRangeException ArgumentException(string paramName, string message, string code)
-        {
-            var e = new ArgumentOutOfRangeException(paramName, message);
-            e.Data["Code"] = code;
-            return e;
-        }
-
-        /// <summary>
-        ///   Creates an exception with a given inner optimization algorithm code (for debugging purposes).
-        /// </summary>
-        /// 
-        protected static InvalidOperationException OperationException(string message, string code)
-        {
-            var e = new InvalidOperationException(message);
-            e.Data["Code"] = code;
-            return e;
-        }
     }
 }
