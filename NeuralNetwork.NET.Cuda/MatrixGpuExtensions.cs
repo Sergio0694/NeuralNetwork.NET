@@ -354,7 +354,7 @@ namespace NeuralNetworkNET.Cuda
             double[,]
                 m1_gpu = Gpu.Default.Allocate(m1),
                 m2_gpu = Gpu.Default.Allocate(m2);
-            var result_gpu = Gpu.Default.Allocate(h);
+            double[] result_gpu = Gpu.Default.Allocate<double>(h);
 
             // Wrapper
             void Kernel(int i)
