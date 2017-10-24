@@ -27,18 +27,6 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Gets or sets a <see cref="Func{T, TResult}"/> that transposes the input matrix
-        /// </summary>
-        [CanBeNull]
-        public static Func<double[,], double[,]> TransposeOverride { get; set; }
-
-        /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.Transpose"/> method
-        /// </summary>
-        [Pure, NotNull]
-        public static double[,] MultiplyAndSigmoid([NotNull] double[,] m) => TransposeOverride?.Invoke(m) ?? m.Transpose();
-
-        /// <summary>
         /// Gets or sets a <see cref="Func{T1, T2, TResult}"/> that transposes the first matrix and then multiplies it with the second one
         /// </summary>
         [CanBeNull]
@@ -54,6 +42,18 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Gets or sets a <see cref="Func{T, TResult}"/> that applies the sigmoid function
+        /// </summary>
+        [CanBeNull]
+        public static Func<double[,], double[,]> SigmoidOverride { get; set; }
+
+        /// <summary>
+        /// Forwards the base <see cref="MatrixExtensions.Sigmoid"/> method
+        /// </summary>
+        [Pure, NotNull]
+        public static double[,] Sigmoid([NotNull] double[,] m) => SigmoidOverride?.Invoke(m) ?? m.Sigmoid();
+
+        /// <summary>
         /// Gets or sets a <see cref="Func{T1, T2, TResult}"/> that multiplies two matrices and then applies the sigmoid function
         /// </summary>
         [CanBeNull]
@@ -66,14 +66,6 @@ namespace NeuralNetworkNET.Helpers
         public static double[,] MultiplyAndSigmoid([NotNull] double[,] m1, [NotNull] double[,] m2)
         {
             return MultiplyAndSigmoidOverride?.Invoke(m1, m2) ?? m1.MultiplyAndSigmoid(m2);
-        }
-
-
-        public static Func<double[,], double[,], double[,]> SigmoidOverride { get; set; }
-
-        public static double[,] Sigmoid([NotNull] double[,] m1, [NotNull] double[,] m2)
-        {
-            return SigmoidOverride?.Invoke(m1, m2) ?? m1.Sigmoid();
         }
 
         #endregion
