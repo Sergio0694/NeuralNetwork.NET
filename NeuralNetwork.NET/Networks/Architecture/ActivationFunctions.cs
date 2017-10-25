@@ -86,6 +86,29 @@ namespace NeuralNetworkNET.Networks.Architecture
         public static double ReLUPrime(this double x) => x <= 0 ? 0 : 1;
 
         /// <summary>
+        /// Applies the leaky ReLU function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double LeakyReLU(this double x)
+        {
+            double sub = 0.01 * x;
+            return sub >= x ? sub : x;
+        }
+
+        /// <summary>
+        /// Applies the derivative of the <see cref="LeakyReLU"/> function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        /// <remarks>The real derivative is indetermined when x is 0</remarks>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double LeakyReLUPrime(this double x) => x <= 0 ? 0.01 : 1;
+
+        /// <summary>
         /// Applies the softplus function, ln(1 + e^x)
         /// </summary>
         /// <param name="x">The input to process</param>
@@ -101,5 +124,23 @@ namespace NeuralNetworkNET.Networks.Architecture
                 ln = Math.Log(sum);
             return ln;
         }
+
+        /// <summary>
+        /// Applies the exponential linear unit function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ELU(this double x) => x >= 0 ? x : Math.Exp(x) - 1;
+
+        /// <summary>
+        /// Applies the derivative of the <see cref="ELU"/> function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ELUPrime(this double x) => x >= 0 ? 1 : Math.Exp(x);
     }
 }
