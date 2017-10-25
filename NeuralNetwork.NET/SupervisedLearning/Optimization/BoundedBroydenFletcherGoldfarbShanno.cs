@@ -432,7 +432,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // c     This is the call to the L-BFGS-B code.
             // 
-            setulb(n, m, x, 0, l, 0, u, 0, nbd, 0, ref f, g, 0,
+            Setulb(n, m, x, 0, l, 0, u, 0, nbd, 0, ref f, g, 0,
                 factr, pgtol, work, 0, iwa, 0, ref task, iprint, ref csave,
                 lsave, 0, isave, 0, dsave, 0);
 

@@ -59,19 +59,28 @@
 //    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using NeuralNetworkNET.Helpers;
 
+// ReSharper disable once CheckNamespace
 namespace NeuralNetworkNET.SupervisedLearning.Optimization
 {
+    /// <summary>
+    /// Partial L-BFGS class with the original FORTRAN code
+    /// </summary>
+    [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
+    [SuppressMessage("ReSharper", "RedundantAssignment")]
+    [SuppressMessage("ReSharper", "TooWideLocalVariableScope")]
+    [SuppressMessage("ReSharper", "ParameterHidesMember")]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal sealed partial class BoundedBroydenFletcherGoldfarbShanno
     {
         /// <summary>
-        ///   Double-precision machine round-off error
+        ///     Double-precision machine round-off error
         /// </summary>
-        /// 
         /// <remarks>
-        ///   This value is actually different from Double.Epsilon. It
-        ///   is defined as 1.11022302462515654042E-16
+        ///     This value is actually different from Double.Epsilon. It
+        ///     is defined as 1.11022302462515654042E-16
         /// </remarks>
         private const double DoubleEpsilon = 1.11022302462515654042e-16;
 
@@ -110,102 +119,66 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // 
         // c     Initialize nbdd, prjctd, cnstnd and boxed.
         // 
-        private static void active(int n, double[] l, int _l_offset, double[] u, int _u_offset, int[] nbd,
-            int _nbd_offset, double[] x, int _x_offset, int[] iwhere, int _iwhere_offset, int iprint,
+        private static void Active(int n, double[] l, int _l_offset, double[] u, int _u_offset, int[] nbd,
+            int _nbd_offset, double[] x, int _x_offset, int[] iwhere, int _iwhere_offset,
             ref bool prjctd, ref bool cnstnd, ref bool boxed)
         {
-
-            int nbdd = 0;
-            int i = 0;
+            // Setup
+            int nbdd;
+            int i;
             nbdd = 0;
             prjctd = false;
             cnstnd = false;
             boxed = true;
-            // 
-            // c     Project the initial x to the feasible set if necessary.
-            // 
-            {
-                for (i = 1; i <= n; i++)
-                {
-                    if ((nbd[(i - (1)) + _nbd_offset] > 0))
+
+            // Project the initial x to the feasible set if necessary
+            for (i = 1; i <= n; i++)
+                if (nbd[i - 1 + _nbd_offset] > 0)
+                    if (nbd[i - 1 + _nbd_offset] <= 2
+                        && x[i - 1 + _x_offset] <= l[i - 1 + _l_offset])
                     {
-                        if (((nbd[(i - (1)) + _nbd_offset] <= 2)
-                            && (x[(i - (1)) + _x_offset] <= l[(i - (1)) + _l_offset])))
+                        if (x[i - 1 + _x_offset] < l[i - 1 + _l_offset])
                         {
-                            if ((x[(i - (1)) + _x_offset] < l[(i - (1)) + _l_offset]))
-                            {
-                                prjctd = true;
-                                x[(i - (1)) + _x_offset] = l[(i - (1)) + _l_offset];
-                            }
-                            nbdd = (nbdd + 1);
+                            prjctd = true;
+                            x[i - 1 + _x_offset] = l[i - 1 + _l_offset];
                         }
-                        else if (((nbd[(i - (1)) + _nbd_offset] >= 2)
-                            && (x[(i - (1)) + _x_offset] >= u[(i - (1)) + _u_offset])))
-                        {
-                            if ((x[(i - (1)) + _x_offset] > u[(i - (1)) + _u_offset]))
-                            {
-                                prjctd = true;
-                                x[(i - (1)) + _x_offset] = u[(i - (1)) + _u_offset];
-                            }
-                            nbdd = (nbdd + 1);
-                        }
+                        nbdd = nbdd + 1;
                     }
+                    else if (nbd[i - 1 + _nbd_offset] >= 2
+                             && x[i - 1 + _x_offset] >= u[i - 1 + _u_offset])
+                    {
+                        if (x[i - 1 + _x_offset] > u[i - 1 + _u_offset])
+                        {
+                            prjctd = true;
+                            x[i - 1 + _x_offset] = u[i - 1 + _u_offset];
+                        }
+                        nbdd = nbdd + 1;
+                    }
+
+            // Initialize iwhere and assign values to cnstnd and boxed
+            for (i = 1; i <= n; i++)
+            {
+                if (nbd[i - 1 + _nbd_offset] != 2)
+                    boxed = false;
+                if (nbd[i - 1 + _nbd_offset] == 0)
+                {
+                    // this variable is always free
+                    iwhere[i - 1 + _iwhere_offset] = -1;
+                    // 
+                    // otherwise set x(i)=mid(x(i), u(i), l(i)).
                 }
-            }
-            // 
-            // c     Initialize iwhere and assign values to cnstnd and boxed.
-            // 
-            {
-                for (i = 1; i <= n; i++)
+                else
                 {
-                    if ((nbd[(i - (1)) + _nbd_offset] != 2))
-                    {
-                        boxed = false;
-                    }
-                    if ((nbd[(i - (1)) + _nbd_offset] == 0))
-                    {
-                        // this variable is always free
-                        iwhere[(i - (1)) + _iwhere_offset] = -1;
-                        // 
-                        // otherwise set x(i)=mid(x(i), u(i), l(i)).
-                    }
+                    cnstnd = true;
+                    if (nbd[i - 1 + _nbd_offset] == 2 &&
+                        u[i - 1 + _u_offset] - l[i - 1 + _l_offset] <= 0.0)
+                        iwhere[i - 1 + _iwhere_offset] = 3;
                     else
-                    {
-                        cnstnd = true;
-                        if (((nbd[(i - (1)) + _nbd_offset] == 2) &&
-                            ((u[(i - (1)) + _u_offset] - l[(i - (1)) + _l_offset]) <= 0.0)))
-                        {
-                            // this variable is always fixed
-                            iwhere[(i - (1)) + _iwhere_offset] = 3;
-                        }
-                        else
-                        {
-                            iwhere[(i - (1)) + _iwhere_offset] = 0;
-                        }
-                    }
+                        iwhere[i - 1 + _iwhere_offset] = 0;
                 }
-            }
-
-            // 
-            if ((iprint >= 0))
-            {
-                if (prjctd)
-                {
-                    // DISPLAY: The initial X is infeasible.  Restart with its projection.";
-                }
-                if ((!cnstnd))
-                {
-                    // DISPLAY: "This problem is unconstrained."
-                }
-            }
-
-            if ((iprint > 0))
-            {
-                // DISPLAY: 'At X0 ',i9,' variables are exactly at the bounds'" (nbdd)
             }
         }
-
-
+        
         // 
         // c====================== The end of dpofa ===============================
         // 
@@ -272,155 +245,102 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c        check for zero diagonal elements.
         // c
 
-        private static void dtrsl(double[] t, int _t_offset, int ldt, int n,
+        private static void Dtrsl(double[] t, int _t_offset, int ldt, int n,
             double[] b, int _b_offset, int job, ref int info)
         {
             double temp = 0.0d;
             int Case = 0;
             int j = 0;
             int jj = 0;
-
-            {
-                for (info = 1; info <= n; info++)
-                {
-                    // ......exit
-                    if ((t[(info - (1)) + (info - (1)) * (ldt) + _t_offset] == 0.0e0))
-                    {
-                        return;
-                    }
-                }
-            }
+            for (info = 1; info <= n; info++)
+                // ......exit
+                if (t[info - 1 + (info - 1) * ldt + _t_offset] == 0.0e0) return;
 
             info = 0;
 
-            // 
-            // determine the task and go to it.
-            // 
+            // Determine the task and go to it
             Case = 1;
 
-            if (((job) % (10) != 0))
-            {
-                Case = 2;
-            }
+            if (job % 10 != 0) Case = 2;
 
-            if ((((job) % (100) / 10) != 0))
-            {
-                Case = (Case + 2);
-            }
+            if (job % 100 / 10 != 0) Case = Case + 2;
 
             {
                 int _cg_tmp = Case;
                 if (_cg_tmp == 1)
                     goto L20;
-                else if (_cg_tmp == 2)
+                if (_cg_tmp == 2)
                     goto L50;
-                else if (_cg_tmp == 3)
+                if (_cg_tmp == 3)
                     goto L80;
-                else if (_cg_tmp == 4)
+                if (_cg_tmp == 4)
                     goto L110;
             }
 
-            //
-            // solve t*x=b for t lower triangular
-            //
+            // Solve t*x=b for t lower triangular
             L20:
 
-            b[(1 - (1)) + _b_offset] = (b[(1 - (1)) + _b_offset]
-                / t[(1 - (1)) + (1 - (1)) * (ldt) + _t_offset]);
+            b[1 - 1 + _b_offset] = b[1 - 1 + _b_offset] / t[1 - 1 + (1 - 1) * ldt + _t_offset];
 
-            if ((n < 2))
+            if (n < 2) return;
+            for (j = 2; j <= n; j++)
             {
-                return;
-            }
-
-            {
-                for (j = 2; j <= n; j++)
-                {
-                    temp = (-(b[((j - 1) - (1)) + _b_offset]));
-                    daxpy(((n - j) + 1), temp, t, (j - (1)) + ((j - 1)
-                        - (1)) * (ldt) + _t_offset, 1, b, (j - (1)) + _b_offset, 1);
-                    b[(j - (1)) + _b_offset] = (b[(j - (1)) + _b_offset] / t[(j - (1))
-                        + (j - (1)) * (ldt) + _t_offset]);
-                }
+                temp = -b[j - 1 - 1 + _b_offset];
+                Daxpy(n - j + 1, temp, t, j - 1 + (j - 1 - 1) * ldt + _t_offset, 1, b, j - 1 + _b_offset, 1);
+                b[j - 1 + _b_offset] = b[j - 1 + _b_offset] / t[j - 1 + (j - 1) * ldt + _t_offset];
             }
             return;
 
-            // 
-            // solve t*x=b for t upper triangular.
-            // 
+            // Solve t*x=b for t upper triangular
             L50:
 
-            b[(n - (1)) + _b_offset] = (b[(n - (1)) + _b_offset]
-                / t[(n - (1)) + (n - (1)) * (ldt) + _t_offset]);
+            b[n - 1 + _b_offset] = b[n - 1 + _b_offset] / t[n - 1 + (n - 1) * ldt + _t_offset];
 
-            if ((n < 2))
+            if (n < 2) return;
+            for (jj = 2; jj <= n; jj++)
             {
-                return;
+                j = n - jj + 1;
+                temp = -b[j + 1 - 1 + _b_offset];
+                Daxpy(j, temp,
+                    t, 1 - 1 + (j + 1 - 1) * ldt + _t_offset, 1,
+                    b, 1 - 1 + _b_offset, 1);
+
+                b[j - 1 + _b_offset] = b[j - 1 + _b_offset]
+                                       / t[j - 1 + (j - 1) * ldt + _t_offset];
             }
-
-            {
-                for (jj = 2; jj <= n; jj++)
-                {
-                    j = ((n - jj) + 1);
-                    temp = (-(b[((j + 1) - (1)) + _b_offset]));
-                    daxpy(j, temp,
-                        t, (1 - (1)) + ((j + 1) - (1)) * (ldt) + _t_offset, 1,
-                        b, (1 - (1)) + _b_offset, 1);
-
-                    b[(j - (1)) + _b_offset] = (b[(j - (1)) + _b_offset]
-                        / t[(j - (1)) + (j - (1)) * (ldt) + _t_offset]);
-                }
-            }
-
             return;
-            // 
-            // solve trans(t)*x=b for t lower triangular.
-            // 
+
+            // Solve trans(t)*x=b for t lower triangular
             L80:
-            b[(n - (1)) + _b_offset] = (b[(n - (1)) + _b_offset]
-                / t[(n - (1)) + (n - (1)) * (ldt) + _t_offset]);
+            b[n - 1 + _b_offset] = b[n - 1 + _b_offset] / t[n - 1 + (n - 1) * ldt + _t_offset];
 
-            if ((n < 2))
+            if (n < 2) return;
+            for (jj = 2; jj <= n; jj++)
             {
-                return;
-            }
+                j = n - jj + 1;
+                b[j - 1 + _b_offset] = b[j - 1 + _b_offset]
+                                       - Ddot(jj - 1, t, j + 1 - 1 + (j - 1) * ldt + _t_offset,
+                                           1, b, j + 1 - 1 + _b_offset, 1);
 
-            {
-                for (jj = 2; jj <= n; jj++)
-                {
-                    j = ((n - jj) + 1);
-                    b[(j - (1)) + _b_offset] = (b[(j - (1)) + _b_offset]
-                        - ddot((jj - 1), t, ((j + 1) - (1)) + (j - (1)) * (ldt) + _t_offset,
-                        1, b, ((j + 1) - (1)) + _b_offset, 1));
-
-                    b[(j - (1)) + _b_offset] = (b[(j - (1)) + _b_offset] / t[(j - (1))
-                        + (j - (1)) * (ldt) + _t_offset]);
-                }
+                b[j - 1 + _b_offset] = b[j - 1 + _b_offset] / t[j - 1
+                                                                + (j - 1) * ldt + _t_offset];
             }
             return;
 
-            // 
-            // solve trans(t)*x=b for t upper triangular.
-            // 
+            // Solve trans(t)*x=b for t upper triangular
             L110:
-            b[(1 - (1)) + _b_offset] = (b[(1 - (1)) + _b_offset]
-                / t[(1 - (1)) + (1 - (1)) * (ldt) + _t_offset]);
+            b[1 - 1 + _b_offset] = b[1 - 1 + _b_offset]
+                                   / t[1 - 1 + (1 - 1) * ldt + _t_offset];
 
-            if ((n < 2))
+            if (n < 2) return;
+            for (j = 2; j <= n; j++)
             {
-                return;
-            }
+                b[j - 1 + _b_offset] = b[j - 1 + _b_offset]
+                                       - Ddot(j - 1, t, 1 - 1 + (j - 1) * ldt + _t_offset,
+                                           1, b, 1 - 1 + _b_offset, 1);
 
-            {
-                for (j = 2; j <= n; j++)
-                {
-                    b[(j - (1)) + _b_offset] = (b[(j - (1)) + _b_offset]
-                        - ddot((j - 1), t, (1 - (1)) + (j - (1)) * (ldt) + _t_offset,
-                        1, b, (1 - (1)) + _b_offset, 1));
-
-                    b[(j - (1)) + _b_offset] = (b[(j - (1)) + _b_offset]
-                        / t[(j - (1)) + (j - (1)) * (ldt) + _t_offset]);
-                }
+                b[j - 1 + _b_offset] = b[j - 1 + _b_offset]
+                                       / t[j - 1 + (j - 1) * ldt + _t_offset];
             }
         }
 
@@ -489,17 +409,13 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     ************
         // 
         // 
-        private static void bmv(int m, double[] sy, int _sy_offset, double[] wt, int _wt_offset,
+        private static void Bmv(int m, double[] sy, int _sy_offset, double[] wt, int _wt_offset,
             int col, double[] v, int _v_offset, double[] p, int _p_offset, ref int info)
         {
-
-            int i = 0;
-            int k = 0;
-            int i2 = 0;
-            double sum = 0.0d;
-
-            if ((col == 0))
-                return;
+            int i;
+            int k ;
+            double sum;
+            if (col == 0) return;
 
             // 
             // PART I: solve [  D^(1/2)      O ] [ p1 ] = [ v1 ]
@@ -507,41 +423,30 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             //  solve Jp2=v2+LD^(-1)v1.
             //
-            p[((col + 1) - (1)) + _p_offset] = v[((col + 1) - (1)) + _v_offset];
+            p[col + 1 - 1 + _p_offset] = v[col + 1 - 1 + _v_offset];
+            for (i = 2; i <= col; i++)
             {
-                for (i = 2; i <= col; i++)
+                int i2 = col + i;
+                sum = 0.0e0;
                 {
-                    i2 = (col + i);
-                    sum = 0.0e0;
-                    {
-                        for (k = 1; k <= (i - 1); k++)
-                        {
-                            sum = (sum + ((sy[(i - (1)) + (k - (1)) * (m)
-                                + _sy_offset] * v[(k - (1)) + _v_offset]) / sy[(k - (1))
-                                + (k - (1)) * (m) + _sy_offset]));
-                        }
-                    }
-
-                    p[(i2 - (1)) + _p_offset] = (v[(i2 - (1)) + _v_offset] + sum);
+                    for (k = 1; k <= i - 1; k++)
+                        sum = sum + sy[i - 1 + (k - 1) * m
+                                       + _sy_offset] * v[k - 1 + _v_offset] / sy[k - 1
+                                                                                 + (k - 1) * m + _sy_offset];
                 }
+
+                p[i2 - 1 + _p_offset] = v[i2 - 1 + _v_offset] + sum;
             }
 
             // Solve the triangular system
-            dtrsl(wt, _wt_offset, m, col, p,
-                ((col + 1) - (1)) + _p_offset, 11, ref info);
+            Dtrsl(wt, _wt_offset, m, col, p, col + 1 - 1 + _p_offset, 11, ref info);
 
-            if ((info != 0))
-                return;
-
-            // 
+            if (info != 0) return;
+            
             // solve D^(1/2)p1=v1.
-            {
-                for (i = 1; i <= col; i++)
-                {
-                    p[(i - (1)) + _p_offset] = (v[(i - (1)) + _v_offset]
-                        / System.Math.Sqrt(sy[(i - (1)) + (i - (1)) * (m) + _sy_offset]));
-                }
-            }
+            for (i = 1; i <= col; i++)
+                p[i - 1 + _p_offset] = v[i - 1 + _v_offset]
+                                       / Math.Sqrt(sy[i - 1 + (i - 1) * m + _sy_offset]);
 
             // 
             //  PART II: solve [ -D^(1/2)   D^(-1/2)*L'  ] [ p1 ] = [ p1 ]
@@ -549,36 +454,25 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             //    solve J^Tp2=p2. 
             //
-            dtrsl(wt, _wt_offset, m, col,
-                p, ((col + 1) - (1)) + _p_offset, 01, ref info);
+            Dtrsl(wt, _wt_offset, m, col, p, col + 1 - 1 + _p_offset, 01, ref info);
 
-            if ((info != 0))
-                return;
+            if (info != 0) return;
 
             // 
             // compute p1 = -D^(-1/2)(p1-D^(-1/2)L'p2)
             //            = -D^(-1/2)p1+D^(-1)L'p2.  
-            {
-                for (i = 1; i <= col; i++)
-                {
-                    p[(i - (1)) + _p_offset] = (-((p[(i - (1)) + _p_offset]
-                        / System.Math.Sqrt(sy[(i - (1)) + (i - (1)) * (m) + _sy_offset]))));
-                }
-            }
+            for (i = 1; i <= col; i++)
+                p[i - 1 + _p_offset] = -(p[i - 1 + _p_offset] / Math.Sqrt(sy[i - 1 + (i - 1) * m + _sy_offset]));
 
+            for (i = 1; i <= col; i++)
             {
-                for (i = 1; i <= col; i++)
+                sum = 0.0e0;
                 {
-                    sum = 0.0e0;
-                    {
-                        for (k = (i + 1); k <= col; k++)
-                        {
-                            sum = (sum + ((sy[(k - (1)) + (i - (1)) * (m) + _sy_offset]
-                                * p[((col + k) - (1)) + _p_offset]) / sy[(i - (1)) + (i - (1)) * (m) + _sy_offset]));
-                        }
-                    }
-                    p[(i - (1)) + _p_offset] = (p[(i - (1)) + _p_offset] + sum);
+                    for (k = i + 1; k <= col; k++)
+                        sum = sum + sy[k - 1 + (i - 1) * m + _sy_offset]
+                              * p[col + k - 1 + _p_offset] / sy[i - 1 + (i - 1) * m + _sy_offset];
                 }
+                p[i - 1 + _p_offset] = p[i - 1 + _p_offset] + sum;
             }
         }
 
@@ -773,7 +667,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c       compute the Cauchy direction d and the breakpoints t; initialize
         // c       the derivative f1 and the vector p = W'd (for theta = 1).
         // 
-        private static void cauchy(int n, double[] x, int _x_offset, double[] l, int _l_offset,
+        private static void Cauchy(int n, double[] x, int _x_offset, double[] l, int _l_offset,
             double[] u, int _u_offset, int[] nbd, int _nbd_offset, double[] g, int _g_offset,
             int[] iorder, int _iorder_offset, int[] iwhere, int _iwhere_offset, double[] t, int _t_offset,
             double[] d, int _d_offset, double[] xcp, int _xcp_offset, int m,
@@ -783,7 +677,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double[] wbp, int _wbp_offset, double[] v, int _v_offset, ref int nseg,
             int iprint, double sbgnrm, ref int info, double epsmch)
         {
-
             bool xlower = false;
             bool xupper = false;
             bool bnded = false;
@@ -816,25 +709,25 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double neggi = 0.0d;
             double f2_org = 0.0d;
 
-            if ((sbgnrm <= 0.0))
+            if (sbgnrm <= 0.0)
             {
-                if ((iprint >= 0))
+                if (iprint >= 0)
                 {
                     // DISPLAY: Subgnorm = 0.  GCP = X.
                 }
 
-                dcopy(n, x, _x_offset, 1, xcp, _xcp_offset, 1);
+                Dcopy(n, x, _x_offset, 1, xcp, _xcp_offset, 1);
                 return;
             }
 
             bnded = true;
-            nfree = (n + 1);
+            nfree = n + 1;
             nbreak = 0;
             ibkmin = 0;
             bkmin = 0.0;
-            col2 = (2 * col);
+            col2 = 2 * col;
             f1 = 0.0;
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: '---------------- CAUCHY entered-------------------'
             }
@@ -843,9 +736,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             {
                 for (i = 1; i <= col2; i++)
-                {
-                    p[(i - (1)) + _p_offset] = 0.0;
-                }
+                    p[i - 1 + _p_offset] = 0.0;
             }
             // 
             // c     In the following loop we determine for each variable its bound
@@ -855,108 +746,98 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 for (i = 1; i <= n; i++)
                 {
-                    neggi = (-(g[(i - (1)) + _g_offset]));
+                    neggi = -g[i - 1 + _g_offset];
 
-                    if (((iwhere[(i - (1)) + _iwhere_offset] != 3)
-                        && (iwhere[(i - (1)) + _iwhere_offset] != -1)))
+                    if (iwhere[i - 1 + _iwhere_offset] != 3
+                        && iwhere[i - 1 + _iwhere_offset] != -1)
                     {
                         // c             if x(i) is not a constant and has bounds,
                         // c             compute the difference between x(i) and its bounds.
-                        if ((nbd[(i - (1)) + _nbd_offset] <= 2))
-                        {
-                            tl = (x[(i - (1)) + _x_offset] - l[(i - (1)) + _l_offset]);
-                        }
-                        if ((nbd[(i - (1)) + _nbd_offset] >= 2))
-                        {
-                            tu = (u[(i - (1)) + _u_offset] - x[(i - (1)) + _x_offset]);
-                        }
+                        if (nbd[i - 1 + _nbd_offset] <= 2)
+                            tl = x[i - 1 + _x_offset] - l[i - 1 + _l_offset];
+                        if (nbd[i - 1 + _nbd_offset] >= 2)
+                            tu = u[i - 1 + _u_offset] - x[i - 1 + _x_offset];
                         // 
                         // c           If a variable is close enough to a bound
                         // c             we treat it as at bound.
-                        xlower = ((nbd[(i - (1)) + _nbd_offset] <= 2) && (tl <= 0.0));
-                        xupper = ((nbd[(i - (1)) + _nbd_offset] >= 2) && (tu <= 0.0));
+                        xlower = nbd[i - 1 + _nbd_offset] <= 2 && tl <= 0.0;
+                        xupper = nbd[i - 1 + _nbd_offset] >= 2 && tu <= 0.0;
                         // 
                         // c              reset iwhere(i).
-                        iwhere[(i - (1)) + _iwhere_offset] = 0;
+                        iwhere[i - 1 + _iwhere_offset] = 0;
                         if (xlower)
                         {
-                            if ((neggi <= 0.0))
-                            {
-                                iwhere[(i - (1)) + _iwhere_offset] = 1;
-                            }
+                            if (neggi <= 0.0)
+                                iwhere[i - 1 + _iwhere_offset] = 1;
                         }
                         else if (xupper)
                         {
-                            if ((neggi >= 0.0))
-                            {
-                                iwhere[(i - (1)) + _iwhere_offset] = 2;
-                            }
+                            if (neggi >= 0.0)
+                                iwhere[i - 1 + _iwhere_offset] = 2;
                         }
                         else
                         {
-                            if ((System.Math.Abs(neggi) <= 0.0))
-                            {
-                                iwhere[(i - (1)) + _iwhere_offset] = -3;
-                            }
+                            if (Math.Abs(neggi) <= 0.0)
+                                iwhere[i - 1 + _iwhere_offset] = -3;
                         }
                     }
                     pointr = head;
-                    if (((iwhere[(i - (1)) + _iwhere_offset] != 0) && (iwhere[(i - (1)) + _iwhere_offset] != -1)))
+                    if (iwhere[i - 1 + _iwhere_offset] != 0 && iwhere[i - 1 + _iwhere_offset] != -1)
                     {
-                        d[(i - (1)) + _d_offset] = 0.0;
+                        d[i - 1 + _d_offset] = 0.0;
                     }
                     else
                     {
-                        d[(i - (1)) + _d_offset] = neggi;
-                        f1 = (f1 - (neggi * neggi));
+                        d[i - 1 + _d_offset] = neggi;
+                        f1 = f1 - neggi * neggi;
 
                         // calculate p := p - W'e_i* (g_i).
                         {
                             for (j = 1; j <= col; j++)
                             {
-                                p[(j - (1)) + _p_offset] = (p[(j - (1))
-                                    + _p_offset] + (wy[(i - (1)) + (pointr - (1)) * (n) + _wy_offset] * neggi));
-                                p[((col + j) - (1)) + _p_offset] = (p[((col + j) - (1))
-                                    + _p_offset] + (ws[(i - (1)) + (pointr - (1)) * (n) + _ws_offset] * neggi));
-                                pointr = ((pointr) % (m) + 1);
+                                p[j - 1 + _p_offset] = p[j - 1
+                                                         + _p_offset] + wy[i - 1 + (pointr - 1) * n + _wy_offset] *
+                                                       neggi;
+                                p[col + j - 1 + _p_offset] = p[col + j - 1
+                                                               + _p_offset] +
+                                                             ws[i - 1 + (pointr - 1) * n + _ws_offset] * neggi;
+                                pointr = pointr % m + 1;
                             }
                         }
-                        if ((((nbd[(i - (1)) + _nbd_offset] <= 2)
-                            && (nbd[(i - (1)) + _nbd_offset] != 0)) && (neggi < 0.0)))
+                        if (nbd[i - 1 + _nbd_offset] <= 2
+                            && nbd[i - 1 + _nbd_offset] != 0 && neggi < 0.0)
                         {
                             // x(i) + d(i) is bounded; compute t(i).
 
-                            nbreak = (nbreak + 1);
-                            iorder[(nbreak - (1)) + _iorder_offset] = i;
-                            t[(nbreak - (1)) + _t_offset] = (tl / ((-(neggi))));
-                            if (((nbreak == 1) || (t[(nbreak - (1)) + _t_offset] < bkmin)))
+                            nbreak = nbreak + 1;
+                            iorder[nbreak - 1 + _iorder_offset] = i;
+                            t[nbreak - 1 + _t_offset] = tl / -neggi;
+                            if (nbreak == 1 || t[nbreak - 1 + _t_offset] < bkmin)
                             {
-                                bkmin = t[(nbreak - (1)) + _t_offset];
+                                bkmin = t[nbreak - 1 + _t_offset];
                                 ibkmin = nbreak;
                             }
                         }
-                        else if (((nbd[(i - (1)) + _nbd_offset] >= 2) && (neggi > 0.0)))
+                        else if (nbd[i - 1 + _nbd_offset] >= 2 && neggi > 0.0)
                         {
                             // x(i) + d(i) is bounded; compute t(i).
 
-                            nbreak = (nbreak + 1);
-                            iorder[(nbreak - (1)) + _iorder_offset] = i;
-                            t[(nbreak - (1)) + _t_offset] = (tu / neggi);
-                            if (((nbreak == 1) || (t[(nbreak - (1)) + _t_offset] < bkmin)))
+                            nbreak = nbreak + 1;
+                            iorder[nbreak - 1 + _iorder_offset] = i;
+                            t[nbreak - 1 + _t_offset] = tu / neggi;
+                            if (nbreak == 1 || t[nbreak - 1 + _t_offset] < bkmin)
                             {
-                                bkmin = t[(nbreak - (1)) + _t_offset];
+                                bkmin = t[nbreak - 1 + _t_offset];
                                 ibkmin = nbreak;
                             }
                         }
                         else
                         {
                             // x(i) + d(i) is not bounded.
-                            nfree = (nfree - 1);
-                            iorder[(nfree - (1)) + _iorder_offset] = i;
-                            if ((System.Math.Abs(neggi) > 0.0))
-                            {
+                            nfree = nfree - 1;
+                            iorder[nfree - 1 + _iorder_offset] = i;
+                            if (Math.Abs(neggi) > 0.0)
                                 bnded = false;
-                            }
                         }
                     }
                 }
@@ -966,56 +847,46 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // in iorder(1),...,iorder(nbreak) and iorder(nfree),...,iorder(n).
             // The smallest of the nbreak breakpoints is in t(ibkmin)=bkmin.
             // 
-            if ((theta != 1.0))
-            {
-                // complete the initialization of p for theta not= one.
-                dscal(col, theta, p, ((col + 1) - (1)) + _p_offset, 1);
-            }
+            if (theta != 1.0)
+                Dscal(col, theta, p, col + 1 - 1 + _p_offset, 1);
 
             // 
             // c     Initialize GCP xcp = x.
             // 
-            dcopy(n, x, _x_offset, 1, xcp, _xcp_offset, 1);
+            Dcopy(n, x, _x_offset, 1, xcp, _xcp_offset, 1);
 
-            if (((nbreak == 0) && (nfree == (n + 1))))
-            {
-                // is a zero vector, return with the initial xcp as GCP.
+            if (nbreak == 0 && nfree == n + 1)
                 return;
-            }
 
             // 
             // c     Initialize c = W'(xcp - x) = 0.
             // 
             {
                 for (j = 1; j <= col2; j++)
-                {
-                    c[(j - (1)) + _c_offset] = 0.0;
-                }
+                    c[j - 1 + _c_offset] = 0.0;
             }
 
             // 
             // c     Initialize derivative f2.
             // 
-            f2 = (-((theta * f1)));
+            f2 = -(theta * f1);
             f2_org = f2;
-            if ((col > 0))
+            if (col > 0)
             {
-                bmv(m, sy, _sy_offset, wt, _wt_offset,
+                Bmv(m, sy, _sy_offset, wt, _wt_offset,
                     col, p, _p_offset, v, _v_offset, ref info);
 
-                if ((info != 0))
-                {
+                if (info != 0)
                     return;
-                }
 
-                f2 = (f2 - BoundedBroydenFletcherGoldfarbShanno.ddot(col2, v, _v_offset, 1, p, _p_offset, 1));
+                f2 = f2 - Ddot(col2, v, _v_offset, 1, p, _p_offset, 1);
             }
 
-            dtm = (-((f1 / f2)));
+            dtm = -(f1 / f2);
             tsum = 0.0;
             nseg = 1;
 
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: "There are " + nbreak + "  breakpoints "
             }
@@ -1023,7 +894,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // c     If there are no breakpoints, locate the GCP and return. 
             // 
-            if ((nbreak == 0))
+            if (nbreak == 0)
                 goto L888;
 
             nleft = nbreak;
@@ -1040,37 +911,30 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             tj0 = tj;
 
-            if ((iter == 1))
+            if (iter == 1)
             {
                 // Since we already have the smallest breakpoint we need not do
                 // heapsort yet. Often only one breakpoint is used and the
                 // cost of heapsort is avoided.
                 tj = bkmin;
-                ibp = iorder[(ibkmin - (1)) + _iorder_offset];
+                ibp = iorder[ibkmin - 1 + _iorder_offset];
             }
             else
             {
-                if ((iter == 2))
-                {
-                    // Replace the already used smallest breakpoint with the
-                    // breakpoint numbered nbreak > nlast, before heapsort call.
-
-                    if ((ibkmin != nbreak))
+                if (iter == 2)
+                    if (ibkmin != nbreak)
                     {
-                        t[(ibkmin - (1)) + _t_offset] = t[(nbreak - (1)) + _t_offset];
-                        iorder[(ibkmin - (1)) + _iorder_offset] = iorder[(nbreak - (1)) + _iorder_offset];
+                        t[ibkmin - 1 + _t_offset] = t[nbreak - 1 + _t_offset];
+                        iorder[ibkmin - 1 + _iorder_offset] = iorder[nbreak - 1 + _iorder_offset];
                     }
-                    // Update heap structure of breakpoints
-                    //   (if iter=2, initialize heap).
-                }
-                hpsolb(nleft, t, _t_offset, iorder, _iorder_offset, (iter - 2));
-                tj = t[(nleft - (1)) + _t_offset];
-                ibp = iorder[(nleft - (1)) + _iorder_offset];
+                Hpsolb(nleft, t, _t_offset, iorder, _iorder_offset, iter - 2);
+                tj = t[nleft - 1 + _t_offset];
+                ibp = iorder[nleft - 1 + _iorder_offset];
             }
             // 
-            dt = (tj - tj0);
+            dt = tj - tj0;
             // 
-            if (((dt != 0.0) && (iprint >= 100)))
+            if (dt != 0.0 && iprint >= 100)
             {
                 // DISPLAY: nseg, f1, f2
                 //          "/,'Piece    ',i3,' --f1, f2 at start point ',1p,2(1x,d11.4)"
@@ -1085,38 +949,38 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // If a minimizer is within this interval, locate the GCP and return.
             // 
-            if ((dtm < dt))
+            if (dtm < dt)
                 goto L888;
 
             // 
             // Otherwise fix one variable and
             //   reset the corresponding component of d to zero.
             // 
-            tsum = (tsum + dt);
-            nleft = (nleft - 1);
-            iter = (iter + 1);
-            dibp = d[(ibp - (1)) + _d_offset];
-            d[(ibp - (1)) + _d_offset] = 0.0;
+            tsum = tsum + dt;
+            nleft = nleft - 1;
+            iter = iter + 1;
+            dibp = d[ibp - 1 + _d_offset];
+            d[ibp - 1 + _d_offset] = 0.0;
 
-            if ((dibp > 0.0))
+            if (dibp > 0.0)
             {
-                zibp = (u[(ibp - (1)) + _u_offset] - x[(ibp - (1)) + _x_offset]);
-                xcp[(ibp - (1)) + _xcp_offset] = u[(ibp - (1)) + _u_offset];
-                iwhere[(ibp - (1)) + _iwhere_offset] = 2;
+                zibp = u[ibp - 1 + _u_offset] - x[ibp - 1 + _x_offset];
+                xcp[ibp - 1 + _xcp_offset] = u[ibp - 1 + _u_offset];
+                iwhere[ibp - 1 + _iwhere_offset] = 2;
             }
             else
             {
-                zibp = (l[(ibp - (1)) + _l_offset] - x[(ibp - (1)) + _x_offset]);
-                xcp[(ibp - (1)) + _xcp_offset] = l[(ibp - (1)) + _l_offset];
-                iwhere[(ibp - (1)) + _iwhere_offset] = 1;
+                zibp = l[ibp - 1 + _l_offset] - x[ibp - 1 + _x_offset];
+                xcp[ibp - 1 + _xcp_offset] = l[ibp - 1 + _l_offset];
+                iwhere[ibp - 1 + _iwhere_offset] = 1;
             }
 
-            if ((iprint >= 100))
+            if (iprint >= 100)
             {
                 // DISPLAY: "Variable  " + ibp + "  is fixed."
             }
 
-            if (((nleft == 0) && (nbreak == n)))
+            if (nleft == 0 && nbreak == n)
             {
                 // all n variables are fixed,
                 // return with xcp as GCP.
@@ -1127,21 +991,21 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // Update the derivative information.
             // 
-            nseg = (nseg + 1);
-            dibp2 = (System.Math.Pow(dibp, 2));
+            nseg = nseg + 1;
+            dibp2 = Math.Pow(dibp, 2);
 
             // 
             // Update f1 and f2.
             // 
             // temporarily set f1 and f2 for col=0.
             //
-            f1 = (((f1 + (dt * f2)) + dibp2) - ((theta * dibp) * zibp));
-            f2 = (f2 - (theta * dibp2));
+            f1 = f1 + dt * f2 + dibp2 - theta * dibp * zibp;
+            f2 = f2 - theta * dibp2;
             // 
-            if ((col > 0))
+            if (col > 0)
             {
                 // update c = c + dt*p.
-                daxpy(col2, dt, p, _p_offset, 1, c, _c_offset, 1);
+                Daxpy(col2, dt, p, _p_offset, 1, c, _c_offset, 1);
 
                 // choose wbp,
                 // the row of W corresponding to the breakpoint encountered.
@@ -1149,47 +1013,45 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     for (j = 1; j <= col; j++)
                     {
-                        wbp[(j - (1)) + _wbp_offset] = wy[(ibp - (1))
-                            + (pointr - (1)) * (n) + _wy_offset];
+                        wbp[j - 1 + _wbp_offset] = wy[ibp - 1
+                                                      + (pointr - 1) * n + _wy_offset];
 
-                        wbp[((col + j) - (1)) + _wbp_offset] = (theta * ws[(ibp
-                            - (1)) + (pointr - (1)) * (n) + _ws_offset]);
+                        wbp[col + j - 1 + _wbp_offset] = theta * ws[ibp
+                                                                    - 1 + (pointr - 1) * n + _ws_offset];
 
-                        pointr = ((pointr) % (m) + 1);
+                        pointr = pointr % m + 1;
                     }
                 }
 
                 // compute (wbp)Mc, (wbp)Mp, and (wbp)M(wbp)'.
-                bmv(m, sy, _sy_offset, wt, _wt_offset, col, wbp,
+                Bmv(m, sy, _sy_offset, wt, _wt_offset, col, wbp,
                     _wbp_offset, v, _v_offset, ref info);
 
-                if ((info != 0))
-                {
+                if (info != 0)
                     return;
-                }
 
-                wmc = ddot(col2, c, _c_offset, 1, v, _v_offset, 1);
-                wmp = ddot(col2, p, _p_offset, 1, v, _v_offset, 1);
-                wmw = ddot(col2, wbp, _wbp_offset, 1, v, _v_offset, 1);
+                wmc = Ddot(col2, c, _c_offset, 1, v, _v_offset, 1);
+                wmp = Ddot(col2, p, _p_offset, 1, v, _v_offset, 1);
+                wmw = Ddot(col2, wbp, _wbp_offset, 1, v, _v_offset, 1);
 
                 // update p = p - dibp*wbp. 
-                daxpy(col2, (-(dibp)), wbp, _wbp_offset, 1, p, _p_offset, 1);
+                Daxpy(col2, -dibp, wbp, _wbp_offset, 1, p, _p_offset, 1);
 
                 // complete updating f1 and f2 while col > 0.
-                f1 = (f1 + (dibp * wmc));
-                f2 = ((f2 + ((2.0e0 * dibp) * wmp)) - (dibp2 * wmw));
+                f1 = f1 + dibp * wmc;
+                f2 = f2 + 2.0e0 * dibp * wmp - dibp2 * wmw;
             }
 
 
-            f2 = System.Math.Max((epsmch * f2_org), f2);
+            f2 = Math.Max(epsmch * f2_org, f2);
 
-            if ((nleft > 0))
+            if (nleft > 0)
             {
-                dtm = (-((f1 / f2)));
+                dtm = -(f1 / f2);
                 goto L777;
                 // to repeat the loop for unsearched intervals. 
             }
-            else if (bnded)
+            if (bnded)
             {
                 f1 = 0.0;
                 f2 = 0.0;
@@ -1197,7 +1059,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             }
             else
             {
-                dtm = (-((f1 / f2)));
+                dtm = -(f1 / f2);
             }
 
             // 
@@ -1205,7 +1067,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             L888:
 
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: "GCP found in this segment", 
                 //
@@ -1214,43 +1076,35 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 //          dtm
                 //          "'Distance to the stationary point =  ',1p,d11.4"
             }
-            if ((dtm <= 0.0))
-            {
+            if (dtm <= 0.0)
                 dtm = 0.0;
-            }
-            tsum = (tsum + dtm);
+            tsum = tsum + dtm;
 
             // 
             // Move free variables (i.e., the ones w/o breakpoints) and 
             //   the variables whose breakpoints haven't been reached.
             // 
-            daxpy(n, tsum, d, _d_offset, 1, xcp, _xcp_offset, 1);
+            Daxpy(n, tsum, d, _d_offset, 1, xcp, _xcp_offset, 1);
             // 
             L999:
             // 
             // Update c = c + dtm*p = W'(x^c - x) 
             //   which will be used in computing r = Z'(B(x^c - x) + g).
             // 
-            if ((col > 0))
-            {
-                daxpy(col2, dtm, p, _p_offset, 1, c, _c_offset, 1);
-            }
+            if (col > 0)
+                Daxpy(col2, dtm, p, _p_offset, 1, c, _c_offset, 1);
 
 
-            if ((iprint > 100))
-            {
+            if (iprint > 100)
                 for (i = 1; i <= n; i++)
                 {
                     // DISPLAY: xcp[(i - (1)) + _xcp_offset];
                 }
-                // DISPLAY: "'Cauchy X =  ',/,(4x,1p,6(1x,d11.4))"
-            }
 
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: '---------------- exit CAUCHY----------------------'
             }
-
         }
 
         // 
@@ -1283,12 +1137,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     ************
         // 
         // 
-        private static void cmprlb(int n, int m, double[] x, int _x_offset, double[] g, int _g_offset, double[] ws, int _ws_offset, double[] wy, int _wy_offset, double[] sy, int _sy_offset,
-        double[] wt, int _wt_offset, double[] z, int _z_offset, double[] r, int _r_offset,
-        double[] wa, int _wa_offset, int[] index, int _index_offset, double theta,
-        int col, int head, int nfree, bool cnstnd, ref int info)
+        private static void Cmprlb(int n, int m, double[] x, int _x_offset, double[] g, int _g_offset, double[] ws,
+            int _ws_offset, double[] wy, int _wy_offset, double[] sy, int _sy_offset,
+            double[] wt, int _wt_offset, double[] z, int _z_offset, double[] r, int _r_offset,
+            double[] wa, int _wa_offset, int[] index, int _index_offset, double theta,
+            int col, int head, int nfree, bool cnstnd, ref int info)
         {
-
             int i = 0;
             int j = 0;
             int k = 0;
@@ -1296,13 +1150,11 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double a1 = 0.0d;
             double a2 = 0.0d;
 
-            if (((!cnstnd) && (col > 0)))
+            if (!cnstnd && col > 0)
             {
                 {
                     for (i = 1; i <= n; i++)
-                    {
-                        r[(i - (1)) + _r_offset] = (-(g[(i - (1)) + _g_offset]));
-                    }
+                        r[i - 1 + _r_offset] = -g[i - 1 + _g_offset];
                 }
             }
             else
@@ -1310,16 +1162,17 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     for (i = 1; i <= nfree; i++)
                     {
-                        k = index[(i - (1)) + _index_offset];
-                        r[(i - (1)) + _r_offset] = ((-((theta * ((z[(k - (1))
-                            + _z_offset] - x[(k - (1)) + _x_offset]))))) - g[(k - (1)) + _g_offset]);
+                        k = index[i - 1 + _index_offset];
+                        r[i - 1 + _r_offset] = -(theta * (z[k - 1
+                                                            + _z_offset] - x[k - 1 + _x_offset])) -
+                                               g[k - 1 + _g_offset];
                     }
                 }
 
-                bmv(m, sy, _sy_offset, wt, _wt_offset, col, wa,
-                    (((2 * m) + 1) - (1)) + _wa_offset, wa, (1 - (1)) + _wa_offset, ref info);
+                Bmv(m, sy, _sy_offset, wt, _wt_offset, col, wa,
+                    2 * m + 1 - 1 + _wa_offset, wa, 1 - 1 + _wa_offset, ref info);
 
-                if ((info != 0))
+                if (info != 0)
                 {
                     info = -8;
                     return;
@@ -1330,19 +1183,19 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     for (j = 1; j <= col; j++)
                     {
-                        a1 = wa[(j - (1)) + _wa_offset];
-                        a2 = (theta * wa[((col + j) - (1)) + _wa_offset]);
+                        a1 = wa[j - 1 + _wa_offset];
+                        a2 = theta * wa[col + j - 1 + _wa_offset];
                         {
                             for (i = 1; i <= nfree; i++)
                             {
-                                k = index[(i - (1)) + _index_offset];
-                                r[(i - (1)) + _r_offset] = ((r[(i - (1)) + _r_offset]
-                                    + (wy[(k - (1)) + (pointr - (1)) * (n) + _wy_offset] * a1))
-                                    + (ws[(k - (1)) + (pointr - (1)) * (n) + _ws_offset] * a2));
+                                k = index[i - 1 + _index_offset];
+                                r[i - 1 + _r_offset] = r[i - 1 + _r_offset]
+                                                       + wy[k - 1 + (pointr - 1) * n + _wy_offset] * a1
+                                                       + ws[k - 1 + (pointr - 1) * n + _ws_offset] * a2;
                             }
                         }
 
-                        pointr = ((pointr) % (m) + 1);
+                        pointr = pointr % m + 1;
                     }
                 }
             }
@@ -1486,11 +1339,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // 
         // c     Initialization block.
         // 
-        private static void dcsrch(double f, double g, ref double stp, double ftol,
-        double gtol, double xtol, double stpmin, double stpmax, ref string task,
-        int[] isave, int _isave_offset, double[] dsave, int _dsave_offset)
+        private static void Dcsrch(double f, double g, ref double stp, double ftol,
+            double gtol, double xtol, double stpmin, double stpmax, ref string task,
+            int[] isave, int _isave_offset, double[] dsave, int _dsave_offset)
         {
-
             bool brackt = false;
             int stage = 0;
             double finit = 0.0d;
@@ -1514,50 +1366,32 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double width = 0.0d;
             double width1 = 0.0d;
 
-            if ((task.StartsWith("START", StringComparison.OrdinalIgnoreCase)))
+            if (task.StartsWith("START", StringComparison.OrdinalIgnoreCase))
             {
                 // 
                 //  Check the input arguments for errors.
                 // 
-                if ((stp < stpmin))
-                {
+                if (stp < stpmin)
                     task = "ERROR: STP .LT. STPMIN";
-                }
-                if ((stp > stpmax))
-                {
+                if (stp > stpmax)
                     task = "ERROR: STP .GT. STPMAX";
-                }
-                if ((g >= 0.0))
-                {
+                if (g >= 0.0)
                     task = "ERROR: INITIAL G .GE. ZERO";
-                }
-                if ((ftol < 0.0))
-                {
+                if (ftol < 0.0)
                     task = "ERROR: FTOL .LT. ZERO";
-                }
-                if ((gtol < 0.0))
-                {
+                if (gtol < 0.0)
                     task = "ERROR: GTOL .LT. ZERO";
-                }
-                if ((xtol < 0.0))
-                {
+                if (xtol < 0.0)
                     task = "ERROR: XTOL .LT. ZERO";
-                }
-                if ((stpmin < 0.0))
-                {
+                if (stpmin < 0.0)
                     task = "ERROR: STPMIN .LT. ZERO";
-                }
-                if ((stpmax < stpmin))
-                {
+                if (stpmax < stpmin)
                     task = "ERROR: STPMAX .LT. STPMIN";
-                }
                 // 
                 // c        Exit if there are errors on input.
                 // 
-                if ((task.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase)))
-                {
+                if (task.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase))
                     return;
-                }
 
                 // 
                 // Initialize local variables.
@@ -1566,9 +1400,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 stage = 1;
                 finit = f;
                 ginit = g;
-                gtest = (ftol * ginit);
-                width = (stpmax - stpmin);
-                width1 = (width / 0.5);
+                gtest = ftol * ginit;
+                width = stpmax - stpmin;
+                width1 = width / 0.5;
 
                 // 
                 // The variables stx, fx, gx contain the values of the step, 
@@ -1585,115 +1419,91 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 fy = finit;
                 gy = ginit;
                 stmin = 0.0;
-                stmax = (stp + (4.0 * stp));
+                stmax = stp + 4.0 * stp;
                 task = "FG";
                 goto L1000;
             }
-            else
-            {
-                // 
-                // Restore local variables.
-                // 
-                if ((isave[(1 - (1)) + _isave_offset] == 1))
-                {
-                    brackt = true;
-                }
-                else
-                {
-                    brackt = false;
-                }
-                stage = isave[(2 - (1)) + _isave_offset];
-                ginit = dsave[(1 - (1)) + _dsave_offset];
-                gtest = dsave[(2 - (1)) + _dsave_offset];
-                gx = dsave[(3 - (1)) + _dsave_offset];
-                gy = dsave[(4 - (1)) + _dsave_offset];
-                finit = dsave[(5 - (1)) + _dsave_offset];
-                fx = dsave[(6 - (1)) + _dsave_offset];
-                fy = dsave[(7 - (1)) + _dsave_offset];
-                stx = dsave[(8 - (1)) + _dsave_offset];
-                sty = dsave[(9 - (1)) + _dsave_offset];
-                stmin = dsave[(10 - (1)) + _dsave_offset];
-                stmax = dsave[(11 - (1)) + _dsave_offset];
-                width = dsave[(12 - (1)) + _dsave_offset];
-                width1 = dsave[(13 - (1)) + _dsave_offset];
-            }
+            // 
+            // Restore local variables.
+            // 
+            brackt = isave[1 - 1 + _isave_offset] == 1;
+            stage = isave[2 - 1 + _isave_offset];
+            ginit = dsave[1 - 1 + _dsave_offset];
+            gtest = dsave[2 - 1 + _dsave_offset];
+            gx = dsave[3 - 1 + _dsave_offset];
+            gy = dsave[4 - 1 + _dsave_offset];
+            finit = dsave[5 - 1 + _dsave_offset];
+            fx = dsave[6 - 1 + _dsave_offset];
+            fy = dsave[7 - 1 + _dsave_offset];
+            stx = dsave[8 - 1 + _dsave_offset];
+            sty = dsave[9 - 1 + _dsave_offset];
+            stmin = dsave[10 - 1 + _dsave_offset];
+            stmax = dsave[11 - 1 + _dsave_offset];
+            width = dsave[12 - 1 + _dsave_offset];
+            width1 = dsave[13 - 1 + _dsave_offset];
 
             // 
             // c     If psi(stp) <= 0 and f'(stp) >= 0 for some step, then the
             // c     algorithm enters the second stage.
             // 
-            ftest = (finit + (stp * gtest));
-            if ((((stage == 1) && (f <= ftest)) && (g >= 0.0)))
-            {
+            ftest = finit + stp * gtest;
+            if (stage == 1 && f <= ftest && g >= 0.0)
                 stage = 2;
-            }
 
             // 
             // c     Test for warnings.
             // 
-            if ((brackt && (((stp <= stmin) || (stp >= stmax)))))
-            {
+            if (brackt && (stp <= stmin || stp >= stmax))
                 task = "WARNING: ROUNDING ERRORS PREVENT PROGRESS";
-            }
-            if ((brackt && ((stmax - stmin) <= (xtol * stmax))))
-            {
+            if (brackt && stmax - stmin <= xtol * stmax)
                 task = "WARNING: XTOL TEST SATISFIED";
-            }
-            if ((((stp == stpmax) && (f <= ftest)) && (g <= gtest)))
-            {
+            if (stp == stpmax && f <= ftest && g <= gtest)
                 task = "WARNING: STP = STPMAX";
-            }
-            if (((stp == stpmin) && (((f > ftest) || (g >= gtest)))))
-            {
+            if (stp == stpmin && (f > ftest || g >= gtest))
                 task = "WARNING: STP = STPMIN";
-            }
 
             // 
             // c     Test for convergence.
             // 
-            if (((f <= ftest) && (System.Math.Abs(g) <= (gtol * ((-(ginit)))))))
-            {
+            if (f <= ftest && Math.Abs(g) <= gtol * -ginit)
                 task = "CONVERGENCE";
-            }
             // 
             // c     Test for termination.
             // 
-            if (((task.StartsWith("WARN", StringComparison.OrdinalIgnoreCase)) ||
-                (task.StartsWith("CONV", StringComparison.OrdinalIgnoreCase))))
-            {
+            if (task.StartsWith("WARN", StringComparison.OrdinalIgnoreCase) ||
+                task.StartsWith("CONV", StringComparison.OrdinalIgnoreCase))
                 goto L1000;
-            }
 
             // 
             // c     A modified function is used to predict the step during the
             // c     first stage if a lower function value has been obtained but 
             // c     the decrease is not sufficient.
             // 
-            if ((((stage == 1) && (f <= fx)) && (f > ftest)))
+            if (stage == 1 && f <= fx && f > ftest)
             {
                 // 
                 // c        Define the modified function and derivative values.
                 // 
-                fm = (f - (stp * gtest));
-                fxm = (fx - (stx * gtest));
-                fym = (fy - (sty * gtest));
-                gm = (g - gtest);
-                gxm = (gx - gtest);
-                gym = (gy - gtest);
+                fm = f - stp * gtest;
+                fxm = fx - stx * gtest;
+                fym = fy - sty * gtest;
+                gm = g - gtest;
+                gxm = gx - gtest;
+                gym = gy - gtest;
 
                 // 
                 // Call dcstep to update stx, sty, and to compute the new step.
                 // 
-                dcstep(ref stx, ref fxm, ref gxm, ref sty, ref fym, ref gym,
+                Dcstep(ref stx, ref fxm, ref gxm, ref sty, ref fym, ref gym,
                     ref stp, fm, gm, ref brackt, stmin, stmax);
 
                 // 
                 // Reset the function and derivative values for f.
                 // 
-                fx = (fxm + (stx * gtest));
-                fy = (fym + (sty * gtest));
-                gx = (gxm + gtest);
-                gy = (gym + gtest);
+                fx = fxm + stx * gtest;
+                fy = fym + sty * gtest;
+                gx = gxm + gtest;
+                gy = gym + gtest;
                 // 
             }
             else
@@ -1701,7 +1511,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // 
                 // Call dcstep to update stx, sty, and to compute the new step.
                 // 
-                dcstep(ref stx, ref fx, ref gx, ref sty, ref fy, ref gy,
+                Dcstep(ref stx, ref fx, ref gx, ref sty, ref fy, ref gy,
                     ref stp, f, g, ref brackt, stmin, stmax);
             }
 
@@ -1710,40 +1520,36 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             if (brackt)
             {
-                if ((System.Math.Abs((sty - stx)) >= (0.6600000000000000310862446895043831318617 * width1)))
-                {
-                    stp = (stx + (0.5 * ((sty - stx))));
-                }
+                if (Math.Abs(sty - stx) >= 0.6600000000000000310862446895043831318617 * width1)
+                    stp = stx + 0.5 * (sty - stx);
                 width1 = width;
-                width = System.Math.Abs((sty - stx));
+                width = Math.Abs(sty - stx);
             }
             // 
             // c     Set the minimum and maximum steps allowed for stp.
             // 
             if (brackt)
             {
-                stmin = System.Math.Min(stx, sty);
-                stmax = System.Math.Max(stx, sty);
+                stmin = Math.Min(stx, sty);
+                stmax = Math.Max(stx, sty);
             }
             else
             {
-                stmin = (stp + (1.100000000000000088817841970012523233891 * ((stp - stx))));
-                stmax = (stp + (4.0 * ((stp - stx))));
+                stmin = stp + 1.100000000000000088817841970012523233891 * (stp - stx);
+                stmax = stp + 4.0 * (stp - stx);
             }
 
             // 
             // c     Force the step to be within the bounds stpmax and stpmin.
             // 
-            stp = System.Math.Max(stp, stpmin);
-            stp = System.Math.Min(stp, stpmax);
+            stp = Math.Max(stp, stpmin);
+            stp = Math.Min(stp, stpmax);
             // 
             // c     If further progress is not possible, let stp be the best
             // c     point obtained during the search.
             // 
-            if (((brackt && (((stp <= stmin) || (stp >= stmax)))) || ((brackt && ((stmax - stmin) <= (xtol * stmax))))))
-            {
+            if (brackt && (stp <= stmin || stp >= stmax) || brackt && stmax - stmin <= xtol * stmax)
                 stp = stx;
-            }
             // 
             // c     Obtain another function and derivative.
             // 
@@ -1756,28 +1562,24 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c     Save local variables.
             // 
             if (brackt)
-            {
-                isave[(1 - (1)) + _isave_offset] = 1;
-            }
+                isave[1 - 1 + _isave_offset] = 1;
             else
-            {
-                isave[(1 - (1)) + _isave_offset] = 0;
-            }
+                isave[1 - 1 + _isave_offset] = 0;
 
-            isave[(2 - (1)) + _isave_offset] = stage;
-            dsave[(1 - (1)) + _dsave_offset] = ginit;
-            dsave[(2 - (1)) + _dsave_offset] = gtest;
-            dsave[(3 - (1)) + _dsave_offset] = gx;
-            dsave[(4 - (1)) + _dsave_offset] = gy;
-            dsave[(5 - (1)) + _dsave_offset] = finit;
-            dsave[(6 - (1)) + _dsave_offset] = fx;
-            dsave[(7 - (1)) + _dsave_offset] = fy;
-            dsave[(8 - (1)) + _dsave_offset] = stx;
-            dsave[(9 - (1)) + _dsave_offset] = sty;
-            dsave[(10 - (1)) + _dsave_offset] = stmin;
-            dsave[(11 - (1)) + _dsave_offset] = stmax;
-            dsave[(12 - (1)) + _dsave_offset] = width;
-            dsave[(13 - (1)) + _dsave_offset] = width1;
+            isave[2 - 1 + _isave_offset] = stage;
+            dsave[1 - 1 + _dsave_offset] = ginit;
+            dsave[2 - 1 + _dsave_offset] = gtest;
+            dsave[3 - 1 + _dsave_offset] = gx;
+            dsave[4 - 1 + _dsave_offset] = gy;
+            dsave[5 - 1 + _dsave_offset] = finit;
+            dsave[6 - 1 + _dsave_offset] = fx;
+            dsave[7 - 1 + _dsave_offset] = fy;
+            dsave[8 - 1 + _dsave_offset] = stx;
+            dsave[9 - 1 + _dsave_offset] = sty;
+            dsave[10 - 1 + _dsave_offset] = stmin;
+            dsave[11 - 1 + _dsave_offset] = stmax;
+            dsave[12 - 1 + _dsave_offset] = width;
+            dsave[13 - 1 + _dsave_offset] = width1;
         }
 
         // 
@@ -1878,11 +1680,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     **********
         // 
         // 
-        internal static void dcstep(ref double stx, ref double fx, ref double dx,
+        internal static void Dcstep(ref double stx, ref double fx, ref double dx,
             ref double sty, ref double fy, ref double dy, ref double stp,
             double fp, double dp, ref bool brackt, double stpmin, double stpmax)
         {
-
             double gamma = 0.0d;
             double p = 0.0d;
             double q = 0.0d;
@@ -1893,7 +1694,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double stpf = 0.0d;
             double stpq = 0.0d;
             double theta = 0.0d;
-            sgnd = (dp * ((dx / System.Math.Abs(dx))));
+            sgnd = dp * (dx / Math.Abs(dx));
 
             // 
             // c     First case: A higher function value. The minimum is bracketed. 
@@ -1902,31 +1703,25 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c     quadratic steps is taken.
             // 
 
-            if ((fp > fx))
+            if (fp > fx)
             {
-                theta = ((((3.0 * ((fx - fp))) / ((stp - stx))) + dx) + dp);
+                theta = 3.0 * (fx - fp) / (stp - stx) + dx + dp;
 
-                s = Extensions.Max(System.Math.Abs(theta), System.Math.Abs(dx), System.Math.Abs(dp));
+                s = Extensions.Max(Math.Abs(theta), Math.Abs(dx), Math.Abs(dp));
 
-                gamma = (s * System.Math.Sqrt(((System.Math.Pow(((theta / s)), 2)) - (((dx / s)) * ((dp / s))))));
-                if ((stp < stx))
-                {
-                    gamma = (-(gamma));
-                }
-                p = (((gamma - dx)) + theta);
-                q = (((((gamma - dx)) + gamma)) + dp);
-                r = (p / q);
-                stpc = (stx + (r * ((stp - stx))));
-                stpq = (stx + (((((dx / (((((fx - fp)) / ((stp - stx))) + dx)))) / 2.0)) * ((stp - stx))));
+                gamma = s * Math.Sqrt(Math.Pow(theta / s, 2) - dx / s * (dp / s));
+                if (stp < stx)
+                    gamma = -gamma;
+                p = gamma - dx + theta;
+                q = gamma - dx + gamma + dp;
+                r = p / q;
+                stpc = stx + r * (stp - stx);
+                stpq = stx + dx / ((fx - fp) / (stp - stx) + dx) / 2.0 * (stp - stx);
 
-                if ((System.Math.Abs((stpc - stx)) < System.Math.Abs((stpq - stx))))
-                {
+                if (Math.Abs(stpc - stx) < Math.Abs(stpq - stx))
                     stpf = stpc;
-                }
                 else
-                {
-                    stpf = (stpc + (((stpq - stpc)) / 2.0));
-                }
+                    stpf = stpc + (stpq - stpc) / 2.0;
 
                 brackt = true;
 
@@ -1938,31 +1733,25 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // c     secant step is taken.
                 // 
             }
-            else if ((sgnd < 0.0))
+            else if (sgnd < 0.0)
             {
-                theta = ((((3.0 * ((fx - fp))) / ((stp - stx))) + dx) + dp);
-                s = Extensions.Max(System.Math.Abs(theta), System.Math.Abs(dx), System.Math.Abs(dp));
-                gamma = (s * System.Math.Sqrt(((System.Math.Pow(((theta / s)), 2)) - (((dx / s)) * ((dp / s))))));
+                theta = 3.0 * (fx - fp) / (stp - stx) + dx + dp;
+                s = Extensions.Max(Math.Abs(theta), Math.Abs(dx), Math.Abs(dp));
+                gamma = s * Math.Sqrt(Math.Pow(theta / s, 2) - dx / s * (dp / s));
 
-                if ((stp > stx))
-                {
-                    gamma = (-(gamma));
-                }
+                if (stp > stx)
+                    gamma = -gamma;
 
-                p = (((gamma - dp)) + theta);
-                q = (((((gamma - dp)) + gamma)) + dx);
-                r = (p / q);
-                stpc = (stp + (r * ((stx - stp))));
-                stpq = (stp + (((dp / ((dp - dx)))) * ((stx - stp))));
+                p = gamma - dp + theta;
+                q = gamma - dp + gamma + dx;
+                r = p / q;
+                stpc = stp + r * (stx - stp);
+                stpq = stp + dp / (dp - dx) * (stx - stp);
 
-                if ((System.Math.Abs((stpc - stp)) > System.Math.Abs((stpq - stp))))
-                {
+                if (Math.Abs(stpc - stp) > Math.Abs(stpq - stp))
                     stpf = stpc;
-                }
                 else
-                {
                     stpf = stpq;
-                }
 
                 brackt = true;
                 // 
@@ -1971,7 +1760,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // c     and the magnitude of the derivative decreases.
                 // 
             }
-            else if ((System.Math.Abs(dp) < System.Math.Abs(dx)))
+            else if (Math.Abs(dp) < Math.Abs(dx))
             {
                 // 
                 // c        The cubic step is computed only if the cubic tends to infinity 
@@ -1979,39 +1768,31 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // c        is beyond stp. Otherwise the cubic step is defined to be the 
                 // c        secant step.
                 // 
-                theta = ((((3.0 * ((fx - fp))) / ((stp - stx))) + dx) + dp);
-                s = Extensions.Max(System.Math.Abs(theta), System.Math.Abs(dx), System.Math.Abs(dp));
+                theta = 3.0 * (fx - fp) / (stp - stx) + dx + dp;
+                s = Extensions.Max(Math.Abs(theta), Math.Abs(dx), Math.Abs(dp));
 
                 // 
                 // c        The case gamma = 0 only arises if the cubic does not tend
                 // c        to infinity in the direction of the step.
                 // 
-                gamma = (s * System.Math.Sqrt(System.Math.Max(0.0,
-                    ((System.Math.Pow(((theta / s)), 2)) - (((dx / s)) * ((dp / s)))))));
+                gamma = s * Math.Sqrt(Math.Max(0.0,
+                            Math.Pow(theta / s, 2) - dx / s * (dp / s)));
 
-                if ((stp > stx))
-                {
-                    gamma = (-(gamma));
-                }
+                if (stp > stx)
+                    gamma = -gamma;
 
-                p = (((gamma - dp)) + theta);
-                q = (((gamma + ((dx - dp)))) + gamma);
-                r = (p / q);
+                p = gamma - dp + theta;
+                q = gamma + (dx - dp) + gamma;
+                r = p / q;
 
-                if (((r < 0.0) && (gamma != 0.0)))
-                {
-                    stpc = (stp + (r * ((stx - stp))));
-                }
-                else if ((stp > stx))
-                {
+                if (r < 0.0 && gamma != 0.0)
+                    stpc = stp + r * (stx - stp);
+                else if (stp > stx)
                     stpc = stpmax;
-                }
                 else
-                {
                     stpc = stpmin;
-                }
 
-                stpq = (stp + (((dp / ((dp - dx)))) * ((stx - stp))));
+                stpq = stp + dp / (dp - dx) * (stx - stp);
 
                 if (brackt)
                 {
@@ -2020,24 +1801,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     // c           closer to stp than the secant step, the cubic step is 
                     // c           taken, otherwise the secant step is taken.
                     // 
-                    if ((System.Math.Abs((stpc - stp)) < System.Math.Abs((stpq - stp))))
-                    {
+                    if (Math.Abs(stpc - stp) < Math.Abs(stpq - stp))
                         stpf = stpc;
-                    }
                     else
-                    {
                         stpf = stpq;
-                    }
-                    if ((stp > stx))
-                    {
-                        stpf = System.Math.Min((stp +
-                            (0.6600000000000000310862446895043831318617 * ((sty - stp)))), stpf);
-                    }
+                    if (stp > stx)
+                        stpf = Math.Min(stp +
+                                        0.6600000000000000310862446895043831318617 * (sty - stp), stpf);
                     else
-                    {
-                        stpf = System.Math.Max((stp +
-                            (0.6600000000000000310862446895043831318617 * ((sty - stp)))), stpf);
-                    }
+                        stpf = Math.Max(stp +
+                                        0.6600000000000000310862446895043831318617 * (sty - stp), stpf);
                 }
                 else
                 {
@@ -2046,16 +1819,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     // c           farther from stp than the secant step, the cubic step is 
                     // c           taken, otherwise the secant step is taken.
                     // 
-                    if ((System.Math.Abs((stpc - stp)) > System.Math.Abs((stpq - stp))))
-                    {
+                    if (Math.Abs(stpc - stp) > Math.Abs(stpq - stp))
                         stpf = stpc;
-                    }
                     else
-                    {
                         stpf = stpq;
-                    }
-                    stpf = System.Math.Min(stpmax, stpf);
-                    stpf = System.Math.Max(stpmin, stpf);
+                    stpf = Math.Min(stpmax, stpf);
+                    stpf = Math.Max(stpmin, stpf);
                 }
 
                 // 
@@ -2069,22 +1838,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 if (brackt)
                 {
-                    theta = ((((3.0 * ((fp - fy))) / ((sty - stp))) + dy) + dp);
-                    s = Extensions.Max(System.Math.Abs(theta), System.Math.Abs(dy), System.Math.Abs(dp));
-                    gamma = (s * System.Math.Sqrt(((System.Math.Pow(((theta / s)), 2)) - (((dy / s)) * ((dp / s))))));
+                    theta = 3.0 * (fp - fy) / (sty - stp) + dy + dp;
+                    s = Extensions.Max(Math.Abs(theta), Math.Abs(dy), Math.Abs(dp));
+                    gamma = s * Math.Sqrt(Math.Pow(theta / s, 2) - dy / s * (dp / s));
 
-                    if ((stp > sty))
-                    {
-                        gamma = (-(gamma));
-                    }
+                    if (stp > sty)
+                        gamma = -gamma;
 
-                    p = (((gamma - dp)) + theta);
-                    q = (((((gamma - dp)) + gamma)) + dy);
-                    r = (p / q);
-                    stpc = (stp + (r * ((sty - stp))));
+                    p = gamma - dp + theta;
+                    q = gamma - dp + gamma + dy;
+                    r = p / q;
+                    stpc = stp + r * (sty - stp);
                     stpf = stpc;
                 }
-                else if ((stp > stx))
+                else if (stp > stx)
                 {
                     stpf = stpmax;
                 }
@@ -2097,7 +1864,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // c     Update the interval which contains a minimizer.
             // 
-            if ((fp > fx))
+            if (fp > fx)
             {
                 sty = stp;
                 fy = fp;
@@ -2105,7 +1872,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             }
             else
             {
-                if ((sgnd < 0.0))
+                if (sgnd < 0.0)
                 {
                     sty = stx;
                     fy = fx;
@@ -2149,24 +1916,17 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // 
         // c     Check the input arguments for errors.
         // 
-        private static void errclb(int n, int m, double factr,
+        private static void Errclb(int n, int m, double factr,
             double[] l, int _l_offset, double[] u, int _u_offset,
             int[] nbd, int _nbd_offset, ref string task, ref int info, ref int k)
         {
-
             int i = 0;
-            if ((n <= 0))
-            {
+            if (n <= 0)
                 task = "ERROR: N .LE. 0";
-            }
-            if ((m <= 0))
-            {
+            if (m <= 0)
                 task = "ERROR: M .LE. 0";
-            }
-            if ((factr < 0.0))
-            {
+            if (factr < 0.0)
                 task = "ERROR: FACTR .LT. 0";
-            }
 
             // 
             // c     Check the validity of the arrays nbd(i), u(i), and l(i).
@@ -2174,26 +1934,23 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 for (i = 1; i <= n; i++)
                 {
-                    if (((nbd[(i - (1)) + _nbd_offset] < 0) || (nbd[(i - (1)) + _nbd_offset] > 3)))
+                    if (nbd[i - 1 + _nbd_offset] < 0 || nbd[i - 1 + _nbd_offset] > 3)
                     {
                         // c                                                   return
                         task = "ERROR: INVALID NBD";
                         info = -6;
                         k = i;
                     }
-                    if ((nbd[(i - (1)) + _nbd_offset] == 2))
-                    {
-                        if ((l[(i - (1)) + _l_offset] > u[(i - (1)) + _u_offset]))
+                    if (nbd[i - 1 + _nbd_offset] == 2)
+                        if (l[i - 1 + _l_offset] > u[i - 1 + _u_offset])
                         {
                             // c                                    return
                             task = "ERROR: NO FEASIBLE SOLUTION";
                             info = -7;
                             k = i;
                         }
-                    }
                 }
             }
-
         }
 
         // 
@@ -2334,14 +2091,13 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c        where L_a is the strictly lower triangular part of S'AA'Y
         // c              R_z is the upper triangular part of S'ZZ'Y.
         // 
-        private static void formk(int n, int nsub, int[] ind, int _ind_offset,
+        private static void Formk(int n, int nsub, int[] ind, int _ind_offset,
             int nenter, int ileave, int[] indx2, int _indx2_offset,
             int iupdat, bool updatd, double[] wn, int _wn_offset, double[] wn1, int _wn1_offset,
             int m, double[] ws, int _ws_offset, double[] wy, int _wy_offset,
             double[] sy, int _sy_offset, double theta, int col, int head,
             ref int info)
         {
-
             int m2 = 0;
             int ipntr = 0;
             int jpntr = 0;
@@ -2367,41 +2123,34 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
 
             if (updatd)
             {
-                if ((iupdat > m))
-                {
-                    // c                                 shift old part of WN1.
+                if (iupdat > m)
+                    for (jy = 1; jy <= m - 1; jy++)
                     {
-                        for (jy = 1; jy <= (m - 1); jy++)
-                        {
-                            js = (m + jy);
-                            dcopy((m - jy), wn1, ((jy + 1) - (1)) + ((jy + 1) - (1)) * ((2 * m))
-                                + _wn1_offset, 1, wn1, (jy - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset, 1);
-                            dcopy((m - jy), wn1, ((js + 1) - (1)) + ((js + 1) - (1)) * ((2 * m))
-                                + _wn1_offset, 1, wn1, (js - (1)) + (js - (1)) * ((2 * m)) + _wn1_offset, 1);
-                            dcopy((m - 1), wn1, ((m + 2) - (1)) + ((jy + 1) - (1)) * ((2 * m))
-                                + _wn1_offset, 1, wn1, ((m + 1) - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset, 1);
-                        }
+                        js = m + jy;
+                        Dcopy(m - jy, wn1, jy + 1 - 1 + (jy + 1 - 1) * 2 * m
+                                           + _wn1_offset, 1, wn1, jy - 1 + (jy - 1) * 2 * m + _wn1_offset, 1);
+                        Dcopy(m - jy, wn1, js + 1 - 1 + (js + 1 - 1) * 2 * m
+                                           + _wn1_offset, 1, wn1, js - 1 + (js - 1) * 2 * m + _wn1_offset, 1);
+                        Dcopy(m - 1, wn1, m + 2 - 1 + (jy + 1 - 1) * 2 * m
+                                          + _wn1_offset, 1, wn1, m + 1 - 1 + (jy - 1) * 2 * m + _wn1_offset, 1);
                     }
-                }
 
                 // 
                 // c          put new rows in blocks (1,1), (2,1) and (2,2).
                 pbegin = 1;
                 pend = nsub;
-                dbegin = (nsub + 1);
+                dbegin = nsub + 1;
                 dend = n;
                 iy = col;
-                is2 = (m + col);
-                ipntr = ((head + col) - 1);
-                if ((ipntr > m))
-                {
-                    ipntr = (ipntr - m);
-                }
+                is2 = m + col;
+                ipntr = head + col - 1;
+                if (ipntr > m)
+                    ipntr = ipntr - m;
                 jpntr = head;
                 {
                     for (jy = 1; jy <= col; jy++)
                     {
-                        js = (m + jy);
+                        js = m + jy;
                         temp1 = 0.0;
                         temp2 = 0.0;
                         temp3 = 0.0;
@@ -2410,58 +2159,56 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                         {
                             for (k = pbegin; k <= pend; k++)
                             {
-                                k1 = ind[(k - (1)) + _ind_offset];
-                                temp1 = (temp1 + (wy[(k1 - (1)) + (ipntr - (1))
-                                    * (n) + _wy_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
+                                k1 = ind[k - 1 + _ind_offset];
+                                temp1 = temp1 + wy[k1 - 1 + (ipntr - 1)
+                                                   * n + _wy_offset] * wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
                             }
                         }
                         // c             compute elements jy of row 'col' of L_a and S'AA'S
                         {
                             for (k = dbegin; k <= dend; k++)
                             {
-                                k1 = ind[(k - (1)) + _ind_offset];
-                                temp2 = (temp2 + (ws[(k1 - (1)) + (ipntr - (1))
-                                    * (n) + _ws_offset] * ws[(k1 - (1)) + (jpntr - (1)) * (n) + _ws_offset]));
-                                temp3 = (temp3 + (ws[(k1 - (1)) + (ipntr - (1))
-                                    * (n) + _ws_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
+                                k1 = ind[k - 1 + _ind_offset];
+                                temp2 = temp2 + ws[k1 - 1 + (ipntr - 1)
+                                                   * n + _ws_offset] * ws[k1 - 1 + (jpntr - 1) * n + _ws_offset];
+                                temp3 = temp3 + ws[k1 - 1 + (ipntr - 1)
+                                                   * n + _ws_offset] * wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
                             }
                         }
 
-                        wn1[(iy - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] = temp1;
-                        wn1[(is2 - (1)) + (js - (1)) * ((2 * m)) + _wn1_offset] = temp2;
-                        wn1[(is2 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] = temp3;
-                        jpntr = ((jpntr) % (m) + 1);
+                        wn1[iy - 1 + (jy - 1) * 2 * m + _wn1_offset] = temp1;
+                        wn1[is2 - 1 + (js - 1) * 2 * m + _wn1_offset] = temp2;
+                        wn1[is2 - 1 + (jy - 1) * 2 * m + _wn1_offset] = temp3;
+                        jpntr = jpntr % m + 1;
                     }
                 }
 
                 // 
                 // c          put new column in block (2,1).
                 jy = col;
-                jpntr = ((head + col) - 1);
-                if ((jpntr > m))
-                {
-                    jpntr = (jpntr - m);
-                }
+                jpntr = head + col - 1;
+                if (jpntr > m)
+                    jpntr = jpntr - m;
                 ipntr = head;
                 {
                     for (i = 1; i <= col; i++)
                     {
-                        is2 = (m + i);
+                        is2 = m + i;
                         temp3 = 0.0;
                         // c             compute element i of column 'col' of R_z
                         {
                             for (k = pbegin; k <= pend; k++)
                             {
-                                k1 = ind[(k - (1)) + _ind_offset];
-                                temp3 = (temp3 + (ws[(k1 - (1)) + (ipntr - (1))
-                                    * (n) + _ws_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
+                                k1 = ind[k - 1 + _ind_offset];
+                                temp3 = temp3 + ws[k1 - 1 + (ipntr - 1)
+                                                   * n + _ws_offset] * wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
                             }
                         }
-                        ipntr = ((ipntr) % (m) + 1);
-                        wn1[(is2 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] = temp3;
+                        ipntr = ipntr % m + 1;
+                        wn1[is2 - 1 + (jy - 1) * 2 * m + _wn1_offset] = temp3;
                     }
                 }
-                upcl = (col - 1);
+                upcl = col - 1;
             }
             else
             {
@@ -2476,12 +2223,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 for (iy = 1; iy <= upcl; iy++)
                 {
-                    is2 = (m + iy);
+                    is2 = m + iy;
                     jpntr = head;
                     {
                         for (jy = 1; jy <= iy; jy++)
                         {
-                            js = (m + jy);
+                            js = m + jy;
                             temp1 = 0.0;
                             temp2 = 0.0;
                             temp3 = 0.0;
@@ -2489,33 +2236,35 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                             {
                                 for (k = 1; k <= nenter; k++)
                                 {
-                                    k1 = indx2[(k - (1)) + _indx2_offset];
-                                    temp1 = (temp1 + (wy[(k1 - (1)) + (ipntr - (1))
-                                        * (n) + _wy_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
-                                    temp2 = (temp2 + (ws[(k1 - (1)) + (ipntr - (1))
-                                        * (n) + _ws_offset] * ws[(k1 - (1)) + (jpntr - (1)) * (n) + _ws_offset]));
+                                    k1 = indx2[k - 1 + _indx2_offset];
+                                    temp1 = temp1 + wy[k1 - 1 + (ipntr - 1)
+                                                       * n + _wy_offset] * wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
+                                    temp2 = temp2 + ws[k1 - 1 + (ipntr - 1)
+                                                       * n + _ws_offset] * ws[k1 - 1 + (jpntr - 1) * n + _ws_offset];
                                 }
                             }
                             {
                                 for (k = ileave; k <= n; k++)
                                 {
-                                    k1 = indx2[(k - (1)) + _indx2_offset];
-                                    temp3 = (temp3 + (wy[(k1 - (1)) + (ipntr
-                                        - (1)) * (n) + _wy_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
-                                    temp4 = (temp4 + (ws[(k1 - (1)) + (ipntr
-                                        - (1)) * (n) + _ws_offset] * ws[(k1 - (1)) + (jpntr - (1)) * (n) + _ws_offset]));
+                                    k1 = indx2[k - 1 + _indx2_offset];
+                                    temp3 = temp3 + wy[k1 - 1 + (ipntr
+                                                                 - 1) * n + _wy_offset] *
+                                            wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
+                                    temp4 = temp4 + ws[k1 - 1 + (ipntr
+                                                                 - 1) * n + _ws_offset] *
+                                            ws[k1 - 1 + (jpntr - 1) * n + _ws_offset];
                                 }
                             }
 
-                            wn1[(iy - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] =
-                                ((wn1[(iy - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] + temp1) - temp3);
-                            wn1[(is2 - (1)) + (js - (1)) * ((2 * m)) + _wn1_offset] =
-                                ((wn1[(is2 - (1)) + (js - (1)) * ((2 * m)) + _wn1_offset] - temp2) + temp4);
-                            jpntr = ((jpntr) % (m) + 1);
+                            wn1[iy - 1 + (jy - 1) * 2 * m + _wn1_offset] =
+                                wn1[iy - 1 + (jy - 1) * 2 * m + _wn1_offset] + temp1 - temp3;
+                            wn1[is2 - 1 + (js - 1) * 2 * m + _wn1_offset] =
+                                wn1[is2 - 1 + (js - 1) * 2 * m + _wn1_offset] - temp2 + temp4;
+                            jpntr = jpntr % m + 1;
                         }
                     }
 
-                    ipntr = ((ipntr) % (m) + 1);
+                    ipntr = ipntr % m + 1;
                 }
             }
 
@@ -2523,7 +2272,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c       modify the old parts in block (2,1).
             ipntr = head;
             {
-                for (is2 = (m + 1); is2 <= (m + upcl); is2++)
+                for (is2 = m + 1; is2 <= m + upcl; is2++)
                 {
                     jpntr = head;
                     {
@@ -2534,34 +2283,31 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                             {
                                 for (k = 1; k <= nenter; k++)
                                 {
-                                    k1 = indx2[(k - (1)) + _indx2_offset];
-                                    temp1 = (temp1 + (ws[(k1 - (1)) + (ipntr
-                                        - (1)) * (n) + _ws_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
+                                    k1 = indx2[k - 1 + _indx2_offset];
+                                    temp1 = temp1 + ws[k1 - 1 + (ipntr
+                                                                 - 1) * n + _ws_offset] *
+                                            wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
                                 }
                             }
                             {
                                 for (k = ileave; k <= n; k++)
                                 {
-                                    k1 = indx2[(k - (1)) + _indx2_offset];
-                                    temp3 = (temp3 + (ws[(k1 - (1)) + (ipntr - (1))
-                                        * (n) + _ws_offset] * wy[(k1 - (1)) + (jpntr - (1)) * (n) + _wy_offset]));
+                                    k1 = indx2[k - 1 + _indx2_offset];
+                                    temp3 = temp3 + ws[k1 - 1 + (ipntr - 1)
+                                                       * n + _ws_offset] * wy[k1 - 1 + (jpntr - 1) * n + _wy_offset];
                                 }
                             }
 
-                            if ((is2 <= (jy + m)))
-                            {
-                                wn1[(is2 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] =
-                                    ((wn1[(is2 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] + temp1) - temp3);
-                            }
+                            if (is2 <= jy + m)
+                                wn1[is2 - 1 + (jy - 1) * 2 * m + _wn1_offset] =
+                                    wn1[is2 - 1 + (jy - 1) * 2 * m + _wn1_offset] + temp1 - temp3;
                             else
-                            {
-                                wn1[(is2 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] =
-                                    ((wn1[(is2 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] - temp1) + temp3);
-                            }
-                            jpntr = ((jpntr) % (m) + 1);
+                                wn1[is2 - 1 + (jy - 1) * 2 * m + _wn1_offset] =
+                                    wn1[is2 - 1 + (jy - 1) * 2 * m + _wn1_offset] - temp1 + temp3;
+                            jpntr = jpntr % m + 1;
                         }
                     }
-                    ipntr = ((ipntr) % (m) + 1);
+                    ipntr = ipntr % m + 1;
                 }
             }
 
@@ -2569,40 +2315,37 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c     Form the upper triangle of WN = [D+Y' ZZ'Y/theta   -L_a'+R_z' ] 
             // c                                     [-L_a +R_z        S'AA'S*theta]
             // 
-            m2 = (2 * m);
+            m2 = 2 * m;
             {
                 for (iy = 1; iy <= col; iy++)
                 {
-                    is2 = (col + iy);
-                    is1 = (m + iy);
+                    is2 = col + iy;
+                    is1 = m + iy;
                     {
                         for (jy = 1; jy <= iy; jy++)
                         {
-                            js = (col + jy);
-                            js1 = (m + jy);
-                            wn[(jy - (1)) + (iy - (1)) * ((2 * m)) + _wn_offset] =
-                                (wn1[(iy - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset] / theta);
-                            wn[(js - (1)) + (is2 - (1)) * ((2 * m)) + _wn_offset] =
-                                (wn1[(is1 - (1)) + (js1 - (1)) * ((2 * m)) + _wn1_offset] * theta);
+                            js = col + jy;
+                            js1 = m + jy;
+                            wn[jy - 1 + (iy - 1) * 2 * m + _wn_offset] =
+                                wn1[iy - 1 + (jy - 1) * 2 * m + _wn1_offset] / theta;
+                            wn[js - 1 + (is2 - 1) * 2 * m + _wn_offset] =
+                                wn1[is1 - 1 + (js1 - 1) * 2 * m + _wn1_offset] * theta;
                         }
                     }
                     {
-                        for (jy = 1; jy <= (iy - 1); jy++)
-                        {
-                            wn[(jy - (1)) + (is2 - (1)) * ((2 * m)) + _wn_offset] =
-                                (-(wn1[(is1 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset]));
-                        }
+                        for (jy = 1; jy <= iy - 1; jy++)
+                            wn[jy - 1 + (is2 - 1) * 2 * m + _wn_offset] =
+                                -wn1[is1 - 1 + (jy - 1) * 2 * m + _wn1_offset];
                     }
                     {
                         for (jy = iy; jy <= col; jy++)
-                        {
-                            wn[(jy - (1)) + (is2 - (1)) * ((2 * m)) + _wn_offset] =
-                                wn1[(is1 - (1)) + (jy - (1)) * ((2 * m)) + _wn1_offset];
-                        }
+                            wn[jy - 1 + (is2 - 1) * 2 * m + _wn_offset] =
+                                wn1[is1 - 1 + (jy - 1) * 2 * m + _wn1_offset];
                     }
 
-                    wn[(iy - (1)) + (iy - (1)) * ((2 * m)) + _wn_offset] = (wn[(iy - (1)) + (iy - (1)) * ((2 * m))
-                        + _wn_offset] + sy[(iy - (1)) + (iy - (1)) * (m) + _sy_offset]);
+                    wn[iy - 1 + (iy - 1) * 2 * m + _wn_offset] = wn[iy - 1 + (iy - 1) * 2 * m
+                                                                    + _wn_offset] +
+                                                                 sy[iy - 1 + (iy - 1) * m + _sy_offset];
                 }
             }
 
@@ -2612,22 +2355,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // c        first Cholesky factor (1,1) block of wn to get LL'
             // c                          with L' stored in the upper triangle of wn.
-            dpofa(wn, _wn_offset, m2, col, ref info);
+            Dpofa(wn, _wn_offset, m2, col, ref info);
 
-            if ((info != 0))
+            if (info != 0)
             {
                 info = -1;
                 return;
             }
 
             // c        then form L^-1(-L_a'+R_z') in the (1,2) block.
-            col2 = (2 * col);
+            col2 = 2 * col;
             {
-                for (js = (col + 1); js <= col2; js++)
-                {
-                    dtrsl(wn, _wn_offset, m2, col, wn, (1 - (1))
-                        + (js - (1)) * ((2 * m)) + _wn_offset, 11, ref info);
-                }
+                for (js = col + 1; js <= col2; js++)
+                    Dtrsl(wn, _wn_offset, m2, col, wn, 1 - 1
+                                                       + (js - 1) * 2 * m + _wn_offset, 11, ref info);
             }
 
             // 
@@ -2636,32 +2377,21 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // 
             {
-                for (is2 = (col + 1); is2 <= col2; is2++)
-                {
-                    {
-                        for (js = is2; js <= col2; js++)
-                        {
-                            wn[(is2 - (1)) + (js - (1)) * ((2 * m)) + _wn_offset] =
-                                (wn[(is2 - (1)) + (js - (1)) * ((2 * m)) + _wn_offset]
-                                + ddot(col, wn, (1 - (1)) + (is2 - (1)) * ((2 * m))
-                                + _wn_offset, 1, wn, (1 - (1)) + (js - (1)) * ((2 * m)) + _wn_offset, 1));
-                        }
-                    }
-                }
+                for (is2 = col + 1; is2 <= col2; is2++)
+                for (js = is2; js <= col2; js++)
+                    wn[is2 - 1 + (js - 1) * 2 * m + _wn_offset] =
+                        wn[is2 - 1 + (js - 1) * 2 * m + _wn_offset]
+                        + Ddot(col, wn, 1 - 1 + (is2 - 1) * 2 * m
+                                        + _wn_offset, 1, wn, 1 - 1 + (js - 1) * 2 * m + _wn_offset, 1);
             }
 
             // 
             // c     Cholesky factorization of (2,2) block of wn.
             // 
-            dpofa(wn, ((col + 1) - (1)) + ((col + 1) - (1))
-                * ((2 * m)) + _wn_offset, m2, col, ref info);
+            Dpofa(wn, col + 1 - 1 + (col + 1 - 1) * 2 * m + _wn_offset, m2, col, ref info);
 
-            if ((info != 0))
-            {
+            if (info != 0)
                 info = -2;
-                return;
-            }
-
         }
 
         // 
@@ -2702,13 +2432,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     Form the upper half of  T = theta*SS + L*D^(-1)*L',
         // c        store T in the upper triangle of the array wt.
         // 
-        private static void formt(int m,
+        private static void Formt(int m,
             double[] wt, int _wt_offset,
             double[] sy, int _sy_offset,
             double[] ss, int _ss_offset,
             int col, double theta, ref int info)
         {
-
             int i = 0;
             int j = 0;
             int k = 0;
@@ -2717,34 +2446,26 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double ddum = 0.0d;
             {
                 for (j = 1; j <= col; j++)
-                {
-                    wt[(1 - (1)) + (j - (1)) * (m) + _wt_offset] = (theta * ss[(1 - (1))
-                        + (j - (1)) * (m) + _ss_offset]);
-                }
+                    wt[1 - 1 + (j - 1) * m + _wt_offset] = theta * ss[1 - 1
+                                                                      + (j - 1) * m + _ss_offset];
             }
 
             {
                 for (i = 2; i <= col; i++)
+                for (j = i; j <= col; j++)
                 {
+                    k1 = Math.Min(i, j) - 1;
+
+                    ddum = 0.0;
                     {
-                        for (j = i; j <= col; j++)
-                        {
-                            k1 = (System.Math.Min(i, j) - 1);
-
-                            ddum = 0.0;
-                            {
-                                for (k = 1; k <= k1; k++)
-                                {
-                                    ddum = (ddum + ((sy[(i - (1)) + (k - (1)) * (m)
-                                        + _sy_offset] * sy[(j - (1)) + (k - (1)) * (m)
-                                        + _sy_offset]) / sy[(k - (1)) + (k - (1)) * (m) + _sy_offset]));
-                                }
-                            }
-
-                            wt[(i - (1)) + (j - (1)) * (m) + _wt_offset] = (ddum
-                                + (theta * ss[(i - (1)) + (j - (1)) * (m) + _ss_offset]));
-                        }
+                        for (k = 1; k <= k1; k++)
+                            ddum = ddum + sy[i - 1 + (k - 1) * m
+                                             + _sy_offset] * sy[j - 1 + (k - 1) * m
+                                                                + _sy_offset] / sy[k - 1 + (k - 1) * m + _sy_offset];
                     }
+
+                    wt[i - 1 + (j - 1) * m + _wt_offset] = ddum
+                                                           + theta * ss[i - 1 + (j - 1) * m + _ss_offset];
                 }
             }
 
@@ -2752,12 +2473,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c     Cholesky factorize T to J*J' with 
             // c        J' stored in the upper triangle of wt.
             // 
-            dpofa(wt, _wt_offset, m, col, ref info);
+            Dpofa(wt, _wt_offset, m, col, ref info);
 
-            if ((info != 0))
-            {
+            if (info != 0)
                 info = -3;
-            }
         }
 
         // 
@@ -2804,37 +2523,36 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     ************
         // 
         // 
-        private static void freev(int n, ref int nfree,
+        private static void Freev(int n, ref int nfree,
             int[] index, int _index_offset, ref int nenter, ref int ileave,
             int[] indx2, int _indx2_offset, int[] iwhere, int _iwhere_offset,
             ref bool wrk, bool updatd, bool cnstnd, int iprint, int iter)
         {
-
             int iact = 0;
             int i = 0;
             int k = 0;
 
             nenter = 0;
-            ileave = (n + 1);
+            ileave = n + 1;
 
-            if (((iter > 0) && cnstnd))
+            if (iter > 0 && cnstnd)
             {
                 // c                           count the entering and leaving variables.
                 {
                     for (i = 1; i <= nfree; i++)
                     {
-                        k = index[(i - (1)) + _index_offset];
+                        k = index[i - 1 + _index_offset];
 
                         // 
                         // c            write(6,*) ' k  = index(i) ', k
                         // c            write(6,*) ' index = ', i
                         // 
-                        if ((iwhere[(k - (1)) + _iwhere_offset] > 0))
+                        if (iwhere[k - 1 + _iwhere_offset] > 0)
                         {
-                            ileave = (ileave - 1);
-                            indx2[(ileave - (1)) + _indx2_offset] = k;
+                            ileave = ileave - 1;
+                            indx2[ileave - 1 + _indx2_offset] = k;
 
-                            if ((iprint >= 100))
+                            if (iprint >= 100)
                             {
                                 // DISPLAY: "Variable " + k + " leaves the set of free variables"
                             }
@@ -2842,16 +2560,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     }
                 }
                 {
-                    for (i = (1 + nfree); i <= n; i++)
+                    for (i = 1 + nfree; i <= n; i++)
                     {
-                        k = index[(i - (1)) + _index_offset];
-                        if ((iwhere[(k - (1)) + _iwhere_offset] <= 0))
+                        k = index[i - 1 + _index_offset];
+                        if (iwhere[k - 1 + _iwhere_offset] <= 0)
                         {
-                            nenter = (nenter + 1);
-                            indx2[(nenter - (1)) + _indx2_offset] = k;
+                            nenter = nenter + 1;
+                            indx2[nenter - 1 + _indx2_offset] = k;
 
 
-                            if ((iprint >= 100))
+                            if (iprint >= 100)
                             {
                                 // DISPLAY: "Variable " + k + " enters the set of free variables"
                             }
@@ -2859,37 +2577,35 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     }
                 }
 
-                if ((iprint >= 99))
+                if (iprint >= 99)
                 {
                     // DISPLAY: ((n + 1) - ileave)) + " variables leave; "
                     //           nenter + " variables enter"
                 }
             }
 
-            wrk = ((((ileave < (n + 1))) || ((nenter > 0))) || updatd);
+            wrk = ileave < n + 1 || nenter > 0 || updatd;
 
             // 
             // c     Find the index set of free and active variables at the GCP.
             // 
             nfree = 0;
-            iact = (n + 1);
+            iact = n + 1;
             {
                 for (i = 1; i <= n; i++)
-                {
-                    if ((iwhere[(i - (1)) + _iwhere_offset] <= 0))
+                    if (iwhere[i - 1 + _iwhere_offset] <= 0)
                     {
-                        nfree = (nfree + 1);
-                        index[(nfree - (1)) + _index_offset] = i;
+                        nfree = nfree + 1;
+                        index[nfree - 1 + _index_offset] = i;
                     }
                     else
                     {
-                        iact = (iact - 1);
-                        index[(iact - (1)) + _index_offset] = i;
+                        iact = iact - 1;
+                        index[iact - 1 + _index_offset] = i;
                     }
-                }
             }
 
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: nfree + " variables are free at GCP " + (iter + 1))
             }
@@ -2944,10 +2660,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     ************
         // 
         // 
-        private static void hpsolb(int n, double[] t, int _t_offset,
-        int[] iorder, int _iorder_offset, int iheap)
+        private static void Hpsolb(int n, double[] t, int _t_offset,
+            int[] iorder, int _iorder_offset, int iheap)
         {
-
             int i = 0;
             int j = 0;
             int k = 0;
@@ -2956,76 +2671,67 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double ddum = 0.0d;
             double out2 = 0.0d;
 
-            if ((iheap == 0))
-            {
-                // 
-                // c        Rearrange the elements t(1) to t(n) to form a heap.
-                // 
+            if (iheap == 0)
+                for (k = 2; k <= n; k++)
                 {
-                    for (k = 2; k <= n; k++)
+                    ddum = t[k - 1 + _t_offset];
+                    indxin = iorder[k - 1 + _iorder_offset];
+                    // 
+                    // c           Add ddum to the heap.
+                    i = k;
+
+                    L10:
+                    if (i > 1)
                     {
-                        ddum = t[(k - (1)) + _t_offset];
-                        indxin = iorder[(k - (1)) + _iorder_offset];
-                        // 
-                        // c           Add ddum to the heap.
-                        i = k;
-
-                        L10:
-                        if ((i > 1))
+                        j = i / 2;
+                        if (ddum < t[j - 1 + _t_offset])
                         {
-                            j = (i / 2);
-                            if ((ddum < t[(j - (1)) + _t_offset]))
-                            {
-                                t[(i - (1)) + _t_offset] = t[(j - (1)) + _t_offset];
-                                iorder[(i - (1)) + _iorder_offset] = iorder[(j - (1)) + _iorder_offset];
-                                i = j;
-                                goto L10;
-                            }
+                            t[i - 1 + _t_offset] = t[j - 1 + _t_offset];
+                            iorder[i - 1 + _iorder_offset] = iorder[j - 1 + _iorder_offset];
+                            i = j;
+                            goto L10;
                         }
-
-                        t[(i - (1)) + _t_offset] = ddum;
-                        iorder[(i - (1)) + _iorder_offset] = indxin;
                     }
+
+                    t[i - 1 + _t_offset] = ddum;
+                    iorder[i - 1 + _iorder_offset] = indxin;
                 }
-            }
             // 
             // c     Assign to 'out' the value of t(1), the least member of the heap,
             // c        and rearrange the remaining members to form a heap as
             // c        elements 1 to n-1 of t.
             // 
-            if ((n > 1))
+            if (n > 1)
             {
                 i = 1;
-                out2 = t[(1 - (1)) + _t_offset];
-                indxou = iorder[(1 - (1)) + _iorder_offset];
-                ddum = t[(n - (1)) + _t_offset];
-                indxin = iorder[(n - (1)) + _iorder_offset];
+                out2 = t[1 - 1 + _t_offset];
+                indxou = iorder[1 - 1 + _iorder_offset];
+                ddum = t[n - 1 + _t_offset];
+                indxin = iorder[n - 1 + _iorder_offset];
 
                 // 
                 // c        Restore the heap 
                 L30:
-                j = (i + i);
-                if ((j <= (n - 1)))
+                j = i + i;
+                if (j <= n - 1)
                 {
-                    if ((t[((j + 1) - (1)) + _t_offset] < t[(j - (1)) + _t_offset]))
+                    if (t[j + 1 - 1 + _t_offset] < t[j - 1 + _t_offset])
+                        j = j + 1;
+                    if (t[j - 1 + _t_offset] < ddum)
                     {
-                        j = (j + 1);
-                    }
-                    if ((t[(j - (1)) + _t_offset] < ddum))
-                    {
-                        t[(i - (1)) + _t_offset] = t[(j - (1)) + _t_offset];
-                        iorder[(i - (1)) + _iorder_offset] = iorder[(j - (1)) + _iorder_offset];
+                        t[i - 1 + _t_offset] = t[j - 1 + _t_offset];
+                        iorder[i - 1 + _iorder_offset] = iorder[j - 1 + _iorder_offset];
                         i = j;
                         goto L30;
                     }
                 }
-                t[(i - (1)) + _t_offset] = ddum;
-                iorder[(i - (1)) + _iorder_offset] = indxin;
+                t[i - 1 + _t_offset] = ddum;
+                iorder[i - 1 + _iorder_offset] = indxin;
                 // 
                 // c     Put the least member in t(n). 
                 // 
-                t[(n - (1)) + _t_offset] = out2;
-                iorder[(n - (1)) + _iorder_offset] = indxou;
+                t[n - 1 + _t_offset] = out2;
+                iorder[n - 1 + _iorder_offset] = indxou;
             }
         }
 
@@ -3062,7 +2768,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     **********
         // 
         // 
-        private static void lnsrlb(int n, double[] l, int _l_offset, double[] u, int _u_offset,
+        private static void Lnsrlb(int n, double[] l, int _l_offset, double[] u, int _u_offset,
             int[] nbd, int _nbd_offset, double[] x, int _x_offset, double f, ref double fold, ref double gd,
             ref double gdold, double[] g, int _g_offset, double[] d, int _d_offset, double[] r, int _r_offset,
             double[] t, int _t_offset, double[] z, int _z_offset, ref double stp,
@@ -3071,83 +2777,55 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             bool boxed, bool cnstnd, ref string csave, int[] isave, int _isave_offset,
             double[] dsave, int _dsave_offset)
         {
-
             int i = 0;
             double a1 = 0.0d;
             double a2 = 0.0d;
 
-            if ((task.Substring((1) - 1, 5).StartsWith("FG_LN", StringComparison.OrdinalIgnoreCase)))
-            {
+            if (task.Substring(1 - 1, 5).StartsWith("FG_LN", StringComparison.OrdinalIgnoreCase))
                 goto L556;
-            }
 
             // 
-            dtd = ddot(n, d, _d_offset, 1, d, _d_offset, 1);
-            dnorm = System.Math.Sqrt(dtd);
+            dtd = Ddot(n, d, _d_offset, 1, d, _d_offset, 1);
+            dnorm = Math.Sqrt(dtd);
             // 
             // c     Determine the maximum step length.
             // 
             stpmx = 10000000000.0;
             if (cnstnd)
-            {
-                if ((iter == 0))
-                {
+                if (iter == 0)
                     stpmx = 1.0;
-                }
                 else
-                {
+                    for (i = 1; i <= n; i++)
                     {
-                        for (i = 1; i <= n; i++)
-                        {
-                            a1 = d[(i - (1)) + _d_offset];
-                            if ((nbd[(i - (1)) + _nbd_offset] != 0))
+                        a1 = d[i - 1 + _d_offset];
+                        if (nbd[i - 1 + _nbd_offset] != 0)
+                            if (a1 < 0.0 && nbd[i - 1 + _nbd_offset] <= 2)
                             {
-                                if (((a1 < 0.0) && (nbd[(i - (1)) + _nbd_offset] <= 2)))
-                                {
-                                    a2 = (l[(i - (1)) + _l_offset] - x[(i - (1)) + _x_offset]);
-                                    if ((a2 >= 0.0))
-                                    {
-                                        stpmx = 0.0;
-                                    }
-                                    else if (((a1 * stpmx) < a2))
-                                    {
-                                        stpmx = (a2 / a1);
-                                    }
-                                }
-                                else if (((a1 > 0.0) && (nbd[(i - (1)) + _nbd_offset] >= 2)))
-                                {
-                                    a2 = (u[(i - (1)) + _u_offset] - x[(i - (1)) + _x_offset]);
-                                    if ((a2 <= 0.0))
-                                    {
-                                        stpmx = 0.0;
-                                    }
-                                    else if (((a1 * stpmx) > a2))
-                                    {
-                                        stpmx = (a2 / a1);
-                                    }
-                                }
+                                a2 = l[i - 1 + _l_offset] - x[i - 1 + _x_offset];
+                                if (a2 >= 0.0)
+                                    stpmx = 0.0;
+                                else if (a1 * stpmx < a2)
+                                    stpmx = a2 / a1;
                             }
-                        }
+                            else if (a1 > 0.0 && nbd[i - 1 + _nbd_offset] >= 2)
+                            {
+                                a2 = u[i - 1 + _u_offset] - x[i - 1 + _x_offset];
+                                if (a2 <= 0.0)
+                                    stpmx = 0.0;
+                                else if (a1 * stpmx > a2)
+                                    stpmx = a2 / a1;
+                            }
                     }
-                }
-            }
 
             // 
-            if (((iter == 0) && (!boxed)))
-            {
-                if (double.IsNaN(dnorm))
-                    stp = stpmx;
-                else
-                    stp = System.Math.Min((1.0 / dnorm), stpmx);
-            }
+            if (iter == 0 && !boxed)
+                stp = double.IsNaN(dnorm) ? stpmx : Math.Min(1.0 / dnorm, stpmx);
             else
-            {
                 stp = 1.0;
-            }
 
             // 
-            dcopy(n, x, _x_offset, 1, t, _t_offset, 1);
-            dcopy(n, g, _g_offset, 1, r, _r_offset, 1);
+            Dcopy(n, x, _x_offset, 1, t, _t_offset, 1);
+            Dcopy(n, g, _g_offset, 1, r, _r_offset, 1);
 
             fold = f;
             ifun = 0;
@@ -3155,12 +2833,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             csave = "START";
 
             L556:
-            gd = BoundedBroydenFletcherGoldfarbShanno.ddot(n, g, _g_offset, 1, d, _d_offset, 1);
+            gd = Ddot(n, g, _g_offset, 1, d, _d_offset, 1);
 
-            if ((ifun == 0))
+            if (ifun == 0)
             {
                 gdold = gd;
-                if ((gd >= 0.0))
+                if (gd >= 0.0)
                 {
                     // the directional derivative >=0.
                     // Line search is impossible.
@@ -3171,34 +2849,26 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 }
             }
 
-            dcsrch(f, gd, ref stp,
+            Dcsrch(f, gd, ref stp,
                 0.001000000000000000020816681711721685132943,
                 0.9000000000000000222044604925031308084726,
                 0.1000000000000000055511151231257827021182, 0.0,
                 stpmx, ref csave, isave, _isave_offset, dsave, _dsave_offset);
 
             // 
-            xstep = (stp * dnorm);
-            if (((!csave.StartsWith("CONV", StringComparison.OrdinalIgnoreCase))
-                && (!csave.StartsWith("WARN", StringComparison.OrdinalIgnoreCase))))
+            xstep = stp * dnorm;
+            if (!csave.StartsWith("CONV", StringComparison.OrdinalIgnoreCase)
+                && !csave.StartsWith("WARN", StringComparison.OrdinalIgnoreCase))
             {
                 task = "FG_LNSRCH";
-                ifun = (ifun + 1);
-                nfgv = (nfgv + 1);
-                iback = (ifun - 1);
-                if ((stp == 1.0))
-                {
-                    dcopy(n, z, _z_offset, 1, x, _x_offset, 1);
-                }
+                ifun = ifun + 1;
+                nfgv = nfgv + 1;
+                iback = ifun - 1;
+                if (stp == 1.0)
+                    Dcopy(n, z, _z_offset, 1, x, _x_offset, 1);
                 else
-                {
-                    {
-                        for (i = 1; i <= n; i++)
-                        {
-                            x[(i - (1)) + _x_offset] = ((stp * d[(i - (1)) + _d_offset]) + t[(i - (1)) + _t_offset]);
-                        }
-                    }
-                }
+                    for (i = 1; i <= n; i++)
+                        x[i - 1 + _x_offset] = stp * d[i - 1 + _d_offset] + t[i - 1 + _t_offset];
             }
             else
             {
@@ -3398,7 +3068,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     ************
         // 
         // 
-        private static void mainlb(int n,
+        private static void Mainlb(int n,
             int m,
             double[] x, int _x_offset,
             double[] l, int _l_offset,
@@ -3431,7 +3101,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             int[] isave, int _isave_offset,
             double[] dsave, int _dsave_offset)
         {
-
             bool prjctd = false;
             bool cnstnd = false;
             bool boxed = false;
@@ -3482,7 +3151,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // double time = 0.0d;
             // float epsilon = 0.0f;
 
-            if ((task.StartsWith("START", StringComparison.OrdinalIgnoreCase)))
+            if (task.StartsWith("START", StringComparison.OrdinalIgnoreCase))
             {
                 // 
                 // epsmch = (double)(Epsilon.epsilon(1.0));
@@ -3524,38 +3193,26 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 nfree = n;
                 ifun = 0;
                 // c           for stopping tolerance:
-                tol = (factr * epsmch);
+                tol = factr * epsmch;
                 // 
                 // c           for measuring running time:
-                cachyt = (double)(0);
-                sbtime = (double)(0);
-                lnscht = (double)(0);
+                cachyt = 0;
+                sbtime = 0;
+                lnscht = 0;
 
                 // 
                 // c           'info' records the termination information.
                 info = 0;
                 // 
                 itfile = 8;
-                if ((iprint >= 1))
-                {
-                    // c                                open a summary file 'iterate.dat'
-                    ; // WARNING: Unimplemented statement in Fortran source.
-                }
                 // 
                 // c        Check the input arguments for errors.
                 // 
-                errclb(n, m, factr, l, _l_offset, u, _u_offset,
+                Errclb(n, m, factr, l, _l_offset, u, _u_offset,
                     nbd, _nbd_offset, ref task, ref info, ref k);
 
-                if ((task.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase)))
-                {
-                    /*
-                    Prn3lb.prn3lb(n, x, _x_offset, f, task, iprint,
-                        info, itfile, iter, nfgv, nintol, nskip, nact, sbgnrm, 0.0, nseg, word,
-                        iback, stp, xstep, k, cachyt, sbtime, lnscht);
-                    */
+                if (task.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase))
                     return;
-                }
 
                 // 
                 // Prn1lb.prn1lb(n, m, l, _l_offset, u, _u_offset, x, _x_offset, iprint, itfile, epsmch);
@@ -3563,8 +3220,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // 
                 // c        Initialize iwhere & project x onto the feasible set.
                 // 
-                active(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset, x,
-                    _x_offset, iwhere, _iwhere_offset, iprint, ref prjctd, ref cnstnd, ref boxed);
+                Active(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset, x,
+                    _x_offset, iwhere, _iwhere_offset, ref prjctd, ref cnstnd, ref boxed);
                 // 
                 // c        The end of the initialization.
                 // 
@@ -3573,72 +3230,66 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 // c          restore local variables.
                 // 
-                prjctd = lsave[(1 - (1)) + _lsave_offset];
-                cnstnd = lsave[(2 - (1)) + _lsave_offset];
-                boxed = lsave[(3 - (1)) + _lsave_offset];
-                updatd = lsave[(4 - (1)) + _lsave_offset];
+                prjctd = lsave[1 - 1 + _lsave_offset];
+                cnstnd = lsave[2 - 1 + _lsave_offset];
+                boxed = lsave[3 - 1 + _lsave_offset];
+                updatd = lsave[4 - 1 + _lsave_offset];
                 // 
-                nintol = isave[(1 - (1)) + _isave_offset];
-                itfile = isave[(3 - (1)) + _isave_offset];
-                iback = isave[(4 - (1)) + _isave_offset];
-                nskip = isave[(5 - (1)) + _isave_offset];
-                head = isave[(6 - (1)) + _isave_offset];
-                col = isave[(7 - (1)) + _isave_offset];
-                itail = isave[(8 - (1)) + _isave_offset];
-                iter = isave[(9 - (1)) + _isave_offset];
-                iupdat = isave[(10 - (1)) + _isave_offset];
-                nseg = isave[(12 - (1)) + _isave_offset];
-                nfgv = isave[(13 - (1)) + _isave_offset];
-                info = isave[(14 - (1)) + _isave_offset];
-                ifun = isave[(15 - (1)) + _isave_offset];
-                iword = isave[(16 - (1)) + _isave_offset];
-                nfree = isave[(17 - (1)) + _isave_offset];
-                nact = isave[(18 - (1)) + _isave_offset];
-                ileave = isave[(19 - (1)) + _isave_offset];
-                nenter = isave[(20 - (1)) + _isave_offset];
+                nintol = isave[1 - 1 + _isave_offset];
+                itfile = isave[3 - 1 + _isave_offset];
+                iback = isave[4 - 1 + _isave_offset];
+                nskip = isave[5 - 1 + _isave_offset];
+                head = isave[6 - 1 + _isave_offset];
+                col = isave[7 - 1 + _isave_offset];
+                itail = isave[8 - 1 + _isave_offset];
+                iter = isave[9 - 1 + _isave_offset];
+                iupdat = isave[10 - 1 + _isave_offset];
+                nseg = isave[12 - 1 + _isave_offset];
+                nfgv = isave[13 - 1 + _isave_offset];
+                info = isave[14 - 1 + _isave_offset];
+                ifun = isave[15 - 1 + _isave_offset];
+                iword = isave[16 - 1 + _isave_offset];
+                nfree = isave[17 - 1 + _isave_offset];
+                nact = isave[18 - 1 + _isave_offset];
+                ileave = isave[19 - 1 + _isave_offset];
+                nenter = isave[20 - 1 + _isave_offset];
                 // 
-                theta = dsave[(1 - (1)) + _dsave_offset];
-                fold = dsave[(2 - (1)) + _dsave_offset];
-                tol = dsave[(3 - (1)) + _dsave_offset];
-                dnorm = dsave[(4 - (1)) + _dsave_offset];
-                epsmch = dsave[(5 - (1)) + _dsave_offset];
-                cpu1 = dsave[(6 - (1)) + _dsave_offset];
-                cachyt = dsave[(7 - (1)) + _dsave_offset];
-                sbtime = dsave[(8 - (1)) + _dsave_offset];
-                lnscht = dsave[(9 - (1)) + _dsave_offset];
-                time1 = dsave[(10 - (1)) + _dsave_offset];
-                gd = dsave[(11 - (1)) + _dsave_offset];
-                stpmx = dsave[(12 - (1)) + _dsave_offset];
-                sbgnrm = dsave[(13 - (1)) + _dsave_offset];
-                stp = dsave[(14 - (1)) + _dsave_offset];
-                gdold = dsave[(15 - (1)) + _dsave_offset];
-                dtd = dsave[(16 - (1)) + _dsave_offset];
+                theta = dsave[1 - 1 + _dsave_offset];
+                fold = dsave[2 - 1 + _dsave_offset];
+                tol = dsave[3 - 1 + _dsave_offset];
+                dnorm = dsave[4 - 1 + _dsave_offset];
+                epsmch = dsave[5 - 1 + _dsave_offset];
+                cpu1 = dsave[6 - 1 + _dsave_offset];
+                cachyt = dsave[7 - 1 + _dsave_offset];
+                sbtime = dsave[8 - 1 + _dsave_offset];
+                lnscht = dsave[9 - 1 + _dsave_offset];
+                time1 = dsave[10 - 1 + _dsave_offset];
+                gd = dsave[11 - 1 + _dsave_offset];
+                stpmx = dsave[12 - 1 + _dsave_offset];
+                sbgnrm = dsave[13 - 1 + _dsave_offset];
+                stp = dsave[14 - 1 + _dsave_offset];
+                gdold = dsave[15 - 1 + _dsave_offset];
+                dtd = dsave[16 - 1 + _dsave_offset];
                 // 
                 // c        After returning from the driver go to the point where execution
                 // c        is to resume.
                 // 
-                if ((task.Substring((1) - 1, 5).StartsWith("FG_LN", StringComparison.OrdinalIgnoreCase)))
-                {
+                if (task.Substring(1 - 1, 5).StartsWith("FG_LN", StringComparison.OrdinalIgnoreCase))
                     goto L666;
-                }
 
-                if ((task.Substring((1) - 1, 5).StartsWith("NEW_X", StringComparison.OrdinalIgnoreCase)))
-                {
+                if (task.Substring(1 - 1, 5).StartsWith("NEW_X", StringComparison.OrdinalIgnoreCase))
                     goto L777;
-                }
 
-                if ((task.Substring((1) - 1, 5).StartsWith("FG_ST", StringComparison.OrdinalIgnoreCase)))
-                {
+                if (task.Substring(1 - 1, 5).StartsWith("FG_ST", StringComparison.OrdinalIgnoreCase))
                     goto L111;
-                }
 
-                if ((task.Substring((1) - 1, 4).StartsWith("STOP", StringComparison.OrdinalIgnoreCase)))
+                if (task.Substring(1 - 1, 4).StartsWith("STOP", StringComparison.OrdinalIgnoreCase))
                 {
-                    if ((task.Substring((7) - 1, 9).StartsWith("CPU", StringComparison.OrdinalIgnoreCase)))
+                    if (task.Substring(7 - 1, 9).StartsWith("CPU", StringComparison.OrdinalIgnoreCase))
                     {
                         // c                                          restore the previous iterate.
-                        dcopy(n, t, _t_offset, 1, x, _x_offset, 1);
-                        dcopy(n, r, _r_offset, 1, g, _g_offset, 1);
+                        Dcopy(n, t, _t_offset, 1, x, _x_offset, 1);
+                        Dcopy(n, r, _r_offset, 1, g, _g_offset, 1);
                         f = fold;
                     }
                     goto L999;
@@ -3660,10 +3311,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             // c     Compute the infinity norm of the (-) projected gradient.
             // 
-            projgr(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset,
+            Projgr(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset,
                 x, _x_offset, g, _g_offset, ref sbgnrm);
 
-            if ((iprint >= 1))
+            if (iprint >= 1)
             {
                 // DISPLAY: iter, f, sbgnrm
                 //          'At iterate',i5,4x,'f= ',1p,d12.5,4X,'|proj g|= ',1P,D12.5"
@@ -3672,7 +3323,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 //         "2(1x,i4),5x,'-',5x,'-',3x,'-',5x,'-',5x,'-',8x,'-',3x,1p,2(1x,d10.3)"
             }
 
-            if ((sbgnrm <= pgtol))
+            if (sbgnrm <= pgtol)
             {
                 // terminate the algorithm.
                 task = "CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL";
@@ -3682,17 +3333,17 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c ----------------- the beginning of the loop --------------------------
             // 
             L222:
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: (iter + 1))); ITERATION ',i5"
             }
 
             iword = -1;
 
-            if (((!cnstnd) && (col > 0)))
+            if (!cnstnd && col > 0)
             {
                 // skip the search for GCP.
-                dcopy(n, x, _x_offset, 1, z, _z_offset, 1);
+                Dcopy(n, x, _x_offset, 1, z, _z_offset, 1);
                 wrk = updatd;
                 nseg = 0;
                 goto L333;
@@ -3706,18 +3357,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // 
 
-            cauchy(n, x, _x_offset, l, _l_offset, u, _u_offset, nbd, _nbd_offset,
+            Cauchy(n, x, _x_offset, l, _l_offset, u, _u_offset, nbd, _nbd_offset,
                 g, _g_offset, indx2, _indx2_offset, iwhere, _iwhere_offset, t, _t_offset,
                 d, _d_offset, z, _z_offset, m, wy, _wy_offset, ws, _ws_offset, sy, _sy_offset,
-                wt, _wt_offset, theta, col, head, wa, (1 - (1)) + _wa_offset, wa,
-                (((2 * m) + 1) - (1)) + _wa_offset, wa, (((4 * m) + 1) - (1)) + _wa_offset, wa,
-                (((6 * m) + 1) - (1)) + _wa_offset, ref nseg, iprint, sbgnrm, ref info, epsmch);
+                wt, _wt_offset, theta, col, head, wa, 1 - 1 + _wa_offset, wa,
+                2 * m + 1 - 1 + _wa_offset, wa, 4 * m + 1 - 1 + _wa_offset, wa,
+                6 * m + 1 - 1 + _wa_offset, ref nseg, iprint, sbgnrm, ref info, epsmch);
 
-            if ((info != 0))
+            if (info != 0)
             {
                 // c         singular triangular system detected; refresh the lbfgs memory.
 
-                if ((iprint >= 1))
+                if (iprint >= 1)
                 {
                     // DISPLAY: Singular triangular system detected;',/,
                     //          refresh the lbfgs memory and restart the iteration.'"
@@ -3729,21 +3380,21 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 theta = 1.0;
                 iupdat = 0;
                 updatd = false;
-                cachyt = ((cachyt + cpu2) - cpu1);
+                cachyt = cachyt + cpu2 - cpu1;
                 goto L222;
             }
 
-            cachyt = ((cachyt + cpu2) - cpu1);
-            nintol = (nintol + nseg);
+            cachyt = cachyt + cpu2 - cpu1;
+            nintol = nintol + nseg;
 
             // 
             // Count the entering and leaving variables for iter > 0; 
             // find the index set of free and active variables at the GCP.
             // 
-            freev(n, ref nfree, index, _index_offset, ref nenter, ref ileave, indx2, _indx2_offset,
+            Freev(n, ref nfree, index, _index_offset, ref nenter, ref ileave, indx2, _indx2_offset,
                 iwhere, _iwhere_offset, ref wrk, updatd, cnstnd, iprint, iter);
 
-            nact = (n - nfree);
+            nact = n - nfree;
             // 
             L333:
 
@@ -3751,10 +3402,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // If there are no free variables or B=theta*I, 
             // then skip the subspace minimization.
             // 
-            if (((nfree == 0) || (col == 0)))
-            {
+            if (nfree == 0 || col == 0)
                 goto L555;
-            }
 
 
             // cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -3770,19 +3419,17 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c                     [ 0  I]
             // 
             if (wrk)
-            {
-                formk(n, nfree, index, _index_offset, nenter,
+                Formk(n, nfree, index, _index_offset, nenter,
                     ileave, indx2, _indx2_offset, iupdat, updatd, wn, _wn_offset,
                     snd, _snd_offset, m, ws, _ws_offset, wy, _wy_offset, sy, _sy_offset,
                     theta, col, head, ref info);
-            }
 
-            if ((info != 0))
+            if (info != 0)
             {
                 // nonpositive definiteness in Cholesky factorization;
                 // refresh the lbfgs memory and restart the iteration.
 
-                if ((iprint >= 1))
+                if (iprint >= 1)
                 {
                     // DISPLAY: ' Nonpositive definiteness in Cholesky factorization in formk;'
                     //          ' refresh the lbfgs memory and restart the iteration.'"
@@ -3794,37 +3441,35 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 theta = 1.0;
                 iupdat = 0;
                 updatd = false;
-                sbtime = ((sbtime + cpu2) - cpu1);
+                sbtime = sbtime + cpu2 - cpu1;
                 goto L222;
             }
 
             // 
             // compute r=-Z'B(xcp-xk)-Z'g   (using wa(2m+1)=W'(xcp-x) from 'cauchy')
             //
-            cmprlb(n, m, x, _x_offset, g, _g_offset, ws, _ws_offset, wy, _wy_offset,
+            Cmprlb(n, m, x, _x_offset, g, _g_offset, ws, _ws_offset, wy, _wy_offset,
                 sy, _sy_offset, wt, _wt_offset, z, _z_offset, r, _r_offset, wa, _wa_offset,
                 index, _index_offset, theta, col, head, nfree, cnstnd, ref info);
 
-            if ((info != 0))
-            {
+            if (info != 0)
                 goto L444;
-            }
 
             // 
             // c-jlm-jn   call the direct method. 
             // 
-            subsm(n, m, nfree, index, _index_offset, l, _l_offset, u, _u_offset,
+            Subsm(n, m, nfree, index, _index_offset, l, _l_offset, u, _u_offset,
                 nbd, _nbd_offset, z, _z_offset, r, _r_offset, xp, _xp_offset, ws, _ws_offset,
                 wy, _wy_offset, theta, x, _x_offset, g, _g_offset, col, head,
                 ref iword, wa, _wa_offset, wn, _wn_offset, iprint, ref info);
 
             L444:
 
-            if ((info != 0))
+            if (info != 0)
             {
                 // singular triangular system detected;
                 // refresh the lbfgs memory and restart the iteration.
-                if ((iprint >= 1))
+                if (iprint >= 1)
                 {
                     // DISPLAY: ' Singular triangular system detected;',
                     //            refresh the lbfgs memory and restart the iteration.'"
@@ -3853,101 +3498,88 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             {
                 for (i = 1; i <= n; i++)
-                {
-                    d[(i - (1)) + _d_offset] = (z[(i - (1)) + _z_offset] - x[(i - (1)) + _x_offset]);
-                }
+                    d[i - 1 + _d_offset] = z[i - 1 + _z_offset] - x[i - 1 + _x_offset];
             }
 
 
             L666:
-            lnsrlb(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset, x, _x_offset,
+            Lnsrlb(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset, x, _x_offset,
                 f, ref fold, ref gd, ref gdold, g, _g_offset, d, _d_offset, r, _r_offset, t, _t_offset,
                 z, _z_offset, ref stp, ref dnorm, ref dtd, ref xstep, ref stpmx, iter, ref ifun,
                 ref iback, ref nfgv, ref info, ref task, boxed, cnstnd, ref csave, isave,
-                (22 - (1)) + _isave_offset, dsave, (17 - (1)) + _dsave_offset);
+                22 - 1 + _isave_offset, dsave, 17 - 1 + _dsave_offset);
 
-            if (((info != 0) || (iback >= 20)))
+            if (info != 0 || iback >= 20)
             {
                 // restore the previous iterate.
-                dcopy(n, t, _t_offset, 1, x, _x_offset, 1);
-                dcopy(n, r, _r_offset, 1, g, _g_offset, 1);
+                Dcopy(n, t, _t_offset, 1, x, _x_offset, 1);
+                Dcopy(n, r, _r_offset, 1, g, _g_offset, 1);
 
                 f = fold;
 
-                if ((col == 0))
+                if (col == 0)
                 {
                     // abnormal termination.
-                    if ((info == 0))
+                    if (info == 0)
                     {
                         info = -9;
 
                         // restore the actual number of f and g evaluations etc.
-                        nfgv = (nfgv - 1);
-                        ifun = (ifun - 1);
-                        iback = (iback - 1);
+                        nfgv = nfgv - 1;
+                        ifun = ifun - 1;
+                        iback = iback - 1;
                     }
                     task = "ABNORMAL_TERMINATION_IN_LNSRCH";
-                    iter = (iter + 1);
+                    iter = iter + 1;
 
                     goto L999;
                 }
-                else
+                // refresh the lbfgs memory and restart the iteration.
+                if (iprint >= 1)
                 {
-                    // refresh the lbfgs memory and restart the iteration.
-                    if ((iprint >= 1))
-                    {
-                        // DISPLAY: Bad direction in the line search;'
-                        //          refresh the lbfgs memory and restart the iteration.
-                    }
-
-                    if ((info == 0))
-                    {
-                        nfgv = (nfgv - 1);
-                    }
-
-                    info = 0;
-                    col = 0;
-                    head = 1;
-                    theta = 1.0;
-                    iupdat = 0;
-                    updatd = false;
-                    task = "RESTART_FROM_LNSRCH";
-                    goto L222;
+                    // DISPLAY: Bad direction in the line search;'
+                    //          refresh the lbfgs memory and restart the iteration.
                 }
+
+                if (info == 0)
+                    nfgv = nfgv - 1;
+
+                info = 0;
+                col = 0;
+                head = 1;
+                theta = 1.0;
+                iupdat = 0;
+                updatd = false;
+                task = "RESTART_FROM_LNSRCH";
+                goto L222;
             }
-            else if ((task.StartsWith("FG_LN", StringComparison.OrdinalIgnoreCase)))
-            {
-                // return to the driver for calculating f and g; reenter at 666.
+            if (task.StartsWith("FG_LN", StringComparison.OrdinalIgnoreCase))
                 goto L1000;
-            }
-            else
-            {
-                // calculate and print out the quantities related to the new X.
+            // calculate and print out the quantities related to the new X.
 
-                iter = (iter + 1);
+            iter = iter + 1;
 
-                // 
-                // Compute the infinity norm of the projected (-)gradient.
-                // 
-                projgr(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset,
-                    x, _x_offset, g, _g_offset, ref sbgnrm);
+            // 
+            // Compute the infinity norm of the projected (-)gradient.
+            // 
+            Projgr(n, l, _l_offset, u, _u_offset, nbd, _nbd_offset,
+                x, _x_offset, g, _g_offset, ref sbgnrm);
 
-                // 
-                // Print iteration information.
-                // 
-                /* Prn2lb.prn2lb(n, x, _x_offset, f, g, _g_offset, iprint, itfile,
+            // 
+            // Print iteration information.
+            // 
+            /* Prn2lb.prn2lb(n, x, _x_offset, f, g, _g_offset, iprint, itfile,
                     iter, nfgv, nact, sbgnrm, nseg, ref word,
                     iword, iback, stp, xstep); */
 
-                goto L1000;
-            }
+            goto L1000;
 
             L777:
 
             // 
             // c     Test for termination.
             // 
-            if ((sbgnrm <= pgtol))
+            if (sbgnrm <= pgtol)
             {
                 // terminate the algorithm.
                 task = "CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL";
@@ -3955,17 +3587,15 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             }
 
             // 
-            ddum = Extensions.Max(System.Math.Abs(fold), System.Math.Abs(f), 1.0);
+            ddum = Extensions.Max(Math.Abs(fold), Math.Abs(f), 1.0);
 
-            if ((((fold - f)) <= (tol * ddum)))
+            if (fold - f <= tol * ddum)
             {
                 // terminate the algorithm.
                 task = "CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH";
 
-                if ((iback >= 10))
-                {
+                if (iback >= 10)
                     info = -5;
-                }
 
                 // i.e., to issue a warning if iback>10 in the line search.
                 goto L999;
@@ -3976,33 +3606,31 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             {
                 for (i = 1; i <= n; i++)
-                {
-                    r[(i - (1)) + _r_offset] = (g[(i - (1)) + _g_offset] - r[(i - (1)) + _r_offset]);
-                }
+                    r[i - 1 + _r_offset] = g[i - 1 + _g_offset] - r[i - 1 + _r_offset];
             }
 
-            rr = ddot(n, r, _r_offset, 1, r, _r_offset, 1);
+            rr = Ddot(n, r, _r_offset, 1, r, _r_offset, 1);
 
-            if ((stp == 1.0))
+            if (stp == 1.0)
             {
-                dr = (gd - gdold);
-                ddum = (-(gdold));
+                dr = gd - gdold;
+                ddum = -gdold;
             }
             else
             {
-                dr = (((gd - gdold)) * stp);
-                dscal(n, stp, d, _d_offset, 1);
-                ddum = (-((gdold * stp)));
+                dr = (gd - gdold) * stp;
+                Dscal(n, stp, d, _d_offset, 1);
+                ddum = -(gdold * stp);
             }
 
-            if ((dr <= (epsmch * ddum)))
+            if (dr <= epsmch * ddum)
             {
                 // skip the L-BFGS update.
-                nskip = (nskip + 1);
+                nskip = nskip + 1;
                 updatd = false;
 
 
-                if ((iprint >= 1))
+                if (iprint >= 1)
                 {
                     // DISPLAY: dr, ddum
                     // DISPLAY: '  ys=',1p,e10.3,'  -gs=',1P,E10.3,' BFGS update SKIPPED'"
@@ -4019,12 +3647,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
             // 
             updatd = true;
-            iupdat = (iupdat + 1);
+            iupdat = iupdat + 1;
 
             // 
             // c     Update matrices WS and WY and form the middle matrix in B.
             // 
-            matupd(n, m, ws, _ws_offset, wy, _wy_offset, sy, _sy_offset,
+            Matupd(n, m, ws, _ws_offset, wy, _wy_offset, sy, _sy_offset,
                 ss, _ss_offset, d, _d_offset, r, _r_offset, ref itail, iupdat, ref col,
                 ref head, ref theta, rr, dr, stp, dtd);
 
@@ -4034,16 +3662,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c        Cholesky factorize T to J*J' with
             // c           J' stored in the upper triangular of wt.
             // 
-            formt(m, wt, _wt_offset, sy, _sy_offset, ss,
+            Formt(m, wt, _wt_offset, sy, _sy_offset, ss,
                 _ss_offset, col, theta, ref info);
 
             // 
-            if ((info != 0))
+            if (info != 0)
             {
                 // c          nonpositive definiteness in Cholesky factorization;
                 // c          refresh the lbfgs memory and restart the iteration.
 
-                if ((iprint >= 1))
+                if (iprint >= 1)
                 {
                     // DISPLAY:"Nonpositive definiteness in Cholesky factorization in formt
                     //          refresh the lbfgs memory and restart the iteration.'"
@@ -4082,48 +3710,46 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             //   Save local variables.
             // 
-            lsave[(1 - (1)) + _lsave_offset] = prjctd;
-            lsave[(2 - (1)) + _lsave_offset] = cnstnd;
-            lsave[(3 - (1)) + _lsave_offset] = boxed;
-            lsave[(4 - (1)) + _lsave_offset] = updatd;
+            lsave[1 - 1 + _lsave_offset] = prjctd;
+            lsave[2 - 1 + _lsave_offset] = cnstnd;
+            lsave[3 - 1 + _lsave_offset] = boxed;
+            lsave[4 - 1 + _lsave_offset] = updatd;
             // 
-            isave[(1 - (1)) + _isave_offset] = nintol;
-            isave[(3 - (1)) + _isave_offset] = itfile;
-            isave[(4 - (1)) + _isave_offset] = iback;
-            isave[(5 - (1)) + _isave_offset] = nskip;
-            isave[(6 - (1)) + _isave_offset] = head;
-            isave[(7 - (1)) + _isave_offset] = col;
-            isave[(8 - (1)) + _isave_offset] = itail;
-            isave[(9 - (1)) + _isave_offset] = iter;
-            isave[(10 - (1)) + _isave_offset] = iupdat;
-            isave[(12 - (1)) + _isave_offset] = nseg;
-            isave[(13 - (1)) + _isave_offset] = nfgv;
-            isave[(14 - (1)) + _isave_offset] = info;
-            isave[(15 - (1)) + _isave_offset] = ifun;
-            isave[(16 - (1)) + _isave_offset] = iword;
-            isave[(17 - (1)) + _isave_offset] = nfree;
-            isave[(18 - (1)) + _isave_offset] = nact;
-            isave[(19 - (1)) + _isave_offset] = ileave;
-            isave[(20 - (1)) + _isave_offset] = nenter;
+            isave[1 - 1 + _isave_offset] = nintol;
+            isave[3 - 1 + _isave_offset] = itfile;
+            isave[4 - 1 + _isave_offset] = iback;
+            isave[5 - 1 + _isave_offset] = nskip;
+            isave[6 - 1 + _isave_offset] = head;
+            isave[7 - 1 + _isave_offset] = col;
+            isave[8 - 1 + _isave_offset] = itail;
+            isave[9 - 1 + _isave_offset] = iter;
+            isave[10 - 1 + _isave_offset] = iupdat;
+            isave[12 - 1 + _isave_offset] = nseg;
+            isave[13 - 1 + _isave_offset] = nfgv;
+            isave[14 - 1 + _isave_offset] = info;
+            isave[15 - 1 + _isave_offset] = ifun;
+            isave[16 - 1 + _isave_offset] = iword;
+            isave[17 - 1 + _isave_offset] = nfree;
+            isave[18 - 1 + _isave_offset] = nact;
+            isave[19 - 1 + _isave_offset] = ileave;
+            isave[20 - 1 + _isave_offset] = nenter;
             // 
-            dsave[(1 - (1)) + _dsave_offset] = theta;
-            dsave[(2 - (1)) + _dsave_offset] = fold;
-            dsave[(3 - (1)) + _dsave_offset] = tol;
-            dsave[(4 - (1)) + _dsave_offset] = dnorm;
-            dsave[(5 - (1)) + _dsave_offset] = epsmch;
-            dsave[(6 - (1)) + _dsave_offset] = cpu1;
-            dsave[(7 - (1)) + _dsave_offset] = cachyt;
-            dsave[(8 - (1)) + _dsave_offset] = sbtime;
-            dsave[(9 - (1)) + _dsave_offset] = lnscht;
-            dsave[(10 - (1)) + _dsave_offset] = time1;
-            dsave[(11 - (1)) + _dsave_offset] = gd;
-            dsave[(12 - (1)) + _dsave_offset] = stpmx;
-            dsave[(13 - (1)) + _dsave_offset] = sbgnrm;
-            dsave[(14 - (1)) + _dsave_offset] = stp;
-            dsave[(15 - (1)) + _dsave_offset] = gdold;
-            dsave[(16 - (1)) + _dsave_offset] = dtd;
-
-            return;
+            dsave[1 - 1 + _dsave_offset] = theta;
+            dsave[2 - 1 + _dsave_offset] = fold;
+            dsave[3 - 1 + _dsave_offset] = tol;
+            dsave[4 - 1 + _dsave_offset] = dnorm;
+            dsave[5 - 1 + _dsave_offset] = epsmch;
+            dsave[6 - 1 + _dsave_offset] = cpu1;
+            dsave[7 - 1 + _dsave_offset] = cachyt;
+            dsave[8 - 1 + _dsave_offset] = sbtime;
+            dsave[9 - 1 + _dsave_offset] = lnscht;
+            dsave[10 - 1 + _dsave_offset] = time1;
+            dsave[11 - 1 + _dsave_offset] = gd;
+            dsave[12 - 1 + _dsave_offset] = stpmx;
+            dsave[13 - 1 + _dsave_offset] = sbgnrm;
+            dsave[14 - 1 + _dsave_offset] = stp;
+            dsave[15 - 1 + _dsave_offset] = gdold;
+            dsave[16 - 1 + _dsave_offset] = dtd;
         }
 
         // 
@@ -4158,87 +3784,75 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // 
         // c     Set pointers for matrices WS and WY.
         // 
-        internal static void matupd(int n,
+        internal static void Matupd(int n,
             int m, double[] ws, int _ws_offset, double[] wy, int _wy_offset,
             double[] sy, int _sy_offset, double[] ss, int _ss_offset, double[] d, int _d_offset,
             double[] r, int _r_offset, ref int itail, int iupdat, ref int col,
             ref int head, ref double theta, double rr, double dr, double stp, double dtd)
         {
-
             int j = 0;
             int pointr = 0;
 
-            if ((iupdat <= m))
+            if (iupdat <= m)
             {
                 col = iupdat;
-                itail = ((((head + iupdat) - 2)) % (m) + 1);
+                itail = (head + iupdat - 2) % m + 1;
             }
             else
             {
-                itail = ((itail) % (m) + 1);
-                head = ((head) % (m) + 1);
+                itail = itail % m + 1;
+                head = head % m + 1;
             }
 
             // 
             // c     Update matrices WS and WY.
             // 
-            dcopy(n, d, _d_offset, 1, ws, (1 - (1)) + (itail - (1)) * (n) + _ws_offset, 1);
-            dcopy(n, r, _r_offset, 1, wy, (1 - (1)) + (itail - (1)) * (n) + _wy_offset, 1);
+            Dcopy(n, d, _d_offset, 1, ws, 1 - 1 + (itail - 1) * n + _ws_offset, 1);
+            Dcopy(n, r, _r_offset, 1, wy, 1 - 1 + (itail - 1) * n + _wy_offset, 1);
 
             // 
             // c     Set theta=yy/ys.
             // 
-            theta = (rr / dr);
+            theta = rr / dr;
             // 
             // c     Form the middle matrix in B.
             // 
             // c        update the upper triangle of SS,
             // c                                         and the lower triangle of SY:
 
-            if ((iupdat > m))
-            {
-                // c                              move old information
+            if (iupdat > m)
+                for (j = 1; j <= col - 1; j++)
                 {
-                    for (j = 1; j <= (col - 1); j++)
-                    {
-                        dcopy(j, ss, (2 - (1)) + ((j + 1) - (1)) * (m)
-                            + _ss_offset, 1, ss, (1 - (1)) + (j - (1)) * (m) + _ss_offset, 1);
-                        dcopy((col - j), sy, ((j + 1) - (1)) + ((j + 1)
-                            - (1)) * (m) + _sy_offset, 1, sy, (j - (1)) + (j - (1)) * (m) + _sy_offset, 1);
-                    }
+                    Dcopy(j, ss, 2 - 1 + (j + 1 - 1) * m
+                                 + _ss_offset, 1, ss, 1 - 1 + (j - 1) * m + _ss_offset, 1);
+                    Dcopy(col - j, sy, j + 1 - 1 + (j + 1
+                                                    - 1) * m + _sy_offset, 1, sy, j - 1 + (j - 1) * m + _sy_offset, 1);
                 }
-            }
             // c        add new information: the last row of SY
             // c                                             and the last column of SS:
             pointr = head;
             {
-                for (j = 1; j <= (col - 1); j++)
+                for (j = 1; j <= col - 1; j++)
                 {
-                    sy[(col - (1)) + (j - (1)) * (m) + _sy_offset] =
-                        ddot(n,
-                          d, _d_offset, 1,
-                        wy, (1 - (1)) + (pointr - (1)) * (n) + _wy_offset, 1);
+                    sy[col - 1 + (j - 1) * m + _sy_offset] =
+                        Ddot(n,
+                            d, _d_offset, 1,
+                            wy, 1 - 1 + (pointr - 1) * n + _wy_offset, 1);
 
-                    ss[(j - (1)) + (col - (1)) * (m) + _ss_offset] =
-                        ddot(n,
-                          ws, (1 - (1)) + (pointr - (1)) * (n) + _ws_offset, 1,
-                          d, _d_offset, 1);
+                    ss[j - 1 + (col - 1) * m + _ss_offset] =
+                        Ddot(n,
+                            ws, 1 - 1 + (pointr - 1) * n + _ws_offset, 1,
+                            d, _d_offset, 1);
 
-                    pointr = ((pointr) % (m) + 1);
+                    pointr = pointr % m + 1;
                 }
             }
-            if ((stp == 1.0))
-            {
-                ss[(col - (1)) + (col - (1)) * (m) + _ss_offset] = dtd;
-            }
+            if (stp == 1.0)
+                ss[col - 1 + (col - 1) * m + _ss_offset] = dtd;
             else
-            {
-                ss[(col - (1)) + (col - (1)) * (m) + _ss_offset] = ((stp * stp) * dtd);
-            }
+                ss[col - 1 + (col - 1) * m + _ss_offset] = stp * stp * dtd;
 
-            sy[(col - (1)) + (col - (1)) * (m) + _sy_offset] = dr;
-
-            return;
+            sy[col - 1 + (col - 1) * m + _sy_offset] = dr;
         }
 
         // 
@@ -4267,40 +3881,33 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     ************
         // 
         // 
-        internal static void projgr(int n,
-        double[] l, int _l_offset,
-        double[] u, int _u_offset,
-        int[] nbd, int _nbd_offset,
-        double[] x, int _x_offset,
-        double[] g, int _g_offset,
-        ref double sbgnrm)
+        internal static void Projgr(int n,
+            double[] l, int _l_offset,
+            double[] u, int _u_offset,
+            int[] nbd, int _nbd_offset,
+            double[] x, int _x_offset,
+            double[] g, int _g_offset,
+            ref double sbgnrm)
         {
-
             int i = 0;
             double gi = 0.0d;
             sbgnrm = 0.0;
             {
                 for (i = 1; i <= n; i++)
                 {
-                    gi = g[(i - (1)) + _g_offset];
-                    if ((nbd[(i - (1)) + _nbd_offset] != 0))
-                    {
-                        if ((gi < 0.0))
+                    gi = g[i - 1 + _g_offset];
+                    if (nbd[i - 1 + _nbd_offset] != 0)
+                        if (gi < 0.0)
                         {
-                            if ((nbd[(i - (1)) + _nbd_offset] >= 2))
-                            {
-                                gi = System.Math.Max(((x[(i - (1)) + _x_offset] - u[(i - (1)) + _u_offset])), gi);
-                            }
+                            if (nbd[i - 1 + _nbd_offset] >= 2)
+                                gi = Math.Max(x[i - 1 + _x_offset] - u[i - 1 + _u_offset], gi);
                         }
                         else
                         {
-                            if ((nbd[(i - (1)) + _nbd_offset] <= 2))
-                            {
-                                gi = System.Math.Min(((x[(i - (1)) + _x_offset] - l[(i - (1)) + _l_offset])), gi);
-                            }
+                            if (nbd[i - 1 + _nbd_offset] <= 2)
+                                gi = Math.Min(x[i - 1 + _x_offset] - l[i - 1 + _l_offset], gi);
                         }
-                    }
-                    sbgnrm = System.Math.Max(sbgnrm, System.Math.Abs(gi));
+                    sbgnrm = Math.Max(sbgnrm, Math.Abs(gi));
                 }
             }
         }
@@ -4538,26 +4145,25 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c
         // c     ************
         // 
-        internal static void setulb(int n,
-        int m,
-        double[] x, int _x_offset,
-        double[] l, int _l_offset,
-        double[] u, int _u_offset,
-        int[] nbd, int _nbd_offset,
-        ref double f,
-        double[] g, int _g_offset,
-        double factr,
-        double pgtol,
-        double[] wa, int _wa_offset,
-        int[] iwa, int _iwa_offset,
-        ref string task,
-        int iprint,
-        ref string csave,
-        bool[] lsave, int _lsave_offset,
-        int[] isave, int _isave_offset,
-        double[] dsave, int _dsave_offset)
+        internal static void Setulb(int n,
+            int m,
+            double[] x, int _x_offset,
+            double[] l, int _l_offset,
+            double[] u, int _u_offset,
+            int[] nbd, int _nbd_offset,
+            ref double f,
+            double[] g, int _g_offset,
+            double factr,
+            double pgtol,
+            double[] wa, int _wa_offset,
+            int[] iwa, int _iwa_offset,
+            ref string task,
+            int iprint,
+            ref string csave,
+            bool[] lsave, int _lsave_offset,
+            int[] isave, int _isave_offset,
+            double[] dsave, int _dsave_offset)
         {
-
             int lws = 0;
             int lr = 0;
             int lz = 0;
@@ -4572,50 +4178,50 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             int lwn = 0;
             int lsnd = 0;
 
-            if ((task.StartsWith("START", StringComparison.OrdinalIgnoreCase)))
+            if (task.StartsWith("START", StringComparison.OrdinalIgnoreCase))
             {
-                isave[(1 - (1)) + _isave_offset] = (m * n);
-                isave[(2 - (1)) + _isave_offset] = ((int)System.Math.Pow(m, 2));
-                isave[(3 - (1)) + _isave_offset] = (4 * ((int)System.Math.Pow(m, 2)));
-                isave[(4 - (1)) + _isave_offset] = 1;
-                isave[(5 - (1)) + _isave_offset] = (isave[(4 - (1)) + _isave_offset] + isave[(1 - (1)) + _isave_offset]);
-                isave[(6 - (1)) + _isave_offset] = (isave[(5 - (1)) + _isave_offset] + isave[(1 - (1)) + _isave_offset]);
-                isave[(7 - (1)) + _isave_offset] = (isave[(6 - (1)) + _isave_offset] + isave[(2 - (1)) + _isave_offset]);
-                isave[(8 - (1)) + _isave_offset] = (isave[(7 - (1)) + _isave_offset] + isave[(2 - (1)) + _isave_offset]);
-                isave[(9 - (1)) + _isave_offset] = (isave[(8 - (1)) + _isave_offset] + isave[(2 - (1)) + _isave_offset]);
-                isave[(10 - (1)) + _isave_offset] = (isave[(9 - (1)) + _isave_offset] + isave[(3 - (1)) + _isave_offset]);
-                isave[(11 - (1)) + _isave_offset] = (isave[(10 - (1)) + _isave_offset] + isave[(3 - (1)) + _isave_offset]);
-                isave[(12 - (1)) + _isave_offset] = (isave[(11 - (1)) + _isave_offset] + n);
-                isave[(13 - (1)) + _isave_offset] = (isave[(12 - (1)) + _isave_offset] + n);
-                isave[(14 - (1)) + _isave_offset] = (isave[(13 - (1)) + _isave_offset] + n);
-                isave[(15 - (1)) + _isave_offset] = (isave[(14 - (1)) + _isave_offset] + n);
-                isave[(16 - (1)) + _isave_offset] = (isave[(15 - (1)) + _isave_offset] + n);
+                isave[1 - 1 + _isave_offset] = m * n;
+                isave[2 - 1 + _isave_offset] = (int)Math.Pow(m, 2);
+                isave[3 - 1 + _isave_offset] = 4 * (int)Math.Pow(m, 2);
+                isave[4 - 1 + _isave_offset] = 1;
+                isave[5 - 1 + _isave_offset] = isave[4 - 1 + _isave_offset] + isave[1 - 1 + _isave_offset];
+                isave[6 - 1 + _isave_offset] = isave[5 - 1 + _isave_offset] + isave[1 - 1 + _isave_offset];
+                isave[7 - 1 + _isave_offset] = isave[6 - 1 + _isave_offset] + isave[2 - 1 + _isave_offset];
+                isave[8 - 1 + _isave_offset] = isave[7 - 1 + _isave_offset] + isave[2 - 1 + _isave_offset];
+                isave[9 - 1 + _isave_offset] = isave[8 - 1 + _isave_offset] + isave[2 - 1 + _isave_offset];
+                isave[10 - 1 + _isave_offset] = isave[9 - 1 + _isave_offset] + isave[3 - 1 + _isave_offset];
+                isave[11 - 1 + _isave_offset] = isave[10 - 1 + _isave_offset] + isave[3 - 1 + _isave_offset];
+                isave[12 - 1 + _isave_offset] = isave[11 - 1 + _isave_offset] + n;
+                isave[13 - 1 + _isave_offset] = isave[12 - 1 + _isave_offset] + n;
+                isave[14 - 1 + _isave_offset] = isave[13 - 1 + _isave_offset] + n;
+                isave[15 - 1 + _isave_offset] = isave[14 - 1 + _isave_offset] + n;
+                isave[16 - 1 + _isave_offset] = isave[15 - 1 + _isave_offset] + n;
             }
-            lws = isave[(4 - (1)) + _isave_offset];
-            lwy = isave[(5 - (1)) + _isave_offset];
-            lsy = isave[(6 - (1)) + _isave_offset];
-            lss = isave[(7 - (1)) + _isave_offset];
-            lwt = isave[(8 - (1)) + _isave_offset];
-            lwn = isave[(9 - (1)) + _isave_offset];
-            lsnd = isave[(10 - (1)) + _isave_offset];
-            lz = isave[(11 - (1)) + _isave_offset];
-            lr = isave[(12 - (1)) + _isave_offset];
-            ld = isave[(13 - (1)) + _isave_offset];
-            lt = isave[(14 - (1)) + _isave_offset];
-            lxp = isave[(15 - (1)) + _isave_offset];
-            lwa = isave[(16 - (1)) + _isave_offset];
+            lws = isave[4 - 1 + _isave_offset];
+            lwy = isave[5 - 1 + _isave_offset];
+            lsy = isave[6 - 1 + _isave_offset];
+            lss = isave[7 - 1 + _isave_offset];
+            lwt = isave[8 - 1 + _isave_offset];
+            lwn = isave[9 - 1 + _isave_offset];
+            lsnd = isave[10 - 1 + _isave_offset];
+            lz = isave[11 - 1 + _isave_offset];
+            lr = isave[12 - 1 + _isave_offset];
+            ld = isave[13 - 1 + _isave_offset];
+            lt = isave[14 - 1 + _isave_offset];
+            lxp = isave[15 - 1 + _isave_offset];
+            lwa = isave[16 - 1 + _isave_offset];
             // 
-            mainlb(n, m, x, _x_offset, l, _l_offset, u, _u_offset, nbd,
-                _nbd_offset, ref f, g, _g_offset, factr, pgtol, wa, (lws - (1)) + _wa_offset,
-                wa, (lwy - (1)) + _wa_offset, wa, (lsy - (1)) + _wa_offset, wa,
-                (lss - (1)) + _wa_offset, wa, (lwt - (1)) + _wa_offset, wa,
-                (lwn - (1)) + _wa_offset, wa, (lsnd - (1)) + _wa_offset, wa,
-                (lz - (1)) + _wa_offset, wa, (lr - (1)) + _wa_offset, wa,
-                (ld - (1)) + _wa_offset, wa, (lt - (1)) + _wa_offset, wa,
-                (lxp - (1)) + _wa_offset, wa, (lwa - (1)) + _wa_offset, iwa,
-                (1 - (1)) + _iwa_offset, iwa, ((n + 1) - (1)) + _iwa_offset,
-                iwa, (((2 * n) + 1) - (1)) + _iwa_offset, ref task, iprint, ref csave,
-                lsave, _lsave_offset, isave, (22 - (1)) + _isave_offset, dsave,
+            Mainlb(n, m, x, _x_offset, l, _l_offset, u, _u_offset, nbd,
+                _nbd_offset, ref f, g, _g_offset, factr, pgtol, wa, lws - 1 + _wa_offset,
+                wa, lwy - 1 + _wa_offset, wa, lsy - 1 + _wa_offset, wa,
+                lss - 1 + _wa_offset, wa, lwt - 1 + _wa_offset, wa,
+                lwn - 1 + _wa_offset, wa, lsnd - 1 + _wa_offset, wa,
+                lz - 1 + _wa_offset, wa, lr - 1 + _wa_offset, wa,
+                ld - 1 + _wa_offset, wa, lt - 1 + _wa_offset, wa,
+                lxp - 1 + _wa_offset, wa, lwa - 1 + _wa_offset, iwa,
+                1 - 1 + _iwa_offset, iwa, n + 1 - 1 + _iwa_offset,
+                iwa, 2 * n + 1 - 1 + _iwa_offset, ref task, iprint, ref csave,
+                lsave, _lsave_offset, isave, 22 - 1 + _isave_offset, dsave,
                 _dsave_offset);
         }
 
@@ -4807,15 +4413,15 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // 
         // c
         // 
-        internal static void subsm(int n,
-        int m, int nsub, int[] ind, int _ind_offset,
-        double[] l, int _l_offset, double[] u, int _u_offset,
-        int[] nbd, int _nbd_offset, double[] x, int _x_offset,
-        double[] d, int _d_offset, double[] xp, int _xp_offset,
-        double[] ws, int _ws_offset, double[] wy, int _wy_offset,
-        double theta, double[] xx, int _xx_offset, double[] gg, int _gg_offset,
-        int col, int head, ref int iword,
-        double[] wv, int _wv_offset, double[] wn, int _wn_offset, int iprint, ref int info)
+        internal static void Subsm(int n,
+            int m, int nsub, int[] ind, int _ind_offset,
+            double[] l, int _l_offset, double[] u, int _u_offset,
+            int[] nbd, int _nbd_offset, double[] x, int _x_offset,
+            double[] d, int _d_offset, double[] xp, int _xp_offset,
+            double[] ws, int _ws_offset, double[] wy, int _wy_offset,
+            double theta, double[] xx, int _xx_offset, double[] gg, int _gg_offset,
+            int col, int head, ref int iword,
+            double[] wv, int _wv_offset, double[] wn, int _wn_offset, int iprint, ref int info)
         {
             int pointr = 0;
             int m2 = 0;
@@ -4833,12 +4439,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double temp2 = 0.0d;
             double dd_p = 0.0d;
 
-            if ((nsub <= 0))
-            {
+            if (nsub <= 0)
                 return;
-            }
 
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: "/,'----------------SUBSM entered-----------------'
             }
@@ -4855,46 +4459,40 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     {
                         for (j = 1; j <= nsub; j++)
                         {
-                            k = ind[(j - (1)) + _ind_offset];
-                            temp1 = (temp1 + (wy[(k - (1)) + (pointr - (1))
-                                * (n) + _wy_offset] * d[(j - (1)) + _d_offset]));
-                            temp2 = (temp2 + (ws[(k - (1)) + (pointr - (1))
-                                * (n) + _ws_offset] * d[(j - (1)) + _d_offset]));
+                            k = ind[j - 1 + _ind_offset];
+                            temp1 = temp1 + wy[k - 1 + (pointr - 1)
+                                               * n + _wy_offset] * d[j - 1 + _d_offset];
+                            temp2 = temp2 + ws[k - 1 + (pointr - 1)
+                                               * n + _ws_offset] * d[j - 1 + _d_offset];
                         }
                     }
 
-                    wv[(i - (1)) + _wv_offset] = temp1;
-                    wv[((col + i) - (1)) + _wv_offset] = (theta * temp2);
-                    pointr = ((pointr) % (m) + 1);
+                    wv[i - 1 + _wv_offset] = temp1;
+                    wv[col + i - 1 + _wv_offset] = theta * temp2;
+                    pointr = pointr % m + 1;
                 }
             }
 
             // 
             // Compute wv:=K^(-1)wv.
             // 
-            m2 = (2 * m);
-            col2 = (2 * col);
+            m2 = 2 * m;
+            col2 = 2 * col;
 
-            dtrsl(wn, _wn_offset, m2, col2, wv, _wv_offset, 11, ref info);
+            Dtrsl(wn, _wn_offset, m2, col2, wv, _wv_offset, 11, ref info);
 
-            if ((info != 0))
-            {
+            if (info != 0)
                 return;
-            }
 
             {
                 for (i = 1; i <= col; i++)
-                {
-                    wv[(i - (1)) + _wv_offset] = (-(wv[(i - (1)) + _wv_offset]));
-                }
+                    wv[i - 1 + _wv_offset] = -wv[i - 1 + _wv_offset];
             }
 
-            dtrsl(wn, _wn_offset, m2, col2, wv, _wv_offset, 1, ref info);
+            Dtrsl(wn, _wn_offset, m2, col2, wv, _wv_offset, 1, ref info);
 
-            if ((info != 0))
-            {
+            if (info != 0)
                 return;
-            }
 
             // 
             // Compute d = (1/theta)d + (1/theta**2)Z'W wv.
@@ -4903,24 +4501,26 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 for (jy = 1; jy <= col; jy++)
                 {
-                    js = (col + jy);
+                    js = col + jy;
                     {
                         for (i = 1; i <= nsub; i++)
                         {
-                            k = ind[(i - (1)) + _ind_offset];
-                            d[(i - (1)) + _d_offset] = ((d[(i - (1)) + _d_offset]
-                                + ((wy[(k - (1)) + (pointr - (1)) * (n) + _wy_offset] * wv[(jy - (1))
-                                + _wv_offset]) / theta)) + (ws[(k - (1))
-                                + (pointr - (1)) * (n) + _ws_offset] * wv[(js - (1)) + _wv_offset]));
+                            k = ind[i - 1 + _ind_offset];
+                            d[i - 1 + _d_offset] = d[i - 1 + _d_offset]
+                                                   + wy[k - 1 + (pointr - 1) * n + _wy_offset] * wv[jy - 1
+                                                                                                    + _wv_offset] /
+                                                   theta + ws[k - 1
+                                                              + (pointr - 1) * n + _ws_offset] *
+                                                   wv[js - 1 + _wv_offset];
                         }
                     }
 
-                    pointr = ((pointr) % (m) + 1);
+                    pointr = pointr % m + 1;
                 }
             }
 
 
-            dscal(nsub, (1.0 / theta), d, _d_offset, 1);
+            Dscal(nsub, 1.0 / theta, d, _d_offset, 1);
 
             //  
             // ----------------------------------------------------
@@ -4928,62 +4528,51 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // 
             iword = 0;
 
-            dcopy(n, x, _x_offset, 1, xp, _xp_offset, 1);
+            Dcopy(n, x, _x_offset, 1, xp, _xp_offset, 1);
 
             // c
             {
                 for (i = 1; i <= nsub; i++)
                 {
-                    k = ind[(i - (1)) + _ind_offset];
-                    dk = d[(i - (1)) + _d_offset];
-                    xk = x[(k - (1)) + _x_offset];
-                    if ((nbd[(k - (1)) + _nbd_offset] != 0))
-                    {
-                        if ((nbd[(k - (1)) + _nbd_offset] == 1))
+                    k = ind[i - 1 + _ind_offset];
+                    dk = d[i - 1 + _d_offset];
+                    xk = x[k - 1 + _x_offset];
+                    if (nbd[k - 1 + _nbd_offset] != 0)
+                        if (nbd[k - 1 + _nbd_offset] == 1)
                         {
-                            x[(k - (1)) + _x_offset] = System.Math.Max(l[(k - (1)) + _l_offset], (xk + dk));
-                            if ((x[(k - (1)) + _x_offset] == l[(k - (1)) + _l_offset]))
-                            {
+                            x[k - 1 + _x_offset] = Math.Max(l[k - 1 + _l_offset], xk + dk);
+                            if (x[k - 1 + _x_offset] == l[k - 1 + _l_offset])
                                 iword = 1;
-                            }
                         }
                         else
                         {
-                            if ((nbd[(k - (1)) + _nbd_offset] == 2))
+                            if (nbd[k - 1 + _nbd_offset] == 2)
                             {
-                                xk = System.Math.Max(l[(k - (1)) + _l_offset], (xk + dk));
-                                x[(k - (1)) + _x_offset] = System.Math.Min(u[(k - (1)) + _u_offset], xk);
-                                if (((x[(k - (1)) + _x_offset] == l[(k - (1))
-                                    + _l_offset]) || (x[(k - (1)) + _x_offset] == u[(k - (1)) + _u_offset])))
-                                {
+                                xk = Math.Max(l[k - 1 + _l_offset], xk + dk);
+                                x[k - 1 + _x_offset] = Math.Min(u[k - 1 + _u_offset], xk);
+                                if (x[k - 1 + _x_offset] == l[k - 1
+                                                              + _l_offset] || x[k - 1 + _x_offset] ==
+                                    u[k - 1 + _u_offset])
                                     iword = 1;
-                                }
                             }
                             else
                             {
-                                if ((nbd[(k - (1)) + _nbd_offset] == 3))
+                                if (nbd[k - 1 + _nbd_offset] == 3)
                                 {
-                                    x[(k - (1)) + _x_offset] = System.Math.Min(u[(k - (1)) + _u_offset], (xk + dk));
-                                    if ((x[(k - (1)) + _x_offset] == u[(k - (1)) + _u_offset]))
-                                    {
+                                    x[k - 1 + _x_offset] = Math.Min(u[k - 1 + _u_offset], xk + dk);
+                                    if (x[k - 1 + _x_offset] == u[k - 1 + _u_offset])
                                         iword = 1;
-                                    }
                                 }
                             }
                         }
-                    }
                     else
-                    {
-                        x[(k - (1)) + _x_offset] = (xk + dk);
-                    }
+                        x[k - 1 + _x_offset] = xk + dk;
                 }
             }
 
 
-            if ((iword == 0))
-            {
+            if (iword == 0)
                 goto L911;
-            }
 
             // 
             // check sign of the directional derivative
@@ -4991,23 +4580,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             dd_p = 0.0;
             {
                 for (i = 1; i <= n; i++)
-                {
-                    dd_p = (dd_p + (((x[(i - (1)) + _x_offset]
-                        - xx[(i - (1)) + _xx_offset])) * gg[(i - (1)) + _gg_offset]));
-                }
+                    dd_p = dd_p + (x[i - 1 + _x_offset]
+                                   - xx[i - 1 + _xx_offset]) * gg[i - 1 + _gg_offset];
             }
 
-            if ((dd_p > 0.0))
-            {
-                dcopy(n, xp, _xp_offset, 1, x, _x_offset, 1);
-
-                // DISPLAY: " Positive dir derivative in projection "
-                // DISPLAY: " Using the backtracking step "
-            }
+            if (dd_p > 0.0)
+                Dcopy(n, xp, _xp_offset, 1, x, _x_offset, 1);
             else
-            {
                 goto L911;
-            }
 
             // 
             // -----------------------------------------------------------------
@@ -5018,36 +4598,28 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             {
                 for (i = 1; i <= nsub; i++)
                 {
-                    k = ind[(i - (1)) + _ind_offset];
-                    dk = d[(i - (1)) + _d_offset];
-                    if ((nbd[(k - (1)) + _nbd_offset] != 0))
+                    k = ind[i - 1 + _ind_offset];
+                    dk = d[i - 1 + _d_offset];
+                    if (nbd[k - 1 + _nbd_offset] != 0)
                     {
-                        if (((dk < 0.0) && (nbd[(k - (1)) + _nbd_offset] <= 2)))
+                        if (dk < 0.0 && nbd[k - 1 + _nbd_offset] <= 2)
                         {
-                            temp2 = (l[(k - (1)) + _l_offset] - x[(k - (1)) + _x_offset]);
-                            if ((temp2 >= 0.0))
-                            {
+                            temp2 = l[k - 1 + _l_offset] - x[k - 1 + _x_offset];
+                            if (temp2 >= 0.0)
                                 temp1 = 0.0;
-                            }
-                            else if (((dk * alpha) < temp2))
-                            {
-                                temp1 = (temp2 / dk);
-                            }
+                            else if (dk * alpha < temp2)
+                                temp1 = temp2 / dk;
                         }
-                        else if (((dk > 0.0) && (nbd[(k - (1)) + _nbd_offset] >= 2)))
+                        else if (dk > 0.0 && nbd[k - 1 + _nbd_offset] >= 2)
                         {
-                            temp2 = (u[(k - (1)) + _u_offset] - x[(k - (1)) + _x_offset]);
-                            if ((temp2 <= 0.0))
-                            {
+                            temp2 = u[k - 1 + _u_offset] - x[k - 1 + _x_offset];
+                            if (temp2 <= 0.0)
                                 temp1 = 0.0;
-                            }
-                            else if (((dk * alpha) > temp2))
-                            {
-                                temp1 = (temp2 / dk);
-                            }
+                            else if (dk * alpha > temp2)
+                                temp1 = temp2 / dk;
                         }
 
-                        if ((temp1 < alpha))
+                        if (temp1 < alpha)
                         {
                             alpha = temp1;
                             ibd = i;
@@ -5056,38 +4628,36 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 }
             }
 
-            if ((alpha < 1.0))
+            if (alpha < 1.0)
             {
-                dk = d[(ibd - (1)) + _d_offset];
-                k = ind[(ibd - (1)) + _ind_offset];
-                if ((dk > 0.0))
+                dk = d[ibd - 1 + _d_offset];
+                k = ind[ibd - 1 + _ind_offset];
+                if (dk > 0.0)
                 {
-                    x[(k - (1)) + _x_offset] = u[(k - (1)) + _u_offset];
-                    d[(ibd - (1)) + _d_offset] = 0.0;
+                    x[k - 1 + _x_offset] = u[k - 1 + _u_offset];
+                    d[ibd - 1 + _d_offset] = 0.0;
                 }
-                else if ((dk < 0.0))
+                else if (dk < 0.0)
                 {
-                    x[(k - (1)) + _x_offset] = l[(k - (1)) + _l_offset];
-                    d[(ibd - (1)) + _d_offset] = 0.0;
+                    x[k - 1 + _x_offset] = l[k - 1 + _l_offset];
+                    d[ibd - 1 + _d_offset] = 0.0;
                 }
             }
             {
                 for (i = 1; i <= nsub; i++)
                 {
-                    k = ind[(i - (1)) + _ind_offset];
-                    x[(k - (1)) + _x_offset] = (x[(k - (1)) + _x_offset] + (alpha * d[(i - (1)) + _d_offset]));
+                    k = ind[i - 1 + _ind_offset];
+                    x[k - 1 + _x_offset] = x[k - 1 + _x_offset] + alpha * d[i - 1 + _d_offset];
                 }
             }
 
 
             L911:
 
-            if ((iprint >= 99))
+            if (iprint >= 99)
             {
                 // DISPLAY: "----------------exit SUBSM --------------------"
             }
-
-            return;
         }
 
         // c                                                                       
@@ -5141,7 +4711,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // c     begin block with ...exits to 40
         // c
         // c
-        private static void dpofa(double[] a, int _a_offset, int lda, int n, ref int info)
+        private static void Dpofa(double[] a, int _a_offset, int lda, int n, ref int info)
         {
             double t = 0.0d;
             double s = 0.0d;
@@ -5153,41 +4723,37 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     info = j;
                     s = 0.0e0;
-                    jm1 = (j - 1);
-                    if ((jm1 < 1))
-                    {
+                    jm1 = j - 1;
+                    if (jm1 < 1)
                         goto L20;
-                    }
 
                     {
                         for (k = 1; k <= jm1; k++)
                         {
-                            t = (a[(k - (1)) + (j - (1)) * (lda) + _a_offset]
-                                - ddot((k - 1), a, (1 - (1)) + (k - (1)) * (lda)
-                                + _a_offset, 1, a, (1 - (1)) + (j - (1)) * (lda) + _a_offset, 1));
+                            t = a[k - 1 + (j - 1) * lda + _a_offset]
+                                - Ddot(k - 1, a, 1 - 1 + (k - 1) * lda
+                                                 + _a_offset, 1, a, 1 - 1 + (j - 1) * lda + _a_offset, 1);
 
-                            t = (t / a[(k - (1)) + (k - (1)) * (lda) + _a_offset]);
-                            a[(k - (1)) + (j - (1)) * (lda) + _a_offset] = t;
-                            s = (s + (t * t));
+                            t = t / a[k - 1 + (k - 1) * lda + _a_offset];
+                            a[k - 1 + (j - 1) * lda + _a_offset] = t;
+                            s = s + t * t;
                         }
                     }
 
                     L20:
-                    s = (a[(j - (1)) + (j - (1)) * (lda) + _a_offset] - s);
+                    s = a[j - 1 + (j - 1) * lda + _a_offset] - s;
                     // c     ......exit
-                    if ((s <= 0.0e0))
-                    {
+                    if (s <= 0.0e0)
                         goto L40;
-                    }
 
-                    a[(j - (1)) + (j - (1)) * (lda) + _a_offset] = System.Math.Sqrt(s);
+                    a[j - 1 + (j - 1) * lda + _a_offset] = Math.Sqrt(s);
                 }
             }
 
             info = 0;
 
             L40:
-            return;
+            ;
         }
 
         // *     .. Scalar Arguments ..
@@ -5209,34 +4775,27 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // *     ..
         // *     .. Intrinsic Functions ..
         // *     ..
-        private static void dscal(int n, double da, double[] dx, int _dx_offset, int incx)
+        private static void Dscal(int n, double da, double[] dx, int _dx_offset, int incx)
         {
-
             int i = 0;
             int m = 0;
             int mp1 = 0;
             int nincx = 0;
 
-            if (((n <= 0) || (incx <= 0)))
-            {
+            if (n <= 0 || incx <= 0)
                 return;
-            }
 
-            if ((incx == 1))
-            {
+            if (incx == 1)
                 goto L20;
-            }
 
             // *
             // *        code for increment not equal to 1
             // *
-            nincx = (n * incx);
+            nincx = n * incx;
             {
                 int _i_inc = incx;
-                for (i = 1; (_i_inc < 0) ? i >= nincx : i <= nincx; i += _i_inc)
-                {
-                    dx[(i - (1)) + _dx_offset] = (da * dx[(i - (1)) + _dx_offset]);
-                }
+                for (i = 1; _i_inc < 0 ? i >= nincx : i <= nincx; i += _i_inc)
+                    dx[i - 1 + _dx_offset] = da * dx[i - 1 + _dx_offset];
             }
             return;
             // *
@@ -5246,39 +4805,31 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // *        clean-up loop
             // *
             L20:
-            m = (n) % (5);
+            m = n % 5;
 
-            if ((m == 0))
-            {
+            if (m == 0)
                 goto L40;
-            }
             {
                 for (i = 1; i <= m; i++)
-                {
-                    dx[(i - (1)) + _dx_offset] = (da * dx[(i - (1)) + _dx_offset]);
-                }
+                    dx[i - 1 + _dx_offset] = da * dx[i - 1 + _dx_offset];
             }
 
-            if ((n < 5))
-            {
+            if (n < 5)
                 return;
-            }
 
             L40:
-            mp1 = (m + 1);
+            mp1 = m + 1;
             {
                 int _i_inc = 5;
                 for (i = mp1; i <= n; i += _i_inc)
                 {
-                    dx[(i - (1)) + _dx_offset] = (da * dx[(i - (1)) + _dx_offset]);
-                    dx[((i + 1) - (1)) + _dx_offset] = (da * dx[((i + 1) - (1)) + _dx_offset]);
-                    dx[((i + 2) - (1)) + _dx_offset] = (da * dx[((i + 2) - (1)) + _dx_offset]);
-                    dx[((i + 3) - (1)) + _dx_offset] = (da * dx[((i + 3) - (1)) + _dx_offset]);
-                    dx[((i + 4) - (1)) + _dx_offset] = (da * dx[((i + 4) - (1)) + _dx_offset]);
+                    dx[i - 1 + _dx_offset] = da * dx[i - 1 + _dx_offset];
+                    dx[i + 1 - 1 + _dx_offset] = da * dx[i + 1 - 1 + _dx_offset];
+                    dx[i + 2 - 1 + _dx_offset] = da * dx[i + 2 - 1 + _dx_offset];
+                    dx[i + 3 - 1 + _dx_offset] = da * dx[i + 3 - 1 + _dx_offset];
+                    dx[i + 4 - 1 + _dx_offset] = da * dx[i + 4 - 1 + _dx_offset];
                 }
             }
-
-            return;
         }
 
         // *     .. Scalar Arguments ..
@@ -5299,8 +4850,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // *     ..
         // *     .. Intrinsic Functions ..
         // *     ..
-        private static double ddot(int n, double[] dx, int _dx_offset,
-           int incx, double[] dy, int _dy_offset, int incy)
+        private static double Ddot(int n, double[] dx, int _dx_offset,
+            int incx, double[] dy, int _dy_offset, int incy)
         {
             double dtemp = 0.0d;
             int i = 0;
@@ -5311,36 +4862,28 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             double ddot = 0.0d;
             ddot = 0.0e0;
             dtemp = 0.0e0;
-            if ((n <= 0))
-            {
+            if (n <= 0)
                 return ddot;
-            }
 
-            if (((incx == 1) && (incy == 1)))
-            {
+            if (incx == 1 && incy == 1)
                 goto L20;
-            }
             // *
             // *        code for unequal increments or equal increments
             // *          not equal to 1
             // *
             ix = 1;
             iy = 1;
-            if ((incx < 0))
-            {
-                ix = (((((-(n)) + 1)) * incx) + 1);
-            }
-            if ((incy < 0))
-            {
-                iy = (((((-(n)) + 1)) * incy) + 1);
-            }
+            if (incx < 0)
+                ix = (-n + 1) * incx + 1;
+            if (incy < 0)
+                iy = (-n + 1) * incy + 1;
 
             {
                 for (i = 1; i <= n; i++)
                 {
-                    dtemp = (dtemp + (dx[(ix - (1)) + _dx_offset] * dy[(iy - (1)) + _dy_offset]));
-                    ix = (ix + incx);
-                    iy = (iy + incy);
+                    dtemp = dtemp + dx[ix - 1 + _dx_offset] * dy[iy - 1 + _dy_offset];
+                    ix = ix + incx;
+                    iy = iy + incy;
                 }
             }
             ddot = dtemp;
@@ -5353,81 +4896,67 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // *        clean-up loop
             // *
             L20:
-            m = (n) % (5);
+            m = n % 5;
 
-            if ((m == 0))
-            {
+            if (m == 0)
                 goto L40;
-            }
 
             {
                 for (i = 1; i <= m; i++)
-                {
-                    dtemp = (dtemp + (dx[(i - (1)) + _dx_offset] * dy[(i - (1)) + _dy_offset]));
-                }
+                    dtemp = dtemp + dx[i - 1 + _dx_offset] * dy[i - 1 + _dy_offset];
             }
 
-            if ((n < 5))
-            {
+            if (n < 5)
                 goto L60;
-            }
 
             L40:
-            mp1 = (m + 1);
+            mp1 = m + 1;
             {
                 int _i_inc = 5;
                 for (i = mp1; i <= n; i += _i_inc)
-                {
-                    dtemp = (((((dtemp + (dx[(i - (1)) + _dx_offset] * dy[(i - (1))
-                        + _dy_offset])) + (dx[((i + 1) - (1)) + _dx_offset] * dy[((i + 1) - (1))
-                        + _dy_offset])) + (dx[((i + 2) - (1)) + _dx_offset] * dy[((i + 2) - (1))
-                        + _dy_offset])) + (dx[((i + 3) - (1)) + _dx_offset] * dy[((i + 3) - (1))
-                        + _dy_offset])) + (dx[((i + 4) - (1)) + _dx_offset] * dy[((i + 4) - (1)) + _dy_offset]));
-                }
+                    dtemp = dtemp + dx[i - 1 + _dx_offset] * dy[i - 1
+                                                                + _dy_offset] + dx[i + 1 - 1 + _dx_offset] * dy[
+                                i + 1 - 1
+                                + _dy_offset] + dx[i + 2 - 1 + _dx_offset] * dy[i + 2 - 1
+                                                                                + _dy_offset] +
+                            dx[i + 3 - 1 + _dx_offset] * dy[i + 3 - 1
+                                                            + _dy_offset] + dx[i + 4 - 1 + _dx_offset] *
+                            dy[i + 4 - 1 + _dy_offset];
             }
             L60:
             ddot = dtemp;
             return ddot;
         }
 
-        private static void dcopy(int n, double[] dx, int _dx_offset, int incx,
-           double[] dy, int _dy_offset, int incy)
+        private static void Dcopy(int n, double[] dx, int _dx_offset, int incx,
+            double[] dy, int _dy_offset, int incy)
         {
-
             int i = 0;
             int ix = 0;
             int iy = 0;
             int m = 0;
             int mp1 = 0;
-            if ((n <= 0))
-            {
+            if (n <= 0)
                 return;
-            }
 
-            if (((incx == 1) && (incy == 1)))
-            {
+            if (incx == 1 && incy == 1)
                 goto L20;
-            }
             // c
             // c        code for unequal increments or equal increments
             // c          not equal to 1
             // c
             ix = 1;
             iy = 1;
-            if ((incx < 0))
-            {
-                ix = (((((-(n)) + 1)) * incx) + 1);
-            }
-            if ((incy < 0))
-            {
-                iy = (((((-(n)) + 1)) * incy) + 1);
-            }
+            if (incx < 0)
+                ix = (-n + 1) * incx + 1;
+            if (incy < 0)
+                iy = (-n + 1) * incy + 1;
             {
                 for (i = 1; i <= n; i++)
                 {
-                    dy[(iy - (1)) + _dy_offset] = dx[(ix - (1)) + _dx_offset];
-                    ix = (ix + incx);
-                    iy = (iy + incy);
+                    dy[iy - 1 + _dy_offset] = dx[ix - 1 + _dx_offset];
+                    ix = ix + incx;
+                    iy = iy + incy;
                 }
             }
             return;
@@ -5438,35 +4967,29 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             // c        clean-up loop
             // c
             L20:
-            m = (n) % (7);
-            if ((m == 0))
-            {
+            m = n % 7;
+            if (m == 0)
                 goto L40;
-            }
             {
                 for (i = 1; i <= m; i++)
-                {
-                    dy[(i - (1)) + _dy_offset] = dx[(i - (1)) + _dx_offset];
-                }
+                    dy[i - 1 + _dy_offset] = dx[i - 1 + _dx_offset];
             }
-            if ((n < 7))
-            {
+            if (n < 7)
                 return;
-            }
 
             L40:
-            mp1 = (m + 1);
+            mp1 = m + 1;
             {
                 int _i_inc = 7;
                 for (i = mp1; i <= n; i += _i_inc)
                 {
-                    dy[(i - (1)) + _dy_offset] = dx[(i - (1)) + _dx_offset];
-                    dy[((i + 1) - (1)) + _dy_offset] = dx[((i + 1) - (1)) + _dx_offset];
-                    dy[((i + 2) - (1)) + _dy_offset] = dx[((i + 2) - (1)) + _dx_offset];
-                    dy[((i + 3) - (1)) + _dy_offset] = dx[((i + 3) - (1)) + _dx_offset];
-                    dy[((i + 4) - (1)) + _dy_offset] = dx[((i + 4) - (1)) + _dx_offset];
-                    dy[((i + 5) - (1)) + _dy_offset] = dx[((i + 5) - (1)) + _dx_offset];
-                    dy[((i + 6) - (1)) + _dy_offset] = dx[((i + 6) - (1)) + _dx_offset];
+                    dy[i - 1 + _dy_offset] = dx[i - 1 + _dx_offset];
+                    dy[i + 1 - 1 + _dy_offset] = dx[i + 1 - 1 + _dx_offset];
+                    dy[i + 2 - 1 + _dy_offset] = dx[i + 2 - 1 + _dx_offset];
+                    dy[i + 3 - 1 + _dy_offset] = dx[i + 3 - 1 + _dx_offset];
+                    dy[i + 4 - 1 + _dy_offset] = dx[i + 4 - 1 + _dx_offset];
+                    dy[i + 5 - 1 + _dy_offset] = dx[i + 5 - 1 + _dx_offset];
+                    dy[i + 6 - 1 + _dy_offset] = dx[i + 6 - 1 + _dx_offset];
                 }
             }
         }
@@ -5494,26 +5017,21 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // *     ..
         // *     .. Intrinsic Functions ..
         // *     ..
-        private static void daxpy(int n, double da,
-             double[] dx, int _dx_offset, int incx, double[] dy, int _dy_offset, int incy)
+        private static void Daxpy(int n, double da,
+            double[] dx, int _dx_offset, int incx, double[] dy, int _dy_offset, int incy)
         {
-
             int i = 0;
             int ix = 0;
             int iy = 0;
             int m = 0;
             int mp1 = 0;
-            if ((n <= 0))
-            {
+            if (n <= 0)
                 return;
-            }
 
-            if ((da == 0.0e0))
-            {
+            if (da == 0.0e0)
                 return;
-            }
 
-            if (((incx == 1) && (incy == 1)))
+            if (incx == 1 && incy == 1)
             {
                 // *
                 // *        code for both increments equal to 1
@@ -5521,36 +5039,28 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // *
                 // *        clean-up loop
                 // *
-                m = (n) % (4);
-                if ((m != 0))
-                {
-                    {
-                        for (i = 1; i <= m; i++)
-                        {
-                            dy[(i - (1)) + _dy_offset] = (dy[(i - (1)) + _dy_offset]
-                                + (da * dx[(i - (1)) + _dx_offset]));
-                        }
-                    }
-                }
+                m = n % 4;
+                if (m != 0)
+                    for (i = 1; i <= m; i++)
+                        dy[i - 1 + _dy_offset] = dy[i - 1 + _dy_offset]
+                                                 + da * dx[i - 1 + _dx_offset];
 
-                if ((n < 4))
-                {
+                if (n < 4)
                     return;
-                }
 
-                mp1 = (m + 1);
+                mp1 = m + 1;
                 {
                     int _i_inc = 4;
                     for (i = mp1; i <= n; i += _i_inc)
                     {
-                        dy[(i - (1)) + _dy_offset] = (dy[(i - (1)) + _dy_offset]
-                            + (da * dx[(i - (1)) + _dx_offset]));
-                        dy[((i + 1) - (1)) + _dy_offset] = (dy[((i + 1) - (1)) + _dy_offset]
-                            + (da * dx[((i + 1) - (1)) + _dx_offset]));
-                        dy[((i + 2) - (1)) + _dy_offset] = (dy[((i + 2) - (1)) + _dy_offset]
-                            + (da * dx[((i + 2) - (1)) + _dx_offset]));
-                        dy[((i + 3) - (1)) + _dy_offset] = (dy[((i + 3) - (1)) + _dy_offset]
-                            + (da * dx[((i + 3) - (1)) + _dx_offset]));
+                        dy[i - 1 + _dy_offset] = dy[i - 1 + _dy_offset]
+                                                 + da * dx[i - 1 + _dx_offset];
+                        dy[i + 1 - 1 + _dy_offset] = dy[i + 1 - 1 + _dy_offset]
+                                                     + da * dx[i + 1 - 1 + _dx_offset];
+                        dy[i + 2 - 1 + _dy_offset] = dy[i + 2 - 1 + _dy_offset]
+                                                     + da * dx[i + 2 - 1 + _dx_offset];
+                        dy[i + 3 - 1 + _dy_offset] = dy[i + 3 - 1 + _dy_offset]
+                                                     + da * dx[i + 3 - 1 + _dx_offset];
                     }
                 }
             }
@@ -5562,25 +5072,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 // *
                 ix = 1;
                 iy = 1;
-                if ((incx < 0))
-                {
-                    ix = (((((-(n)) + 1)) * incx) + 1);
-                }
-                if ((incy < 0))
-                {
-                    iy = (((((-(n)) + 1)) * incy) + 1);
-                }
+                if (incx < 0)
+                    ix = (-n + 1) * incx + 1;
+                if (incy < 0)
+                    iy = (-n + 1) * incy + 1;
                 {
                     for (i = 1; i <= n; i++)
                     {
-                        dy[(iy - (1)) + _dy_offset] = (dy[(iy - (1)) + _dy_offset]
-                            + (da * dx[(ix - (1)) + _dx_offset]));
-                        ix = (ix + incx);
-                        iy = (iy + incy);
+                        dy[iy - 1 + _dy_offset] = dy[iy - 1 + _dy_offset]
+                                                  + da * dx[ix - 1 + _dx_offset];
+                        ix = ix + incx;
+                        iy = iy + incy;
                     }
                 }
             }
-            return;
         }
     }
 }
