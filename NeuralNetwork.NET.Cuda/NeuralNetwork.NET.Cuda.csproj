@@ -58,9 +58,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NetworkTrainerGpuPreferences.cs" />
-    <Compile Include="MatrixGpuExtensions.cs" />
-    <Compile Include="ProcessingMode.cs" />
+    <Compile Include="APIs\NeuralNetworkGpuPreferences.cs" />
+    <Compile Include="Helpers\MatrixGpuExtensions.cs" />
+    <Compile Include="APIs\ProcessingMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

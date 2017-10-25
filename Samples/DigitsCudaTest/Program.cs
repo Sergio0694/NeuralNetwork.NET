@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using NeuralNetworkNET.Cuda;
+using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using SharedBenchmark;
 
@@ -9,7 +9,7 @@ namespace DigitsCudaTest
     {
         static async Task Main()
         {
-            NetworkTrainerGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
+            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             await MnistTester.PerformBenchmarkAsync(LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence, false, null, true, 784, 16, 16, 10);
         }
     }

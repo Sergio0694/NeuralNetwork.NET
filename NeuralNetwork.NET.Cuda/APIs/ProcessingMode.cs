@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.Cuda
+﻿namespace NeuralNetworkNET.Cuda.APIs
 {
     /// <summary>
     /// Indicates the desired processing mode while training a network

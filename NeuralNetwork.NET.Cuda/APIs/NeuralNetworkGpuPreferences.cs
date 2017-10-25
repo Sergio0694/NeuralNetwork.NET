@@ -1,17 +1,18 @@
 ﻿using System;
+using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.Cuda
+namespace NeuralNetworkNET.Cuda.APIs
 {
     /// <summary>
-    /// A static class for some additional settings for the <see cref="SupervisedLearning.BackpropagationNetworkTrainer"/> class
+    /// A static class for some additional settings for the neural networks produced by the library
     /// </summary>
-    public static class NetworkTrainerGpuPreferences
+    public static class NeuralNetworkGpuPreferences
     {
         private static ProcessingMode _ProcessingMode = ProcessingMode.Cpu;
 
         /// <summary>
-        /// Gets or sets the desired processing mode to perform the network training
+        /// Gets or sets the desired processing mode to perform the neural network operations
         /// </summary>
         public static ProcessingMode ProcessingMode
         {

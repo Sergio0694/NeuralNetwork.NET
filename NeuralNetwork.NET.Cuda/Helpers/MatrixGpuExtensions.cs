@@ -3,7 +3,7 @@ using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Cuda
+namespace NeuralNetworkNET.Cuda.Helpers
 {
     /// <summary>
     /// A static extension class that operates on matrices through Gpu computing
