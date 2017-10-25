@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[][] biases = new double[neurons.Length - 1][];
             for (int i = 0; i < weights.Length; i++)
             {
-                weights[i] = random.NextMatrix(neurons[i], neurons[i + 1]);
+                weights[i] = random.NextGaussianMatrix(neurons[i], neurons[i + 1]);
                 int next = neurons[i + 1];
                 double[] bias = new double[next];
                 for (int j = 0; j < next; j++)
