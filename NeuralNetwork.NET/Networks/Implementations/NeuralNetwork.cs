@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Architecture;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using Newtonsoft.Json;
 
@@ -78,12 +79,30 @@ namespace NeuralNetworkNET.Networks.Implementations
         [NotNull]
         internal static NeuralNetwork NewRandom([NotNull] params int[] neurons)
         {
+            // Check
             if (neurons.Length < 2) throw new ArgumentOutOfRangeException(nameof(neurons), "The network must have at least two layers");
+
+            // Get the provider
             Random random = new Random();
+            Func<int, int, double[,]> factory;
+            switch (NeuralNetworkSettings.ActivationFunctionType)
+            {
+                case ActivationFunction.Sigmoid:
+                    factory = (x, y) => random.NextSigmoidMatrix(x, y);
+                    break;
+                case ActivationFunction.Tanh:
+                    factory = (x, y) => random.NextTanhMatrix(x, y);
+                    break;
+                default:
+                    factory = (x, y) => random.NextXavierMatrix(x, y);
+                    break;
+            }
+
+            // Initialize the weights
             double[][,] weights = new double[neurons.Length - 1][,];
             for (int i = 0; i < weights.Length; i++)
             {
-                weights[i] = random.NextSigmoidMatrix(neurons[i], neurons[i + 1]);
+                weights[i] = factory(neurons[i], neurons[i + 1]);
             }
             return new NeuralNetwork(weights);
         }
