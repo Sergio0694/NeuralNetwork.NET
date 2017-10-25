@@ -13,6 +13,11 @@
         /// <summary>
         /// Limited-memory Broyden–Fletcher–Goldfarb–Shanno optimizaation algorithm
         /// </summary>
-        BoundedFGS
+        BoundedFGS,
+
+        /// <summary>
+        /// Limited-memory Broyden–Fletcher–Goldfarb–Shanno and then gradient descent after first convergence
+        /// </summary>
+        BoundedBFGSWithGradientDescentOnFirstConvergence
     }
 }

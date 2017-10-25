@@ -78,9 +78,9 @@ namespace DigitsTest
             });
             INeuralNetwork network = previous == null
                 ? await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
-                    LearningAlgorithmType.GradientDescend, cts.Token, progress, 480, 160, 16, 10)
+                    LearningAlgorithmType.BoundedFGS, cts.Token, progress, 480, 32, 16, 10)
                 : await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y,
-                    previous, LearningAlgorithmType.GradientDescend, cts.Token, progress);
+                    previous, LearningAlgorithmType.BoundedFGS, cts.Token, progress);
 
             if (args.Length == 2 && args[1].Equals("-Backup"))
             {

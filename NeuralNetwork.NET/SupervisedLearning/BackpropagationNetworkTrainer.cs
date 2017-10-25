@@ -91,7 +91,9 @@ namespace NeuralNetworkNET.SupervisedLearning
             switch (type)
             {
                 case LearningAlgorithmType.BoundedFGS:
-                    throw new NotImplementedException();
+                case LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence:
+                    optimizer = new BoundedBroydenFletcherGoldfarbShanno(start.Length);
+                    break;
                 case LearningAlgorithmType.GradientDescend:
                     optimizer = new GradientDescent { NumberOfVariables = start.Length };
                     break;
@@ -125,6 +127,24 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Minimize the cost function
             await Task.Run(() => optimizer.Minimize(), token);
+
+            // Check if second optimization is pending
+            if (type == LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence && !token.IsCancellationRequested)
+            {
+                // Reinitialize the optimizer
+                double[] partial = optimizer.Solution;
+                optimizer = new GradientDescent
+                {
+                    NumberOfVariables = start.Length,
+                    Solution = partial,
+                    Token = token,
+                    Function = CostFunction,
+                    Gradient = GradientFunction
+                };
+
+                // Optimize again
+                await Task.Run(() => optimizer.Minimize(), token);
+            }
 
             // Return the result network
             return NeuralNetwork.Deserialize(optimizer.Solution, neurons);
