@@ -1,6 +1,7 @@
 ﻿using System;
+using NeuralNetworkNET.Networks.Architecture;
 
-namespace NeuralNetworkNET.Networks.Architecture
+namespace NeuralNetworkNET.Networks.PublicAPIs
 {
     /// <summary>
     /// A static class with some additional settings for the neural networks produced by the library

@@ -17,19 +17,19 @@ namespace NeuralNetworkNET.Helpers
         public static void SetupInjections(
             [NotNull] Func<double[,], double[,], double[,]> multiply,
             [NotNull] Func<double[,], double[,], double[,]> transposeMultiply,
-            [NotNull] Func<double[,], double[,], double[,]> multiplySigmoid,
-            [NotNull] Func<double[,], double[,]> sigmoid,
+            [NotNull] Func<double[,], double[,], double[,]> multiplyActivation,
+            [NotNull] Func<double[,], double[,]> activation,
             [NotNull] Func<double[,], double[,], double> halfSquaredDifference,
-            [NotNull] Action<double[,], double[,], double[,]> inPlaceSubtractHadamardSigmoidPrime,
-            [NotNull] Action<double[,], double[,]> inPlaceSigmoidPrimeHadamard)
+            [NotNull] Action<double[,], double[,], double[,]> inPlaceSubtractHadamardActivationPrime,
+            [NotNull] Action<double[,], double[,]> inPlaceActivationPrimeHadamard)
         {
             _MultiplyOverride = multiply;
             _TransposeAndMultiplyOverride = transposeMultiply;
-            _MultiplyAndSigmoidOverride = multiplySigmoid;
-            _SigmoidOverride = sigmoid;
+            _MultiplyAndActivationOverride = multiplyActivation;
+            _ActivationOverride = activation;
             _HalfSquaredDifferenceOverride = halfSquaredDifference;
-            _InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride = inPlaceSubtractHadamardSigmoidPrime;
-            _InPlaceSigmoidPrimeAndHadamardProductOverride = inPlaceSigmoidPrimeHadamard;
+            _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = inPlaceSubtractHadamardActivationPrime;
+            _InPlaceActivationPrimeAndHadamardProductOverride = inPlaceActivationPrimeHadamard;
         }
 
         /// <summary>
@@ -37,11 +37,11 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         public static void ResetInjections()
         {
-            _MultiplyOverride = _TransposeAndMultiplyOverride = _MultiplyAndSigmoidOverride = null;
-            _SigmoidOverride = null;
+            _MultiplyOverride = _TransposeAndMultiplyOverride = _MultiplyAndActivationOverride = null;
+            _ActivationOverride = null;
             _HalfSquaredDifferenceOverride = null;
-            _InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride = null;
-            _InPlaceSigmoidPrimeAndHadamardProductOverride = null;
+            _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = null;
+            _InPlaceActivationPrimeAndHadamardProductOverride = null;
         }
 
         #endregion
@@ -79,30 +79,30 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// A <see cref="Func{T, TResult}"/> that applies the sigmoid function
+        /// A <see cref="Func{T, TResult}"/> that applies the activation function
         /// </summary>
         [CanBeNull]
-        private static Func<double[,], double[,]> _SigmoidOverride;
+        private static Func<double[,], double[,]> _ActivationOverride;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.Sigmoid"/> method
+        /// Forwards the base <see cref="MatrixExtensions.Activation"/> method
         /// </summary>
         [Pure, NotNull]
-        public static double[,] Sigmoid([NotNull] double[,] m) => _SigmoidOverride?.Invoke(m) ?? m.Sigmoid();
+        public static double[,] Activation([NotNull] double[,] m) => _ActivationOverride?.Invoke(m) ?? m.Activation();
 
         /// <summary>
-        /// A <see cref="Func{T1, T2, TResult}"/> that multiplies two matrices and then applies the sigmoid function
+        /// A <see cref="Func{T1, T2, TResult}"/> that multiplies two matrices and then applies the activation function
         /// </summary>
         [CanBeNull]
-        private static Func<double[,], double[,], double[,]> _MultiplyAndSigmoidOverride;
+        private static Func<double[,], double[,], double[,]> _MultiplyAndActivationOverride;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.MultiplyAndSigmoid"/> method
+        /// Forwards the base <see cref="MatrixExtensions.MultiplyAndActivation"/> method
         /// </summary>
         [Pure, NotNull]
-        public static double[,] MultiplyAndSigmoid([NotNull] double[,] m1, [NotNull] double[,] m2)
+        public static double[,] MultiplyAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2)
         {
-            return _MultiplyAndSigmoidOverride?.Invoke(m1, m2) ?? m1.MultiplyAndSigmoid(m2);
+            return _MultiplyAndActivationOverride?.Invoke(m1, m2) ?? m1.MultiplyAndActivation(m2);
         }
 
         /// <summary>
@@ -125,33 +125,33 @@ namespace NeuralNetworkNET.Helpers
         #region Side effect
 
         /// <summary>
-        /// An <see cref="Action{T1, T2, T3}"/> that performs the Hadamard product to the cost function prime, then applies the sigmoid prime function
+        /// An <see cref="Action{T1, T2, T3}"/> that performs the Hadamard product to the cost function prime, then applies the activation prime function
         /// </summary>
         [CanBeNull]
-        private static Action<double[,], double[,], double[,]> _InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride;
+        private static Action<double[,], double[,], double[,]> _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.InPlaceSubtractAndHadamardProductWithSigmoidPrime"/> method
+        /// Forwards the base <see cref="MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime"/> method
         /// </summary>
-        public static void InPlaceSubtractAndHadamardProductWithSigmoidPrime([NotNull] double[,] m, [NotNull] double[,] y, [NotNull] double[,] z)
+        public static void InPlaceSubtractAndHadamardProductWithActivationPrime([NotNull] double[,] m, [NotNull] double[,] y, [NotNull] double[,] z)
         {
-            if (_InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride == null) m.InPlaceSubtractAndHadamardProductWithSigmoidPrime(y, z);
-            else _InPlaceSubtractAndHadamardProductWithSigmoidPrimeOverride?.Invoke(m, y, z);
+            if (_InPlaceSubtractAndHadamardProductWithActivationPrimeOverride == null) m.InPlaceSubtractAndHadamardProductWithActivationPrime(y, z);
+            else _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride?.Invoke(m, y, z);
         }
 
         /// <summary>
-        /// An <see cref="Action{T1, T2, T3}"/> that performs the sigmoid prime function and then the Hadamard product
+        /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product
         /// </summary>
         [CanBeNull]
-        private static Action<double[,], double[,]> _InPlaceSigmoidPrimeAndHadamardProductOverride;
+        private static Action<double[,], double[,]> _InPlaceActivationPrimeAndHadamardProductOverride;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.InPlaceSigmoidPrimeAndHadamardProduct"/> method
+        /// Forwards the base <see cref="MatrixExtensions.InPlaceActivationPrimeAndHadamardProduct"/> method
         /// </summary>
-        public static void InPlaceSigmoidPrimeAndHadamardProduct([NotNull] double[,] m, [NotNull] double[,] delta)
+        public static void InPlaceActivationPrimeAndHadamardProduct([NotNull] double[,] m, [NotNull] double[,] delta)
         {
-            if (_InPlaceSigmoidPrimeAndHadamardProductOverride == null) m.InPlaceSigmoidPrimeAndHadamardProduct(delta);
-            else _InPlaceSigmoidPrimeAndHadamardProductOverride?.Invoke(m, delta);
+            if (_InPlaceActivationPrimeAndHadamardProductOverride == null) m.InPlaceActivationPrimeAndHadamardProduct(delta);
+            else _InPlaceActivationPrimeAndHadamardProductOverride?.Invoke(m, delta);
         }
 
         #endregion

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Architecture;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -271,7 +272,7 @@ namespace NeuralNetworkNET.Helpers
 
         #endregion
 
-        #region Sigmoid
+        #region Activation
 
         /// <summary>
         /// Returns the result of the input after the activation function has been applied
@@ -280,11 +281,11 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Sigmoid([NotNull] this double[] v)
+        public static double[] Activation([NotNull] this double[] v)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
-                result[i] = 1 / (1 + Math.Exp(-v[i]));
+                result[i] = ActivationFunctionProvider.Activation(v[i]);
             return result;
         }
 
@@ -295,13 +296,13 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Sigmoid([NotNull] this double[,] m)
+        public static double[,] Activation([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] result = new double[h, w];
 
-            // Execute the sigmoid in parallel
+            // Execute the activation in parallel
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
@@ -309,7 +310,7 @@ namespace NeuralNetworkNET.Helpers
                     fixed (double* pr = result, pm = m)
                     {
                         for (int j = 0; j < w; j++)
-                            pr[i * w + j] = 1 / (1 + Math.Exp(-pm[i * w + j]));
+                            pr[i * w + j] = ActivationFunctionProvider.Activation(pm[i * w + j]);
                     }
                 }
             }).IsCompleted;
@@ -323,12 +324,12 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m">The input to process</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceSigmoid([NotNull] this double[,] m)
+        public static void InPlaceActivation([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
 
-            // Execute the sigmoid in parallel
+            // Execute the activation in parallel
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
@@ -338,7 +339,7 @@ namespace NeuralNetworkNET.Helpers
                         for (int j = 0; j < w; j++)
                         {
                             int offset = i * w + j;
-                            pm[offset] = 1 / (1 + Math.Exp(-pm[offset]));
+                            pm[offset] = ActivationFunctionProvider.Activation(pm[offset]);
                         }
                     }
                 }
@@ -353,17 +354,12 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] SigmoidPrime([NotNull] this double[] v)
+        public static double[] ActivationPrime([NotNull] this double[] v)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
             {
-                double
-                    exp = Math.Exp(-v[i]),
-                    sum = 1 + exp,
-                    square = sum * sum,
-                    div = exp / square;
-                result[i] = div;
+                result[i] = ActivationFunctionProvider.ActivationPrime(v[i]);
             }
             return result;
         }
@@ -375,13 +371,13 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] SigmoidPrime([NotNull] this double[,] m)
+        public static double[,] ActivationPrime([NotNull] this double[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
             double[,] result = new double[h, w];
 
-            // Execute the sigmoid prime in parallel
+            // Execute the activation prime in parallel
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
@@ -390,12 +386,7 @@ namespace NeuralNetworkNET.Helpers
                     {
                         for (int j = 0; j < w; j++)
                         {
-                            double
-                                exp = Math.Exp(-pm[i * w + j]),
-                                sum = 1 + exp,
-                                square = sum * sum,
-                                div = exp / square;
-                            pr[i * w + j] = div;
+                            pr[i * w + j] = ActivationFunctionProvider.ActivationPrime(pm[i * w + j]);
                         }
                     }
                 }
@@ -409,14 +400,14 @@ namespace NeuralNetworkNET.Helpers
         #region Combined
 
         /// <summary>
-        /// Performs the multiplication between two matrices and then applies the sigmoid function
+        /// Performs the multiplication between two matrices and then applies the activation function
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndSigmoid([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -446,7 +437,7 @@ namespace NeuralNetworkNET.Helpers
                             {
                                 res += pm1[i1 + k] * pm2[i2];
                             }
-                            pm[i * w + j] = 1 / (1 + Math.Exp(-res)); // Store the result and apply the sigmoid
+                            pm[i * w + j] = ActivationFunctionProvider.Activation(res); // Store the result and apply the activation
                         }
                     }
                 }
@@ -504,15 +495,15 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Performs the multiplication between two matrices and then applies the sigmoid function
+        /// Performs the multiplication between two matrices and then applies the activation function
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
-        /// <param name="v">The array to add to the resulting matrix before applying the sigmoid function</param>
+        /// <param name="v">The array to add to the resulting matrix before applying the activation function</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSumAndSigmoid([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -543,7 +534,7 @@ namespace NeuralNetworkNET.Helpers
                                 res += pm1[i1 + k] * pm2[i2];
                             }
                             res += pv[j]; // Sum the input vector to each component
-                            pm[i * w + j] = 1 / (1 + Math.Exp(-res)); // Store the result and apply the sigmoid
+                            pm[i * w + j] = ActivationFunctionProvider.Activation(res); // Store the result and apply the activation
                         }
                     }
                 }
@@ -553,14 +544,14 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the sigmoid prime of z
+        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
         /// </summary>
         /// <param name="a">The estimated y</param>
         /// <param name="y">The expected y</param>
         /// <param name="z">The activity on the last layer</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithSigmoidPrime(
+        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
             [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z)
         {
             // Checks
@@ -585,10 +576,7 @@ namespace NeuralNetworkNET.Helpers
                             int index = offset + j;
                             double
                                 difference = pa[index] - py[index],
-                                exp = Math.Exp(-pz[index]),
-                                sum = 1 + exp,
-                                square = sum * sum,
-                                zPrime = exp / square,
+                                zPrime = ActivationFunctionProvider.ActivationPrime(pz[index]),
                                 hProduct = difference * zPrime;
                             pa[index] = hProduct;
                         }
@@ -599,13 +587,13 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the sigmoid prime of z
+        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
         /// <param name="delta">The precomputed delta to use in the Hadamard product</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSigmoidPrimeAndHadamardProduct(
+        public static void InPlaceActivationPrimeAndHadamardProduct(
             [NotNull] this double[,] z, [NotNull] double[,] delta)
         {
             // Checks
@@ -627,12 +615,7 @@ namespace NeuralNetworkNET.Helpers
                         for (int j = 0; j < w; j++)
                         {
                             int index = offset + j;
-                            double
-                                exp = Math.Exp(-pz[index]),
-                                sum = 1 + exp,
-                                square = sum * sum,
-                                zPrime = exp / square;
-                            pz[index] = zPrime * pd[index];
+                            pz[index] = ActivationFunctionProvider.ActivationPrime(pz[index]) * pd[index];
                         }
                     }
                 }
