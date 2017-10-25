@@ -27,6 +27,7 @@
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies;
 
@@ -118,6 +119,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
     /// 
     /// </code>
     /// </example>
+    [SuppressMessage("ReSharper", "UnusedMember.Local")]
     internal sealed partial class BoundedBroydenFletcherGoldfarbShanno : GradientOptimizationMethodBase
     {
         // those values need not be modified
@@ -127,113 +129,77 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         // Line search parameters
         private int iterations;
         private int evaluations;
-
         private int corrections = 5;
-
         private double[] lowerBound;
         private double[] upperBound;
-
         private double[] work;
-
         double factr = 1e+5;
-        double pgtol = 0.0;
-
+        double pgtol;
 
         #region Properties
 
-
         /// <summary>
         ///   Gets the number of iterations performed in the last
-        ///   call to <see cref="IOptimizationMethod{TInput, TOutput}.Minimize()"/>
-        ///   or <see cref="IOptimizationMethod{TInput, TOutput}.Maximize()"/>.
+        ///   call to <see cref="GradientOptimizationMethodBase.Minimize()"/>
         /// </summary>
         /// 
         /// <value>
         ///   The number of iterations performed
         ///   in the previous optimization.</value>
-        ///   
-        public int Iterations
-        {
-            get { return iterations; }
-        }
+        public int Iterations => iterations;
 
         /// <summary>
         ///   Gets or sets the maximum number of iterations
         ///   to be performed during optimization. Default
-        ///   is 0 (iterate until convergence).
+        ///   is 0 (iterate until convergence)
         /// </summary>
-        /// 
         public int MaxIterations { get; set; }
 
         /// <summary>
         ///   Gets the number of function evaluations performed
-        ///   in the last call to <see cref="IOptimizationMethod{TInput, TOutput}.Minimize()"/>
-        ///   or <see cref="IOptimizationMethod{TInput, TOutput}.Maximize()"/>.
+        ///   in the last call to <see cref="GradientOptimizationMethodBase.Minimize()"/>
         /// </summary>
         /// 
         /// <value>
         ///   The number of evaluations performed
-        ///   in the previous optimization.</value>
-        ///   
-        public int Evaluations
-        {
-            get { return evaluations; }
-        }
+        ///   in the previous optimization
+        /// </value>
+        public int Evaluations => evaluations;
 
         /// <summary>
         ///   Gets or sets the number of corrections used in the L-BFGS
-        ///   update. Recommended values are between 3 and 7. Default is 5.
+        ///   update. Recommended values are between 3 and 7. Default is 5
         /// </summary>
-        /// 
         public int Corrections
         {
-            get { return corrections; }
-            set
-            {
-                if (value <= 0)
-                    throw new ArgumentException("value",
-                        "Number of corrections should be higher than zero.");
-
-                corrections = value;
-            }
+            get => corrections;
+            set => corrections = value <= 0 ? throw new ArgumentException(nameof(Corrections), "Number of corrections should be higher than zero") : value;
         }
 
         /// <summary>
         ///   Gets or sets the upper bounds of the interval
-        ///   in which the solution must be found.
+        ///   in which the solution must be found
         /// </summary>
-        /// 
         public double[] UpperBounds
         {
-            get { return upperBound; }
-            set
-            {
-                if (value.Length != upperBound.Length)
-                    throw new ArgumentException("value", "The bounds vector should have the same length as the number of variables to be optimized");
-                upperBound = value;
-            }
+            get => upperBound;
+            set => upperBound = value.Length != upperBound.Length ? throw new ArgumentException(nameof(UpperBounds), "The bounds vector should have the same length as the number of variables to be optimized") : value;
         }
 
         /// <summary>
         ///   Gets or sets the lower bounds of the interval
-        ///   in which the solution must be found.
+        ///   in which the solution must be found
         /// </summary>
-        /// 
         public double[] LowerBounds
         {
-            get { return lowerBound; }
-            set
-            {
-                if (value.Length != lowerBound.Length)
-                    throw new ArgumentException("value", "The bounds vector should have the same length as the number of variables to be optimized");
-                lowerBound = value;
-            }
+            get => lowerBound;
+            set => lowerBound = value.Length != lowerBound.Length ? throw new ArgumentException(nameof(LowerBounds), "The bounds vector should have the same length as the number of variables to be optimized") : value;
         }
 
         /// <summary>
         ///   Gets or sets the accuracy with which the solution
         ///   is to be found. Default value is 1e5. Smaller values
-        ///   up until zero result in higher accuracy. 
+        ///   up until zero result in higher accuracy.
         /// </summary>
         /// 
         /// <remarks>
@@ -245,27 +211,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         ///   where epsmch is the machine precision, which is automatically
         ///   generated by the code. Typical values for this parameter are:
         ///   1e12 for low accuracy; 1e7 for moderate accuracy; 1e1 for extremely
-        ///   high accuracy.</para>
+        ///   high accuracy
+        /// </para>
         /// </remarks>
-        /// 
         public double FunctionTolerance
         {
-            get { return factr; }
-            set
-            {
-                if (value < 0)
-                {
-                    throw new ArgumentException("value",
-                        "Tolerance must be greater than or equal to zero.");
-                }
-
-                factr = value;
-            }
+            get => factr;
+            set => factr = value < 0 ? throw new ArgumentException(nameof(FunctionTolerance), "Tolerance must be greater than or equal to zero") : value;
         }
 
         /// <summary>
         ///   Gets or sets a tolerance value when detecting convergence 
-        ///   of the gradient vector steps. Default is 0.
+        ///   of the gradient vector steps. Default is 0
         /// </summary>
         /// 
         /// <remarks>
@@ -275,21 +232,19 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         ///   max{|proj g_i | i = 1, ..., n} &lt;= pgtol
         /// </code>
         /// <para>
-        ///   where pg_i is the ith component of the projected gradient. </para>
+        ///   where pg_i is the ith component of the projected gradient
+        /// </para>
         /// </remarks>
-        /// 
         public double GradientTolerance
         {
-            get { return pgtol; }
-            set { pgtol = value; }
+            get => pgtol;
+            set => pgtol = value;
         }
 
         /// <summary>
         ///   Get the exit code returned in the last call to the
-        ///   <see cref="IOptimizationMethod{TInput, TOutput}.Maximize()"/> or 
-        ///   <see cref="IOptimizationMethod{TInput, TOutput}.Minimize()"/> methods.
+        ///   <see cref="GradientOptimizationMethodBase.Minimize"/> method
         /// </summary>
-        /// 
         public BoundedBroydenFletcherGoldfarbShannoStatus Status { get; private set; }
 
         #endregion
@@ -297,43 +252,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         #region Constructors
 
         /// <summary>
-        ///   Creates a new instance of the L-BFGS optimization algorithm.
+        ///   Creates a new instance of the L-BFGS optimization algorithm
         /// </summary>
         /// 
-        /// <param name="numberOfVariables">The number of free parameters in the optimization problem.</param>
-        /// 
+        /// <param name="numberOfVariables">The number of free parameters in the optimization problem</param>
         public BoundedBroydenFletcherGoldfarbShanno(int numberOfVariables) : base(numberOfVariables)
         {
-            this.upperBound = new double[numberOfVariables];
-            this.lowerBound = new double[numberOfVariables];
+            upperBound = new double[numberOfVariables];
+            lowerBound = new double[numberOfVariables];
 
             for (int i = 0; i < upperBound.Length; i++)
                 lowerBound[i] = double.NegativeInfinity;
 
             for (int i = 0; i < upperBound.Length; i++)
                 upperBound[i] = double.PositiveInfinity;
-        }
-
-        /// <summary>
-        ///   Creates a new instance of the L-BFGS optimization algorithm.
-        /// </summary>
-        /// 
-        /// <param name="numberOfVariables">The number of free parameters in the function to be optimized.</param>
-        /// <param name="function">The function to be optimized.</param>
-        /// <param name="gradient">The gradient of the function.</param>
-        /// 
-        public BoundedBroydenFletcherGoldfarbShanno(int numberOfVariables,
-            Func<double[], double> function, Func<double[], double[]> gradient)
-            : this(numberOfVariables)
-        {
-            if (function == null)
-                throw new ArgumentNullException("function");
-
-            if (gradient == null)
-                throw new ArgumentNullException("gradient");
-
-            this.Function = function;
-            this.Gradient = gradient;
         }
 
         #endregion
@@ -357,7 +289,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             int n = NumberOfVariables;
             int m = corrections;
 
-            String task = "";
             String csave = "";
             bool[] lsave = new bool[4];
             int iprint = 101;
@@ -375,134 +306,93 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
 
             if (work == null || work.Length < totalSize)
                 work = new double[totalSize];
-
-            int i = 0;
-
+            
+            for (int i = 0; i < UpperBounds.Length; i++)
             {
-                for (i = 0; i < UpperBounds.Length; i++)
-                {
-                    bool hasUpper = !Double.IsInfinity(UpperBounds[i]);
-                    bool hasLower = !Double.IsInfinity(LowerBounds[i]);
+                bool hasUpper = !double.IsInfinity(UpperBounds[i]);
+                bool hasLower = !double.IsInfinity(LowerBounds[i]);
+                if (hasUpper && hasLower)
+                    nbd[i] = 2;
+                else if (hasUpper)
+                    nbd[i] = 3;
+                else if (hasLower)
+                    nbd[i] = 1;
+                else nbd[i] = 0; // unbounded
 
-                    if (hasUpper && hasLower)
-                        nbd[i] = 2;
-                    else if (hasUpper)
-                        nbd[i] = 3;
-                    else if (hasLower)
-                        nbd[i] = 1;
-                    else nbd[i] = 0; // unbounded
-
-                    if (hasLower)
-                        l[i] = LowerBounds[i];
-                    if (hasUpper)
-                        u[i] = UpperBounds[i];
-                }
+                if (hasLower)
+                    l[i] = LowerBounds[i];
+                if (hasUpper)
+                    u[i] = UpperBounds[i];
             }
 
 
             // We now define the starting point.
             {
-                for (i = 0; i < n; i++)
+                for (int i = 0; i < n; i++)
                     x[i] = Solution[i];
             }
 
-            double newF = 0;
-            double[] newG = null;
-
-            // We start the iteration by initializing task.
-            task = "START";
-
+            // Task initialization
+            string task = "START";
             iterations = 0;
 
-            // 
-            // c        ------- the beginning of the loop ----------
-            // 
-            L111:
-            if (Token.IsCancellationRequested)
-                return false;
-
-            if (MaxIterations > 0 && iterations >= MaxIterations)
+            // Main loop
+            while (true)
             {
-                exit(csave, lsave, isave, x, dsave, out newF, out newG);
-                return true;
-            }
-
-            iterations++;
-
-            // 
-            // c     This is the call to the L-BFGS-B code.
-            // 
-            Setulb(n, m, x, 0, l, 0, u, 0, nbd, 0, ref f, g, 0,
-                factr, pgtol, work, 0, iwa, 0, ref task, iprint, ref csave,
-                lsave, 0, isave, 0, dsave, 0);
-
-
-            // 
-            if ((task.StartsWith("FG", StringComparison.OrdinalIgnoreCase)))
-            {
-                newF = Function(x);
-                newG = Gradient(x);
-                evaluations++;
-
-                f = newF;
-
-                for (int j = 0; j < newG.Length; j++)
-                    g[j] = newG[j];
-            }
-
-            // c
-            else if ((task.StartsWith("NEW_X", StringComparison.OrdinalIgnoreCase)))
-            {
-
-            }
-            else
-            {
-                if (task == "ABNORMAL_TERMINATION_IN_LNSRCH")
-                    Status = BoundedBroydenFletcherGoldfarbShannoStatus.LineSearchFailed;
-                else if (task == "CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH")
-                    Status = BoundedBroydenFletcherGoldfarbShannoStatus.FunctionConvergence;
-                else if (task == "CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL")
-                    Status = BoundedBroydenFletcherGoldfarbShannoStatus.GradientConvergence;
-                else throw new InvalidOperationException(task);
-
-                exit(csave, lsave, isave, x, dsave, out newF, out newG);
-                return true;
-            }
-
-            /*
-            if (Progress != null)
-            {
-                Progress(this, new OptimizationProgressEventArgs(iterations, 0, newG, 0, null, 0, f, 0, false)
+                // Check completion
+                double newF;
+                double[] newG;
+                if (Token.IsCancellationRequested || MaxIterations > 0 && iterations >= MaxIterations)
                 {
-                    Tag = new BoundedBroydenFletcherGoldfarbShannoInnerStatus(
-                            isave, dsave, lsave, csave, work)
-                });
-            } */
+                    Exit(x, out newF, out newG);
+                    return true;
+                }
+                iterations++;
 
-            goto L111;
+                // This is the call to the L-BFGS-B code
+                Setulb(n, m, x, 0, l, 0, u, 0, nbd, 0, ref f, g, 0,
+                    factr, pgtol, work, 0, iwa, 0, ref task, iprint, ref csave,
+                    lsave, 0, isave, 0, dsave, 0);
+
+                // Normal iteration
+                if (task.StartsWith("FG", StringComparison.OrdinalIgnoreCase))
+                {
+                    newF = Function(x);
+                    newG = Gradient(x);
+                    evaluations++;
+                    f = newF;
+                    for (int j = 0; j < newG.Length; j++)
+                        g[j] = newG[j];
+                }
+
+                // Final tests
+                else if (task.StartsWith("NEW_X", StringComparison.OrdinalIgnoreCase))
+                {
+
+                }
+                else
+                {
+                    if (task == "ABNORMAL_TERMINATION_IN_LNSRCH")
+                        Status = BoundedBroydenFletcherGoldfarbShannoStatus.LineSearchFailed;
+                    else if (task == "CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH")
+                        Status = BoundedBroydenFletcherGoldfarbShannoStatus.FunctionConvergence;
+                    else if (task == "CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL")
+                        Status = BoundedBroydenFletcherGoldfarbShannoStatus.GradientConvergence;
+                    else throw new InvalidOperationException(task);
+                    Exit(x, out newF, out newG);
+                    return true;
+                }
+            }
         }
 
-        private void exit(string csave, bool[] lsave, int[] isave, double[] x, double[] dsave, out double newF, out double[] newG)
+        // Save the current progress
+        private void Exit(double[] x, out double newF, out double[] newG)
         {
             for (int j = 0; j < Solution.Length; j++)
                 Solution[j] = x[j];
-
             newF = Function(x);
             newG = Gradient(x);
             evaluations++;
-
-            /*
-            if (Progress != null)
-            {
-                Progress(this, new OptimizationProgressEventArgs(iterations, 0, newG, 0, null, 0, newF, 0, true)
-                {
-                    Tag = new BoundedBroydenFletcherGoldfarbShannoInnerStatus(
-                        isave, dsave, lsave, csave, work)
-                });
-            } */
         }
-
-
-
     }
 }
