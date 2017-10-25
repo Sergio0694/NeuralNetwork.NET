@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
         /// </summary>
         /// 
         /// <value>The number of parameters</value>
-        public virtual int NumberOfVariables
+        public int NumberOfVariables
         {
             get => _NumberOfVariables;
             set
@@ -115,8 +115,23 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Abstract
 
         #endregion
 
+        protected GradientOptimizationMethodBase() { }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="GradientOptimizationMethodBase"/> class
+        /// </summary>
+        /// 
+        /// <param name="numberOfVariables">The number of free parameters in the optimization problem</param>
+        protected GradientOptimizationMethodBase(int numberOfVariables)
+        {
+            if (numberOfVariables <= 0)
+                throw new ArgumentOutOfRangeException("numberOfVariables");
+
+            NumberOfVariables = numberOfVariables;
+        }
+
         // A small function to validate the gradient function
-        private static void CheckGradient([NotNull] Func<double[], double[]> value, [NotNull] double[] probe)
+        protected static void CheckGradient([NotNull] Func<double[], double[]> value, [NotNull] double[] probe)
         {
             // Local copy
             double[] original = (double[])probe.Clone();

@@ -19,5 +19,17 @@ namespace NeuralNetworkNET.Helpers
             if (double.IsNegativeInfinity(value) && double.IsNegativeInfinity(other)) return true;
             return (value - other).Abs() < threshold;
         }
+
+        /// <summary>
+        ///   Gets the maximum value among three values
+        /// </summary>
+        /// <param name="a">The first value <c>a</c></param>
+        /// <param name="b">The second value <c>b</c></param>
+        /// <param name="c">The third value <c>c</c></param>
+        public static double Max(double a, double b, double c)
+        {
+            if (a > b) return c > a ? c : a;
+            return c > b ? c : b;
+        }
     }
 }

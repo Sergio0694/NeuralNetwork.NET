@@ -91,7 +91,8 @@ namespace NeuralNetworkNET.SupervisedLearning
             switch (type)
             {
                 case LearningAlgorithmType.BoundedFGS:
-                    throw new NotImplementedException();
+                    optimizer = new BoundedBroydenFletcherGoldfarbShanno(start.Length);
+                    break;
                 case LearningAlgorithmType.GradientDescend:
                     optimizer = new GradientDescent { NumberOfVariables = start.Length };
                     break;
