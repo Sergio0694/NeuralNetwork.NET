@@ -21,7 +21,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManualDigitsTest", "Samples
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET.Cuda.Unit", "NeuralNetwork.NET.Cuda.Unit\NeuralNetwork.NET.Cuda.Unit.csproj", "{4B1F19ED-1190-43D4-82E5-7060DBE3AC51}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SharedBenchmark", "Samples\SharedBenchmark\SharedBenchmark.shproj", "{EDC2BE0B-3039-417B-9F39-79A498416BDC}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Samples\SharedBenchmark\SharedBenchmark.projitems*{2f0eec06-4171-4738-9eaf-55cfba658dc1}*SharedItemsImports = 4
+		Samples\SharedBenchmark\SharedBenchmark.projitems*{edc2be0b-3039-417b-9f39-79a498416bdc}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|ARM = Debug|ARM
@@ -170,6 +176,7 @@ Global
 		{684C87F9-061B-43F5-ADAF-65A43DA7F5F4} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
 		{2F0EEC06-4171-4738-9EAF-55CFBA658DC1} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
 		{953C6E04-F314-4DD6-8E8D-F2D2D6DCDD5C} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
+		{EDC2BE0B-3039-417B-9F39-79A498416BDC} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E8684D12-614F-431C-80F6-09FC9B5E51ED}

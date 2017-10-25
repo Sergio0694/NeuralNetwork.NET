@@ -76,6 +76,7 @@
       <Name>MnistDatasetToolkit</Name>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="..\SharedBenchmark\SharedBenchmark.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Alea.3.0.3\build\Alea.targets" Condition="Exists('..\..\packages\Alea.3.0.3\build\Alea.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
