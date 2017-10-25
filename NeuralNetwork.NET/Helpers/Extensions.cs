@@ -1,15 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NeuralNetworkNET.Helpers
+﻿namespace NeuralNetworkNET.Helpers
 {
+    /// <summary>
+    /// A simple class with some extension methods
+    /// </summary>
     public static class Extensions
     {
+        /// <summary>
+        /// Calculates the absolute value of the input number
+        /// </summary>
+        /// <param name="value">The input value</param>
         public static double Abs(this double value) => value >= 0 ? value : -value;
 
+        // Threshold for the Equals method
         private const double DefaultThreshold = 0.00001;
 
+        /// <summary>
+        /// Calculates if two values are within a given distance from one another
+        /// </summary>
+        /// <param name="value">The first value</param>
+        /// <param name="other">The second value</param>
+        /// <param name="threshold">The comparison threshold</param>
         public static bool EqualsWithDelta(this double value, double other, double threshold = DefaultThreshold)
         {
             if (double.IsNaN(value) ^ double.IsNaN(other)) return false;
@@ -21,7 +31,7 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        ///   Gets the maximum value among three values
+        /// Gets the maximum value among three values
         /// </summary>
         /// <param name="a">The first value <c>a</c></param>
         /// <param name="b">The second value <c>b</c></param>
