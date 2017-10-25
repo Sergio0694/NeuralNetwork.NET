@@ -90,11 +90,11 @@ namespace NeuralNetworkNET.SupervisedLearning
             GradientOptimizationMethodBase optimizer;
             switch (type)
             {
-                case LearningAlgorithmType.BoundedFGS:
+                case LearningAlgorithmType.BoundedBFGS:
                 case LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence:
                     optimizer = new BoundedBroydenFletcherGoldfarbShanno(start.Length);
                     break;
-                case LearningAlgorithmType.GradientDescend:
+                case LearningAlgorithmType.GradientDescent:
                     optimizer = new GradientDescent { NumberOfVariables = start.Length };
                     break;
                 default:

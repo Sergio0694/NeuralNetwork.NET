@@ -8,12 +8,12 @@
         /// <summary>
         /// Gradient descend optimization algorithm
         /// </summary>
-        GradientDescend,
+        GradientDescent,
 
         /// <summary>
         /// Limited-memory Broyden–Fletcher–Goldfarb–Shanno optimizaation algorithm
         /// </summary>
-        BoundedFGS,
+        BoundedBFGS,
 
         /// <summary>
         /// Limited-memory Broyden–Fletcher–Goldfarb–Shanno and then gradient descent after first convergence

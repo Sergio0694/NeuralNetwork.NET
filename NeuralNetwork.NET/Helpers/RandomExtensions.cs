@@ -49,15 +49,8 @@ namespace NeuralNetworkNET.Helpers
             return (start, end);
         }
 
-        /// <summary>
-        /// Returns a new matrix filled with random values from a random Gaussian distribution (0, 1)
-        /// </summary>
-        /// <param name="random">The random instance</param>
-        /// <param name="x">The height of the matrix</param>
-        /// <param name="y">The width of the matrix</param>
-        [PublicAPI]
-        [NotNull]
-        public static double[,] NextMatrix([NotNull] this Random random, int x, int y)
+        // Matrix initialization
+        public static double[,] NextMatrix([NotNull] this Random random, int x, int y, Func<Random, double> provider)
         {
             // Checks
             if (x <= 0 || y <= 0) throw new ArgumentOutOfRangeException("The size of the matrix isn't valid");
@@ -77,12 +70,64 @@ namespace NeuralNetworkNET.Helpers
                     // Iterate over each row
                     fixed (double* r = result)
                         for (int j = 0; j < y; j++)
-                            r[i * y + j] = localRandom.NextGaussian();
+                            r[i * y + j] = provider(localRandom);
                 }
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while running the parallel loop");
             return result;
         }
+
+        /// <summary>
+        /// Returns a new matrix with random values suited for the sigmoid activation function
+        /// </summary>
+        /// <param name="random">The random instance</param>
+        /// <param name="x">The height of the matrix</param>
+        /// <param name="y">The width of the matrix</param>
+        [PublicAPI]
+        [NotNull]
+        public static double[,] NextSigmoidMatrix([NotNull] this Random random, int x, int y)
+        {
+            double range = 4 * Math.Sqrt(6d / (x + y));
+            return random.NextMatrix(x, y, r => r.NextDouble() * 2 * range - range);
+        }
+
+        /// <summary>
+        /// Returns a new matrix with random values suited for the tanh activation function
+        /// </summary>
+        /// <param name="random">The random instance</param>
+        /// <param name="x">The height of the matrix</param>
+        /// <param name="y">The width of the matrix</param>
+        [PublicAPI]
+        [NotNull]
+        public static double[,] NextTanhMatrix([NotNull] this Random random, int x, int y)
+        {
+            double range = Math.Sqrt(6d / (x + y));
+            return random.NextMatrix(x, y, r => r.NextDouble() * 2 * range - range);
+        }
+
+        /// <summary>
+        /// Returns a new matrix filled with values from the Xavier initialization
+        /// </summary>
+        /// <param name="random">The random instance</param>
+        /// <param name="x">The height of the matrix</param>
+        /// <param name="y">The width of the matrix</param>
+        [PublicAPI]
+        [NotNull]
+        public static double[,] NextXavierMatrix([NotNull] this Random random, int x, int y)
+        {
+            double sqrt = Math.Sqrt(x);
+            return random.NextMatrix(x, y, r => r.NextGaussian() / sqrt);
+        }
+
+        /// <summary>
+        /// Returns a new matrix filled with random values from a random Gaussian distribution (0, 1)
+        /// </summary>
+        /// <param name="random">The random instance</param>
+        /// <param name="x">The height of the matrix</param>
+        /// <param name="y">The width of the matrix</param>
+        [PublicAPI]
+        [NotNull]
+        public static double[,] NextGaussianMatrix([NotNull] this Random random, int x, int y) => random.NextMatrix(x, y, r => r.NextGaussian());
 
         /// <summary>
         /// Randomizes part of the content of a matrix

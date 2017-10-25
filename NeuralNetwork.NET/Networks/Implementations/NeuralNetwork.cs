@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[][,] weights = new double[neurons.Length - 1][,];
             for (int i = 0; i < weights.Length; i++)
             {
-                weights[i] = random.NextMatrix(neurons[i], neurons[i + 1]);
+                weights[i] = random.NextSigmoidMatrix(neurons[i], neurons[i + 1]);
             }
             return new NeuralNetwork(weights);
         }
