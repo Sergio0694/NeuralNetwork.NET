@@ -2,10 +2,12 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Accord.Math.Optimization;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Abstract;
 
 namespace NeuralNetworkNET.SupervisedLearning
 {
@@ -85,10 +87,11 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Get the optimization algorithm instance
             int iteration = 1;
-            BaseGradientOptimizationMethod optimizer;
+            GradientOptimizationMethodBase optimizer;
             switch (type)
             {
                 case LearningAlgorithmType.BoundedFGS:
+                case LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence:
                     optimizer = new BoundedBroydenFletcherGoldfarbShanno(start.Length);
                     break;
                 case LearningAlgorithmType.GradientDescend:
@@ -124,6 +127,24 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Minimize the cost function
             await Task.Run(() => optimizer.Minimize(), token);
+
+            // Check if second optimization is pending
+            if (type == LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence && !token.IsCancellationRequested)
+            {
+                // Reinitialize the optimizer
+                double[] partial = optimizer.Solution;
+                optimizer = new GradientDescent
+                {
+                    NumberOfVariables = start.Length,
+                    Solution = partial,
+                    Token = token,
+                    Function = CostFunction,
+                    Gradient = GradientFunction
+                };
+
+                // Optimize again
+                await Task.Run(() => optimizer.Minimize(), token);
+            }
 
             // Return the result network
             return NeuralNetwork.Deserialize(optimizer.Solution, neurons);

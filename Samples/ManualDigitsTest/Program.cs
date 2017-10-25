@@ -11,6 +11,7 @@ using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
+using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace ManualDigitsTest
 {
@@ -63,7 +64,7 @@ namespace ManualDigitsTest
                 Console.CancelKeyPress -= CancelToken;
             }
             Console.CancelKeyPress += CancelToken;
-            _Network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
+            _Network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");

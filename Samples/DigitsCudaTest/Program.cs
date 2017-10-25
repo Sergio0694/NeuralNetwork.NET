@@ -1,61 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Alea;
-using Alea.Parallel;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
+using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace DigitsCudaTest
 {
     class Program
     {
-        private static void Test()
-        {
-            Random random = new Random(DateTime.Now.Millisecond);
-            int x = 2000, y = 1500, z = 800;
-            double[,]
-                a = random.NextMatrix(x, y),
-                b = random.NextMatrix(y, z);
-
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
-            var c1 = new double[x, z];
-            int m = a.GetLength(0);
-            int n = a.GetLength(1);
-            int p = b.GetLength(1);
-            
-            Gpu.Default.For(0, m * p, index =>
-            {
-                int
-                    i = index / p,
-                    j = index % p;
-
-                double sum = 0;
-                for (int k = 0; k < n; k++)
-                {
-                    sum += a[i, k] * b[k, j];
-                }
-                c1[i, j] = sum;
-            });
-
-            timer.Stop();
-            var t1 = timer.Elapsed;
-            timer.Restart();
-            var c2 = a.Multiply(b);
-            timer.Stop();
-            var t2 = timer.Elapsed;
-            Debug.Assert(c1.ContentEquals(c2));
-            Debug.WriteLine($"{t1.TotalMilliseconds} vs {t2.TotalMilliseconds}");
-        }
-
         static async Task Main(String[] args)
         {
             if (args.Length != 2) args = new[] { @"C:\Users\Sergi\Documents\Digits", "100" };
@@ -72,7 +30,7 @@ namespace DigitsCudaTest
             // Get the optimized network
             Printf("Training");
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            INeuralNetwork network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token, null,
+            INeuralNetwork network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(inputs, y, LearningAlgorithmType.GradientDescend, cts.Token,
                 new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Iteration #{p.Iteration} >> {p.Cost}");

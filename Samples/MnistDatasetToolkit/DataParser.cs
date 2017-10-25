@@ -131,19 +131,11 @@ namespace MnistDatasetToolkit
         {
             using (FileStream data = File.OpenRead(path))
             {
-                int size;
-                if (limit == null)
-                {
-                    data.Seek(4, SeekOrigin.Begin);
-                    byte[] length = new byte[4];
-                    data.Read(length, 0, 4);
-                    size = length.ToLittleEndian();
-                }
-                else
-                {
-                    data.Seek(8, SeekOrigin.Begin);
-                    size = limit.Value;
-                }
+                data.Seek(4, SeekOrigin.Begin);
+                byte[] length = new byte[4];
+                data.Read(length, 0, 4);
+                int size = length.ToLittleEndian();
+                if (limit.HasValue && limit < size) size = limit.Value;
                 double[,] dataset = new double[size, 10]; // n samples
                 for (int i = 0; i < size; i++)
                 {
