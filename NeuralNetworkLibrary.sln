@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET.Unit", "U
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET.Cuda.Unit", "Unit\NeuralNetwork.NET.Cuda.Unit\NeuralNetwork.NET.Cuda.Unit.csproj", "{7A72CECA-927F-4207-ADBD-44597A3314B0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DigitsCudaTest", "Samples\DigitsCudaTest\DigitsCudaTest.csproj", "{61AE027B-B2C2-443F-A5B8-59D55FD70259}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Samples\SharedBenchmark\SharedBenchmark.projitems*{edc2be0b-3039-417b-9f39-79a498416bdc}*SharedItemsImports = 13
@@ -132,6 +134,22 @@ Global
 		{7A72CECA-927F-4207-ADBD-44597A3314B0}.Release|x64.Build.0 = Release|Any CPU
 		{7A72CECA-927F-4207-ADBD-44597A3314B0}.Release|x86.ActiveCfg = Release|Any CPU
 		{7A72CECA-927F-4207-ADBD-44597A3314B0}.Release|x86.Build.0 = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|ARM.Build.0 = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|x64.Build.0 = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Debug|x86.Build.0 = Debug|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|ARM.ActiveCfg = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|ARM.Build.0 = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x64.ActiveCfg = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x64.Build.0 = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x86.ActiveCfg = Release|Any CPU
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -142,6 +160,7 @@ Global
 		{EDC2BE0B-3039-417B-9F39-79A498416BDC} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
 		{2DC460A3-F62D-4F90-983C-14F496A5240C} = {49AA3089-344B-4572-B1D2-413875F958AB}
 		{7A72CECA-927F-4207-ADBD-44597A3314B0} = {49AA3089-344B-4572-B1D2-413875F958AB}
+		{61AE027B-B2C2-443F-A5B8-59D55FD70259} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E8684D12-614F-431C-80F6-09FC9B5E51ED}
