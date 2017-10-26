@@ -7,7 +7,7 @@ namespace NeuralNetworkNET.Networks.Architecture
     /// <summary>
     /// A static collection of available activation functions
     /// </summary>
-    public static class ActivationFunctions
+    internal static class ActivationFunctions
     {
         /// <summary>
         /// Applies the sigmoid function, 1 / (1 + e^(-x))
