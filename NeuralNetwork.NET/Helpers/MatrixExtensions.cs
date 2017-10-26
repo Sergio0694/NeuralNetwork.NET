@@ -756,6 +756,37 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Compresses a matrix into a row vector by summing the components column by column
+        /// </summary>
+        /// <param name="m">The matrix to compress</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] CompressVertically([NotNull] this double[,] m)
+        {
+            // Preliminary checks and declarations
+            if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            double[] vector = new double[w];
+
+            // Compress the matrix
+            bool result = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    // Fix the pointers and add the current values
+                    fixed (double* pm = m, pv = vector)
+                        for (int j = 0; j < w; j++)
+                            pv[j] += pm[i * w + j];
+                }
+            }).IsCompleted;
+            if (!result) throw new Exception("Error while runnig the parallel loop");
+            return vector;
+        }
+
+        /// <summary>
         /// Flattens the input volume in a linear array
         /// </summary>
         /// <param name="volume">The volume to flatten</param>
@@ -786,9 +817,6 @@ namespace NeuralNetworkNET.Helpers
 
         #region Content check
 
-        // Constant value used to compare two double values
-        private const double EqualsThreshold = 0.000000001;
-
         /// <summary>
         /// Checks if two matrices have the same size and content
         /// </summary>
@@ -802,7 +830,7 @@ namespace NeuralNetworkNET.Helpers
                 m.GetLength(1) != o.GetLength(1)) return false;
             for (int i = 0; i < m.GetLength(0); i++)
                 for (int j = 0; j < m.GetLength(1); j++)
-                    if (Math.Abs(m[i, j] - o[i, j]) > EqualsThreshold) return false;
+                    if (!m[i, j].EqualsWithDelta(o[i, j])) return false;
             return true;
         }
 
@@ -817,7 +845,7 @@ namespace NeuralNetworkNET.Helpers
             if (v == null || o == null) return false;
             if (v.Length != o.Length) return false;
             for (int i = 0; i < v.Length; i++)
-                if (Math.Abs(v[i] - o[i]) > EqualsThreshold) return false;
+                if (!v[i].EqualsWithDelta(o[i])) return false;
             return true;
         }
 
