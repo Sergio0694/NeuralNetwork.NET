@@ -16,6 +16,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         public static void SetupInjections(
             [NotNull] Func<double[,], double[,], double[,]> multiply,
+            [NotNull] Func<double[,], double[,], double[], double[,]> multiplyWithSum,
             [NotNull] Func<double[,], double[,], double[,]> transposeMultiply,
             [NotNull] Func<double[,], double[,], double[,]> multiplyActivation,
             [NotNull] Func<double[,], double[,], double[], double[,]> multiplyWithSumAndActivation,
@@ -25,6 +26,7 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Action<double[,], double[,]> inPlaceActivationPrimeHadamard)
         {
             _MultiplyOverride = multiply;
+            _MultiplyWithSumOverride = multiplyWithSum;
             _TransposeAndMultiplyOverride = transposeMultiply;
             _MultiplyAndActivationOverride = multiplyActivation;
             _MultiplyWithSumAndActivationOverride = multiplyWithSumAndActivation;
@@ -63,6 +65,21 @@ namespace NeuralNetworkNET.Helpers
         public static double[,] Multiply([NotNull] double[,] m1, [NotNull] double[,] m2)
         {
             return _MultiplyOverride?.Invoke(m1, m2) ?? m1.Multiply(m2);
+        }
+
+        /// <summary>
+        /// A <see cref="Func{T1, T2, T3, TResult}"/> that multiplies two matrices and sums the input vector
+        /// </summary>
+        [CanBeNull]
+        private static Func<double[,], double[,], double[], double[,]> _MultiplyWithSumOverride;
+
+        /// <summary>
+        /// Forwards the base <see cref="MatrixExtensions.MultiplyWithSum"/> method
+        /// </summary>
+        [Pure, NotNull]
+        public static double[,] MultiplyWithSum([NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        {
+            return _MultiplyWithSumOverride?.Invoke(m1, m2, v) ?? m1.MultiplyWithSum(m2, v);
         }
 
         /// <summary>

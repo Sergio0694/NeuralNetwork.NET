@@ -203,6 +203,59 @@ namespace NeuralNetworkNET.Cuda.Helpers
         }
 
         /// <summary>
+        /// Performs the multiplication between two matrices and sums another vector to the result
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="v">The array to add to the resulting matrix</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] MultiplyWithSum([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        {
+            // Checks
+            if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+            double[,]
+                m1_gpu = Gpu.Default.Allocate(m1),
+                m2_gpu = Gpu.Default.Allocate(m2),
+                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
+            double[] v_gpu = Gpu.Default.Allocate(v);
+
+            // Wrapper
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    i = index / w,
+                    j = index % w;
+
+                // Perform the multiplication
+                double sum = 0;
+                for (int k = 0; k < l; k++)
+                {
+                    sum += m1_gpu[i, k] * m2_gpu[k, j];
+                }
+                mresult_gpu[i, j] = sum + v_gpu[j]; // Sum the input vector to each component
+            }
+
+            // Execute the multiplication in parallel
+            Gpu.Default.For(0, h * w, Kernel);
+
+            // Free memory and copy the result back
+            Gpu.Free(m1_gpu);
+            Gpu.Free(m2_gpu);
+            Gpu.Free(v_gpu);
+            double[,] result = Gpu.CopyToHost(mresult_gpu);
+            Gpu.Free(mresult_gpu);
+            return result;
+        }
+
+        /// <summary>
         /// Performs the multiplication between two matrices and then applies the activation function
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>

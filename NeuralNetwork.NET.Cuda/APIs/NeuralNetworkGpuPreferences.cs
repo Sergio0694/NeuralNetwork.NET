@@ -29,6 +29,7 @@ namespace NeuralNetworkNET.Cuda.APIs
                         case ProcessingMode.Gpu:
                             MatrixServiceProvider.SetupInjections(
                                 MatrixGpuExtensions.Multiply,
+                                MatrixGpuExtensions.MultiplyWithSum,
                                 MatrixGpuExtensions.TransposeAndMultiply,
                                 MatrixGpuExtensions.MultiplyAndActivation,
                                 MatrixGpuExtensions.MultiplyWithSumAndActivation,
