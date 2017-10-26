@@ -15,15 +15,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MnistDatasetToolkit", "Samp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DigitsCudaTest", "Samples\DigitsCudaTest\DigitsCudaTest.csproj", "{2F0EEC06-4171-4738-9EAF-55CFBA658DC1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET.Cuda", "NeuralNetwork.NET.Cuda\NeuralNetwork.NET.Cuda.csproj", "{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManualDigitsTest", "Samples\ManualDigitsTest\ManualDigitsTest.csproj", "{953C6E04-F314-4DD6-8E8D-F2D2D6DCDD5C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET.Cuda.Unit", "NeuralNetwork.NET.Cuda.Unit\NeuralNetwork.NET.Cuda.Unit.csproj", "{4B1F19ED-1190-43D4-82E5-7060DBE3AC51}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SharedBenchmark", "Samples\SharedBenchmark\SharedBenchmark.shproj", "{EDC2BE0B-3039-417B-9F39-79A498416BDC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork.NET.Cuda2", "NeuralNetwork.NET.Cuda2\NeuralNetwork.NET.Cuda2.csproj", "{E62B0893-BE5F-43A8-A186-16726330F087}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET.Cuda", "NeuralNetwork.NET.Cuda\NeuralNetwork.NET.Cuda.csproj", "{E62B0893-BE5F-43A8-A186-16726330F087}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -121,22 +119,6 @@ Global
 		{2F0EEC06-4171-4738-9EAF-55CFBA658DC1}.Release|x64.Build.0 = Release|Any CPU
 		{2F0EEC06-4171-4738-9EAF-55CFBA658DC1}.Release|x86.ActiveCfg = Release|Any CPU
 		{2F0EEC06-4171-4738-9EAF-55CFBA658DC1}.Release|x86.Build.0 = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|ARM.Build.0 = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|x64.Build.0 = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Debug|x86.Build.0 = Debug|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|Any CPU.Build.0 = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|ARM.ActiveCfg = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|ARM.Build.0 = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|x64.ActiveCfg = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|x64.Build.0 = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|x86.ActiveCfg = Release|Any CPU
-		{12FC0F21-CA7A-42FB-9E8D-47BC09EFD332}.Release|x86.Build.0 = Release|Any CPU
 		{953C6E04-F314-4DD6-8E8D-F2D2D6DCDD5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{953C6E04-F314-4DD6-8E8D-F2D2D6DCDD5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{953C6E04-F314-4DD6-8E8D-F2D2D6DCDD5C}.Debug|ARM.ActiveCfg = Debug|Any CPU

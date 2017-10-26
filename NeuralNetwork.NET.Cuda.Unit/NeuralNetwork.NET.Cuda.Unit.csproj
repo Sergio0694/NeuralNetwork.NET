@@ -72,10 +72,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NeuralNetwork.NET.Cuda\NeuralNetwork.NET.Cuda.csproj">
-      <Project>{12fc0f21-ca7a-42fb-9e8d-47bc09efd332}</Project>
-      <Name>NeuralNetwork.NET.Cuda</Name>
-    </ProjectReference>
     <ProjectReference Include="..\NeuralNetwork.NET\NeuralNetwork.NET.csproj">
       <Project>{db944c09-55f9-49e1-8f0d-bbfde51914de}</Project>
       <Name>NeuralNetwork.NET</Name>
