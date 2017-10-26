@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
 // Used to inject the AleaGPU usage from the .NET Framework library
-[assembly: InternalsVisibleTo("NeuralNetwork.NET.Cuda")]
+[assembly: InternalsVisibleTo("NeuralNetwork.NET.Cuda2")]
 
 // Allow the Unit tests to access internal methods
 [assembly: InternalsVisibleTo("NeuralNetwork.NET.Unit")]

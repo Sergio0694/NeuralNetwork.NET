@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net47</TargetFramework>
+    <RootNamespace>NeuralNetworkNET.Cuda2</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Alea" Version="3.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
+  </ItemGroup>
+</Project>
