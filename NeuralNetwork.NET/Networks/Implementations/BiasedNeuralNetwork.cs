@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[][] biases = new double[neurons.Length - 1][];
             for (int i = 0; i < weights.Length; i++)
             {
-                weights[i] = random.NextMatrix(neurons[i], neurons[i + 1]);
+                weights[i] = random.NextGaussianMatrix(neurons[i], neurons[i + 1]);
                 int next = neurons[i + 1];
                 double[] bias = new double[next];
                 for (int j = 0; j < next; j++)
@@ -81,7 +81,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 // A(l) = sigm(W(l) * A(l - 1) + b(l))
-                a0 = a0.MultiplyWithSumAndSigmoid(Weights[i], Biases[i]);
+                a0 = a0.MultiplyWithSumAndActivation(Weights[i], Biases[i]);
             }
             return a0; // At least one weight matrix, so a0 != x
         }
@@ -107,7 +107,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Save the intermediate steps to be able to reuse them later
                 double[,] zi = a0.MultiplyWithSum(Weights[i], Biases[i]);
                 zList[i] = zi;
-                aList[i] = a0 = zi.Sigmoid();
+                aList[i] = a0 = zi.Activation();
             }
 
             /* ============================
@@ -117,7 +117,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Calculate the gradient of C with respect to a, so (yHat - y)
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             double[,] dL = aList[aList.Length - 1];
-            dL.InPlaceSubtractAndHadamardProductWithSigmoidPrime(y, zList[zList.Length - 1]);
+            dL.InPlaceSubtractAndHadamardProductWithActivationPrime(y, zList[zList.Length - 1]);
 
             // Backpropagation
             double[][,] deltas = new double[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
@@ -126,7 +126,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 // Precompute  W(l + 1) * delta(l + 1)
                 double[,]
-                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]),
+                    dleft = deltas[l + 1].Multiply(TransposedWeights[l + 1]), // TODO: fix this
                     dl = zList[l]; // Local reference on the delta to calculate in place
 
                 /* ============================
@@ -134,7 +134,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * ============================
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Compute d(l), the Hadamard product of z'(l) and W(l + 1) * delta(l + 1) */
-                dl.InPlaceSigmoidPrimeAndHadamardProduct(dleft);
+                dl.InPlaceActivationPrimeAndHadamardProduct(dleft);
                 deltas[l] = dl;
             }
 

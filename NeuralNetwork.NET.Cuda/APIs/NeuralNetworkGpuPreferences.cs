@@ -30,11 +30,11 @@ namespace NeuralNetworkNET.Cuda.APIs
                             MatrixServiceProvider.SetupInjections(
                                 MatrixGpuExtensions.Multiply,
                                 MatrixGpuExtensions.TransposeAndMultiply,
-                                MatrixGpuExtensions.MultiplyAndSigmoid,
-                                MatrixGpuExtensions.Sigmoid,
+                                MatrixGpuExtensions.MultiplyAndActivation,
+                                MatrixGpuExtensions.Activation,
                                 MatrixGpuExtensions.HalfSquaredDifference,
-                                MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithSigmoidPrime,
-                                MatrixGpuExtensions.InPlaceSigmoidPrimeAndHadamardProduct);
+                                MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime,
+                                MatrixGpuExtensions.InPlaceActivationPrimeAndHadamardProduct);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value), value, null);

@@ -2,6 +2,7 @@
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Architecture;
 
 namespace NeuralNetworkNET.Cuda.Helpers
 {
@@ -151,14 +152,14 @@ namespace NeuralNetworkNET.Cuda.Helpers
         #region Combined
 
         /// <summary>
-        /// Performs the multiplication between two matrices and then applies the sigmoid function
+        /// Performs the multiplication between two matrices and then applies the activation function
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndSigmoid([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -186,8 +187,8 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 {
                     sum += m1_gpu[i, k] * m2_gpu[k, j];
                 }
-                double sigmoid = 1 / (1 + Math.Exp(-sum));
-                mresult_gpu[i, j] = sigmoid;
+                double activation = ActivationFunctionProvider.Activation(sum);
+                mresult_gpu[i, j] = activation;
             }
 
             // Execute the multiplication in parallel
@@ -202,14 +203,14 @@ namespace NeuralNetworkNET.Cuda.Helpers
         }
 
         /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the sigmoid prime of z
+        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
         /// </summary>
         /// <param name="a">The estimated y</param>
         /// <param name="y">The expected y</param>
         /// <param name="z">The activity on the last layer</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithSigmoidPrime(
+        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
             [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z)
         {
             // Checks
@@ -233,10 +234,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 {
                     double
                         difference = a_gpu[i, j] - y_gpu[i, j],
-                        exp = Math.Exp(-z_gpu[i, j]),
-                        sum = 1 + exp,
-                        square = sum * sum,
-                        zPrime = exp / square,
+                        zPrime = ActivationFunctionProvider.ActivationPrime(z_gpu[i, j]),
                         hProduct = difference * zPrime;
                     a_gpu[i, j] = hProduct;
                 }
@@ -253,13 +251,13 @@ namespace NeuralNetworkNET.Cuda.Helpers
         }
 
         /// <summary>
-        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the sigmoid prime of z
+        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
         /// <param name="delta">The precomputed delta to use in the Hadamard product</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSigmoidPrimeAndHadamardProduct(
+        public static void InPlaceActivationPrimeAndHadamardProduct(
             [NotNull] this double[,] z, [NotNull] double[,] delta)
         {
             // Checks
@@ -279,12 +277,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 // Save the index and iterate for each column
                 for (int j = 0; j < w; j++)
                 {
-                    double
-                        exp = Math.Exp(-z_gpu[i, j]),
-                        sum = 1 + exp,
-                        square = sum * sum,
-                        zPrime = exp / square;
-                    z_gpu[i, j] = zPrime * d_gpu[i, j];
+                    z_gpu[i, j] = ActivationFunctionProvider.ActivationPrime(z_gpu[i, j]) * d_gpu[i, j];
                 }
             }
 
@@ -302,13 +295,13 @@ namespace NeuralNetworkNET.Cuda.Helpers
         #region Misc
 
         /// <summary>
-        /// Performs the sigmoid function on the input matrix
+        /// Performs the activation function on the input matrix
         /// </summary>
         /// <param name="m">The input matrix</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Sigmoid([NotNull] this double[,] m)
+        public static double[,] Activation([NotNull] this double[,] m)
         {
             // Initialize the parameters and the result matrix
             int h = m.GetLength(0);
@@ -320,10 +313,10 @@ namespace NeuralNetworkNET.Cuda.Helpers
             // Wrapper
             void Kernel(int ki)
             {
-                // Apply the sigmoid to the current row
+                // Apply the activation to the current row
                 for (int j = 0; j < w; j++)
                 {
-                    mresult_gpu[ki, j] = 1 / (1 + Math.Exp(-m_gpu[ki, j]));
+                    mresult_gpu[ki, j] = ActivationFunctionProvider.Activation(m_gpu[ki, j]);
                 }
             }
 
