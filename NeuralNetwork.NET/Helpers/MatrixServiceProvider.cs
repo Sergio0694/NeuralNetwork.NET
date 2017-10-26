@@ -18,6 +18,7 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Func<double[,], double[,], double[,]> multiply,
             [NotNull] Func<double[,], double[,], double[,]> transposeMultiply,
             [NotNull] Func<double[,], double[,], double[,]> multiplyActivation,
+            [NotNull] Func<double[,], double[,], double[], double[,]> multiplyWithSumAndActivation,
             [NotNull] Func<double[,], double[,]> activation,
             [NotNull] Func<double[,], double[,], double> halfSquaredDifference,
             [NotNull] Action<double[,], double[,], double[,]> inPlaceSubtractHadamardActivationPrime,
@@ -26,6 +27,7 @@ namespace NeuralNetworkNET.Helpers
             _MultiplyOverride = multiply;
             _TransposeAndMultiplyOverride = transposeMultiply;
             _MultiplyAndActivationOverride = multiplyActivation;
+            _MultiplyWithSumAndActivationOverride = multiplyWithSumAndActivation;
             _ActivationOverride = activation;
             _HalfSquaredDifferenceOverride = halfSquaredDifference;
             _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = inPlaceSubtractHadamardActivationPrime;
@@ -103,6 +105,21 @@ namespace NeuralNetworkNET.Helpers
         public static double[,] MultiplyAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2)
         {
             return _MultiplyAndActivationOverride?.Invoke(m1, m2) ?? m1.MultiplyAndActivation(m2);
+        }
+
+        /// <summary>
+        /// A <see cref="Func{T1, T2, T3, TResult}"/> that multiplies two matrices, sums the input vector and then applies the activation function
+        /// </summary>
+        [CanBeNull]
+        private static Func<double[,], double[,], double[], double[,]> _MultiplyWithSumAndActivationOverride;
+
+        /// <summary>
+        /// Forwards the base <see cref="MatrixExtensions.MultiplyWithSumAndActivation"/> method
+        /// </summary>
+        [Pure, NotNull]
+        public static double[,] MultiplyWithSumAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        {
+            return _MultiplyWithSumAndActivationOverride?.Invoke(m1, m2, v) ?? m1.MultiplyWithSumAndActivation(m2, v);
         }
 
         /// <summary>

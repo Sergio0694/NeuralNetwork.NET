@@ -11,23 +11,19 @@
         /// <param name="value">The input value</param>
         public static double Abs(this double value) => value >= 0 ? value : -value;
 
-        // Threshold for the Equals method
-        private const double DefaultThreshold = 0.00001;
-
         /// <summary>
         /// Calculates if two values are within a given distance from one another
         /// </summary>
         /// <param name="value">The first value</param>
         /// <param name="other">The second value</param>
-        /// <param name="threshold">The comparison threshold</param>
-        public static bool EqualsWithDelta(this double value, double other, double threshold = DefaultThreshold)
+        public static bool EqualsWithDelta(this double value, double other)
         {
             if (double.IsNaN(value) ^ double.IsNaN(other)) return false;
             if (double.IsNaN(value) && double.IsNaN(other)) return true;
             if (double.IsInfinity(value) ^ double.IsInfinity(other)) return false;
             if (double.IsPositiveInfinity(value) && double.IsPositiveInfinity(other)) return true;
             if (double.IsNegativeInfinity(value) && double.IsNegativeInfinity(other)) return true;
-            return (value - other).Abs() < threshold;
+            return (value - other).Abs() < double.Epsilon;
         }
 
         /// <summary>

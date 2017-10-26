@@ -31,6 +31,7 @@ namespace NeuralNetworkNET.Cuda.APIs
                                 MatrixGpuExtensions.Multiply,
                                 MatrixGpuExtensions.TransposeAndMultiply,
                                 MatrixGpuExtensions.MultiplyAndActivation,
+                                MatrixGpuExtensions.MultiplyWithSumAndActivation,
                                 MatrixGpuExtensions.Activation,
                                 MatrixGpuExtensions.HalfSquaredDifference,
                                 MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime,
