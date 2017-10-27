@@ -26,25 +26,32 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
-            double[,]
-                m_gpu = Gpu.Default.Allocate(m),
-                mresult_gpu = Gpu.Default.Allocate<double>(w, h);
-
-            // Wrapper
-            void Kernel(int ki)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> m_gpu = gpu.AllocateDevice(m))
+            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(w, h))
             {
-                for (int j = 0; j < w; j++)
-                    mresult_gpu[j, ki] = m_gpu[ki, j];
+                // Local parameters
+                deviceptr<double>
+                    pm_gpu = m_gpu.Ptr,
+                    pmresult_gpu = mresult_gpu.Ptr;
+                int
+                    m_gpu_pitch = m_gpu.PitchInElements.ToInt32(),
+                    mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
+
+                // Wrapper
+                void Kernel(int ki)
+                {
+                    int offset = ki * m_gpu_pitch;
+                    for (int j = 0; j < w; j++)
+                        pmresult_gpu[j * mresult_gpu_pitch + ki] = pm_gpu[offset + j];
+                }
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h, Kernel);
+
+                // Return the result
+                return Gpu.Copy2DToHost(mresult_gpu);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, h, Kernel);
-
-            // Return the results
-            Gpu.Free(m_gpu);
-            double[,] result = Gpu.CopyToHost(mresult_gpu);
-            Gpu.Free(mresult_gpu);
-            return result;
         }
 
         /// <summary>
@@ -64,37 +71,45 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,]
-                m1_gpu = Gpu.Default.Allocate(m1),
-                m2_gpu = Gpu.Default.Allocate(m2),
-                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
-
-            // Wrapper
-            void Kernel(int index)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
             {
-                // Calculate the current indexes
+                // Local parameters
+                deviceptr<double>
+                    pm1_gpu = m1_gpu.Ptr,
+                    pm2_gpu = m2_gpu.Ptr,
+                    pmresult_gpu = mresult_gpu.Ptr;
                 int
-                    i = index / w,
-                    j = index % w;
+                    m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
+                    m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32(),
+                    mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
 
-                // Perform the multiplication
-                double sum = 0;
-                for (int k = 0; k < l; k++)
+                // Wrapper
+                void Kernel(int index)
                 {
-                    sum += m1_gpu[i, k] * m2_gpu[k, j];
+                    // Calculate the current indexes
+                    int
+                        i = index / w,
+                        j = index % w;
+
+                    // Perform the multiplication
+                    double sum = 0;
+                    int m1_offset = i * m1_gpu_pitch; // Constant within the loop
+                    for (int k = 0; k < l; k++)
+                    {
+                        sum += pm1_gpu[m1_offset + k] * pm2_gpu[k * m2_gpu_pitch + j];
+                    }
+                    pmresult_gpu[i * mresult_gpu_pitch + j] = sum;
                 }
-                mresult_gpu[i, j] = sum;
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h * w, Kernel);
+
+                // Return the result
+                return Gpu.Copy2DToHost(mresult_gpu);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, h * w, Kernel);
-
-            // Free memory and copy the result back
-            Gpu.Free(m1_gpu);
-            Gpu.Free(m2_gpu);
-            double[,] result = Gpu.CopyToHost(mresult_gpu);
-            Gpu.Free(mresult_gpu);
-            return result;
         }
 
         /// <summary>
@@ -114,37 +129,44 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,]
-                m1_gpu = Gpu.Default.Allocate(m1),
-                m2_gpu = Gpu.Default.Allocate(m2),
-                mresult_gpu = Gpu.Default.Allocate<double>(l, w);   // l because the first matrix will be transposed
-
-            // Wrapper
-            void Kernel(int index)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(l, w)) // The first matrix will be transposed
             {
-                // Calculate the current indexes
+                // Local parameters
+                deviceptr<double>
+                    pm1_gpu = m1_gpu.Ptr,
+                    pm2_gpu = m2_gpu.Ptr,
+                    pmresult_gpu = mresult_gpu.Ptr;
                 int
-                    i = index / w,
-                    j = index % w;
+                    m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
+                    m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32(),
+                    mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
 
-                // Perform the multiplication
-                double sum = 0;
-                for (int k = 0; k < h; k++)
+                // Wrapper
+                void Kernel(int index)
                 {
-                    sum += m1_gpu[k, i] * m2_gpu[k, j];
+                    // Calculate the current indexes
+                    int
+                        i = index / w,
+                        j = index % w;
+
+                    // Perform the multiplication
+                    double sum = 0;
+                    for (int k = 0; k < h; k++)
+                    {
+                        sum += pm1_gpu[k * m1_gpu_pitch + i] * pm2_gpu[k * m2_gpu_pitch + j];
+                    }
+                    pmresult_gpu[i * mresult_gpu_pitch + j] = sum;
                 }
-                mresult_gpu[i, j] = sum;
+
+                // Execute the multiplication in parallel
+                gpu.For(0, l * w, Kernel);
+
+                // Return the result
+                return Gpu.Copy2DToHost(mresult_gpu);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, l * w, Kernel);
-
-            // Free memory and copy the result back
-            Gpu.Free(m1_gpu);
-            Gpu.Free(m2_gpu);
-            double[,] result = Gpu.CopyToHost(mresult_gpu);
-            Gpu.Free(mresult_gpu);
-            return result;
         }
 
         #endregion
@@ -168,38 +190,47 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,]
-                m1_gpu = Gpu.Default.Allocate(m1),
-                m2_gpu = Gpu.Default.Allocate(m2),
-                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
-
-            // Wrapper
-            void Kernel(int index)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
             {
-                // Calculate the current indexes
+                // Local parameters
+                deviceptr<double>
+                    pm1_gpu = m1_gpu.Ptr,
+                    pm2_gpu = m2_gpu.Ptr,
+                    pmresult_gpu = mresult_gpu.Ptr;
                 int
-                    i = index / w,
-                    j = index % w;
+                    m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
+                    m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32(),
+                    mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
+                Func<double, double> activation = ActivationFunctionProvider.Activation;
 
-                // Perform the multiplication
-                double sum = 0;
-                for (int k = 0; k < l; k++)
+                // Wrapper
+                void Kernel(int index)
                 {
-                    sum += m1_gpu[i, k] * m2_gpu[k, j];
+                    // Calculate the current indexes
+                    int
+                        i = index / w,
+                        j = index % w;
+
+                    // Perform the multiplication
+                    double sum = 0;
+                    int m1_offset = i * m1_gpu_pitch; // Constant within the loop
+                    for (int k = 0; k < l; k++)
+                    {
+                        sum += pm1_gpu[m1_offset + k] * pm2_gpu[k * m2_gpu_pitch + j];
+                    }
+                    sum = activation(sum);
+                    pmresult_gpu[i * mresult_gpu_pitch + j] = sum;
                 }
-                double activation = ActivationFunctionProvider.Activation(sum);
-                mresult_gpu[i, j] = activation;
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h * w, Kernel);
+
+                // Return the result
+                return Gpu.Copy2DToHost(mresult_gpu);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, h * w, Kernel);
-
-            // Free memory and copy the result back
-            Gpu.Free(m1_gpu);
-            Gpu.Free(m2_gpu);
-            double[,] result = Gpu.CopyToHost(mresult_gpu);
-            Gpu.Free(mresult_gpu);
-            return result;
         }
 
         /// <summary>
@@ -329,33 +360,46 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
 
             // Initialize the parameters and the result matrix
-            double[,]
-                a_gpu = Gpu.Default.Allocate(a),
-                y_gpu = Gpu.Default.Allocate(y),
-                z_gpu = Gpu.Default.Allocate(z);
-
-            // Wrapper
-            void Kernel(int i)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> a_gpu = gpu.AllocateDevice(a))
+            using (DeviceMemory2D<double> y_gpu = gpu.AllocateDevice(y))
+            using (DeviceMemory2D<double> z_gpu = gpu.AllocateDevice(z))
             {
-                // Save the index and iterate for each column
-                for (int j = 0; j < w; j++)
+                // Pointers and pitches
+                deviceptr<double>
+                    pa_gpu = a_gpu.Ptr,
+                    py_gpu = y_gpu.Ptr,
+                    pz_gpu = z_gpu.Ptr;
+                int
+                    a_gpu_pitch = a_gpu.PitchInElements.ToInt32(),
+                    y_gpu_pitch = y_gpu.PitchInElements.ToInt32(),
+                    z_gpu_pitch = z_gpu.PitchInElements.ToInt32();
+                Func<double, double> activation = ActivationFunctionProvider.ActivationPrime;
+
+                // Wrapper
+                void Kernel(int i)
                 {
-                    double
-                        difference = a_gpu[i, j] - y_gpu[i, j],
-                        zPrime = ActivationFunctionProvider.ActivationPrime(z_gpu[i, j]),
-                        hProduct = difference * zPrime;
-                    a_gpu[i, j] = hProduct;
+                    // Save the index and iterate for each column
+                    int
+                        y_gpu_offset = i * y_gpu_pitch,
+                        z_gpu_offset = i * z_gpu_pitch;
+                    for (int j = 0; j < w; j++)
+                    {
+                        int a_gpu_target = i * a_gpu_pitch + j;
+                        double
+                            difference = pa_gpu[a_gpu_target] - py_gpu[y_gpu_offset + j],
+                            zPrime = activation(pz_gpu[z_gpu_offset + j]),
+                            hProduct = difference * zPrime;
+                        pa_gpu[a_gpu_target] = hProduct;
+                    }
                 }
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h, Kernel);
+
+                // Copy the results back
+                Gpu.Copy2D(a_gpu, a);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, h, Kernel);
-
-            // Free memory and copy the result back
-            Gpu.Free(y_gpu);
-            Gpu.Free(z_gpu);
-            Gpu.Copy(a_gpu, a);
-            Gpu.Free(a_gpu);
         }
 
         /// <summary>
@@ -375,27 +419,39 @@ namespace NeuralNetworkNET.Cuda.Helpers
             if (h != delta.GetLength(0) || w != delta.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
 
             // Initialize the parameters and the result matrix
-            double[,]
-                z_gpu = Gpu.Default.Allocate(z),
-                d_gpu = Gpu.Default.Allocate(delta);
-
-            // Wrapper
-            void Kernel(int i)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> z_gpu = gpu.AllocateDevice(z))
+            using (DeviceMemory2D<double> d_gpu = Gpu.Default.AllocateDevice(delta))
             {
-                // Save the index and iterate for each column
-                for (int j = 0; j < w; j++)
+                // Pointers and pitches
+                deviceptr<double>
+                    pz_gpu = z_gpu.Ptr,
+                    pd_gpu = d_gpu.Ptr;
+                int
+                    z_gpu_pitch = z_gpu.PitchInElements.ToInt32(),
+                    d_gpu_pitch = d_gpu.PitchInElements.ToInt32();
+                Func<double, double> activation = ActivationFunctionProvider.ActivationPrime;
+
+                // Wrapper
+                void Kernel(int i)
                 {
-                    z_gpu[i, j] = ActivationFunctionProvider.ActivationPrime(z_gpu[i, j]) * d_gpu[i, j];
+                    // Save the index and iterate for each column
+                    int
+                        pz_offset = i * z_gpu_pitch,
+                        pd_offset = i * d_gpu_pitch;
+                    for (int j = 0; j < w; j++)
+                    {
+                        int pz_target = pz_offset + j;
+                        pz_gpu[pz_target] = activation(pz_gpu[pz_target]) * pd_gpu[pd_offset + j];
+                    }
                 }
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h, Kernel);
+
+                // Copy the results back
+                Gpu.Copy2D(z_gpu, z);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, h, Kernel);
-
-            // Free memory and copy the result back
-            Gpu.Free(d_gpu);
-            Gpu.Copy(z_gpu, z);
-            Gpu.Free(z_gpu);
         }
 
         #endregion
@@ -411,31 +467,39 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Activation([NotNull] this double[,] m)
         {
-            // Initialize the parameters and the result matrix
-            int h = m.GetLength(0);
-            int w = m.GetLength(1);
-            double[,]
-                m_gpu = Gpu.Default.Allocate(m),
-                mresult_gpu = Gpu.Default.Allocate<double>(h, w);
-
-            // Wrapper
-            void Kernel(int ki)
+            // Setup
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> m_gpu = gpu.AllocateDevice(m))
+            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
             {
-                // Apply the activation to the current row
-                for (int j = 0; j < w; j++)
+                // Local parameters
+                deviceptr<double>
+                    pm_gpu = m_gpu.Ptr,
+                    pmresult_gpu = mresult_gpu.Ptr;
+                int
+                    m_gpu_pitch = m_gpu.PitchInElements.ToInt32(),
+                    mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
+                Func<double, double> activation = ActivationFunctionProvider.Activation;
+
+                // Wrapper
+                void Kernel(int ki)
                 {
-                    mresult_gpu[ki, j] = ActivationFunctionProvider.Activation(m_gpu[ki, j]);
+                    int
+                        m1_offset = ki * m_gpu_pitch,
+                        mresult_offset = ki * mresult_gpu_pitch;
+                    for (int j = 0; j < w; j++)
+                        pmresult_gpu[mresult_offset + j] = activation(pm_gpu[m1_offset + j]);
                 }
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h, Kernel);
+
+                // Return the result
+                return Gpu.Copy2DToHost(mresult_gpu);
             }
-
-            // Execute the multiplication in parallel
-            Gpu.Default.For(0, h, Kernel);
-
-            // Free memory and copy the result back
-            Gpu.Free(m_gpu);
-            double[,] result = Gpu.CopyToHost(mresult_gpu);
-            Gpu.Free(mresult_gpu);
-            return result;
         }
 
         /// <summary>
@@ -452,33 +516,83 @@ namespace NeuralNetworkNET.Cuda.Helpers
             if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
 
             // Allocate parameters
-            double[,]
-                m1_gpu = Gpu.Default.Allocate(m1),
-                m2_gpu = Gpu.Default.Allocate(m2);
-            double[] result_gpu = Gpu.Default.Allocate<double>(h);
-
-            // Wrapper
-            void Kernel(int i)
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
             {
-                // Local sum over each row
-                double row = 0;
-                for (int j = 0; j < w; j++)
+                // Check Compute Capability (64bit atomicAdd function requires Compute 6.x)
+                if (gpu.Device.Arch.Major >= 6)
                 {
-                    double delta = m1_gpu[i, j] - m2_gpu[i, j];
-                    row += delta * delta;
+                    using (DeviceMemory<double> result_gpu = gpu.AllocateDevice<double>(1))
+                    {
+                        // Local parameters
+                        deviceptr<double>
+                            pm1_gpu = m1_gpu.Ptr,
+                            pm2_gpu = m2_gpu.Ptr,
+                            presult_gpu = result_gpu.Ptr;
+                        int
+                            m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
+                            m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
+
+                        // Wrapper
+                        void Kernel(int i)
+                        {
+                            // Local sum over each row
+                            double row = 0;
+                            int
+                                m1_offset = i * m1_gpu_pitch,
+                                m2_offset = i * m2_gpu_pitch;
+                            for (int j = 0; j < w; j++)
+                            {
+                                double delta = pm1_gpu[m1_offset + j] - pm2_gpu[m2_offset + j];
+                                row += delta * delta;
+                            }
+                            DeviceFunction.AtomicAdd(presult_gpu, row);
+                        }
+
+                        // Compute the total sum
+                        gpu.For(0, h, Kernel);
+
+                        // Return the result
+                        double[] result = Gpu.CopyToHost(result_gpu);
+                        return result[0] / 2;
+                    }
                 }
-                result_gpu[i] = row;
+
+                // Legacy code
+                using (DeviceMemory<double> result_gpu = gpu.AllocateDevice<double>(h))
+                {
+                    // Local parameters
+                    deviceptr<double>
+                        pm1_gpu = m1_gpu.Ptr,
+                        pm2_gpu = m2_gpu.Ptr,
+                        presult_gpu = result_gpu.Ptr;
+                    int
+                        m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
+                        m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
+
+                    // Wrapper
+                    void Kernel(int i)
+                    {
+                        // Local sum over each row
+                        double row = 0;
+                        int
+                            m1_offset = i * m1_gpu_pitch,
+                            m2_offset = i * m2_gpu_pitch;
+                        for (int j = 0; j < w; j++)
+                        {
+                            double delta = pm1_gpu[m1_offset + j] - pm2_gpu[m2_offset + j];
+                            row += delta * delta;
+                        }
+                        presult_gpu[i] = row;
+                    }
+
+                    // Compute the total sum
+                    gpu.For(0, h, Kernel);
+                    double AggregateKernel(double a, double b) => a + b;
+                    return gpu.Aggregate(presult_gpu, h, AggregateKernel) / 2;
+                }
             }
-
-            // Run the first kernel and compute the sum vector
-            Gpu.Default.For(0, h, Kernel);
-            Gpu.Free(m1_gpu);
-            Gpu.Free(m2_gpu);
-
-            // Aggregate the results in the sum vector
-            double cost = Gpu.Default.Aggregate(result_gpu, (n1, n2) => n1 + n2);
-            Gpu.Free(result_gpu);
-            return cost / 2;
         }
 
         /// <summary>
@@ -504,15 +618,34 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     pvresult_gpu = vresult_gpu.Ptr;
                 int pitch = m_gpu.PitchInElements.ToInt32();
 
-                // Wrapper
-                void Kernel(int ki)
+                // Check Compute Capability (64bit atomicAdd function requires Compute 6.x)
+                if (gpu.Device.Arch.Major >= 6)
                 {
-                    for (int j = 0; j < w; j++)
-                        DeviceFunction.AtomicAdd(pvresult_gpu + 4, pm_gpu[ki * pitch + j]);
-                }
+                    // Wrapper 
+                    void Kernel(int ki)
+                    {
+                        int m_gpu_offset = ki * pitch;
+                        for (int j = 0; j < w; j++)
+                            DeviceFunction.AtomicAdd(pvresult_gpu + j, pm_gpu[m_gpu_offset + j]);
+                    }
 
-                // Execute the multiplication in parallel
-                gpu.For(0, h, Kernel);
+                    // Execute the multiplication for GPUs with Compute Capability >= 6.x
+                    gpu.For(0, h, Kernel);
+                }
+                else
+                {
+                    // Legacy wrapper 
+                    void Kernel(int kj)
+                    {
+                        double sum = 0;
+                        for (int i = 0; i < h; i++)
+                            sum += pm_gpu[i * pitch + kj];
+                        pvresult_gpu[kj] = sum;
+                    }
+
+                    // Execute the multiplication for GPUs with Compute Capability >= 6.x
+                    gpu.For(0, w, Kernel);
+                }
 
                 // Return the results
                 return Gpu.CopyToHost(vresult_gpu);
