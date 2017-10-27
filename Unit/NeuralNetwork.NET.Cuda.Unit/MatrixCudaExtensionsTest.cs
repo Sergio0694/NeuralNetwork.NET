@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Cuda.Helpers;
@@ -101,6 +102,25 @@ namespace NeuralNetworkNET.Cuda.Unit
             m2 = r.NextGaussianMatrix(800, 40);
             check = MatrixExtensions.Multiply(MatrixGpuExtensions.Transpose(m1), m2);
             test = m1.TransposeAndMultiply(m2);
+            Assert.IsTrue(test.ContentEquals(check));
+        }
+
+        [TestMethod]
+        public void MultiplyWithSum()
+        {
+            Random r = new Random();
+            double[,]
+                m1 = r.NextGaussianMatrix(13, 5),
+                m2 = r.NextGaussianMatrix(5, 4);
+            double[] v = Enumerable.Range(0, 4).Select(i => (double)i).ToArray();
+            double[,] check = MatrixExtensions.MultiplyWithSum(m1, m2, v);
+            double[,] test = MatrixGpuExtensions.MultiplyWithSum(m1, m2, v);
+            Assert.IsTrue(test.ContentEquals(check));
+            m1 = r.NextGaussianMatrix(1500, 800);
+            m2 = r.NextGaussianMatrix(800, 40);
+            v = Enumerable.Range(0, 40).Select(i => (double)i).ToArray();
+            check = MatrixExtensions.MultiplyWithSum(m1, m2, v);
+            test = MatrixGpuExtensions.MultiplyWithSum(m1, m2, v);
             Assert.IsTrue(test.ContentEquals(check));
         }
 
