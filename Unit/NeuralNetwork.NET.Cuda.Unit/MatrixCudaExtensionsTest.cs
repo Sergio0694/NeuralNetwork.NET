@@ -125,6 +125,25 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
+        public void MultiplyWithSumAndActivation()
+        {
+            Random r = new Random();
+            double[,]
+                m1 = r.NextGaussianMatrix(13, 5),
+                m2 = r.NextGaussianMatrix(5, 4);
+            double[] v = Enumerable.Range(0, 4).Select(i => (double)i).ToArray();
+            double[,] check = MatrixExtensions.MultiplyWithSumAndActivation(m1, m2, v);
+            double[,] test = MatrixGpuExtensions.MultiplyWithSumAndActivation(m1, m2, v);
+            Assert.IsTrue(test.ContentEquals(check));
+            m1 = r.NextGaussianMatrix(1500, 800);
+            m2 = r.NextGaussianMatrix(800, 40);
+            v = Enumerable.Range(0, 40).Select(i => (double)i).ToArray();
+            check = MatrixExtensions.MultiplyWithSumAndActivation(m1, m2, v);
+            test = MatrixGpuExtensions.MultiplyWithSumAndActivation(m1, m2, v);
+            Assert.IsTrue(test.ContentEquals(check));
+        }
+
+        [TestMethod]
         public void MultiplyAndActivation()
         {
             Random r = new Random();
