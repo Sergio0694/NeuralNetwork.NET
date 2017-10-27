@@ -23,7 +23,7 @@
             if (double.IsInfinity(value) ^ double.IsInfinity(other)) return false;
             if (double.IsPositiveInfinity(value) && double.IsPositiveInfinity(other)) return true;
             if (double.IsNegativeInfinity(value) && double.IsNegativeInfinity(other)) return true;
-            return (value - other).Abs() < double.Epsilon;
+            return (value - other).Abs() < 1e-10;
         }
 
         /// <summary>

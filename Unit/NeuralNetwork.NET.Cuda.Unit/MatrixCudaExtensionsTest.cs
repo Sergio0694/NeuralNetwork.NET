@@ -6,6 +6,7 @@ using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Implementations;
+#pragma warning disable 162
 
 namespace NeuralNetworkNET.Cuda.Unit
 {
@@ -18,6 +19,7 @@ namespace NeuralNetworkNET.Cuda.Unit
     {
         [TestMethod]
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
+        [SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
         public void StopwatchTest()
         {
             // Helper
@@ -38,6 +40,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 }
             }
 
+            return;
             var network = NeuralNetwork.NewRandom(200, 100, 32, 10);
             var r = new Random();
             var input = r.NextGaussianMatrix(2000, 200);
@@ -123,7 +126,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             Random r = new Random();
             double[,]
-                m = r.NextGaussianMatrix(7, 3),
+                m = r.NextGaussianMatrix(20, 35),
                 check = MatrixExtensions.Activation(m);
             double[,] test = MatrixGpuExtensions.Activation(m);
             Assert.IsTrue(test.ContentEquals(check));

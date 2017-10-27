@@ -481,6 +481,44 @@ namespace NeuralNetworkNET.Cuda.Helpers
             return cost / 2;
         }
 
+        /// <summary>
+        /// Compresses a matrix into a row vector by summing the components column by column
+        /// </summary>
+        /// <param name="m">The matrix to compress</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] CompressVertically([NotNull] this double[,] m)
+        {
+            // Setup
+            Gpu gpu = Gpu.Default;
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            using (DeviceMemory2D<double> m_gpu = gpu.AllocateDevice(m))
+            using (DeviceMemory<double> vresult_gpu = gpu.AllocateDevice<double>(w))
+            {
+                // Pointers
+                deviceptr<double>
+                    pm_gpu = m_gpu.Ptr,
+                    pvresult_gpu = vresult_gpu.Ptr;
+                int pitch = m_gpu.PitchInElements.ToInt32();
+
+                // Wrapper
+                void Kernel(int ki)
+                {
+                    for (int j = 0; j < w; j++)
+                        DeviceFunction.AtomicAdd(pvresult_gpu + 4, pm_gpu[ki * pitch + j]);
+                }
+
+                // Execute the multiplication in parallel
+                gpu.For(0, h, Kernel);
+
+                // Return the results
+                return Gpu.CopyToHost(vresult_gpu);
+            }
+        }
+
         #endregion
     }
 }

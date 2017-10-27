@@ -4,7 +4,8 @@
     <RootNamespace>NeuralNetworkNET.Cuda</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Alea" Version="3.0.3" />
+    <PackageReference Include="Alea" Version="3.0.4-beta4" />
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
