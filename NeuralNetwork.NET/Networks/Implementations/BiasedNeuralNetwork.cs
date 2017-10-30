@@ -124,7 +124,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Prepare d(l + 1) and W(l + 1)T
                 double[,]
                     transposed = TransposedWeights[l + 1] ?? (TransposedWeights[l + 1] = Weights[l + 1].Transpose()), // Calculate W[l + 1]T if needed
-                    //dleft = MatrixServiceProvider.Multiply(deltas[l + 1], transposed),
                     dl = zList[l]; // Local reference on the delta to calculate in place
 
                 /* ============================

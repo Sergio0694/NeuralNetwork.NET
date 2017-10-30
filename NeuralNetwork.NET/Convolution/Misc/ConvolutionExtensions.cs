@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Convolution.Misc
 {
@@ -101,11 +102,10 @@ namespace NeuralNetworkNET.Convolution.Misc
             double[,] result = new double[h - 2, w - 2];
 
             // Calculate the normalization factor
-            double Abs(double value) => value >= 0 ? value : -value;
             double factor = 0;
             for (int i = 0; i < 3; i++)
                 for (int j = 0; j < 3; j++)
-                    factor += Abs(kernel[i, j]);
+                    factor += kernel[i, j].Abs();
 
             // Process the convolution
             int x = 0;
