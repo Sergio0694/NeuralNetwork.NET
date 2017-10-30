@@ -10,7 +10,7 @@ namespace DigitsCudaTest
         static async Task Main()
         {
             NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
-            await MnistTester.PerformBenchmarkAsync(LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence, false, null, true, 784, 16, 16, 10);
+            await MnistTester.PerformBenchmarkAsync(LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence, false, null, false, 784, 16, 16, 10);
         }
     }
 }
