@@ -217,23 +217,25 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
-        public void InPlaceActivationPrimeAndHadamardProduct()
+        public void MultiplyAndInPlaceActivationPrimeAndHadamardProduct()
         {
             Random r = new Random();
             double[,]
+                wt = r.NextGaussianMatrix(10, 10),
                 m1 = r.NextGaussianMatrix(10, 10),
                 m2 = r.NextGaussianMatrix(10, 10),
                 backup = new double[10, 10];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(double) * m1.Length);
-            MatrixExtensions.InPlaceActivationPrimeAndHadamardProduct(backup, m2);
-            MatrixGpuExtensions.InPlaceActivationPrimeAndHadamardProduct(m1, m2);
+            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt);
+            MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt);
             Assert.IsTrue(m1.ContentEquals(backup));
+            wt = r.NextGaussianMatrix(200, 200);
             m1 = r.NextGaussianMatrix(200, 200);
             m2 = r.NextGaussianMatrix(200, 200);
             backup = new double[200, 200];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(double) * m1.Length);
-            MatrixExtensions.InPlaceActivationPrimeAndHadamardProduct(backup, m2);
-            MatrixGpuExtensions.InPlaceActivationPrimeAndHadamardProduct(m1, m2);
+            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt);
+            MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt);
             Assert.IsTrue(m1.ContentEquals(backup));
         }
     }

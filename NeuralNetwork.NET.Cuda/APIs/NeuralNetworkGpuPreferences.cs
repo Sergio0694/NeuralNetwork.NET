@@ -36,7 +36,7 @@ namespace NeuralNetworkNET.Cuda.APIs
                                 MatrixGpuExtensions.Activation,
                                 MatrixGpuExtensions.HalfSquaredDifference,
                                 MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime,
-                                MatrixGpuExtensions.InPlaceActivationPrimeAndHadamardProduct);
+                                MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value), value, null);

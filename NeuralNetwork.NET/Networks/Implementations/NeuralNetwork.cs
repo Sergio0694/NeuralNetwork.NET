@@ -190,18 +190,19 @@ namespace NeuralNetworkNET.Networks.Implementations
             deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
-                // Precompute  W(l + 1) * delta(l + 1)
+                // Prepare d(l + 1) and W(l + 1)T
                 double[,]
                     transposed = TransposedWeights[l + 1] ?? (TransposedWeights[l + 1] = Weights[l + 1].Transpose()), // Calculate W[l + 1]T if needed
-                    dleft = MatrixServiceProvider.Multiply(deltas[l + 1], transposed),
+                    //dleft = MatrixServiceProvider.Multiply(deltas[l + 1], transposed),
                     dl = zList[l]; // Local reference on the delta to calculate in place
 
                 /* ============================
                  * Calculate delta(l) in place
                  * ============================
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
-                 * Compute d(l), the Hadamard product of z'(l) and W(l + 1) * delta(l + 1) */
-                //MatrixServiceProvider.InPlaceActivationPrimeAndHadamardProduct(dl, dleft);
+                 * Multiply the previous delta with the transposed weights of the following layer
+                 * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
+                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed);
                 deltas[l] = dl;
             }
 

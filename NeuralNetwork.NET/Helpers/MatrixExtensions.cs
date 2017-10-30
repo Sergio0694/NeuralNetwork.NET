@@ -590,43 +590,6 @@ namespace NeuralNetworkNET.Helpers
         /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
-        /// <param name="delta">The precomputed delta to use in the Hadamard product</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] delta)
-        {
-            // Checks
-            int
-                h = z.GetLength(0),
-                w = z.GetLength(1);
-            if (h != delta.GetLength(0) || w != delta.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
-
-            // Execute the multiplication in parallel
-            bool loopResult = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    // Get the pointers and iterate fo each row
-                    fixed (double* pz = z, pd = delta)
-                    {
-                        // Save the index and iterate for each column
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int index = offset + j;
-                            pz[index] = ActivationFunctionProvider.ActivationPrime(pz[index]) * pd[index];
-                        }
-                    }
-                }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-        }
-
-        /// <summary>
-        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
-        /// </summary>
-        /// <param name="z">The activity on the previous layer</param>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         [PublicAPI]
