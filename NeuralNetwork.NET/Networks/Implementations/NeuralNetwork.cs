@@ -201,7 +201,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * ============================
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Compute d(l), the Hadamard product of z'(l) and W(l + 1) * delta(l + 1) */
-                MatrixServiceProvider.InPlaceActivationPrimeAndHadamardProduct(dl, dleft);
+                //MatrixServiceProvider.InPlaceActivationPrimeAndHadamardProduct(dl, dleft);
                 deltas[l] = dl;
             }
 

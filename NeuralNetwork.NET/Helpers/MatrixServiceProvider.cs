@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Func<double[,], double[,]> activation,
             [NotNull] Func<double[,], double[,], double> halfSquaredDifference,
             [NotNull] Action<double[,], double[,], double[,]> inPlaceSubtractHadamardActivationPrime,
-            [NotNull] Action<double[,], double[,]> inPlaceActivationPrimeHadamard)
+            [NotNull] Action<double[,], double[,], double[,]> multiplyAndInPlaceActivationPrimeHadamard)
         {
             _MultiplyOverride = multiply;
             _MultiplyWithSumOverride = multiplyWithSum;
@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Helpers
             _ActivationOverride = activation;
             _HalfSquaredDifferenceOverride = halfSquaredDifference;
             _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = inPlaceSubtractHadamardActivationPrime;
-            _InPlaceActivationPrimeAndHadamardProductOverride = inPlaceActivationPrimeHadamard;
+            _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride = multiplyAndInPlaceActivationPrimeHadamard;
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace NeuralNetworkNET.Helpers
             _ActivationOverride = null;
             _HalfSquaredDifferenceOverride = null;
             _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = null;
-            _InPlaceActivationPrimeAndHadamardProductOverride = null;
+            _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride = null;
         }
 
         #endregion
@@ -174,18 +174,18 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product
+        /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product with a matrix product
         /// </summary>
         [CanBeNull]
-        private static Action<double[,], double[,]> _InPlaceActivationPrimeAndHadamardProductOverride;
+        private static Action<double[,], double[,], double[,]> _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.InPlaceActivationPrimeAndHadamardProduct"/> method
+        /// Forwards the base <see cref="MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct"/> method
         /// </summary>
-        public static void InPlaceActivationPrimeAndHadamardProduct([NotNull] double[,] m, [NotNull] double[,] delta)
+        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct([NotNull] double[,] m, [NotNull] double[,] di, [NotNull] double[,] wt)
         {
-            if (_InPlaceActivationPrimeAndHadamardProductOverride == null) m.InPlaceActivationPrimeAndHadamardProduct(delta);
-            else _InPlaceActivationPrimeAndHadamardProductOverride?.Invoke(m, delta);
+            if (_MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride == null) m.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(di, wt);
+            else _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride?.Invoke(m, di, wt);
         }
 
         #endregion

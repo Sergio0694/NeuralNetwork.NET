@@ -623,6 +623,55 @@ namespace NeuralNetworkNET.Helpers
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
         }
 
+        /// <summary>
+        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
+        /// </summary>
+        /// <param name="z">The activity on the previous layer</param>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
+            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2)
+        {
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+
+            // Checks
+            if (l != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
+
+            // Execute the multiplication in parallel
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pz = z, pm1 = m1, pm2 = m2)
+                    {
+                        // Save the index and iterate for each column
+                        int i1 = i * l;
+                        for (int j = 0; j < w; j++)
+                        {
+                            // Perform the multiplication
+                            int i2 = j;
+                            double res = 0;
+                            for (int k = 0; k < l; k++, i2 += w)
+                            {
+                                res += pm1[i1 + k] * pm2[i2];
+                            }
+
+                            // res has now the matrix multiplication result for position [i, j]
+                            int zIndex = i * w + j;
+                            pz[zIndex] = ActivationFunctionProvider.ActivationPrime(pz[zIndex]) * res;
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+        }
+
         #endregion
 
         #region Misc

@@ -104,7 +104,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Save the intermediate steps to be able to reuse them later
                 double[,] zi = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
                 zList[i] = zi;
-                aList[i] = a0 = zi.Activation();
+                aList[i] = a0 = MatrixServiceProvider.Activation(zi);
             }
 
             /* ============================
@@ -132,7 +132,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * ============================
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Compute d(l), the Hadamard product of z'(l) and W(l + 1) * delta(l + 1) */
-                MatrixServiceProvider.InPlaceActivationPrimeAndHadamardProduct(dl, dleft);
+                //MatrixServiceProvider.InPlaceActivationPrimeAndHadamardProduct(dl, dleft);
                 deltas[l] = dl;
             }
 
@@ -154,7 +154,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 int bytes = sizeof(double) * dJdw.Length;
                 Buffer.BlockCopy(dJdw, 0, gradient, position, bytes);
                 position += bytes;
-                
+
                 // Handle the gradient with respect to the current bias vector
                 double[] dJdb = di.CompressVertically();
                 bytes = sizeof(double) * dJdw.Length;

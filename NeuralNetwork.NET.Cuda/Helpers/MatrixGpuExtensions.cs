@@ -424,48 +424,62 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
-        /// <param name="delta">The precomputed delta to use in the Hadamard product</param>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] delta)
+        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
+            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2)
         {
+            // Initialize the parameters and the result matrix
+            int h = m1.GetLength(0);
+            int w = m2.GetLength(1);
+            int l = m1.GetLength(1);
+
             // Checks
-            int
-                h = z.GetLength(0),
-                w = z.GetLength(1);
-            if (h != delta.GetLength(0) || w != delta.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
+            if (l != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
 
             // Initialize the parameters and the result matrix
             Gpu gpu = Gpu.Default;
             using (DeviceMemory2D<double> z_gpu = gpu.AllocateDevice(z))
-            using (DeviceMemory2D<double> d_gpu = Gpu.Default.AllocateDevice(delta))
+            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
             {
                 // Pointers and pitches
                 deviceptr<double>
                     pz_gpu = z_gpu.Ptr,
-                    pd_gpu = d_gpu.Ptr;
+                    pm1_gpu = m1_gpu.Ptr,
+                    pm2_gpu = m2_gpu.Ptr;
                 int
                     z_gpu_pitch = z_gpu.PitchInElements.ToInt32(),
-                    d_gpu_pitch = d_gpu.PitchInElements.ToInt32();
+                    m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
+                    m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
                 Func<double, double> activation = ActivationFunctionProvider.ActivationPrime;
 
                 // Wrapper
-                void Kernel(int i)
+                void Kernel(int index)
                 {
-                    // Save the index and iterate for each column
+                    // Calculate the current indexes
                     int
-                        pz_offset = i * z_gpu_pitch,
-                        pd_offset = i * d_gpu_pitch;
-                    for (int j = 0; j < w; j++)
+                        i = index / w,
+                        j = index % w;
+
+                    // Perform the multiplication
+                    double sum = 0;
+                    int m1_offset = i * m1_gpu_pitch; // Constant within the loop
+                    for (int k = 0; k < l; k++)
                     {
-                        int pz_target = pz_offset + j;
-                        pz_gpu[pz_target] = activation(pz_gpu[pz_target]) * pd_gpu[pd_offset + j];
+                        sum += pm1_gpu[m1_offset + k] * pm2_gpu[k * m2_gpu_pitch + j];
                     }
+
+                    // sum is now the final delta(l) value in position [i, j]
+                    int z_target = i * z_gpu_pitch + j;
+                    pz_gpu[z_target] = activation(pz_gpu[z_target]) * sum;
                 }
 
                 // Execute the multiplication in parallel
-                gpu.For(0, h, Kernel);
+                gpu.For(0, h * w, Kernel);
 
                 // Copy the results back
                 Gpu.Copy2D(z_gpu, z);
