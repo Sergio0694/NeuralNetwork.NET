@@ -12,6 +12,9 @@ namespace NeuralNetworkNET.Cuda.Helpers
     /// </summary>
     internal static class ConvolutionGpuExtensions
     {
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
         public static double[,] Convolute3x3([NotNull] this double[,] source, [NotNull]  params double[][,] kernels)
         {
             // Checks

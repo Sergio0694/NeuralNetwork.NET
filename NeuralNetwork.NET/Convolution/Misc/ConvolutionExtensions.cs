@@ -38,6 +38,35 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
+        /// Performs the in place normalization of the target matrix
+        /// </summary>
+        /// <param name="m">The input matrix to normalize</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void InPlaceNormalize([NotNull] this double[,] m)
+        {
+            // Prepare the result matrix
+            if (m.Length == 0) throw new ArgumentException(nameof(m), "The target matrix can't be empty");
+            int l = m.Length;
+
+            // Pool the input matrix
+            unsafe
+            {
+                fixed (double* p = m)
+                {
+                    // Get the max value
+                    double max = 0;
+                    for (int i = 0; i < l; i++)
+                        if (p[i] > max) max = p[i];
+
+                    // Normalize the matrix content
+                    for (int i = 0; i < l; i++)
+                        p[i] /= max;
+                }
+            }
+        }
+
+        /// <summary>
         /// Pools the input matrix with a window of 2 and a stride of 2
         /// </summary>
         /// <param name="m">The input matrix to pool</param>
