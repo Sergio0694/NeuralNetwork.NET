@@ -86,32 +86,6 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
-        /// Performs the in place Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
-        /// </summary>
-        /// <param name="m">The input matrix to edit</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceReLU([NotNull] this double[,] m)
-        {
-            int h = m.GetLength(0), w = m.GetLength(1);
-            unsafe
-            {
-                fixed (double* p = m)
-                {
-                    for (int i = 0; i < h; i++)
-                    {
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int target = offset + j;
-                            if (p[target] < 0) p[target] = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Convolutes the input matrix with the given 3x3 kernel
         /// </summary>
         /// <param name="m">The input matrix</param>
