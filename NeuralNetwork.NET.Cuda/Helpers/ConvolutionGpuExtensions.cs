@@ -11,7 +11,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
     /// <summary>
     /// A static class that contains some GPU-accelerated convolution extension methods
     /// </summary>
-    internal static class ConvolutionGpuExtensions
+    public static class ConvolutionGpuExtensions
     {
         /// <summary>
         /// Performs a 3*3 convolution on the source matrix, using the given kernel, in parallel
@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 klen = kernels.Length,
                 imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgAxis) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
             int
                 inner = imgAxis - 2,                                            // Size of each image edge after the convolution
                 convolutionOutputSize = inner * inner,                          // Size of each processed image
@@ -202,7 +202,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 iterations = h * subdivision,
                 imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgAxis) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
 
             // Process the convolution in parallel
             Gpu gpu = Gpu.Default;
@@ -279,7 +279,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 w = source.GetLength(1),
                 imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgAxis) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
             int
                 inner = imgAxis - 1,                        // Iterations for each subdivision dimension
                 iterationsPerSample = subdivision * inner;

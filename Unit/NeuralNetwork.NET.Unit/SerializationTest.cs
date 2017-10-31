@@ -9,8 +9,8 @@ namespace NeuralNetworkNET.Unit
     /// Test class for the serialization methods
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(SerializationTests))]
-    public class SerializationTests
+    [TestCategory(nameof(SerializationTest))]
+    public class SerializationTest
     {
         [TestMethod]
         public void BinarySerialize()

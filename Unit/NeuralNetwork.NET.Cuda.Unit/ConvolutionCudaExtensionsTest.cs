@@ -1,15 +1,16 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution.Misc;
+using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.Unit
+namespace NeuralNetworkNET.Cuda.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="ConvolutionExtensions"/> class
+    /// Test class for the <see cref="ConvolutionCudaExtensionsTest"/> class
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(ConvolutionExtensions))]
-    public class ConvolutionExtensionsTest
+    [TestCategory(nameof(ConvolutionCudaExtensionsTest))]
+    public class ConvolutionCudaExtensionsTest
     {
         [TestMethod]
         public void ReLU1()
@@ -27,9 +28,9 @@ namespace NeuralNetworkNET.Unit
                     { 0, 0, 2 },
                     { 1, 1, 2 },
                     { 0, 0, 99 }
-                },
-                t = m.ReLU();
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            ConvolutionGpuExtensions.ReLU(m);
+            Assert.IsTrue(m.ContentEquals(r));
         }
 
         [TestMethod]
@@ -39,26 +40,17 @@ namespace NeuralNetworkNET.Unit
             double[,]
                 m =
                 {
-                    { 0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33 },
-                    { -0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11 },
-                    { 0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55 },
-                    { 0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33 },
-                    { 0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11 },
-                    { -0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11 },
-                    { 0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77 }
+                    {0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33},
+                    {-0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11},
+                    {0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55},
+                    {0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33},
+                    {0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11},
+                    {-0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11},
+                    {0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77}
                 },
-                r =
-                {
-                    { 0.77, 0, 0.11, 0.33, 0.55, 0, 0.33 },
-                    { 0, 1, 0, 0.33, 0, 0.11, 0 },
-                    { 0.11, 0, 1, 0, 0.11, 0, 0.55 },
-                    { 0.33, 0.33, 0, 0.55, 0, 0.33, 0.33 },
-                    { 0.55, 0, 0.11, 0, 1, 0, 0.11 },
-                    { 0, 0.11, 0, 0.33, 0, 1, 0 },
-                    { 0.33, 0, 0.55, 0.33, 0.11, 0, 0.77 }
-                },
-                t = m.ReLU();
-            Assert.IsTrue(t.ContentEquals(r));
+                check = ConvolutionExtensions.ReLU(m);
+            ConvolutionGpuExtensions.ReLU(m);
+            Assert.IsTrue(m.ContentEquals(check));
         }
 
         /// <summary>
