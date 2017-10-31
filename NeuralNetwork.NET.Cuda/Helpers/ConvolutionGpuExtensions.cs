@@ -256,5 +256,87 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 Gpu.Copy2D(source_gpu, source);
             }
         }
+
+        /// <summary>
+        /// Pools the input matrix with a window of 2 and a stride of 2
+        /// </summary>
+        /// <param name="source">The input matrix to pool</param>
+        /// <param name="subdivision">The number of images in the data volume associated to each sample</param>
+        /// <exception cref="ArgumentException">The size of the matrix isn't valid</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Pool2x2([NotNull] this double[,] source, int subdivision)
+        {
+            // Checks
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (subdivision < 1) throw new ArgumentOutOfRangeException(nameof(subdivision), "The number of images per row can't be lower than 1");
+
+            // Local parameters
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgAxis) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+            int
+                inner = imgAxis - 1,                        // Iterations for each subdivision dimension
+                iterationsPerSample = subdivision * inner;
+
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice(source))
+            using (DeviceMemory2D<double> result_gpu = gpu.AllocateDevice<double>(h / 2, w / 2))
+            {
+                // Pointers and pitches
+                deviceptr<double>
+                    psource_gpu = source_gpu.Ptr,
+                    presult_gpu = result_gpu.Ptr;
+                int
+                    source_gpu_pitch = source_gpu.PitchInElements.ToInt32(),
+                    result_gpu_pitch = result_gpu.PitchInElements.ToInt32();
+
+                // Pooling kernel
+                void Kernel(int index)
+                {
+                    // Calculate the current indexes
+                    int
+                        i = index / iterationsPerSample,        // Sample index
+                        i_mod = index % iterationsPerSample,
+                        j = i_mod / subdivision,                // Subdivision index
+                        x = i_mod % subdivision;                // Subdivision row index
+
+                    // Assuming [x, y] are the indexes of the jth image for sample i
+                    int
+                        sample_offset = i * source_gpu_pitch,
+                        image_offset = sample_offset + j * imgSize,
+                        target_up = image_offset + x * imgAxis,
+                        target_down = image_offset + (x + 1) * imgAxis,
+                        result_offset = x * result_gpu_pitch;
+                    for (int y = 0; y < inner; y++)
+                    {
+                        // Compute the maximum value of the current block
+                        int
+                            up_offset = target_up + y,
+                            down_offset = target_down + y;
+                        double
+                            upLeft = psource_gpu[up_offset],
+                            upRight = psource_gpu[up_offset + 1],
+                            downLeft = psource_gpu[down_offset],
+                            downRight = psource_gpu[down_offset + 1],
+                            upMax = upLeft >= upRight ? upLeft : upRight,
+                            downMax = downLeft >= downRight ? downLeft : downRight,
+                            max = upMax >= downMax ? upMax : downMax;
+                        presult_gpu[result_offset + y] = max;
+                    }
+                }
+
+                // Process the pooling operation
+                gpu.For(0, h * iterationsPerSample, Kernel);
+
+                // Return the results
+                return Gpu.Copy2DToHost(result_gpu);
+            }
+        }
     }
 }
