@@ -38,35 +38,6 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
-        /// Performs the in place normalization of the target matrix
-        /// </summary>
-        /// <param name="m">The input matrix to normalize</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceNormalize([NotNull] this double[,] m)
-        {
-            // Prepare the result matrix
-            if (m.Length == 0) throw new ArgumentException(nameof(m), "The target matrix can't be empty");
-            int l = m.Length;
-
-            // Pool the input matrix
-            unsafe
-            {
-                fixed (double* p = m)
-                {
-                    // Get the max value
-                    double max = 0;
-                    for (int i = 0; i < l; i++)
-                        if (p[i] > max) max = p[i];
-
-                    // Normalize the matrix content
-                    for (int i = 0; i < l; i++)
-                        p[i] /= max;
-                }
-            }
-        }
-
-        /// <summary>
         /// Pools the input matrix with a window of 2 and a stride of 2
         /// </summary>
         /// <param name="m">The input matrix to pool</param>
@@ -100,7 +71,7 @@ namespace NeuralNetworkNET.Convolution.Misc
         /// <summary>
         /// Performs the Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
         /// </summary>
-        /// <param name="m">The input matrix to edit</param>
+        /// <param name="m">The input matrix to read</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -112,6 +83,32 @@ namespace NeuralNetworkNET.Convolution.Misc
                 for (int j = 0; j < w; j++)
                     result[i, j] = m[i, j] >= 0 ? m[i, j] : 0;
             return result;
+        }
+
+        /// <summary>
+        /// Performs the in place Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
+        /// </summary>
+        /// <param name="m">The input matrix to edit</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void InPlaceReLU([NotNull] this double[,] m)
+        {
+            int h = m.GetLength(0), w = m.GetLength(1);
+            unsafe
+            {
+                fixed (double* p = m)
+                {
+                    for (int i = 0; i < h; i++)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            if (p[target] < 0) p[target] = 0;
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
