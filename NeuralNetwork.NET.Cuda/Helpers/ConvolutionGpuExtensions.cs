@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
             // Prepare the kernels info
             double[] norms = new double[klen];
 
-            // Calculate the normalization factor
+            // Precompute the normalization factors
             unsafe
             {
                 fixed (double* pnorms = norms)
@@ -279,6 +279,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 w = source.GetLength(1),
                 imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
                 imgAxis = imgSize.IntegerSquare();          // Size of an edge of one of the inner images per sample
+            if (h != w) throw new ArgumentException("This method can only work with square matrices");
             if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
             bool odd = imgAxis % 2 == 1;
             int

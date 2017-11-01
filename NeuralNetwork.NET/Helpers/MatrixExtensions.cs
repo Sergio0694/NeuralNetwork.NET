@@ -830,6 +830,33 @@ namespace NeuralNetworkNET.Helpers
         #region Content check
 
         /// <summary>
+        /// Edits the contents of the given matrix by applying a function to every item
+        /// </summary>
+        /// <param name="m">The matrix to edit</param>
+        /// <param name="f">The function to modify the matrix elements</param>
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void Tweak([NotNull] this double[,] m, Func<double, double> f)
+        {
+            int w = m.GetLength(1);
+            bool result = Parallel.For(0, m.GetLength(0), i =>
+            {
+                unsafe
+                {
+                    fixed (double* p = m)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            p[target] = f(p[target]);
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!result) throw new Exception("Error while runnig the parallel loop");
+        }
+
+        /// <summary>
         /// Checks if two matrices have the same size and content
         /// </summary>
         /// <param name="m">The first matrix to test</param>
