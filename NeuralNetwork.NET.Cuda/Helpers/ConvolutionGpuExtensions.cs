@@ -310,7 +310,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     int
                         i = index / iterationsPerSample,        // Sample index
                         i_mod = index % iterationsPerSample,
-                        j = i_mod / scaledImageAxis,                   // Subdivision index
+                        j = i_mod / scaledImageAxis,            // Subdivision index
                         x_plain = i_mod % scaledImageAxis,          
                         x = x_plain * 2;                        // Subdivision row index
 
