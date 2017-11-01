@@ -316,5 +316,87 @@ namespace NeuralNetworkNET.Cuda.Unit
             Assert.IsTrue(unpacked1.ContentEquals(check1));
             Assert.IsTrue(unpacked2.ContentEquals(check2));
         }
+
+        [TestMethod]
+        public void Convolute3x3_4()
+        {
+            Random r = new Random();
+            int
+                size = 9,
+                area = size * size,
+                bytesize = sizeof(double) * area,
+                inner = size - 2,
+                innerArea = inner * inner,
+                innerBytesize = sizeof(double) * innerArea;
+            double[,]
+                k =
+                {
+                    { 1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                source = new double[2, area],
+                m1 = r.NextXavierMatrix(size, size),
+                m2 = r.NextXavierMatrix(size, size),
+                check1 = ConvolutionExtensions.Convolute3x3(m1, k),
+                check2 = ConvolutionExtensions.Convolute3x3(m2, k);
+            Buffer.BlockCopy(m1, 0, source, 0, bytesize);
+            Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
+            double[,]
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k),
+                unpacked1 = new double[inner, inner],
+                unpacked2 = new double[inner, inner];
+            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
+            Buffer.BlockCopy(m_gpu, innerBytesize, unpacked2, 0, innerBytesize);
+            Assert.IsTrue(unpacked1.ContentEquals(check1));
+            Assert.IsTrue(unpacked2.ContentEquals(check2));
+        }
+
+        [TestMethod]
+        public void Convolute3x3_5()
+        {
+            Random r = new Random();
+            int
+                size = 9,
+                area = size * size,
+                bytesize = sizeof(double) * area,
+                inner = size - 2,
+                innerArea = inner * inner,
+                innerBytesize = sizeof(double) * innerArea;
+            double[,]
+                k =
+                {
+                    { 1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                source = new double[2, area * 2],
+                m1 = r.NextXavierMatrix(size, size),
+                m2 = r.NextXavierMatrix(size, size),
+                m3 = r.NextXavierMatrix(size, size),
+                m4 = r.NextXavierMatrix(size, size),
+                check1 = ConvolutionExtensions.Convolute3x3(m1, k),
+                check2 = ConvolutionExtensions.Convolute3x3(m2, k),
+                check3 = ConvolutionExtensions.Convolute3x3(m3, k),
+                check4 = ConvolutionExtensions.Convolute3x3(m4, k);
+            Buffer.BlockCopy(m1, 0, source, 0, bytesize);
+            Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
+            Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
+            Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
+            double[,]
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k),
+                unpacked1 = new double[inner, inner],
+                unpacked2 = new double[inner, inner],
+                unpacked3 = new double[inner, inner],
+                unpacked4 = new double[inner, inner];
+            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
+            Buffer.BlockCopy(m_gpu, innerBytesize, unpacked2, 0, innerBytesize);
+            Buffer.BlockCopy(m_gpu, innerBytesize * 2, unpacked3, 0, innerBytesize);
+            Buffer.BlockCopy(m_gpu, innerBytesize * 3, unpacked4, 0, innerBytesize);
+            Assert.IsTrue(unpacked1.ContentEquals(check1));
+            Assert.IsTrue(unpacked2.ContentEquals(check2));
+            Assert.IsTrue(unpacked3.ContentEquals(check3));
+            Assert.IsTrue(unpacked4.ContentEquals(check4));
+        }
     }
 }
