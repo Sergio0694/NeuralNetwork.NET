@@ -123,7 +123,7 @@ namespace NeuralNetworkNET.Convolution.Misc
         public static double[,] Convolute3x3([NotNull] this double[,] m, [NotNull] double[,] kernel)
         {
             // Prepare the output matrix
-            if (kernel.Length != 9) throw new ArgumentOutOfRangeException("The input kernel must be 3x3");
+            if (kernel.GetLength(0) != 3 || kernel.GetLength(1) != 3) throw new ArgumentOutOfRangeException("The input kernel must be 3x3");
             int h = m.GetLength(0), w = m.GetLength(1);
             if (h < 3 || w < 3) throw new ArgumentOutOfRangeException("The input matrix must be at least 3x3");
             double[,] result = new double[h - 2, w - 2];

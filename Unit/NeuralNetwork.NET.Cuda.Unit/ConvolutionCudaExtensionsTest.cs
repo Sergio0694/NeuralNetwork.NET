@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Cuda.Helpers;
@@ -109,6 +110,78 @@ namespace NeuralNetworkNET.Cuda.Unit
                 unpacked = new double[2, 2];
             Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * 4);
             Assert.IsTrue(unpacked.ContentEquals(check));
+        }
+
+        [TestMethod]
+        public void Pool2x2_4()
+        {
+            Random r = new Random();
+            const int size = 40;
+            int square = size * size;
+            var ms = Enumerable.Range(0, 12).Select(_ => r.NextXavierMatrix(size, size)).ToArray();
+            var checks = ms.Select(ConvolutionExtensions.Pool2x2).ToArray();
+            double[,] source = new double[4, square * 3];
+            for (int i = 0; i < 12; i++)
+            {
+                Buffer.BlockCopy(ms[i], 0, source, i * square, sizeof(double) * square);
+            }
+            double[,] m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 3);
+            int half = size / 2, halfSquare = half * half;
+            var test = new double[4, halfSquare * 3];
+            for (int i = 0; i < 12; i++)
+            {
+                Buffer.BlockCopy(checks[i], 0, test, i * halfSquare, sizeof(double) * halfSquare);
+            }
+            Assert.IsTrue(test.ContentEquals(m_gpu));
+        }
+
+        [TestMethod]
+        public void Convolute3x3_1()
+        {
+            double[,]
+                m =
+                {
+                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
+                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
+                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
+                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
+                    { -1, -1, -1, -1, 1, -1, -1, -1, -1 },
+                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
+                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
+                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
+                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 }
+                },
+                k =
+                {
+                    { 1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                r = ConvolutionExtensions.Convolute3x3(m, k);
+            const int size = 9;
+            int
+                square = size * size,
+                inner = size - 2,
+                innerSquare = inner * inner;
+            double[,] source = new double[1, square];
+            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * square);
+            double[,]
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k),
+                unpacked = new double[inner, inner];
+            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * innerSquare);
+            Assert.IsTrue(unpacked.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Convolute3x3_2()
+        {
+            // TODO
+        }
+
+        [TestMethod]
+        public void Convolute3x3_3()
+        {
+            // TODO
         }
     }
 }
