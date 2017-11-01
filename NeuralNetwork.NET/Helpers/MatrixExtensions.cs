@@ -768,6 +768,33 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Flattens the input volume in a linear array
+        /// </summary>
+        /// <param name="volume">The volume to flatten</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<double[,]> volume)
+        {
+            // Preliminary checks and declarations
+            if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
+            int
+                depth = volume.Count,
+                length = volume[0].Length,
+                bytes = sizeof(double) * length;
+            double[] result = new double[depth * length];
+
+            // Execute the copy in parallel
+            bool loopResult = Parallel.For(0, depth, i =>
+            {
+                // Copy the volume data
+                Buffer.BlockCopy(volume[i], 0, result, bytes * i, bytes);
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        /// <summary>
         /// Compresses a matrix into a row vector by summing the components column by column
         /// </summary>
         /// <param name="m">The matrix to compress</param>
@@ -799,35 +826,29 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Flattens the input volume in a linear array
+        /// Extracts a series of serialized matrices from a single matrix
         /// </summary>
-        /// <param name="volume">The volume to flatten</param>
+        /// <param name="m">The source matrix</param>
         [PublicAPI]
-        [Pure, NotNull]
+        [Pure, NotNull, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<double[,]> volume)
+        public static double[][,] Extract3DVolume([NotNull] this double[,] m)
         {
-            // Preliminary checks and declarations
-            if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
-            int
-                depth = volume.Count,
-                length = volume[0].Length,
-                bytes = sizeof(double) * length;
-            double[] result = new double[depth * length];
-
-            // Execute the copy in parallel
-            bool loopResult = Parallel.For(0, depth, i =>
+            int 
+                h = m.GetLength(0),
+                w = m.GetLength(1),
+                axis = w.IntegerSquare();
+            if (axis * axis != w) throw new ArgumentOutOfRangeException("Invalid matrix size");
+            double[][,] raw = new double[h][,];
+            int bytesize = sizeof(double) * w;
+            Parallel.For(0, raw.Length, i =>
             {
-                // Copy the volume data
-                Buffer.BlockCopy(volume[i], 0, result, bytes * i, bytes);
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
+                double[,] _2d = new double[axis, axis];
+                Buffer.BlockCopy(m, i * w, _2d, 0, bytesize);
+                raw[i] = _2d;
+            });
+            return raw;
         }
-
-        #endregion
-
-        #region Content check
 
         /// <summary>
         /// Edits the contents of the given matrix by applying a function to every item
@@ -855,6 +876,10 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
         }
+
+        #endregion
+
+        #region Content check
 
         /// <summary>
         /// Checks if two matrices have the same size and content

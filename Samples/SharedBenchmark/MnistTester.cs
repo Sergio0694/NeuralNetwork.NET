@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
 using NeuralNetworkNET.SupervisedLearning.Misc;
@@ -43,7 +44,7 @@ namespace SharedBenchmark
             if (convolution)
             {
                 Printf("Preparing 2D data for the convolution layer");
-                IReadOnlyList<double[,]> raw = DataParser.ConvertDatasetTo2dImages(dataset);
+                IReadOnlyList<double[,]> raw = dataset.Extract3DVolume();
 
                 Printf("Processing through the convolution layer");
                 IReadOnlyList<ConvolutionsStack> processed = SharedPipeline.Process(raw);
@@ -101,7 +102,7 @@ namespace SharedBenchmark
             if (convolution)
             {
                 Printf("Preparing test data");
-                IReadOnlyList<double[,]> _2dTest = DataParser.ConvertDatasetTo2dImages(test);
+                IReadOnlyList<double[,]> _2dTest = test.Extract3DVolume();
 
                 Printf("Processing test data through the convolution layer");
                 IReadOnlyList<ConvolutionsStack> convolutions = SharedPipeline.Process(_2dTest);
