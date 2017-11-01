@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -547,6 +548,103 @@ namespace NeuralNetworkNET.Cuda.Unit
                 KernelsCollection.TopLeftEmboss);
             ConvolutionGpuExtensions.ReLU(p1);
             double[,] result_gpu = ConvolutionGpuExtensions.Pool2x2(p1, 3);
+            Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
+            Assert.IsTrue(result_cpu.GetLength(1) == result_gpu.GetLength(1));
+            Assert.IsTrue(result_cpu.ContentEquals(result_gpu));
+        }
+
+        [TestMethod]
+        public void PipelineTest5()
+        {
+            // CPU pipeline
+            ConvolutionPipeline pipeline = new ConvolutionPipeline(
+            v => v.Expand(ConvolutionExtensions.Convolute3x3, // 10 kernels, 28*28*1 pixels >> 26*26*10
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen,
+                KernelsCollection.BottomLeftEmboss,
+                KernelsCollection.TopRightEmboss,
+                KernelsCollection.TopLeftEmboss,
+                KernelsCollection.BottomRightEmboss),
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*10 >> 13*13*10,
+            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen),// 13*13*10 >> 11*11*60
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 11*11*60 >> 6*6*60,
+            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen,
+                KernelsCollection.BottomRightEmboss,
+                KernelsCollection.TopLeftEmboss), // 6*6*60 >> 4*4*480
+            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
+            v => v.Process(ConvolutionExtensions.Pool2x2), // 4*4*480 >> 2*2*480
+            v => v.Process(ConvolutionExtensions.Pool2x2)); // 2*2*480 >> 1*1*480
+
+            // Setup and CPU calculation
+            Random r = new Random();
+            Stopwatch timer = new Stopwatch();
+            double[,] dataset = r.NextXavierMatrix(10000, 784);
+            timer.Start();
+            IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
+            ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
+            double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
+            timer.Stop();
+            long cpuTime = timer.ElapsedMilliseconds;
+            timer.Restart();
+
+            // GPU
+            double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen,
+                KernelsCollection.BottomLeftEmboss,
+                KernelsCollection.TopRightEmboss,
+                KernelsCollection.TopLeftEmboss,
+                KernelsCollection.BottomRightEmboss);
+            ConvolutionGpuExtensions.ReLU(result_gpu);
+            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 10);
+            result_gpu = ConvolutionGpuExtensions.Convolute3x3(result_gpu, 10,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen);
+            ConvolutionGpuExtensions.ReLU(result_gpu);
+            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 60);
+            result_gpu = ConvolutionGpuExtensions.Convolute3x3(result_gpu, 60,
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel,
+                KernelsCollection.Outline,
+                KernelsCollection.Sharpen,
+                KernelsCollection.BottomRightEmboss,
+                KernelsCollection.TopLeftEmboss);
+            ConvolutionGpuExtensions.ReLU(result_gpu);
+            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
+            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
+            timer.Stop();
+            long gpuTime = timer.ElapsedMilliseconds;
+            Console.WriteLine($"CPU: {cpuTime}ms, GPU: {gpuTime}ms");
+
+            // Checks
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
             Assert.IsTrue(result_cpu.GetLength(1) == result_gpu.GetLength(1));
             Assert.IsTrue(result_cpu.ContentEquals(result_gpu));
