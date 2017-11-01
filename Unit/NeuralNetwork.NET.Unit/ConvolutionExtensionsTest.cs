@@ -61,11 +61,8 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
         }
 
-        /// <summary>
-        /// Pool 2x2 test
-        /// </summary>
         [TestMethod]
-        public void Pool2x2()
+        public void Pool2x2_1()
         {
             // Test values
             double[,]
@@ -80,6 +77,50 @@ namespace NeuralNetworkNET.Unit
                 {
                     { 1, 2 },
                     { 10, -0.5 }
+                },
+                t = m.Pool2x2();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool2x2_2()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { 0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33 },
+                    { -0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11 },
+                    { 0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55 },
+                    { 0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33 },
+                    { 0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11 },
+                    { -0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11 },
+                    { 0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77 }
+                },
+                r =
+                {
+                    { 1, 0.33, 0.55, 0.33 },
+                    { 0.33, 1, 0.33, 0.55 },
+                    { 0.55, 0.33, 1, 0.11 },
+                    { 0.33, 0.55, 0.11, 0.77 }
+                },
+                t = m.Pool2x2();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool2x2_3()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { -1, 0 },
+                    { 1, 1 },
+                },
+                r =
+                {
+                    { 1 }
                 },
                 t = m.Pool2x2();
             Assert.IsTrue(t.ContentEquals(r));

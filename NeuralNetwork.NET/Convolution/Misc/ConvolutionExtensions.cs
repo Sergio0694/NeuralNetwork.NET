@@ -48,20 +48,47 @@ namespace NeuralNetworkNET.Convolution.Misc
         {
             // Prepare the result matrix
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h / 2, w / 2];
+            double[,] result = new double[h / 2 + (h % 2 == 0 ? 0 : 1), w / 2 + (w % 2 == 0 ? 0 : 1)];
 
             // Pool the input matrix
             int x = 0;
-            for (int i = 0; i < h - 1; i += 2)
+            for (int i = 0; i < h; i += 2)
             {
                 int y = 0;
-                for (int j = 0; j < w - 1; j += 2)
+                if (i == h - 1)
                 {
-                    double
-                        maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],
-                        maxDown = m[i + 1, j] > m[i + 1, j + 1] ? m[i + 1, j] : m[i + 1, j + 1],
-                        max = maxUp > maxDown ? maxUp : maxDown;
-                    result[x, y++] = max;
+                    // Last row
+                    for (int j = 0; j < w; j += 2)
+                    {
+                        double max;
+                        if (j == w - 1)
+                        {
+                            // Last column
+                            max = m[i, j];
+                        }
+                        else max = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1];
+                        result[x, y++] = max;
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < w; j += 2)
+                    {
+                        double max;
+                        if (j == w - 1)
+                        {
+                            // Last column
+                            max = m[i, j] > m[i + 1, j] ? m[i, j] : m[i + 1, j];
+                        }
+                        else
+                        {
+                            double
+                                maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],
+                                maxDown = m[i + 1, j] > m[i + 1, j + 1] ? m[i + 1, j] : m[i + 1, j + 1];
+                            max = maxUp > maxDown ? maxUp : maxDown;
+                        }
+                        result[x, y++] = max;
+                    }
                 }
                 x++;
             }

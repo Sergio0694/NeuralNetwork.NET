@@ -278,15 +278,21 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 h = source.GetLength(0),
                 w = source.GetLength(1),
                 imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+                imgAxis = imgSize.IntegerSquare();          // Size of an edge of one of the inner images per sample
             if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+            bool odd = imgAxis % 2 == 1;
             int
-                inner = imgAxis - 1,                        // Iterations for each subdivision dimension
-                iterationsPerSample = subdivision * inner;
+                inner = imgAxis - 1,    // Limit index for the edge cases
+                scaledImageAxis = imgAxis / 2 + (odd ? 1 : 0),
+                iterationsPerSample = subdivision * scaledImageAxis,
+                scaledInner = scaledImageAxis - 1,
+                scaledImageSize = scaledImageAxis * scaledImageAxis,
+                finalWidth = scaledImageSize * subdivision;
 
+            // Prepare the GPU memory
             Gpu gpu = Gpu.Default;
             using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice(source))
-            using (DeviceMemory2D<double> result_gpu = gpu.AllocateDevice<double>(h / 2, w / 2))
+            using (DeviceMemory2D<double> result_gpu = gpu.AllocateDevice<double>(h, finalWidth))
             {
                 // Pointers and pitches
                 deviceptr<double>
@@ -303,8 +309,9 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     int
                         i = index / iterationsPerSample,        // Sample index
                         i_mod = index % iterationsPerSample,
-                        j = i_mod / subdivision,                // Subdivision index
-                        x = i_mod % subdivision;                // Subdivision row index
+                        j = i_mod / scaledImageAxis,                   // Subdivision index
+                        x_plain = i_mod % scaledImageAxis,          
+                        x = x_plain * 2;                        // Subdivision row index
 
                     // Assuming [x, y] are the indexes of the jth image for sample i
                     int
@@ -312,22 +319,49 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         image_offset = sample_offset + j * imgSize,
                         target_up = image_offset + x * imgAxis,
                         target_down = image_offset + (x + 1) * imgAxis,
-                        result_offset = x * result_gpu_pitch;
-                    for (int y = 0; y < inner; y++)
+                        result_offset = i * result_gpu_pitch + j * scaledImageSize + x_plain * scaledImageAxis;
+                    if (x == inner)
+                    {
+                        // Last row
+                        for (int y = 0; y < imgAxis; y += 2)
+                        {
+                            int offset = target_up + y;
+                            double
+                                left = psource_gpu[offset],
+                                right = psource_gpu[offset + 1],
+                                max = left >= right ? left : right;
+                            presult_gpu[result_offset + y / 2] = max;
+                        }
+
+                        // At this point the axis length must be an odd number
+                        presult_gpu[result_offset + scaledInner] = psource_gpu[target_up + inner];
+                    }
+                    else
                     {
                         // Compute the maximum value of the current block
-                        int
-                            up_offset = target_up + y,
-                            down_offset = target_down + y;
-                        double
-                            upLeft = psource_gpu[up_offset],
-                            upRight = psource_gpu[up_offset + 1],
-                            downLeft = psource_gpu[down_offset],
-                            downRight = psource_gpu[down_offset + 1],
-                            upMax = upLeft >= upRight ? upLeft : upRight,
-                            downMax = downLeft >= downRight ? downLeft : downRight,
-                            max = upMax >= downMax ? upMax : downMax;
-                        presult_gpu[result_offset + y] = max;
+                        for (int y = 0; y < imgAxis; y += 2)
+                        {
+                            int
+                                up_offset = target_up + y,
+                                down_offset = target_down + y;
+                            double
+                                upLeft = psource_gpu[up_offset],
+                                upRight = psource_gpu[up_offset + 1],
+                                downLeft = psource_gpu[down_offset],
+                                downRight = psource_gpu[down_offset + 1],
+                                upMax = upLeft >= upRight ? upLeft : upRight,
+                                downMax = downLeft >= downRight ? downLeft : downRight,
+                                max = upMax >= downMax ? upMax : downMax;
+                            presult_gpu[result_offset + y / 2] = max;
+                        }
+                        if (odd)
+                        {
+                            double
+                                up = psource_gpu[target_up + inner],
+                                down = psource_gpu[target_down + inner],
+                                max = up > down ? up : down;
+                            presult_gpu[result_offset + scaledInner] = max;
+                        }
                     }
                 }
 
