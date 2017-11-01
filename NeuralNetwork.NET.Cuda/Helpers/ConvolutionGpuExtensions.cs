@@ -47,8 +47,8 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 inner = imgAxis - 2,                                            // Size of each image edge after the convolution
                 convolutionOutputSize = inner * inner,                          // Size of each processed image
                 finalWidth = inner * inner * subdivision * kernels.Length,      // Final size of each sample row
-                iterationsPerSample = subdivision * klen * inner,               // GPU iterations for each dataset entry
-                iterationsPerSubdivision = klen * inner;                        // GPU iterations for each sample sub-image
+                iterationsPerSubdivision = klen * inner,                        // GPU iterations for each sample sub-image
+                iterationsPerSample = subdivision * iterationsPerSubdivision;   // GPU iterations for each dataset entry
 
             // Prepare the kernels info
             double[] norms = new double[klen];
@@ -101,12 +101,12 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 {
                     // Calculate the current indexes
                     int
-                        i = index / iterationsPerSample,        // Sample index
+                        i = index / iterationsPerSample,            // Sample index
                         i_mod = index % iterationsPerSample,
-                        j = i_mod / iterationsPerSubdivision,   // Subdivision index
-                        j_mod = i_mod % j,
-                        k = j_mod / inner,                      // Kernel index
-                        x = j_mod % inner;                      // Sub-image x index
+                        j = i_mod / iterationsPerSubdivision,       // Subdivision index
+                        j_mod = i_mod % iterationsPerSubdivision,
+                        k = j_mod / inner,                          // Kernel index
+                        x = j_mod % inner;                          // Sub-image x index
 
                     // Assuming [x, y] are the indexes of the jth image for sample i, applying kernel k
                     int
