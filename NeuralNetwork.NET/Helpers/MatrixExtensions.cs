@@ -841,10 +841,10 @@ namespace NeuralNetworkNET.Helpers
             if (axis * axis != w) throw new ArgumentOutOfRangeException("Invalid matrix size");
             double[][,] raw = new double[h][,];
             int bytesize = sizeof(double) * w;
-            Parallel.For(0, raw.Length, i =>
+            Parallel.For(0, h, i =>
             {
                 double[,] _2d = new double[axis, axis];
-                Buffer.BlockCopy(m, i * w, _2d, 0, bytesize);
+                Buffer.BlockCopy(m, i * bytesize, _2d, 0, bytesize);
                 raw[i] = _2d;
             });
             return raw;
