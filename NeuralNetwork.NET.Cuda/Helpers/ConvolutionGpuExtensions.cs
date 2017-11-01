@@ -140,7 +140,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                                 psource_gpu[lower_offset] * pkernels_gpu[kernel_offset + 6] +
                                 psource_gpu[lower_offset + 1] * pkernels_gpu[kernel_offset + 7] +
                                 psource_gpu[lower_offset + 2] * pkernels_gpu[kernel_offset + 8],
-                            normalized = partial / pnorms_gpu[j];
+                            normalized = partial / pnorms_gpu[k];
                         presult_gpu[base_target_offset + y] = normalized;
                     }
                 }
