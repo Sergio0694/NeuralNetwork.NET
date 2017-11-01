@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void Pool2x2_1()
         {
             Random r = new Random();
-            foreach (int size in new[] { 4, 12, 400, 1000 })
+            foreach (int size in new[] { 2, 4, 12, 400, 1000 })
             {
                 int
                     square = size * size,
@@ -98,30 +98,12 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void Pool2x2_3()
         {
-            // Test values
-            double[,]
-                m =
-                {
-                    { -1, 0 },
-                    { 1, 1 },
-                },
-                r =
-                {
-                    { 1 }
-                },
-                t = m.Pool2x2();
-            Assert.IsTrue(t.ContentEquals(r));
-        }
-
-        [TestMethod]
-        public void Pool2x2_4()
-        {
             Random r = new Random();
             double[,]
-                source = new double[1, 16],
-                m = r.NextXavierMatrix(400, 400),
+                source = new double[1, 9],
+                m = r.NextXavierMatrix(3, 3),
                 check = ConvolutionExtensions.Pool2x2(m);
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * 16);
+            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * 9);
             double[,]
                 m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
                 unpacked = new double[2, 2];

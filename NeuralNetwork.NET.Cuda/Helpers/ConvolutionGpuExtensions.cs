@@ -323,7 +323,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     if (x == inner)
                     {
                         // Last row
-                        for (int y = 0; y < imgAxis; y += 2)
+                        for (int y = 0; y < inner; y += 2)
                         {
                             int offset = target_up + y;
                             double
@@ -339,7 +339,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     else
                     {
                         // Compute the maximum value of the current block
-                        for (int y = 0; y < imgAxis; y += 2)
+                        for (int y = 0; y < inner; y += 2)
                         {
                             int
                                 up_offset = target_up + y,
