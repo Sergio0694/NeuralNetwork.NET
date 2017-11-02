@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -595,15 +594,10 @@ namespace NeuralNetworkNET.Cuda.Unit
 
             // Setup and CPU calculation
             Random r = new Random();
-            Stopwatch timer = new Stopwatch();
             double[,] dataset = r.NextXavierMatrix(10000, 784);
-            timer.Start();
             IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
             ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
             double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
-            timer.Stop();
-            long cpuTime = timer.ElapsedMilliseconds;
-            timer.Restart();
 
             // GPU
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
@@ -640,9 +634,6 @@ namespace NeuralNetworkNET.Cuda.Unit
             ConvolutionGpuExtensions.ReLU(result_gpu);
             result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
             result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
-            timer.Stop();
-            long gpuTime = timer.ElapsedMilliseconds;
-            Console.WriteLine($"CPU: {cpuTime}ms, GPU: {gpuTime}ms");
 
             // Checks
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
