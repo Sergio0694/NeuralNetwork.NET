@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Alea" Version="3.0.4-beta4" />
+    <PackageReference Include="CUDAfy.NET" Version="1.29.5576.13786" />
     <PackageReference Include="FSharp.Core" Version="4.2.3" />
   </ItemGroup>
   <ItemGroup>
