@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Convolution.Operations;
+using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Cuda.Convolution;
 using NeuralNetworkNET.Helpers;
 
@@ -543,7 +544,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void PipelineTest5()
         {
-            // CPU pipeline
+            // Shared pipeline
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
             ConvolutionOperation.Convolution3x3( // 10 kernels, 28*28*1 pixels >> 26*26*10
                 KernelsCollection.TopSobel,
@@ -580,17 +581,20 @@ namespace NeuralNetworkNET.Cuda.Unit
             ConvolutionOperation.Pool2x2, // 4*4*480 >> 2*2*480
                 ConvolutionOperation.Pool2x2); // 2*2*480 >> 1*1*480
 
-            // Setup and CPU calculation
+            // Setup
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(8000, 784);
+            double[,] dataset = r.NextXavierMatrix(20000, 784);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
             // GPU
+            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             double[,] result_gpu = pipeline.Process(dataset);
             timer.Stop();
             var t1 = timer.ElapsedMilliseconds;
 
+            // CPU
+            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Cpu;
             timer.Restart();
             double[,] result_cpu = pipeline.Process(dataset);
             timer.Stop();

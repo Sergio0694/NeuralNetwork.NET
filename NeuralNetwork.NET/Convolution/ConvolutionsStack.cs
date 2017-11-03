@@ -81,7 +81,7 @@ namespace NeuralNetworkNET.Convolution
         /// <remarks>The resulting volume will have a depth equals to the current one multiplied by the number of kernels used</remarks>
         [PublicAPI]
         [Pure, NotNull]
-        public ConvolutionsStack Expand([NotNull] ConvolutionFunction func, params double[][,] kernels)
+        internal ConvolutionsStack Expand([NotNull] ConvolutionFunction func, params double[][,] kernels)
         {
             double[][][,] expansion = this.Select(layer => kernels.Select(k => func(layer, k)).ToArray()).ToArray();
             double[][,] stack = expansion.SelectMany(volume => volume).ToArray();
@@ -94,7 +94,7 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="processor">The data processor to use for each data layer in the stack</param>
         [PublicAPI]
         [Pure, NotNull]
-        public ConvolutionsStack Process([NotNull] LayerProcessor processor)
+        internal ConvolutionsStack Process([NotNull] LayerProcessor processor)
         {
             double[][,] data = this.Select(layer => processor(layer)).ToArray();
             return new ConvolutionsStack(data);
