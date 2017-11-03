@@ -20,6 +20,17 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// </summary>
         private const ulong MemoryLimitThreshold = 2 << 10; // 10MB
 
+        private static ulong _GPUMemoryAllocationLimit = ulong.MaxValue;
+
+        /// <summary>
+        /// Gets or sets an additional limit on the amount of memory allocation to perform on the GPU memory
+        /// </summary>
+        public static ulong GPUMemoryAllocationLimit
+        {
+            get => _GPUMemoryAllocationLimit;
+            set => _GPUMemoryAllocationLimit = value >= 1024 ? value : throw new ArgumentOutOfRangeException("Can't specify a limit less than 1KB");
+        }
+
         /// <summary>
         /// Performs a 3*3 convolution on the source matrix, using the given kernel, in parallel
         /// </summary>
@@ -101,7 +112,84 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     resultBytes = sizeof(double) * (ulong)h * (ulong)finalWidth,
                     rowBytes = sizeof(double) * ((ulong)w + (ulong)finalWidth),
                     totalBytes = sourceBytes + resultBytes,
-                    free = gpgpu.FreeMemory - MemoryLimitThreshold;
+                    vramThreshold = gpgpu.FreeMemory - MemoryLimitThreshold,
+                    free = vramThreshold > GPUMemoryAllocationLimit ? GPUMemoryAllocationLimit : vramThreshold;
+
+                // Inner function that works on chunks of the original data
+                void Convolute3x3(int offsetIn, int hIn, int offsetOut, double[,] target)
+                {
+                    // Process the convolution in parallel
+                    using (DeviceMemory2D<double>
+                        source_gpu = gpu.AllocateDevice<double>(hIn, w),
+                        result_gpu = gpu.AllocateDevice<double>(hIn, finalWidth))
+                    {
+                        // Copy the source data
+                        Gpu.Copy2D(source, source_gpu, new MemoryCopy2DRegion(offsetIn, 0, 0, 0, hIn, w));
+
+                        // Pointers and pitches
+                        deviceptr<double>
+                            psource_gpu = source_gpu.Ptr,
+                            presult_gpu = result_gpu.Ptr;
+                        int
+                            source_gpu_pitch = source_gpu.PitchInElements.ToInt32(),
+                            result_gpu_pitch = result_gpu.PitchInElements.ToInt32();
+
+                        // Convolution kernel
+                        void Kernel(int index)
+                        {
+                            // Calculate the current indexes
+                            int
+                                i = index / iterationsPerSample,            // Sample index
+                                i_mod = index % iterationsPerSample,
+                                j = i_mod / iterationsPerSubdivision,       // Subdivision index
+                                j_mod = i_mod % iterationsPerSubdivision,
+                                k = j_mod / inner,                          // Kernel index
+                                x = j_mod % inner;                          // Sub-image x index
+
+                            // Assuming [x, y] are the indexes of the jth image for sample i, applying kernel k
+                            int
+                                sample_offset = i * source_gpu_pitch,
+                                image_offset = sample_offset + j * imgSize,
+                                kernel_offset = k * kernels_gpu_pitch,
+                                base_upper_offset = image_offset + x * imgAxis,
+                                base_middle_offset = image_offset + (x + 1) * imgAxis,
+                                base_lower_offset = image_offset + (x + 2) * imgAxis,
+                                base_target_offset =
+                                    i * result_gpu_pitch +
+                                    j * convolutionOutputSize * klen +
+                                    k * convolutionOutputSize +
+                                    x * inner;
+
+                            // Iterate over the columns in the current row and process the convolution
+                            for (int y = 0; y < inner; y++)
+                            {
+                                int
+                                    upper_offset = base_upper_offset + y,
+                                    middle_offset = base_middle_offset + y,
+                                    lower_offset = base_lower_offset + y;
+                                double
+                                    partial =
+                                        psource_gpu[upper_offset] * pkernels_gpu[kernel_offset] +
+                                        psource_gpu[upper_offset + 1] * pkernels_gpu[kernel_offset + 1] +
+                                        psource_gpu[upper_offset + 2] * pkernels_gpu[kernel_offset + 2] +
+                                        psource_gpu[middle_offset] * pkernels_gpu[kernel_offset + 3] +
+                                        psource_gpu[middle_offset + 1] * pkernels_gpu[kernel_offset + 4] +
+                                        psource_gpu[middle_offset + 2] * pkernels_gpu[kernel_offset + 5] +
+                                        psource_gpu[lower_offset] * pkernels_gpu[kernel_offset + 6] +
+                                        psource_gpu[lower_offset + 1] * pkernels_gpu[kernel_offset + 7] +
+                                        psource_gpu[lower_offset + 2] * pkernels_gpu[kernel_offset + 8],
+                                    normalized = partial / pnorms_gpu[k];
+                                presult_gpu[base_target_offset + y] = normalized;
+                            }
+                        }
+
+                        // Convolute in parallel
+                        gpu.For(0, hIn * iterationsPerSample, Kernel);
+
+                        // Return the processed results
+                        Gpu.Copy2D(result_gpu, target, new MemoryCopy2DRegion(0, 0, offsetOut, 0, hIn, finalWidth));
+                    }
+                }
 
                 // Local function to calculate the size fo each memory block
                 (int HBlock, int HMod, int Blocks, int Last) CalculateBlocksSize(ulong memory)
@@ -182,81 +270,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     }
                 }
                 return result;
-
-                // Inner function that works on chunks of the original data
-                void Convolute3x3(int offsetIn, int hIn, int offsetOut, double[,] target)
-                {
-                    // Process the convolution in parallel
-                    using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice<double>(hIn, w))
-                    using (DeviceMemory2D<double> result_gpu = gpu.AllocateDevice<double>(hIn, finalWidth))
-                    {
-                        // Copy the source data
-                        Gpu.Copy2D(source, source_gpu, new MemoryCopy2DRegion(offsetIn, 0, 0, 0, hIn, w));
-
-                        // Pointers and pitches
-                        deviceptr<double>
-                            psource_gpu = source_gpu.Ptr,
-                            presult_gpu = result_gpu.Ptr;
-                        int
-                            source_gpu_pitch = source_gpu.PitchInElements.ToInt32(),
-                            result_gpu_pitch = result_gpu.PitchInElements.ToInt32();
-
-                        // Convolution kernel
-                        void Kernel(int index)
-                        {
-                            // Calculate the current indexes
-                            int
-                                i = index / iterationsPerSample,            // Sample index
-                                i_mod = index % iterationsPerSample,
-                                j = i_mod / iterationsPerSubdivision,       // Subdivision index
-                                j_mod = i_mod % iterationsPerSubdivision,
-                                k = j_mod / inner,                          // Kernel index
-                                x = j_mod % inner;                          // Sub-image x index
-
-                            // Assuming [x, y] are the indexes of the jth image for sample i, applying kernel k
-                            int
-                                sample_offset = i * source_gpu_pitch,
-                                image_offset = sample_offset + j * imgSize,
-                                kernel_offset = k * kernels_gpu_pitch,
-                                base_upper_offset = image_offset + x * imgAxis,
-                                base_middle_offset = image_offset + (x + 1) * imgAxis,
-                                base_lower_offset = image_offset + (x + 2) * imgAxis,
-                                base_target_offset =
-                                    i * result_gpu_pitch +
-                                    j * convolutionOutputSize * klen +
-                                    k * convolutionOutputSize +
-                                    x * inner;
-
-                            // Iterate over the columns in the current row and process the convolution
-                            for (int y = 0; y < inner; y++)
-                            {
-                                int
-                                    upper_offset = base_upper_offset + y,
-                                    middle_offset = base_middle_offset + y,
-                                    lower_offset = base_lower_offset + y;
-                                double
-                                    partial =
-                                        psource_gpu[upper_offset] * pkernels_gpu[kernel_offset] +
-                                        psource_gpu[upper_offset + 1] * pkernels_gpu[kernel_offset + 1] +
-                                        psource_gpu[upper_offset + 2] * pkernels_gpu[kernel_offset + 2] +
-                                        psource_gpu[middle_offset] * pkernels_gpu[kernel_offset + 3] +
-                                        psource_gpu[middle_offset + 1] * pkernels_gpu[kernel_offset + 4] +
-                                        psource_gpu[middle_offset + 2] * pkernels_gpu[kernel_offset + 5] +
-                                        psource_gpu[lower_offset] * pkernels_gpu[kernel_offset + 6] +
-                                        psource_gpu[lower_offset + 1] * pkernels_gpu[kernel_offset + 7] +
-                                        psource_gpu[lower_offset + 2] * pkernels_gpu[kernel_offset + 8],
-                                    normalized = partial / pnorms_gpu[k];
-                                presult_gpu[base_target_offset + y] = normalized;
-                            }
-                        }
-
-                        // Convolute in parallel
-                        gpu.For(0, hIn * iterationsPerSample, Kernel);
-
-                        // Return the processed results
-                        Gpu.Copy2D(result_gpu, target, new MemoryCopy2DRegion(0, 0, offsetOut, 0, hIn, finalWidth));
-                    }
-                }
             }
         }
 
@@ -321,10 +334,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
 
             // Process the convolution in parallel
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice(source))
-            using (DeviceMemory2D<double> kernels_gpu = gpu.AllocateDevice<double>(kernels.Length, 9))  // Series of 3*3 kernels
+            using (DeviceMemory2D<double>
+                source_gpu = gpu.AllocateDevice(source),
+                kernels_gpu = gpu.AllocateDevice<double>(kernels.Length, 9), // Series of 3*3 kernels
+                result_gpu = gpu.AllocateDevice<double>(h, finalWidth))
             using (DeviceMemory<double> norms_gpu = gpu.AllocateDevice(norms))
-            using (DeviceMemory2D<double> result_gpu = gpu.AllocateDevice<double>(h, finalWidth))
             {
                 // Pointers and pitches
                 deviceptr<double>
@@ -455,7 +469,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
             // Process the convolution in parallel
             Gpu gpu = Gpu.Default;
             using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice(source))
-            using (DeviceMemory<double> norms_gpu = gpu.AllocateDevice<double>(h * subdivision))    // Vector to store the normalization factors
+            using (DeviceMemory<double> norms_gpu = gpu.AllocateDevice<double>(h * subdivision))    // Normalization factors
             {
                 // Pointers and pitches
                 deviceptr<double>
@@ -539,8 +553,9 @@ namespace NeuralNetworkNET.Cuda.Helpers
 
             // Prepare the GPU memory
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice(source))
-            using (DeviceMemory2D<double> result_gpu = gpu.AllocateDevice<double>(h, finalWidth))
+            using (DeviceMemory2D<double>
+                source_gpu = gpu.AllocateDevice(source),
+                result_gpu = gpu.AllocateDevice<double>(h, finalWidth))
             {
                 // Pointers and pitches
                 deviceptr<double>
@@ -558,7 +573,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         i = index / iterationsPerSample,        // Sample index
                         i_mod = index % iterationsPerSample,
                         j = i_mod / scaledImageAxis,            // Subdivision index
-                        x_plain = i_mod % scaledImageAxis,          
+                        x_plain = i_mod % scaledImageAxis,
                         x = x_plain * 2;                        // Subdivision row index
 
                     // Assuming [x, y] are the indexes of the jth image for sample i
