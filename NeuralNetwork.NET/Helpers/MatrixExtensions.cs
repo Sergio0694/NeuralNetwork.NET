@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Architecture;
@@ -795,6 +796,36 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Merges the rows of the input matrices into a single matrix
+        /// </summary>
+        /// <param name="blocks">The matrices to merge</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] MergeRows([NotNull, ItemNotNull] this IReadOnlyList<double[,]> blocks)
+        {
+            // Preliminary checks and declarations
+            if (blocks.Count == 0) throw new ArgumentOutOfRangeException("The blocks list can't be empty");
+            int
+                h = blocks.Sum(b => b.GetLength(0)),
+                w = blocks[0].GetLength(1),
+                rowBytes = sizeof(double) * w;
+            double[,] result = new double[h, w];
+
+            // Execute the copy in parallel
+            int position = 0;
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                double[,] next = blocks[i];
+                if (next.GetLength(1) != w) throw new ArgumentOutOfRangeException("The blocks must all have the same width");
+                int rows = next.GetLength(0);
+                Buffer.BlockCopy(next, 0, result, rowBytes * position, rowBytes * rows);
+                position += rows;
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Compresses a matrix into a row vector by summing the components column by column
         /// </summary>
         /// <param name="m">The matrix to compress</param>
@@ -834,7 +865,7 @@ namespace NeuralNetworkNET.Helpers
         [CollectionAccess(CollectionAccessType.Read)]
         public static double[][,] Extract3DVolume([NotNull] this double[,] m)
         {
-            int 
+            int
                 h = m.GetLength(0),
                 w = m.GetLength(1),
                 axis = w.IntegerSquare();

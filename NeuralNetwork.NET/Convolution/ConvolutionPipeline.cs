@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Convolution.Delegates;
+using NeuralNetworkNET.Convolution.Misc;
+using NeuralNetworkNET.Convolution.Operations;
+using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Convolution
 {
@@ -16,93 +18,70 @@ namespace NeuralNetworkNET.Convolution
         /// Gets the pipeline in use in the current instance
         /// </summary>
         [NotNull, ItemNotNull]
-        public IReadOnlyList<ConvolutionsStackProcessor> Pipeline { get; }
+        public IReadOnlyList<ConvolutionOperation> Pipeline { get; }
 
         /// <summary>
         /// Initializes a new instance with the given pipeline
         /// </summary>
         /// <param name="pipeline">The convolution pipeline to execute</param>
         [PublicAPI]
-        public ConvolutionPipeline([NotNull, ItemNotNull] params ConvolutionsStackProcessor[] pipeline)
+        public ConvolutionPipeline([NotNull, ItemNotNull] params ConvolutionOperation[] pipeline)
         {
             if (pipeline.Length == 0) throw new ArgumentOutOfRangeException("The pipeline must contain at least a function");
             Pipeline = pipeline;
         }
 
         /// <summary>
-        /// Processes the input vector through the current pipeline
+        /// Gets or sets an injected function that executes the pipeline processing
         /// </summary>
-        /// <param name="input">The input to process</param>
+        [CanBeNull]
+        internal static ConvolutionPipelineProcessor ProcessOverride { get; set; }
+
+        /// <summary>
+        /// Processes the input dataset through the current pipeline
+        /// </summary>
+        /// <param name="input">The dataset to process</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public ConvolutionsStack Process([NotNull] double[,] input)
+        public double[,] Process([NotNull] double[,] input)
         {
-            ConvolutionsStack result = ConvolutionsStack.From2DLayer(input);
-            foreach (ConvolutionsStackProcessor p in Pipeline)
-                result = p(result);
-            return result;
-        }
+            // Execute the override, if present
+            if (ProcessOverride != null) return ProcessOverride(Pipeline, input);
 
-        /// <summary>
-        /// Processes the input vector sthrough the current pipeline and returns a series of results
-        /// </summary>
-        /// <param name="inputs">The inputs to process</param>
-        [PublicAPI]
-        [Pure, NotNull, ItemNotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public IReadOnlyList<ConvolutionsStack> Process([NotNull, ItemNotNull] IReadOnlyList<double[,]> inputs)
-        {
-            ConvolutionsStack[] results = new ConvolutionsStack[inputs.Count];
-            bool result = Parallel.For(0, inputs.Count, i => results[i] = Process(inputs[i])).IsCompleted;
-            if (!result) throw new Exception("Error executing the parallel loop");
-            return results;
-        }
-
-        /// <summary>
-        /// Flattens a vector of data volumes into a single 2D matrix
-        /// </summary>
-        /// <param name="data">The data to convert</param>
-        [PublicAPI]
-        [Pure]
-        public static double[,] ConvertToMatrix([NotNull, ItemNotNull] params ConvolutionsStack[] data)
-        {
-            // Checks
-            if (data.Length == 0) throw new ArgumentOutOfRangeException("The data array can't be empty");
-
-            // Prepare the base network and the input data
-            int
-                depth = data[0].Count, // Depth of each convolution volume
-                ch = data[0].Height, // Height of each convolution layer
-                cw = data[0].Width, // Width of each convolution layer
-                lsize = ch * cw,
-                volume = depth * lsize;
-
-            // Additional checks
-            if (data.Any(stack => stack.Count != depth || stack.Height != ch || stack.Width != cw))
-                throw new ArgumentException("The input data isn't coherent");
-
-            // Setup the matrix with all the batched inputs
-            double[,] x = new double[data.Length, volume];
-
-            // Populate the matrix, iterate over all the volumes
-            bool result = Parallel.For(0, data.Length, i =>
+            // Local function that processes a 2D layer
+            ConvolutionsStack ProcessLayer(double[,] layer)
             {
-                unsafe
+                ConvolutionsStack processed = ConvolutionsStack.From2DLayer(layer);
+                foreach (ConvolutionOperation operation in Pipeline)
                 {
-                    // Fix the pointers
-                    fixed (double* px = x)
+                    switch (operation)
                     {
-                        ConvolutionsStack stack = data[i];
-                        for (int j = 0; j < depth; j++) // Iterate over all the depth layer in each volume
-                            for (int z = 0; z < ch; z++) // Height of each layer
-                                for (int w = 0; w < cw; w++) // Width of each layer
-                                    px[i * volume + j * lsize + z * ch + w] = stack[j, z, w];
+                        case KernelConvolution k when k.OperationType == ConvolutionOperationType.Convolution3x3:
+                            processed = processed.Expand(ConvolutionExtensions.Convolute3x3, k.Kernels);
+                            break;
+                        case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.Normalization:
+                            processed = processed.Process(ConvolutionExtensions.Normalize);
+                            break;
+                        case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.Pool2x2:
+                            processed = processed.Process(ConvolutionExtensions.Pool2x2);
+                            break;
+                        case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.ReLU:
+                            processed = processed.Process(ConvolutionExtensions.ReLU);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException("Unsupported convolution operation");
                     }
                 }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while running the parallel loop");
-            return x;
+                return processed;
+            }
+
+            // Process the whole dataset in parallel
+            IReadOnlyList<double[,]> volume = input.Extract3DVolume();
+            ConvolutionsStack[] results = new ConvolutionsStack[volume.Count];
+            bool result = Parallel.For(0, volume.Count, i => results[i] = ProcessLayer(volume[i])).IsCompleted;
+            if (!result) throw new Exception("Error executing the parallel loop");
+            return ConvolutionsStack.ConvertToMatrix(results);
         }
     }
 }
