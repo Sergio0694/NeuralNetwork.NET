@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 
@@ -11,11 +12,8 @@ namespace NeuralNetworkNET.Unit
     [TestCategory(nameof(ConvolutionExtensions))]
     public class ConvolutionExtensionsTest
     {
-        /// <summary>
-        /// ReLU test
-        /// </summary>
         [TestMethod]
-        public void ReLU()
+        public void ReLU1()
         {
             // Test values
             double[,]
@@ -35,11 +33,37 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
         }
 
-        /// <summary>
-        /// Pool 2x2 test
-        /// </summary>
         [TestMethod]
-        public void Pool2x2()
+        public void ReLU2()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { 0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33 },
+                    { -0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11 },
+                    { 0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55 },
+                    { 0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33 },
+                    { 0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11 },
+                    { -0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11 },
+                    { 0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77 }
+                },
+                r =
+                {
+                    { 0.77, 0, 0.11, 0.33, 0.55, 0, 0.33 },
+                    { 0, 1, 0, 0.33, 0, 0.11, 0 },
+                    { 0.11, 0, 1, 0, 0.11, 0, 0.55 },
+                    { 0.33, 0.33, 0, 0.55, 0, 0.33, 0.33 },
+                    { 0.55, 0, 0.11, 0, 1, 0, 0.11 },
+                    { 0, 0.11, 0, 0.33, 0, 1, 0 },
+                    { 0.33, 0, 0.55, 0.33, 0.11, 0, 0.77 }
+                },
+                t = m.ReLU();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool2x2_1()
         {
             // Test values
             double[,]
@@ -56,6 +80,146 @@ namespace NeuralNetworkNET.Unit
                     { 10, -0.5 }
                 },
                 t = m.Pool2x2();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool2x2_2()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { 0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33 },
+                    { -0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11 },
+                    { 0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55 },
+                    { 0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33 },
+                    { 0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11 },
+                    { -0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11 },
+                    { 0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77 }
+                },
+                r =
+                {
+                    { 1, 0.33, 0.55, 0.33 },
+                    { 0.33, 1, 0.33, 0.55 },
+                    { 0.55, 0.33, 1, 0.11 },
+                    { 0.33, 0.55, 0.11, 0.77 }
+                },
+                t = m.Pool2x2();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool2x2_3()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { -1, 0 },
+                    { 1, 1 },
+                },
+                r =
+                {
+                    { 1 }
+                },
+                t = m.Pool2x2();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Convolution3x3_1()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
+                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
+                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
+                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
+                    { -1, -1, -1, -1, 1, -1, -1, -1, -1 },
+                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
+                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
+                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
+                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 }
+                },
+                k =
+                {
+                    { 1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                r =
+                {
+                    { 0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33 },
+                    { -0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11 },
+                    { 0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55 },
+                    { 0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33 },
+                    { 0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11 },
+                    { -0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11 },
+                    { 0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77 }
+                },
+                t = m.Convolute3x3(k);
+            t.Tweak(d => Math.Truncate(d * 100) / 100);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Convolution3x3_2()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { -1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                k =
+                {
+                    { 1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                r =
+                {
+                    { 0.77 }
+                },
+                t = m.Convolute3x3(k);
+            t.Tweak(d => Math.Truncate(d * 100) / 100);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Convolution3x3_3()
+        {
+            // Test values
+            double[,]
+                m =
+                {
+                    { -1, -1, -1, -1, -1, -1 },
+                    { -1, 1, -1, -1, -1, -1 },
+                    { -1, -1, 1, -1, -1, -1 },
+                    { -1, -1, -1, 1, -1, 1 },
+                    { -1, -1, -1, -1, 1, -1 },
+                    { -1, -1, -1, 1, -1, 1 }
+                },
+                k =
+                {
+                    { 1, -1, -1 },
+                    { -1, 1, -1 },
+                    { -1, -1, 1 }
+                },
+                r =
+                {
+                    { 0.77, -0.11, 0.11, 0.33 },
+                    { -0.11, 1, -0.11, 0.33 },
+                    { 0.11, -0.11, 1, -0.33 },
+                    { 0.33, 0.33, -0.33, 0.55 }
+                },
+                t = m.Convolute3x3(k);
+            t.Tweak(d => Math.Truncate(d * 100) / 100);
             Assert.IsTrue(t.ContentEquals(r));
         }
     }

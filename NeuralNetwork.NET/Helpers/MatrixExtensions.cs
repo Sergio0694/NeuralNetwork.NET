@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Architecture;
@@ -768,6 +769,63 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Flattens the input volume in a linear array
+        /// </summary>
+        /// <param name="volume">The volume to flatten</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<double[,]> volume)
+        {
+            // Preliminary checks and declarations
+            if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
+            int
+                depth = volume.Count,
+                length = volume[0].Length,
+                bytes = sizeof(double) * length;
+            double[] result = new double[depth * length];
+
+            // Execute the copy in parallel
+            bool loopResult = Parallel.For(0, depth, i =>
+            {
+                // Copy the volume data
+                Buffer.BlockCopy(volume[i], 0, result, bytes * i, bytes);
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        /// <summary>
+        /// Merges the rows of the input matrices into a single matrix
+        /// </summary>
+        /// <param name="blocks">The matrices to merge</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] MergeRows([NotNull, ItemNotNull] this IReadOnlyList<double[,]> blocks)
+        {
+            // Preliminary checks and declarations
+            if (blocks.Count == 0) throw new ArgumentOutOfRangeException("The blocks list can't be empty");
+            int
+                h = blocks.Sum(b => b.GetLength(0)),
+                w = blocks[0].GetLength(1),
+                rowBytes = sizeof(double) * w;
+            double[,] result = new double[h, w];
+
+            // Execute the copy in parallel
+            int position = 0;
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                double[,] next = blocks[i];
+                if (next.GetLength(1) != w) throw new ArgumentOutOfRangeException("The blocks must all have the same width");
+                int rows = next.GetLength(0);
+                Buffer.BlockCopy(next, 0, result, rowBytes * position, rowBytes * rows);
+                position += rows;
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Compresses a matrix into a row vector by summing the components column by column
         /// </summary>
         /// <param name="m">The matrix to compress</param>
@@ -799,30 +857,55 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Flattens the input volume in a linear array
+        /// Extracts a series of serialized matrices from a single matrix
         /// </summary>
-        /// <param name="volume">The volume to flatten</param>
+        /// <param name="m">The source matrix</param>
         [PublicAPI]
-        [Pure, NotNull]
+        [Pure, NotNull, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<double[,]> volume)
+        public static double[][,] Extract3DVolume([NotNull] this double[,] m)
         {
-            // Preliminary checks and declarations
-            if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
             int
-                depth = volume.Count,
-                length = volume[0].Length,
-                bytes = sizeof(double) * length;
-            double[] result = new double[depth * length];
-
-            // Execute the copy in parallel
-            bool loopResult = Parallel.For(0, depth, i =>
+                h = m.GetLength(0),
+                w = m.GetLength(1),
+                axis = w.IntegerSquare();
+            if (axis * axis != w) throw new ArgumentOutOfRangeException("Invalid matrix size");
+            double[][,] raw = new double[h][,];
+            int bytesize = sizeof(double) * w;
+            Parallel.For(0, h, i =>
             {
-                // Copy the volume data
-                Buffer.BlockCopy(volume[i], 0, result, bytes * i, bytes);
+                double[,] _2d = new double[axis, axis];
+                Buffer.BlockCopy(m, i * bytesize, _2d, 0, bytesize);
+                raw[i] = _2d;
+            });
+            return raw;
+        }
+
+        /// <summary>
+        /// Edits the contents of the given matrix by applying a function to every item
+        /// </summary>
+        /// <param name="m">The matrix to edit</param>
+        /// <param name="f">The function to modify the matrix elements</param>
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void Tweak([NotNull] this double[,] m, Func<double, double> f)
+        {
+            int w = m.GetLength(1);
+            bool result = Parallel.For(0, m.GetLength(0), i =>
+            {
+                unsafe
+                {
+                    fixed (double* p = m)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            p[target] = f(p[target]);
+                        }
+                    }
+                }
             }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
+            if (!result) throw new Exception("Error while runnig the parallel loop");
         }
 
         #endregion

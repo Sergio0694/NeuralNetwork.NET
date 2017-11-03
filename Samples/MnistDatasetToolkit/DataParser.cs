@@ -14,28 +14,6 @@ namespace MnistDatasetToolkit
     {
         private const int SamplesPixelSize = 784;
 
-        public static unsafe IReadOnlyList<double[,]> ConvertDatasetTo2dImages([NotNull] double[,] dataset)
-        {
-            int samples = dataset.GetLength(0);
-            double[][,] raw = new double[samples][,];
-            Parallel.For(0, raw.Length, i =>
-            {
-                double[,] _2d = new double[28, 28];
-                fixed (double* p = _2d, pr = dataset)
-                {
-                    int start = i * 784;
-                    for (int j = 0; j < 28; j++)
-                        for (int k = 0; k < 28; k++)
-                        {
-                            int offset = j * 28 + k;
-                            p[offset] = pr[start + offset];
-                        }
-                }
-                raw[i] = _2d;
-            });
-            return raw;
-        }
-
         private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
 
         private const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";

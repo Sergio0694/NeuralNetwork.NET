@@ -48,20 +48,47 @@ namespace NeuralNetworkNET.Convolution.Misc
         {
             // Prepare the result matrix
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h / 2, w / 2];
+            double[,] result = new double[h / 2 + (h % 2 == 0 ? 0 : 1), w / 2 + (w % 2 == 0 ? 0 : 1)];
 
             // Pool the input matrix
             int x = 0;
-            for (int i = 0; i < h - 1; i += 2)
+            for (int i = 0; i < h; i += 2)
             {
                 int y = 0;
-                for (int j = 0; j < w - 1; j += 2)
+                if (i == h - 1)
                 {
-                    double
-                        maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],
-                        maxDown = m[i + 1, j] > m[i + 1, j + 1] ? m[i + 1, j] : m[i + 1, j + 1],
-                        max = maxUp > maxDown ? maxUp : maxDown;
-                    result[x, y++] = max;
+                    // Last row
+                    for (int j = 0; j < w; j += 2)
+                    {
+                        double max;
+                        if (j == w - 1)
+                        {
+                            // Last column
+                            max = m[i, j];
+                        }
+                        else max = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1];
+                        result[x, y++] = max;
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < w; j += 2)
+                    {
+                        double max;
+                        if (j == w - 1)
+                        {
+                            // Last column
+                            max = m[i, j] > m[i + 1, j] ? m[i, j] : m[i + 1, j];
+                        }
+                        else
+                        {
+                            double
+                                maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],
+                                maxDown = m[i + 1, j] > m[i + 1, j + 1] ? m[i + 1, j] : m[i + 1, j + 1];
+                            max = maxUp > maxDown ? maxUp : maxDown;
+                        }
+                        result[x, y++] = max;
+                    }
                 }
                 x++;
             }
@@ -71,7 +98,7 @@ namespace NeuralNetworkNET.Convolution.Misc
         /// <summary>
         /// Performs the Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
         /// </summary>
-        /// <param name="m">The input matrix to edit</param>
+        /// <param name="m">The input matrix to read</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -96,7 +123,7 @@ namespace NeuralNetworkNET.Convolution.Misc
         public static double[,] Convolute3x3([NotNull] this double[,] m, [NotNull] double[,] kernel)
         {
             // Prepare the output matrix
-            if (kernel.Length != 9) throw new ArgumentOutOfRangeException("The input kernel must be 3x3");
+            if (kernel.GetLength(0) != 3 || kernel.GetLength(1) != 3) throw new ArgumentOutOfRangeException("The input kernel must be 3x3");
             int h = m.GetLength(0), w = m.GetLength(1);
             if (h < 3 || w < 3) throw new ArgumentOutOfRangeException("The input matrix must be at least 3x3");
             double[,] result = new double[h - 2, w - 2];
