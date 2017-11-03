@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Convolution.Delegates;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Convolution.Operations;
 using NeuralNetworkNET.Helpers;
@@ -34,7 +35,7 @@ namespace NeuralNetworkNET.Convolution
         /// Gets or sets an injected function that executes the pipeline processing
         /// </summary>
         [CanBeNull]
-        internal static Func<IReadOnlyList<ConvolutionOperation>, double[,], double[,]> ProcessOverride { get; set; }
+        internal static ConvolutionPipelineProcessor ProcessOverride { get; set; }
 
         /// <summary>
         /// Processes the input dataset through the current pipeline
