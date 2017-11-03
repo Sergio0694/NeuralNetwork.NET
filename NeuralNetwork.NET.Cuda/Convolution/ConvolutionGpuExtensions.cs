@@ -8,7 +8,7 @@ using Cudafy.Host;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.Cuda.Helpers
+namespace NeuralNetworkNET.Cuda.Convolution
 {
     /// <summary>
     /// A static class that contains some GPU-accelerated convolution extension methods

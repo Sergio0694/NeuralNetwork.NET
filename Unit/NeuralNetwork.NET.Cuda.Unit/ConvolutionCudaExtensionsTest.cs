@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Cuda.Helpers;
+using NeuralNetworkNET.Convolution.Operations;
+using NeuralNetworkNET.Cuda.Convolution;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Cuda.Unit
@@ -448,16 +449,14 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             Random r = new Random();
             double[,] dataset = r.NextXavierMatrix(1, 9);
-            IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 3*3*1 pixels >> 1*1*3
-                v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                ConvolutionOperation.Convolution3x3(
                     KernelsCollection.TopSobel,
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss));
-            ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
-            double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
+            double[,] result_cpu = pipeline.Process(dataset);
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
@@ -472,17 +471,15 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             Random r = new Random();
             double[,] dataset = r.NextXavierMatrix(1, 9);
-            IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 3*3*1 pixels >> 1*1*3
-                v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                ConvolutionOperation.Convolution3x3(
                     KernelsCollection.TopSobel,
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss),
-                v => v.Process(ConvolutionExtensions.ReLU));
-            ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
-            double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
+                ConvolutionOperation.ReLU);
+            double[,] result_cpu = pipeline.Process(dataset);
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
@@ -498,17 +495,15 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             Random r = new Random();
             double[,] dataset = r.NextXavierMatrix(2, 9);
-            IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 3*3*1 pixels >> 1*1*3
-                v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                ConvolutionOperation.Convolution3x3(
                     KernelsCollection.TopSobel,
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss),
-                v => v.Process(ConvolutionExtensions.ReLU));
-            ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
-            double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
+                ConvolutionOperation.ReLU);
+            double[,] result_cpu = pipeline.Process(dataset);
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
@@ -524,18 +519,16 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             Random r = new Random();
             double[,] dataset = r.NextXavierMatrix(10, 81);
-            IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 9*9*1 pixels >> 7*7*3
-                v => v.Expand(ConvolutionExtensions.Convolute3x3,
+                ConvolutionOperation.Convolution3x3(
                     KernelsCollection.TopSobel,
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss),
-                v => v.Process(ConvolutionExtensions.ReLU),
-                v => v.Process(ConvolutionExtensions.Pool2x2)); // 7*7*3 >> 4*4*3
-            ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
-            double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
+                ConvolutionOperation.ReLU,
+                ConvolutionOperation.Pool2x2); // 7*7*3 >> 4*4*3
+            double[,] result_cpu = pipeline.Process(dataset);
             double[,] p1 = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
@@ -552,7 +545,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             // CPU pipeline
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
-            v => v.Expand(ConvolutionExtensions.Convolute3x3, // 10 kernels, 28*28*1 pixels >> 26*26*10
+            ConvolutionOperation.Convolution3x3( // 10 kernels, 28*28*1 pixels >> 26*26*10
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
@@ -563,18 +556,18 @@ namespace NeuralNetworkNET.Cuda.Unit
                 KernelsCollection.TopRightEmboss,
                 KernelsCollection.TopLeftEmboss,
                 KernelsCollection.BottomRightEmboss),
-            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-            v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*10 >> 13*13*10,
-            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2, // 26*26*10 >> 13*13*10,
+            ConvolutionOperation.Convolution3x3(
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.Outline,
                 KernelsCollection.Sharpen),// 13*13*10 >> 11*11*60
-            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-            v => v.Process(ConvolutionExtensions.Pool2x2), // 11*11*60 >> 6*6*60,
-            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2, // 11*11*60 >> 6*6*60,
+            ConvolutionOperation.Convolution3x3(
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
@@ -583,52 +576,26 @@ namespace NeuralNetworkNET.Cuda.Unit
                 KernelsCollection.Sharpen,
                 KernelsCollection.BottomRightEmboss,
                 KernelsCollection.TopLeftEmboss), // 6*6*60 >> 4*4*480
-            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-            v => v.Process(ConvolutionExtensions.Pool2x2), // 4*4*480 >> 2*2*480
-            v => v.Process(ConvolutionExtensions.Pool2x2)); // 2*2*480 >> 1*1*480
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2, // 4*4*480 >> 2*2*480
+                ConvolutionOperation.Pool2x2); // 2*2*480 >> 1*1*480
 
             // Setup and CPU calculation
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(1000, 784);
-            IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
-            ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
-            double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
+            double[,] dataset = r.NextXavierMatrix(8000, 784);
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
 
             // GPU
-            double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
-                KernelsCollection.TopSobel,
-                KernelsCollection.RightSobel,
-                KernelsCollection.LeftSobel,
-                KernelsCollection.BottomSobel,
-                KernelsCollection.Outline,
-                KernelsCollection.Sharpen,
-                KernelsCollection.BottomLeftEmboss,
-                KernelsCollection.TopRightEmboss,
-                KernelsCollection.TopLeftEmboss,
-                KernelsCollection.BottomRightEmboss).MergeRows();
-            ConvolutionGpuExtensions.ReLU(result_gpu);
-            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 10);
-            result_gpu = ConvolutionGpuExtensions.Convolute3x3(result_gpu, 10,
-                KernelsCollection.TopSobel,
-                KernelsCollection.RightSobel,
-                KernelsCollection.LeftSobel,
-                KernelsCollection.BottomSobel,
-                KernelsCollection.Outline,
-                KernelsCollection.Sharpen).MergeRows();
-            ConvolutionGpuExtensions.ReLU(result_gpu);
-            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 60);
-            result_gpu = ConvolutionGpuExtensions.Convolute3x3(result_gpu, 60,
-                KernelsCollection.TopSobel,
-                KernelsCollection.RightSobel,
-                KernelsCollection.LeftSobel,
-                KernelsCollection.BottomSobel,
-                KernelsCollection.Outline,
-                KernelsCollection.Sharpen,
-                KernelsCollection.BottomRightEmboss,
-                KernelsCollection.TopLeftEmboss).MergeRows();
-            ConvolutionGpuExtensions.ReLU(result_gpu);
-            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
-            result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
+            double[,] result_gpu = pipeline.Process(dataset);
+            timer.Stop();
+            var t1 = timer.ElapsedMilliseconds;
+
+            timer.Restart();
+            double[,] result_cpu = pipeline.Process(dataset);
+            timer.Stop();
+            long t2 = timer.ElapsedMilliseconds;
+            Console.WriteLine($"GPU: {t1}, CPU: {t2}");
 
             // Checks
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
