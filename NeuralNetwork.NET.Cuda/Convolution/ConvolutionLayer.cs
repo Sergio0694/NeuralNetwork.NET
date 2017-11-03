@@ -49,7 +49,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 switch (operation)
                 {
                     case KernelConvolution k when k.OperationType == ConvolutionOperationType.Convolution3x3:
-                        result = result.Convolute3x3(subdivision, (double[][,])k.Kernels);
+                      //  result = result.Convolute3x3(subdivision, (double[][,])k.Kernels);
                         subdivision *= k.Kernels.Count;
                         break;
                     case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.Normalization:

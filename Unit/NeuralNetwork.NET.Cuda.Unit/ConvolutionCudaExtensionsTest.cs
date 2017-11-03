@@ -235,16 +235,11 @@ namespace NeuralNetworkNET.Cuda.Unit
                 },
                 r = ConvolutionExtensions.Convolute3x3(m, k);
             const int size = 3;
-            int
-                square = size * size,
-                inner = size - 2,
-                innerSquare = inner * inner;
+            int square = size * size;
             double[,] source = new double[1, square];
             Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * square);
-            double[,]
-                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k),
-                unpacked = new double[inner, inner];
-            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * innerSquare);
+            double[][,] m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k);
+            double[,] unpacked = m_gpu.MergeRows();
             Assert.IsTrue(unpacked.ContentEquals(r));
         }
 
@@ -279,7 +274,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             double[,] source = new double[1, square];
             Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * square);
             double[,]
-                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k),
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k).MergeRows(),
                 unpacked = new double[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * innerSquare);
             Assert.IsTrue(unpacked.ContentEquals(r));
@@ -310,7 +305,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(m1, 0, source, 0, bytesize);
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
             double[,]
-                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k),
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k).MergeRows(),
                 unpacked1 = new double[inner, inner],
                 unpacked2 = new double[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
@@ -345,7 +340,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(m1, 0, source, 0, bytesize);
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
             double[,]
-                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k),
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k).MergeRows(),
                 unpacked1 = new double[inner, inner],
                 unpacked2 = new double[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
@@ -386,7 +381,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
             Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
             double[,]
-                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k),
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k).MergeRows(),
                 unpacked1 = new double[inner, inner],
                 unpacked2 = new double[inner, inner],
                 unpacked3 = new double[inner, inner],
@@ -433,7 +428,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
             Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
             double[,]
-                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k),
+                m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k).MergeRows(),
                 unpacked1 = new double[inner, inner],
                 unpacked2 = new double[inner, inner],
                 unpacked3 = new double[inner, inner],
@@ -466,7 +461,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
-                KernelsCollection.TopLeftEmboss);
+                KernelsCollection.TopLeftEmboss).MergeRows();
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
             Assert.IsTrue(result_cpu.GetLength(1) == result_gpu.GetLength(1));
             Assert.IsTrue(result_cpu.ContentEquals(result_gpu));
@@ -491,7 +486,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
-                KernelsCollection.TopLeftEmboss);
+                KernelsCollection.TopLeftEmboss).MergeRows();
             ConvolutionGpuExtensions.ReLU(result_gpu);
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
             Assert.IsTrue(result_cpu.GetLength(1) == result_gpu.GetLength(1));
@@ -517,7 +512,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
-                KernelsCollection.TopLeftEmboss);
+                KernelsCollection.TopLeftEmboss).MergeRows();
             ConvolutionGpuExtensions.ReLU(result_gpu);
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
             Assert.IsTrue(result_cpu.GetLength(1) == result_gpu.GetLength(1));
@@ -544,7 +539,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             double[,] p1 = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
-                KernelsCollection.TopLeftEmboss);
+                KernelsCollection.TopLeftEmboss).MergeRows();
             ConvolutionGpuExtensions.ReLU(p1);
             double[,] result_gpu = ConvolutionGpuExtensions.Pool2x2(p1, 3);
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
@@ -594,7 +589,7 @@ namespace NeuralNetworkNET.Cuda.Unit
 
             // Setup and CPU calculation
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(10000, 784);
+            double[,] dataset = r.NextXavierMatrix(1000, 784);
             IReadOnlyList<double[,]> volume = dataset.Extract3DVolume();
             ConvolutionsStack[] processed = pipeline.Process(volume).ToArray();
             double[,] result_cpu = ConvolutionPipeline.ConvertToMatrix(processed);
@@ -610,7 +605,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 KernelsCollection.BottomLeftEmboss,
                 KernelsCollection.TopRightEmboss,
                 KernelsCollection.TopLeftEmboss,
-                KernelsCollection.BottomRightEmboss);
+                KernelsCollection.BottomRightEmboss).MergeRows();
             ConvolutionGpuExtensions.ReLU(result_gpu);
             result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 10);
             result_gpu = ConvolutionGpuExtensions.Convolute3x3(result_gpu, 10,
@@ -619,7 +614,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 KernelsCollection.LeftSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.Outline,
-                KernelsCollection.Sharpen);
+                KernelsCollection.Sharpen).MergeRows();
             ConvolutionGpuExtensions.ReLU(result_gpu);
             result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 60);
             result_gpu = ConvolutionGpuExtensions.Convolute3x3(result_gpu, 60,
@@ -630,7 +625,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 KernelsCollection.Outline,
                 KernelsCollection.Sharpen,
                 KernelsCollection.BottomRightEmboss,
-                KernelsCollection.TopLeftEmboss);
+                KernelsCollection.TopLeftEmboss).MergeRows();
             ConvolutionGpuExtensions.ReLU(result_gpu);
             result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
             result_gpu = ConvolutionGpuExtensions.Pool2x2(result_gpu, 480);
