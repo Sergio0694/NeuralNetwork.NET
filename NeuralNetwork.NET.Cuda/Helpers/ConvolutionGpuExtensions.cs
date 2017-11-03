@@ -97,24 +97,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
 
                 // Calculate the worksize
                 ulong
-                    sourceBytes = (ulong)(sizeof(double) * h * w),
-                    resultBytes = (ulong)(sizeof(double) * h * finalWidth),
-                    rowBytes = (ulong)(sizeof(double) * (w + finalWidth)),
+                    sourceBytes = sizeof(double) * (ulong)h * (ulong)w,
+                    resultBytes = sizeof(double) * (ulong)h * (ulong)finalWidth,
+                    rowBytes = sizeof(double) * ((ulong)w + (ulong)finalWidth),
                     totalBytes = sourceBytes + resultBytes,
                     free = gpgpu.FreeMemory - MemoryLimitThreshold;
-
-                // Check the memory status
-                double[][,] result;
-                bool
-                    canAllocateCpu = totalBytes < int.MaxValue,
-                    canAllocteGpu = free - MemoryLimitThreshold > totalBytes;
-                if (canAllocateCpu && canAllocteGpu)
-                {
-                    // Process the whole data in a single step
-                    double[,] temp = new double[h, finalWidth];
-                    Convolute3x3(0, h, 0, temp);
-                    result = new[] { temp };
-                }
 
                 // Local function to calculate the size fo each memory block
                 (int HBlock, int HMod, int Blocks, int Last) CalculateBlocksSize(ulong memory)
@@ -127,9 +114,21 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     return (hBlock, hMod, blocks, last);
                 }
 
-                // Object bigger than 2GB, but able to be copied on the GPU
-                if (canAllocteGpu)
+                // Check the memory status
+                double[][,] result;
+                bool
+                    canAllocateCpu = totalBytes < int.MaxValue,
+                    canAllocateGpu = free - MemoryLimitThreshold > totalBytes;
+                if (canAllocateCpu && canAllocateGpu)
                 {
+                    // Process the whole data in a single step
+                    double[,] temp = new double[h, finalWidth];
+                    Convolute3x3(0, h, 0, temp);
+                    result = new[] { temp };
+                }
+                else if (canAllocateGpu)
+                {
+                    // Object bigger than 2GB, but able to be copied on the GPU
                     var blockInfo = CalculateBlocksSize(int.MaxValue);
                     result = new double[blockInfo.Blocks][,];
                     for (int i = 0; i < blockInfo.Blocks; i++)
@@ -149,7 +148,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         }
                     }
                 }
-                else
+                else if (canAllocateCpu)
                 {
                     // Not enough GPU space, but result able to be allocated on RAM
                     double[,] temp = new double[h, finalWidth];
@@ -159,6 +158,28 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         Convolute3x3(blockInfo.HBlock * i, i == blockInfo.Last ? blockInfo.HMod : blockInfo.HBlock, blockInfo.HBlock * i, temp);
                     }
                     result = new[] { temp };
+                }
+                else
+                {
+                    // Not enough space both on GPU and RAM
+                    var blockInfo = CalculateBlocksSize(int.MaxValue <= free ? int.MaxValue : free);
+                    result = new double[blockInfo.Blocks][,];
+                    for (int i = 0; i < blockInfo.Blocks; i++)
+                    {
+                        if (i == blockInfo.Last)
+                        {
+                            // Remainder
+                            double[,] block = new double[blockInfo.HMod, finalWidth];
+                            Convolute3x3(blockInfo.HBlock * i, blockInfo.HMod, 0, block);
+                            result[i] = block;
+                        }
+                        else
+                        {
+                            double[,] block = new double[blockInfo.HBlock, finalWidth];
+                            Convolute3x3(blockInfo.HBlock * i, blockInfo.HBlock, 0, block);
+                            result[i] = block;
+                        }
+                    }
                 }
                 return result;
 
