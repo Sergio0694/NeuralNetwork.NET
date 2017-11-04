@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Convolution.Operations;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
 using NeuralNetworkNET.SupervisedLearning.Misc;
@@ -43,12 +41,8 @@ namespace SharedBenchmark
             double[,] x;
             if (convolution)
             {
-                Printf("Preparing 2D data for the convolution layer");
-                IReadOnlyList<double[,]> raw = dataset.Extract3DVolume();
-
                 Printf("Processing through the convolution layer");
-                IReadOnlyList<ConvolutionsStack> processed = SharedPipeline.Process(raw);
-                x = ConvolutionPipeline.ConvertToMatrix(processed.ToArray());
+                x = SharedPipeline.Process(dataset);
             }
             else x = dataset;
 
@@ -101,12 +95,8 @@ namespace SharedBenchmark
             double[,] xt;
             if (convolution)
             {
-                Printf("Preparing test data");
-                IReadOnlyList<double[,]> _2dTest = test.Extract3DVolume();
-
                 Printf("Processing test data through the convolution layer");
-                IReadOnlyList<ConvolutionsStack> convolutions = SharedPipeline.Process(_2dTest);
-                xt = ConvolutionPipeline.ConvertToMatrix(convolutions.ToArray());
+                xt = SharedPipeline.Process(test);
             }
             else xt = test;
 
@@ -160,7 +150,7 @@ namespace SharedBenchmark
         public static ConvolutionPipeline SharedPipeline { get; } = new ConvolutionPipeline(
 
             // 10 kernels, 28*28*1 pixels >> 26*26*10
-            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+            ConvolutionOperation.Convolution3x3(
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
@@ -171,20 +161,18 @@ namespace SharedBenchmark
                 KernelsCollection.TopRightEmboss,
                 KernelsCollection.TopLeftEmboss,
                 KernelsCollection.BottomRightEmboss),
-            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-            v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*10 >> 13*13*10
-            v => v.Process(ConvolutionExtensions.Normalize),
-            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2, // 26*26*10 >> 13*13*10
+            ConvolutionOperation.Convolution3x3(
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.Outline,
                 KernelsCollection.Sharpen),// 13*13*10 >> 11*11*60
-            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-            v => v.Process(ConvolutionExtensions.Pool2x2), // 11*11*60 >> 5*5*60
-            v => v.Process(ConvolutionExtensions.Normalize),
-            v => v.Expand(ConvolutionExtensions.Convolute3x3,
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2, // 11*11*60 >> 5*5*60
+            ConvolutionOperation.Convolution3x3(
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
@@ -193,7 +181,8 @@ namespace SharedBenchmark
                 KernelsCollection.Sharpen,
                 KernelsCollection.BottomRightEmboss,
                 KernelsCollection.TopLeftEmboss), // 5*5*60 >> 3*3*480
-            v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-            v => v.Process(ConvolutionExtensions.Pool2x2)); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2,
+            ConvolutionOperation.Pool2x2); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
     }
 }
