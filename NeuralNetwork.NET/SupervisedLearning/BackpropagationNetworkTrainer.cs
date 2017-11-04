@@ -21,6 +21,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// </summary>
         /// <param name="x">The input data</param>
         /// <param name="ys">The results vector</param>
+        /// <param name="batchSize"></param>
         /// <param name="type">The type of learning algorithm to use to train the network</param>
         /// <param name="token">The cancellation token for the training session</param>
         /// <param name="progress">An optional progress callback</param>
@@ -32,12 +33,13 @@ namespace NeuralNetworkNET.SupervisedLearning
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
             [NotNull] double[,] ys,
+            int? batchSize,
             LearningAlgorithmType type,
             CancellationToken token,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress,
             [NotNull] params int[] neurons)
         {
-            return ComputeTrainedNetworkAsync(x, ys, type, token, null, progress, neurons);
+            return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), type, token, null, progress, neurons);
         }
 
         /// <summary>
@@ -45,6 +47,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// </summary>
         /// <param name="x">The input data</param>
         /// <param name="ys">The results vector</param>
+        /// <param name="batchSize"></param>
         /// <param name="network">The previous network to use as a starting point, to continue a training session</param>
         /// <param name="type">The type of learning algorithm to use to train the network</param>
         /// <param name="token">The cancellation token for the training session</param>
@@ -56,6 +59,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
             [NotNull] double[,] ys,
+            int? batchSize,
             [NotNull] INeuralNetwork network,
             LearningAlgorithmType type,
             CancellationToken token,
@@ -63,13 +67,14 @@ namespace NeuralNetworkNET.SupervisedLearning
         {
             double[] solution = (network as NeuralNetwork)?.Serialize() ?? throw new ArgumentException(nameof(network), "Invalid network instance");
             int[] neurons = new[] { network.InputLayerSize }.Concat(network.HiddenLayers).Concat(new[] { network.OutputLayerSize }).ToArray();
-            return ComputeTrainedNetworkAsync(x, ys, type, token, solution, progress, neurons);
+            return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), type, token, solution, progress, neurons);
         }
 
         // Private implementation
         private static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
             [NotNull] double[,] ys,
+            int batchSize,
             LearningAlgorithmType type,
             CancellationToken token,
             [CanBeNull] double[] solution,
@@ -81,12 +86,53 @@ namespace NeuralNetworkNET.SupervisedLearning
             if (ys.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
             if (x.GetLength(0) != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
             if (neurons.Length < 2) throw new ArgumentOutOfRangeException("The network must have at least two layers");
+            if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
+            if (batchSize > x.GetLength(0)) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be less or equal than the number of training samples");
 
             // Calculate the target network size
             double[] start = solution ?? NeuralNetwork.NewRandom(neurons).Serialize();
+            
+            // Prepare the batches
+            int
+                iteration = 1,
+                samples = x.GetLength(0),
+                w = x.GetLength(1),
+                wy = ys.GetLength(1),
+                batchIndex = 0;
+            TrainingBatch[] batches;
+            if (batchSize == samples) batches = new[] { new TrainingBatch(x, ys) }; // Fake batch with the whole dataset
+            else
+            {
+                // Prepare the different batches
+                int
+                    nBatches = samples / batchSize,
+                    nBatchMod = samples % batchSize;
+                bool oddBatchPresent = nBatchMod > 0;
+                batches = new TrainingBatch[nBatches + (oddBatchPresent ? 1 : 0)];
+                for (int i = 0; i < batches.Length; i++)
+                {
+                    if (oddBatchPresent && i == batches.Length - 1)
+                    {
+                        double[,]
+                            batch = new double[nBatchMod, w],
+                            batchY = new double[nBatchMod, wy];
+                        Buffer.BlockCopy(x, sizeof(double) * (x.Length - batch.Length), batch, 0, sizeof(double) * batch.Length);
+                        Buffer.BlockCopy(ys, sizeof(double) * (ys.Length - batchY.Length), batchY, 0, sizeof(double) * batchY.Length);
+                        batches[batches.Length - 1] = new TrainingBatch(batch, batchY);
+                    }
+                    else
+                    {
+                        double[,]
+                            batch = new double[batchSize, w],
+                            batchY = new double[batchSize, wy];
+                        Buffer.BlockCopy(x, sizeof(double) * i * batch.Length, batch, 0, sizeof(double) * batch.Length);
+                        Buffer.BlockCopy(ys, sizeof(double) * i * batchY.Length, batchY, 0, sizeof(double) * batchY.Length);
+                        batches[i] = new TrainingBatch(batch, batchY);
+                    }
+                }
+            }
 
             // Get the optimization algorithm instance
-            int iteration = 1;
             GradientOptimizationMethodBase optimizer;
             switch (type)
             {
@@ -122,7 +168,9 @@ namespace NeuralNetworkNET.SupervisedLearning
             double[] GradientFunction(double[] weights)
             {
                 NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
-                return network.ComputeGradient(x, ys);
+                TrainingBatch pick = batches[batchIndex];
+                batchIndex = (batchIndex + 1) % batches.Length;
+                return network.ComputeGradient(pick.X, pick.Y);
             }
 
             // Minimize the cost function

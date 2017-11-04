@@ -8,7 +8,7 @@ namespace DigitsTest
     {
         static async Task Main()
         {
-            await MnistTester.PerformBenchmarkAsync(LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence, true, 2000, true, 480, 60, 16, 10);
+            await MnistTester.PerformBenchmarkAsync(LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence, 1000, true, 2000, true, 480, 60, 16, 10);
         }
     }
 }
