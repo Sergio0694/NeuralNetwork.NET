@@ -49,5 +49,16 @@ namespace NeuralNetworkNET.Cuda.APIs
                 }
             }
         }
+
+        private static ulong _GPUMemoryAllocationLimit = UInt64.MaxValue;
+
+        /// <summary>
+        /// Gets or sets an additional limit on the amount of memory allocation to perform on the GPU memory
+        /// </summary>
+        public static ulong GPUMemoryAllocationLimit
+        {
+            get => _GPUMemoryAllocationLimit;
+            set => _GPUMemoryAllocationLimit = value >= 1024 ? value : throw new ArgumentOutOfRangeException("Can't specify a limit less than 1KB");
+        }
     }
 }

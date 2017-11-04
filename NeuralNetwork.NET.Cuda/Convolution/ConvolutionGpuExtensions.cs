@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Cuda.Convolution
@@ -16,23 +17,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
         /// <summary>
         /// The minimum threshold when checking memory limits
         /// </summary>
-        private const ulong MemoryLimitThreshold = 2 << 10; // 10MB
-
-        private static ulong _GPUMemoryAllocationLimit = ulong.MaxValue;
-
-        /// <summary>
-        /// Gets or sets an additional limit on the amount of memory allocation to perform on the GPU memory
-        /// </summary>
-        public static ulong GPUMemoryAllocationLimit
-        {
-            get => _GPUMemoryAllocationLimit;
-            set => _GPUMemoryAllocationLimit = value >= 1024 ? value : throw new ArgumentOutOfRangeException("Can't specify a limit less than 1KB");
-        }
-
-        /// <summary>
-        /// Gets or sets the minimum amount of GPU memory to leave free when performing the operations
-        /// </summary>
-        public static ulong GPUMinimumReservedMemory { get; set; }
+        private const ulong MemoryLimitThreshold = 100_663_296; // ~100MB
 
         /// <summary>
         /// Performs a 3*3 convolution on the source matrix, using the given kernel, in parallel
@@ -109,17 +94,13 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 }
 
                 // Calculate the worksize
-                if (GPUMinimumReservedMemory + MemoryLimitThreshold > gpu.Device.TotalMemory)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(GPUMinimumReservedMemory), "Can't specify a value greates than the amount of GPU memory available");
-                }
                 ulong
                     sourceBytes = sizeof(double) * (ulong)h * (ulong)w,
                     resultBytes = sizeof(double) * (ulong)h * (ulong)finalWidth,
                     rowBytes = sizeof(double) * ((ulong)w + (ulong)finalWidth),
                     totalBytes = sourceBytes + resultBytes,
-                    vramThreshold = gpu.Device.TotalMemory - GPUMinimumReservedMemory - MemoryLimitThreshold,
-                    free = vramThreshold > GPUMemoryAllocationLimit ? GPUMemoryAllocationLimit : vramThreshold;
+                    vramThreshold = gpu.Device.TotalMemory - MemoryLimitThreshold,
+                    free = vramThreshold > NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit ? NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit : vramThreshold;
 
                 // Inner function that works on chunks of the original data
                 void Convolute3x3(int offsetIn, int hIn, int offsetOut, double[,] target)
