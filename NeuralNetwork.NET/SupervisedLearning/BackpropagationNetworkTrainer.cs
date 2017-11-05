@@ -16,6 +16,8 @@ namespace NeuralNetworkNET.SupervisedLearning
     /// </summary>
     public static class BackpropagationNetworkTrainer
     {
+        #region Public APIs
+
         /// <summary>
         /// Generates and trains a neural network suited for the input data and results
         /// </summary>
@@ -27,8 +29,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="progress">An optional progress callback</param>
         /// <param name="neurons">The number of neurons in each network layer</param>
         [PublicAPI]
-        [Pure]
-        [ItemNotNull]
+        [Pure, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
@@ -52,9 +53,9 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="type">The type of learning algorithm to use to train the network</param>
         /// <param name="token">The cancellation token for the training session</param>
         /// <param name="progress">An optional progress callback</param>
+        /// <exception cref="ArgumentException">The input <see cref="INeuralNetwork"/> instance isn't valid</exception>
         [PublicAPI]
-        [Pure]
-        [ItemNotNull]
+        [Pure, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
             [NotNull] double[,] x,
@@ -69,6 +70,36 @@ namespace NeuralNetworkNET.SupervisedLearning
             int[] neurons = new[] { network.InputLayerSize }.Concat(network.HiddenLayers).Concat(new[] { network.OutputLayerSize }).ToArray();
             return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), type, token, solution, progress, neurons);
         }
+
+        /// <summary>
+        /// Generates and trains a neural network suited for the input data and results
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="ys">The results vector</param>
+        /// <param name="batchSize"></param>
+        /// <param name="json">A JSON <see cref="String"/> representing a network to use to start the training</param>
+        /// <param name="type">The type of learning algorithm to use to train the network</param>
+        /// <param name="token">The cancellation token for the training session</param>
+        /// <param name="progress">An optional progress callback</param>
+        /// <exception cref="ArgumentException">The input JSON <see cref="String"/> is invalid</exception>
+        [PublicAPI]
+        [Pure, ItemNotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
+            [NotNull] double[,] x,
+            [NotNull] double[,] ys,
+            int? batchSize,
+            [NotNull] String json,
+            LearningAlgorithmType type,
+            CancellationToken token,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress)
+        {
+            INeuralNetwork network = NeuralNetworkDeserializer.TryDeserialize(json);
+            if (network == null) throw new ArgumentException("The input JSON file isn't valid");
+            return ComputeTrainedNetworkAsync(x, ys, batchSize, network, type, token, progress);
+        }
+
+        #endregion
 
         // Private implementation
         private static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
