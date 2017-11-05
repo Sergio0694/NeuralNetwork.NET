@@ -174,9 +174,11 @@ NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit = 800_000_000; // ~800MB
 
 # Requirements
 
-The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is available for applications targeting .NET Framework >= 4.7, .NET Core >= 2.0 and new versions of Mono and Xamarin.
+The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is available for applications targeting:
+- .NET Framework >= 4.7
+- .NET Core >= 2.0
+- New versions of Mono and Xamarin.
 
 The additional `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.7 and a CUDA enabled GPU.
-
 
 
