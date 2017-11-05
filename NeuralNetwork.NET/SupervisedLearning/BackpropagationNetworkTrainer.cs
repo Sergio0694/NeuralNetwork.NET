@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -94,10 +93,8 @@ namespace NeuralNetworkNET.SupervisedLearning
             double[] start = solution ?? NeuralNetwork.NewRandom(neurons).Serialize();
 
             // Prepare the batches
-            int
-                iteration = 1,
-                batchIndex = 0;
-            IReadOnlyList<TrainingBatch> batches = TrainingBatch.FromDataset(x, ys, batchSize);
+            int iteration = 1;
+            TrainingBatch.BatchesCollection batches = TrainingBatch.BatchesCollection.FromDataset(x, ys, batchSize);
 
             // Get the optimization algorithm instance
             GradientOptimizationMethodBase optimizer;
@@ -135,8 +132,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             double[] GradientFunction(double[] weights)
             {
                 NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
-                TrainingBatch pick = batches[batchIndex];
-                batchIndex = (batchIndex + 1) % batches.Count;
+                TrainingBatch pick = batches.Next();
                 return network.ComputeGradient(pick.X, pick.Y);
             }
 
