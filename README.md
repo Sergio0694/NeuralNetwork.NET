@@ -1,7 +1,10 @@
-# NeuralNetworkLibrary
+![](http://i.pi.gy/8ZDDE.png)
 
-A .NET Standard 1.4 library that implements various types of neural networks (linear and with different hidden layers) as well as multiple training methods, both for supervised and unsupervised learning.
-This library provides simple APIs to create and train neural networks given a cost and gradient function (supervised learning through backpropagation) or a user defined fitness function (unsupervised learning).
+## What is it?
+`NeuralNetwork.NET` is a .NET Standard 2.0 library that implements various types of neural networks (multilayered, with and without bias and with different activation types) as well as multiple training methods, both for supervised and unsupervised learning.
+It provides simple APIs to create and train neural networks given a cost and gradient function (supervised learning through backpropagation) or a user defined fitness function (unsupervised learning).
+
+There's also a secondary .NET Framework 4.7 library, `NeuralNetwork.NET.Cuda` that leverages the GPU to greatly increase the performances when training or using a neural network.
 
 ## Usage
 
