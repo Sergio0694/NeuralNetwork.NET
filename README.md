@@ -6,37 +6,55 @@ It provides simple APIs to create and train neural networks given a cost and gra
 
 There's also a secondary .NET Framework 4.7 library, `NeuralNetwork.NET.Cuda` that leverages the GPU to greatly increase the performances when training or using a neural network.
 
-## Usage
+# Table of Contents
 
-### Setup and compatibility
+- [Installing from NuGet](#installing-from-nuget)
+- [Quick start](#quick-start)
+  - [Supervised learning](#supervised-learning) 
+  - [Activation functions](#activation-functions)
+  - [Kernel convolutions](#kernel-convolutions)
+  - [Unsupervised learning](#unsupervised-learning)
+  - [Serialization and deserialization](#serialization-and-deserialization)
+- [GPU acceleration](#gpu-acceleration)
+- [Requirements](#requirements)
 
-The library needs to be initialized with a wrapper for the `System.Threading.Tasks.Parallel.For` method, since it can't be referenced from a .NET Standard 1.4 project. To do so, just pass a `ParallelFor` delegate to the library, that will forward the call to the actual `Parallel.For` method:
+# Installing from NuGet
 
-```C#
-ParallelCompatibilityWrapper.Initialize((start, end, body) => Parallel.For(start, end, body).IsCompleted);
+To install `NeuralNetwork.NET`, run the following command in the **Package Manager Console**
+
+```
+Install-Package NeuralNetwork.NET
 ```
 
-Then, since the library can't reference the `Accord.Math` or the `portable.accord.math` NuGet packages on its own, a wrapper for the LBFGS method is also needed. You'll need to implement a class with the `IAccordNETGradientOptimizationMethod` interface (you'll find additional info in the file) and then call:
+More details available [here](https://www.nuget.org/packages/NeuralNetwork.NET/).
+
+# Quick start
+
+### Supervised learning
+
+Training a neural network is pretty straightforward - just use the methods in the `BackpropagationNetworkTrainer` class. For example, here's how to create and train a new neural network from scratch:
 
 ```C#
-AccordNETGradientOptimizationMethodCompatibilityWrapper.Initialize(myLBFGSwrapperInstance);
-```
-
-### Supervised learning (backpropagation)
-
-Training a neural network is pretty straightforward - just use the methods in the `GradientDescentNetworkTrainer` class. For example, here's how to create and train a `SingleLayerPerceptron` network instance:
-
-```C#
-INeuralNetwork network = await GradientDescentNetworkTrainer.ComputeTrainedNetworkAsync(
-  inputs, // A [nsamples*hiddenlayersize] matrix
+INeuralNetwork network = await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(
+  x, // The [nsamples*inputneurons] dataset
   y, // The expected results to calculate the cost, a [nsamples*outputsize] matrix
-  90, // The number of neurons in the hidden layer (will be calculated automatically if null)
-  token, // A cancellation token for the training session 
-  null, // The optional starting solution for the training (the serialized weights from another network)
+  1000, // The size of each training mini batch
+  LearningAlgorithmType.GradientDescent, // The training algorithm to use
+  NeuralNetworkType.Biased, // The type of network to create
+  token, // A CancellationToken for the training session
   new Progress<BackpropagationProgressEventArgs>(p =>
   {
       // Some callback code here
-  }));
+  }),
+  784, 16, 16, 10); // The neurons in each network layer (here there are two 16-neurons hidden layers)
+```
+
+### Activation functions
+
+It is possible to choose the activation function to use when training a network from the list of available activation functions exposed by the `ActivationFunction` enum. For example, to use a Tanh activation:
+
+```C#
+NeuralNetworkSettings.ActivationFunctionType = ActivationFunction.Tanh;
 ```
 
 ### Kernel convolutions
@@ -46,29 +64,28 @@ In order to process some data, first setup a pipeline:
 
 ```C#
 ConvolutionPipeline pipeline = new ConvolutionPipeline( // Let's assume the source data matrix is 28*28
-    v => v.Expand(ConvolutionExtensions.Convolute3x3, 
+    ConvolutionOperation.Convolution3x3( 
         KernelsCollection.TopSobel,
         KernelsCollection.Outline,
         KernelsCollection.Sharpen,
         KernelsCollection.BottomLeftEmboss), // 4 3*3 kernels: 28*28*1 pixels >> 26*26*4
-    v => v.Process(ConvolutionExtensions.ReLU), // Set minimum threshold
-    v => v.Process(ConvolutionExtensions.Pool2x2), // 26*26*4 >> 13*13*4
-    v => v.Process(ConvolutionExtensions.Normalize), // Normalize all the values in the [0..1] range
-    v => v.Expand(ConvolutionExtensions.Convolute3x3, 
+    ConvolutionOperation.ReLU, // Set minimum threshold
+    ConvolutionOperation.Pool2x2, // 26*26*4 >> 13*13*4
+    ConvolutionOperation.Normalization, // Normalize all the values in the [0..1] range
+    ConvolutionOperation.Convolution3x3( 
         KernelsCollection.TopSobel,
         KernelsCollection.Outline)); // And so on...
 ```
 
-Then use the pipeline to process data and get a single data matrix with all the results (each `ConvolutionsStack` entry in the processed list will be a single row in the final data matrix, and all of its values will be flattened in the matrix columns):
+Then use the pipeline to process data and get a single data matrix with all the results:
 
 ```C#
-IReadOnlyList<ConvolutionsStack> convolutions = pipeline.Process(source);
-double[,] inputs = ConvolutionPipeline.ConvertToMatrix(convolutions.ToArray());
+double[,] convolutions = pipeline.Process(dataset);
 ```
 
-This `double[,]` object can now be used as data to train a network using the backpropagation APIs.
+This processed matrix can now be used as data to train a network using the backpropagation APIs.
 
-### Unsupervised learning (genetic algorithm)
+### Unsupervised learning
 
 The library provides a `NeuralNetworkGeneticAlgorithmProvider` class that implements a genetic algorithm. This class can be initialized using different parameters and will run the algorithm to create and train the neural networks.
 First, declare a fitness function using the `FitnessDelegate` delegate.
@@ -138,3 +155,28 @@ double[,] result = network.Forward(input);
 
 The `INeuralNetwork` interface exposes a `SerializeAsJSON` method that can be used to serialize any network at any given time.
 In order to get a new network instance from a serialized JSON string, just use the `NeuralNetworkDeserializer.TryDeserialize` method: it will parse the input text and automatically return a neural network with the original parameters.
+
+# GPU acceleration
+
+When using the `NeuralNetwork.NET.Cuda` additional library, it is possible to enable and disable the GPU acceleration at any time. To turn it on, just set the static property in the dedicated settings class:
+
+```C#
+NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
+```
+
+This will enable the GPU acceleration both for the network training and the kernel convolution pipeline processing.
+
+**Note**: to make sure not to exceed the available GPU memory, it is possible to set an explicit memory threshold:
+
+```C#
+NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit = 800_000_000; // ~800MB
+```
+
+# Requirements
+
+The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is available for applications targeting .NET Framework >= 4.7, .NET Core >= 2.0 and new versions of Mono and Xamarin.
+
+The additional `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.7 and a CUDA enabled GPU.
+
+
+
