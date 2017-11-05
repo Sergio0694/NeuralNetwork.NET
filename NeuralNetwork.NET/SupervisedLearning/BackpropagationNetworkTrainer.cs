@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -91,46 +92,12 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Calculate the target network size
             double[] start = solution ?? NeuralNetwork.NewRandom(neurons).Serialize();
-            
+
             // Prepare the batches
             int
                 iteration = 1,
-                samples = x.GetLength(0),
-                w = x.GetLength(1),
-                wy = ys.GetLength(1),
                 batchIndex = 0;
-            TrainingBatch[] batches;
-            if (batchSize == samples) batches = new[] { new TrainingBatch(x, ys) }; // Fake batch with the whole dataset
-            else
-            {
-                // Prepare the different batches
-                int
-                    nBatches = samples / batchSize,
-                    nBatchMod = samples % batchSize;
-                bool oddBatchPresent = nBatchMod > 0;
-                batches = new TrainingBatch[nBatches + (oddBatchPresent ? 1 : 0)];
-                for (int i = 0; i < batches.Length; i++)
-                {
-                    if (oddBatchPresent && i == batches.Length - 1)
-                    {
-                        double[,]
-                            batch = new double[nBatchMod, w],
-                            batchY = new double[nBatchMod, wy];
-                        Buffer.BlockCopy(x, sizeof(double) * (x.Length - batch.Length), batch, 0, sizeof(double) * batch.Length);
-                        Buffer.BlockCopy(ys, sizeof(double) * (ys.Length - batchY.Length), batchY, 0, sizeof(double) * batchY.Length);
-                        batches[batches.Length - 1] = new TrainingBatch(batch, batchY);
-                    }
-                    else
-                    {
-                        double[,]
-                            batch = new double[batchSize, w],
-                            batchY = new double[batchSize, wy];
-                        Buffer.BlockCopy(x, sizeof(double) * i * batch.Length, batch, 0, sizeof(double) * batch.Length);
-                        Buffer.BlockCopy(ys, sizeof(double) * i * batchY.Length, batchY, 0, sizeof(double) * batchY.Length);
-                        batches[i] = new TrainingBatch(batch, batchY);
-                    }
-                }
-            }
+            IReadOnlyList<TrainingBatch> batches = TrainingBatch.FromDataset(x, ys, batchSize);
 
             // Get the optimization algorithm instance
             GradientOptimizationMethodBase optimizer;
@@ -169,7 +136,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             {
                 NeuralNetwork network = NeuralNetwork.Deserialize(weights, neurons);
                 TrainingBatch pick = batches[batchIndex];
-                batchIndex = (batchIndex + 1) % batches.Length;
+                batchIndex = (batchIndex + 1) % batches.Count;
                 return network.ComputeGradient(pick.X, pick.Y);
             }
 
