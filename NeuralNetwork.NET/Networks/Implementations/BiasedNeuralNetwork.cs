@@ -14,6 +14,13 @@ namespace NeuralNetworkNET.Networks.Implementations
     [JsonObject(MemberSerialization.OptIn)]
     internal sealed class BiasedNeuralNetwork : NeuralNetwork
     {
+        #region Public parameters
+
+        /// <inheritdoc/>
+        public override NeuralNetworkType NetworkType { get; } = NeuralNetworkType.Biased;
+
+        #endregion
+
         #region Local fields
 
         /// <summary>
@@ -137,7 +144,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Compute the gradient
-            int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.Length);
+            int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.GetLength(1));
             double[] gradient = new double[dLength];
             int position = 0;
             for (int i = 0; i < Weights.Count; i++)
@@ -157,7 +164,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
                 // Handle the gradient with respect to the current bias vector
                 double[] dJdb = di.CompressVertically();
-                bytes = sizeof(double) * dJdw.Length;
+                bytes = sizeof(double) * dJdb.Length;
                 Buffer.BlockCopy(dJdb, 0, gradient, position, bytes);
                 position += bytes;
             }
