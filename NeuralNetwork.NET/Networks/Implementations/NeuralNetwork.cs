@@ -31,6 +31,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         [JsonProperty(nameof(HiddenLayers), Required = Required.Always)]
         public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Weights.Take(Weights.Count - 1).Select(w => w.GetLength(1)).ToArray());
 
+        /// <inheritdoc/>
+        public virtual NeuralNetworkType NetworkType { get; } = NeuralNetworkType.Unbiased;
+
         #endregion
 
         #region Local fields

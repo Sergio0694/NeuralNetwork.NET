@@ -26,6 +26,11 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         IReadOnlyList<int> HiddenLayers { get; }
 
         /// <summary>
+        /// Gets the type of the current instance
+        /// </summary>
+        NeuralNetworkType NetworkType { get; }
+
+        /// <summary>
         /// Forwards the input through the network
         /// </summary>
         /// <param name="input">The input to process</param>
