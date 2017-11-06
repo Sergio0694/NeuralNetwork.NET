@@ -178,10 +178,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] Func<double, double> activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -204,7 +205,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
                     m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32(),
                     mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
-                Func<double, double> activation = ActivationFunctionProvider.Activation;
 
                 // Wrapper
                 void Kernel(int index)

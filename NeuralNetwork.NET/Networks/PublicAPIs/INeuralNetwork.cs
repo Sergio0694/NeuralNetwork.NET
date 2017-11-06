@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// Gets the list of activation functions used in the network layers
         /// </summary>
         [NotNull]
-        IReadOnlyList<ActivationFunction> ActivationFunctions { get; }
+        IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
 
         /// <summary>
         /// Gets the type of the current instance

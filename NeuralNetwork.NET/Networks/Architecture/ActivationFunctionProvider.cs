@@ -1,20 +1,54 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Networks.Architecture
 {
     /// <summary>
-    /// A static class that holds a reference to the activation functions currently in use
+    /// A static class that returns the right activation function for the given type
     /// </summary>
     internal static class ActivationFunctionProvider
     {
         /// <summary>
-        /// Gets the activation function to use
+        /// Gets an activation function for the given type
         /// </summary>
-        public static Func<double, double> Activation { get; set; } = ActivationFunctions.Sigmoid;
+        /// <param name="type">The activation function type</param>
+        [NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ActivationFunction GetActivation(ActivationFunctionType type)
+        {
+            switch (type)
+            {
+                case ActivationFunctionType.Sigmoid: return ActivationFunctions.Sigmoid;
+                case ActivationFunctionType.Tanh: return ActivationFunctions.Tanh;
+                case ActivationFunctionType.ReLU: return ActivationFunctions.ReLU;
+                case ActivationFunctionType.LeakyReLU: return ActivationFunctions.LeakyReLU;
+                case ActivationFunctionType.Softplus: return ActivationFunctions.Softplus;
+                case ActivationFunctionType.ELU: return ActivationFunctions.ELU;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(Architecture.ActivationFunctionType), "Unsupported activation function");
+            }
+        }
 
         /// <summary>
-        /// Gets the derivative of the current activation function
+        /// Gets the derivative of the activation function requested
         /// </summary>
-        public static Func<double, double> ActivationPrime { get; set; } = ActivationFunctions.SigmoidPrime;
+        /// <param name="type">The activation function type</param>
+        [NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ActivationFunction GetActivationPrime(ActivationFunctionType type)
+        {
+            switch (type)
+            {
+                case ActivationFunctionType.Sigmoid: return ActivationFunctions.SigmoidPrime;
+                case ActivationFunctionType.Tanh: return ActivationFunctions.TanhPrime;
+                case ActivationFunctionType.ReLU: return ActivationFunctions.ReLUPrime;
+                case ActivationFunctionType.LeakyReLU: return ActivationFunctions.LeakyReLUPrime;
+                case ActivationFunctionType.Softplus: return ActivationFunctions.Sigmoid;
+                case ActivationFunctionType.ELU: return ActivationFunctions.ELUPrime;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(Architecture.ActivationFunctionType), "Unsupported activation function");
+            }
+        }
     }
 }

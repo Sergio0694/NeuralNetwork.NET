@@ -31,7 +31,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         /// <param name="neurons">The number of neurons in the fully connected layer</param>
         /// <param name="activation">The activation funtion to use in the current layer</param>
-        public static NetworkLayer FullyConnected(int neurons, ActivationFunction activation) => new FullyConnectedLayer(neurons, activation);
+        public static NetworkLayer FullyConnected(int neurons, ActivationFunctionType activation) => new FullyConnectedLayer(neurons, activation);
 
         /// <summary>
         /// An internal class representing the input layer of a neural network
@@ -49,9 +49,9 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
             /// <summary>
             /// Gets the activation function for the current layer
             /// </summary>
-            public ActivationFunction Activation { get; }
+            public ActivationFunctionType Activation { get; }
 
-            public FullyConnectedLayer(int neurons, ActivationFunction activation) : base(neurons)
+            public FullyConnectedLayer(int neurons, ActivationFunctionType activation) : base(neurons)
             {
                 Activation = activation;
             }

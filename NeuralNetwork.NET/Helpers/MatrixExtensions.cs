@@ -279,14 +279,15 @@ namespace NeuralNetworkNET.Helpers
         /// Returns the result of the input after the activation function has been applied
         /// </summary>
         /// <param name="v">The input to process</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Activation([NotNull] this double[] v)
+        public static double[] Activation([NotNull] this double[] v, [NotNull] Func<double, double> activation)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
-                result[i] = ActivationFunctionProvider.Activation(v[i]);
+                result[i] = activation(v[i]);
             return result;
         }
 
@@ -294,10 +295,11 @@ namespace NeuralNetworkNET.Helpers
         /// Returns the result of the input after the activation function has been applied
         /// </summary>
         /// <param name="m">The input to process</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Activation([NotNull] this double[,] m)
+        public static double[,] Activation([NotNull] this double[,] m, [NotNull] Func<double, double> activation)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -311,7 +313,7 @@ namespace NeuralNetworkNET.Helpers
                     fixed (double* pr = result, pm = m)
                     {
                         for (int j = 0; j < w; j++)
-                            pr[i * w + j] = ActivationFunctionProvider.Activation(pm[i * w + j]);
+                            pr[i * w + j] = activation(pm[i * w + j]);
                     }
                 }
             }).IsCompleted;
@@ -323,9 +325,10 @@ namespace NeuralNetworkNET.Helpers
         /// Applies the activation function to the input matrix
         /// </summary>
         /// <param name="m">The input to process</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceActivation([NotNull] this double[,] m)
+        public static void InPlaceActivation([NotNull] this double[,] m, [NotNull] Func<double, double> activation)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -340,7 +343,7 @@ namespace NeuralNetworkNET.Helpers
                         for (int j = 0; j < w; j++)
                         {
                             int offset = i * w + j;
-                            pm[offset] = ActivationFunctionProvider.Activation(pm[offset]);
+                            pm[offset] = activation(pm[offset]);
                         }
                     }
                 }
@@ -352,15 +355,16 @@ namespace NeuralNetworkNET.Helpers
         /// Returns the result of the input after the activation function primed has been applied
         /// </summary>
         /// <param name="v">The input to process</param>
+        /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] ActivationPrime([NotNull] this double[] v)
+        public static double[] ActivationPrime([NotNull] this double[] v, [NotNull] Func<double, double> prime)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
             {
-                result[i] = ActivationFunctionProvider.ActivationPrime(v[i]);
+                result[i] = prime(v[i]);
             }
             return result;
         }
@@ -369,10 +373,11 @@ namespace NeuralNetworkNET.Helpers
         /// Returns the result of the input after the activation function primed has been applied
         /// </summary>
         /// <param name="m">The input to process</param>
+        /// <param name="prime">The activation pime function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] ActivationPrime([NotNull] this double[,] m)
+        public static double[,] ActivationPrime([NotNull] this double[,] m, [NotNull] Func<double, double> prime)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -387,7 +392,7 @@ namespace NeuralNetworkNET.Helpers
                     {
                         for (int j = 0; j < w; j++)
                         {
-                            pr[i * w + j] = ActivationFunctionProvider.ActivationPrime(pm[i * w + j]);
+                            pr[i * w + j] = prime(pm[i * w + j]);
                         }
                     }
                 }
@@ -405,10 +410,11 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] Func<double, double> activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -438,7 +444,7 @@ namespace NeuralNetworkNET.Helpers
                             {
                                 res += pm1[i1 + k] * pm2[i2];
                             }
-                            pm[i * w + j] = ActivationFunctionProvider.Activation(res); // Store the result and apply the activation
+                            pm[i * w + j] = activation(res); // Store the result and apply the activation
                         }
                     }
                 }
@@ -501,10 +507,11 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix before applying the activation function</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] Func<double, double> activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -535,7 +542,7 @@ namespace NeuralNetworkNET.Helpers
                                 res += pm1[i1 + k] * pm2[i2];
                             }
                             res += pv[j]; // Sum the input vector to each component
-                            pm[i * w + j] = ActivationFunctionProvider.Activation(res); // Store the result and apply the activation
+                            pm[i * w + j] = activation(res); // Store the result and apply the activation
                         }
                     }
                 }
@@ -550,10 +557,11 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="a">The estimated y</param>
         /// <param name="y">The expected y</param>
         /// <param name="z">The activity on the last layer</param>
+        /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z)
+            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] Func<double, double> prime)
         {
             // Checks
             int
@@ -577,7 +585,7 @@ namespace NeuralNetworkNET.Helpers
                             int index = offset + j;
                             double
                                 difference = pa[index] - py[index],
-                                zPrime = ActivationFunctionProvider.ActivationPrime(pz[index]),
+                                zPrime = prime(pz[index]),
                                 hProduct = difference * zPrime;
                             pa[index] = hProduct;
                         }
@@ -593,10 +601,11 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="z">The activity on the previous layer</param>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2)
+            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] Func<double, double> prime)
         {
             // Initialize the parameters and the result matrix
             int h = m1.GetLength(0);
@@ -628,7 +637,7 @@ namespace NeuralNetworkNET.Helpers
 
                             // res has now the matrix multiplication result for position [i, j]
                             int zIndex = i * w + j;
-                            pz[zIndex] = ActivationFunctionProvider.ActivationPrime(pz[zIndex]) * res;
+                            pz[zIndex] = prime(pz[zIndex]) * res;
                         }
                     }
                 }

@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         /// <inheritdoc/>
         [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
-        public IReadOnlyList<ActivationFunction> ActivationFunctions { get; }
+        public IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
 
         /// <inheritdoc/>
         public virtual NeuralNetworkType NetworkType { get; } = NeuralNetworkType.Unbiased;
@@ -65,7 +65,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="weights">The weights in all the network layers</param>
         /// <param name="activations">The activation functions to use in the new network</param>
-        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<ActivationFunction> activations)
+        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<ActivationFunctionType> activations)
         {
             // Input check
             if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 if (i > 0 && weights[i - 1].GetLength(1) != weights[i].GetLength(0))
                     throw new ArgumentOutOfRangeException(nameof(weights), "Some weight matrix doesn't have the right size");
-                if (activations[i] != ActivationFunction.Sigmoid && activations[i] != ActivationFunction.Tanh && i < weights.Count - 1)
+                if (activations[i] != ActivationFunctionType.Sigmoid && activations[i] != ActivationFunctionType.Tanh && i < weights.Count - 1)
                     throw new ArgumentOutOfRangeException(nameof(activations), $"The {activations[i]} activation function can only be used in the output layer");
             }
 
@@ -98,7 +98,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Initialize the weights
             Random random = new Random();
             double[][,] weights = new double[layers.Length - 1][,];
-            ActivationFunction[] activations = new ActivationFunction[weights.Length];
+            ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
             for (int i = 0; i < weights.Length; i++)
             {
                 int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
@@ -107,10 +107,10 @@ namespace NeuralNetworkNET.Networks.Implementations
                 activations[i] = fullyConnected.Activation;
                 switch (fullyConnected.Activation)
                 {
-                    case ActivationFunction.Sigmoid:
+                    case ActivationFunctionType.Sigmoid:
                         weights[i] = random.NextSigmoidMatrix(fanIn, fanOut);
                         break;
-                    case ActivationFunction.Tanh:
+                    case ActivationFunctionType.Tanh:
                         weights[i] = random.NextTanhMatrix(fanIn, fanOut);
                         break;
                     default:
@@ -151,7 +151,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
-                a0 = MatrixServiceProvider.MultiplyAndActivation(a0, Weights[i]); // A(l) = sigm(W(l) * A(l - 1))
+                Func<double, double> activation = ActivationFunctionProvider.GetActivation(ActivationFunctions[i]);
+                a0 = MatrixServiceProvider.MultiplyAndActivation(a0, Weights[i], activation); // A(l) = sigm(W(l) * A(l - 1))
             }
             return a0; // At least one weight matrix, so a0 != x
         }
@@ -181,13 +182,17 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[][,]
                 zList = new double[steps][,],
                 aList = new double[steps][,];
+            Func<double, double>[] activationPrimes = new Func<double, double>[Weights.Count];
             double[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Save the intermediate steps to be able to reuse them later
                 double[,] zi = MatrixServiceProvider.Multiply(a0, Weights[i]);
                 zList[i] = zi;
-                aList[i] = a0 = MatrixServiceProvider.Activation(zi);
+                ActivationFunctionType type = ActivationFunctions[i];
+                activationPrimes[i] = ActivationFunctionProvider.GetActivationPrime(type);
+                Func<double, double> activation = ActivationFunctionProvider.GetActivation(type);
+                aList[i] = a0 = MatrixServiceProvider.Activation(zi, activation);
             }
 
             /* ============================
@@ -197,7 +202,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Calculate the gradient of C with respect to a, so (yHat - y)
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             double[,] dL = aList[aList.Length - 1];
-            MatrixServiceProvider.InPlaceSubtractAndHadamardProductWithActivationPrime(dL, y, zList[zList.Length - 1]);
+            MatrixServiceProvider.InPlaceSubtractAndHadamardProductWithActivationPrime(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
 
             // Backpropagation
             double[][,] deltas = new double[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
@@ -215,7 +220,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed);
+                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed, activationPrimes[l]);
                 deltas[l] = dl;
             }
 
@@ -260,7 +265,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Parse the input data
             int depth = layers.Length - 1;
             double[][,] weights = new double[depth][,];
-            ActivationFunction[] activations = new ActivationFunction[weights.Length];
+            ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
             int position = 0;
             for (int i = 0; i < depth; i++)
             {
