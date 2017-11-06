@@ -191,7 +191,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             }
 
             // Return the result network
-            return NeuralNetwork.Deserialize(optimizer.Solution);
+            return NeuralNetwork.Deserialize(optimizer.Solution, layers);
         }
     }
 }
