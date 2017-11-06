@@ -92,11 +92,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double LeakyReLU(this double x)
-        {
-            double sub = 0.01 * x;
-            return sub >= x ? sub : x;
-        }
+        public static double LeakyReLU(this double x) => x > 0 ? x : 0.01 * x;
 
         /// <summary>
         /// Applies the derivative of the <see cref="LeakyReLU"/> function
@@ -106,7 +102,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double LeakyReLUPrime(this double x) => x <= 0 ? 0.01 : 1;
+        public static double LeakyReLUPrime(this double x) => x > 0 ? 1 : 0.01;
 
         /// <summary>
         /// Applies the softplus function, ln(1 + e^x)
