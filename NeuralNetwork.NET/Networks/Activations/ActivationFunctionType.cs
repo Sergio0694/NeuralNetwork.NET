@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.Networks.Architecture
+﻿namespace NeuralNetworkNET.Networks.Activations
 {
     /// <summary>
     /// Indicates an activation function to use in a neural network

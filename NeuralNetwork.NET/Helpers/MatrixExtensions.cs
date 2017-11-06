@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Architecture;
+using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -283,7 +283,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Activation([NotNull] this double[] v, [NotNull] Func<double, double> activation)
+        public static double[] Activation([NotNull] this double[] v, [NotNull] ActivationFunction activation)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
@@ -299,7 +299,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Activation([NotNull] this double[,] m, [NotNull] Func<double, double> activation)
+        public static double[,] Activation([NotNull] this double[,] m, [NotNull] ActivationFunction activation)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -328,7 +328,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceActivation([NotNull] this double[,] m, [NotNull] Func<double, double> activation)
+        public static void InPlaceActivation([NotNull] this double[,] m, [NotNull] ActivationFunction activation)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -359,7 +359,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] ActivationPrime([NotNull] this double[] v, [NotNull] Func<double, double> prime)
+        public static double[] ActivationPrime([NotNull] this double[] v, [NotNull] ActivationFunction prime)
         {
             double[] result = new double[v.Length];
             for (int i = 0; i < v.Length; i++)
@@ -377,7 +377,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] ActivationPrime([NotNull] this double[,] m, [NotNull] Func<double, double> prime)
+        public static double[,] ActivationPrime([NotNull] this double[,] m, [NotNull] ActivationFunction prime)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -414,7 +414,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] Func<double, double> activation)
+        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -511,7 +511,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] Func<double, double> activation)
+        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -561,7 +561,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] Func<double, double> prime)
+            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] ActivationFunction prime)
         {
             // Checks
             int
@@ -605,7 +605,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] Func<double, double> prime)
+            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
             int h = m1.GetLength(0);

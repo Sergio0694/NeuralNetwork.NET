@@ -49,6 +49,25 @@ namespace NeuralNetworkNET.Helpers
             return (start, end);
         }
 
+        /// <summary>
+        /// Returns a new vector filled with values from the Gaussian distribution (mean 0, standard deviation 1)
+        /// </summary>
+        /// <param name="random">The random instance</param>
+        /// <param name="n">The length of the vector</param>
+        [PublicAPI]
+        [NotNull]
+        public static double[] NextGaussianVector([NotNull] this Random random, int n)
+        {
+            double[] v = new double[n];
+            unsafe
+            {
+                fixed (double* pv = v)
+                    for (int i = 0; i < n; i++)
+                        pv[i] = random.NextGaussian();
+            }
+            return v;
+        }
+
         // Matrix initialization
         public static double[,] NextMatrix([NotNull] this Random random, int x, int y, Func<Random, double> provider)
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,10 +26,9 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="ys">The results vector</param>
         /// <param name="batchSize"></param>
         /// <param name="learningType">The type of learning algorithm to use to train the network</param>
-        /// <param name="networkType">The type of neural network to create and train</param>
         /// <param name="token">The cancellation token for the training session</param>
         /// <param name="progress">An optional progress callback</param>
-        /// <param name="neurons">The number of neurons in each network layer</param>
+        /// <param name="layers">The network layers to create</param>
         [PublicAPI]
         [Pure, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -37,12 +37,11 @@ namespace NeuralNetworkNET.SupervisedLearning
             [NotNull] double[,] ys,
             int? batchSize,
             LearningAlgorithmType learningType,
-            NeuralNetworkType networkType,
             CancellationToken token,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress,
-            [NotNull] params int[] neurons)
+            [NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
-            return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), learningType, networkType, token, null, progress, neurons);
+            return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), learningType, token, null, progress, layers);
         }
 
         /// <summary>
@@ -69,8 +68,10 @@ namespace NeuralNetworkNET.SupervisedLearning
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress)
         {
             double[] solution = (network as NeuralNetwork)?.Serialize() ?? throw new ArgumentException(nameof(network), "Invalid network instance");
-            int[] neurons = new[] { network.InputLayerSize }.Concat(network.HiddenLayers).Concat(new[] { network.OutputLayerSize }).ToArray();
-            return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), learningType, network.NetworkType, token, solution, progress, neurons);
+            IEnumerable<NetworkLayer> layers = new[] { NetworkLayer.Inputs(network.InputLayerSize) }
+                .Concat(network.HiddenLayers.Select((n, i) => NetworkLayer.FullyConnected(n, network.ActivationFunctions[i])))
+                .Concat(new[] { NetworkLayer.FullyConnected(network.OutputLayerSize, network.ActivationFunctions.Last()) });
+            return ComputeTrainedNetworkAsync(x, ys, batchSize ?? x.GetLength(0), learningType, token, solution, progress, layers.ToArray());
         }
 
         /// <summary>
@@ -109,35 +110,21 @@ namespace NeuralNetworkNET.SupervisedLearning
             [NotNull] double[,] ys,
             int batchSize,
             LearningAlgorithmType type,
-            NeuralNetworkType networkType,
             CancellationToken token,
             [CanBeNull] double[] solution,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress,
-            [NotNull] params int[] neurons)
+            [NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
             // Preliminary checks
             if (x.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
             if (ys.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
             if (x.GetLength(0) != ys.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
-            if (neurons.Length < 2) throw new ArgumentOutOfRangeException("The network must have at least two layers");
+            if (layers.Length < 2) throw new ArgumentOutOfRangeException("The network must have at least two layers");
             if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
             if (batchSize > x.GetLength(0)) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be less or equal than the number of training samples");
 
             // Initialize the network and the deserializer
-            double[] start = solution;
-            Func<double[], NeuralNetwork> deserialize;
-            switch (networkType)
-            {
-                case NeuralNetworkType.Unbiased:
-                    deserialize = w => NeuralNetwork.Deserialize(w, neurons);
-                    if (solution == null) start = NeuralNetwork.NewRandom(neurons).Serialize();
-                    break;
-                case NeuralNetworkType.Biased:
-                    deserialize = w => BiasedNeuralNetwork.Deserialize(w, neurons);
-                    if (solution == null) start = BiasedNeuralNetwork.NewRandom(neurons).Serialize();
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(networkType), "Unsupported network type");
-            }
+            double[] start = solution ?? NeuralNetwork.NewRandom(layers).Serialize();
 
             // Prepare the batches
             int iteration = 1;
@@ -165,12 +152,11 @@ namespace NeuralNetworkNET.SupervisedLearning
             // Calculates the cost for a network with the input weights
             double CostFunction(double[] weights)
             {
-                NeuralNetwork network = deserialize(weights);
+                NeuralNetwork network = NeuralNetwork.Deserialize(weights, layers);
                 double cost = network.CalculateCost(x, ys);
                 if (!double.IsNaN(cost))
                 {
-                    progress?.Report(new BackpropagationProgressEventArgs(
-                        () => NeuralNetwork.Deserialize(optimizer.Solution, neurons), iteration++, cost));
+                    progress?.Report(new BackpropagationProgressEventArgs(iteration++, cost));
                 }
                 return cost;
             }
@@ -178,7 +164,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             // Calculates the gradient for a network with the input weights
             double[] GradientFunction(double[] weights)
             {
-                NeuralNetwork network = deserialize(weights);
+                NeuralNetwork network = NeuralNetwork.Deserialize(weights, layers);
                 TrainingBatch pick = batches.Next();
                 return network.ComputeGradient(pick.X, pick.Y);
             }
@@ -205,7 +191,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             }
 
             // Return the result network
-            return deserialize(optimizer.Solution);
+            return NeuralNetwork.Deserialize(optimizer.Solution);
         }
     }
 }

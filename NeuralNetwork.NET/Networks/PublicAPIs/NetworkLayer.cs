@@ -1,5 +1,5 @@
 ﻿using System;
-using NeuralNetworkNET.Networks.Architecture;
+using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {

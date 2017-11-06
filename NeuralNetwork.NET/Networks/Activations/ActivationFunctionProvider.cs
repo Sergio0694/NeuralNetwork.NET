@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Networks.Architecture
+namespace NeuralNetworkNET.Networks.Activations
 {
     /// <summary>
     /// A static class that returns the right activation function for the given type
@@ -26,7 +26,7 @@ namespace NeuralNetworkNET.Networks.Architecture
                 case ActivationFunctionType.Softplus: return ActivationFunctions.Softplus;
                 case ActivationFunctionType.ELU: return ActivationFunctions.ELU;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(Architecture.ActivationFunctionType), "Unsupported activation function");
+                    throw new ArgumentOutOfRangeException(nameof(ActivationFunctionType), "Unsupported activation function");
             }
         }
 
@@ -47,7 +47,7 @@ namespace NeuralNetworkNET.Networks.Architecture
                 case ActivationFunctionType.Softplus: return ActivationFunctions.Sigmoid;
                 case ActivationFunctionType.ELU: return ActivationFunctions.ELUPrime;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(Architecture.ActivationFunctionType), "Unsupported activation function");
+                    throw new ArgumentOutOfRangeException(nameof(ActivationFunctionType), "Unsupported activation function");
             }
         }
     }

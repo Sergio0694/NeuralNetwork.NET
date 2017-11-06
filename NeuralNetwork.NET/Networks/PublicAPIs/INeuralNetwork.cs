@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Architecture;
+using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {
@@ -31,11 +31,6 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         [NotNull]
         IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
-
-        /// <summary>
-        /// Gets the type of the current instance
-        /// </summary>
-        NeuralNetworkType NetworkType { get; }
 
         /// <summary>
         /// Forwards the input through the network

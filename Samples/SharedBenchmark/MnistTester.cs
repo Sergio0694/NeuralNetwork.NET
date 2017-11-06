@@ -33,7 +33,7 @@ namespace SharedBenchmark
             }
         }
 
-        public static async Task PerformBenchmarkAsync(LearningAlgorithmType type, NeuralNetworkType networkType, int? batchSize, bool convolution, int? samplesLimit, bool cacheEnabled, params int[] neurons)
+        public static async Task PerformBenchmarkAsync(LearningAlgorithmType type, int? batchSize, bool convolution, int? samplesLimit, bool cacheEnabled, params NetworkLayer[] layers)
         {
             Printf("Loading sample data");
             (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(samplesLimit);
@@ -79,7 +79,7 @@ namespace SharedBenchmark
             });
             INeuralNetwork network = previous == null
                 ? await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(x, y, batchSize,
-                    type, networkType, cts.Token, progress, neurons)
+                    type, cts.Token, progress, layers)
                 : await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(x, y, batchSize,
                     previous, type, cts.Token, progress);
 

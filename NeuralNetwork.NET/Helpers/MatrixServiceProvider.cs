@@ -1,5 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Activations;
+
 #pragma warning disable 1574
 
 namespace NeuralNetworkNET.Helpers
@@ -18,12 +20,12 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Func<double[,], double[,], double[,]> multiply,
             [NotNull] Func<double[,], double[,], double[], double[,]> multiplyWithSum,
             [NotNull] Func<double[,], double[,], double[,]> transposeMultiply,
-            [NotNull] Func<double[,], double[,], Func<double, double>, double[,]> multiplyActivation,
-            [NotNull] Func<double[,], double[,], double[], Func<double, double>, double[,]> multiplyWithSumAndActivation,
-            [NotNull] Func<double[,], Func<double, double>, double[,]> activation,
+            [NotNull] Func<double[,], double[,], ActivationFunction, double[,]> multiplyActivation,
+            [NotNull] Func<double[,], double[,], double[], ActivationFunction, double[,]> multiplyWithSumAndActivation,
+            [NotNull] Func<double[,], ActivationFunction, double[,]> activation,
             [NotNull] Func<double[,], double[,], double> halfSquaredDifference,
-            [NotNull] Action<double[,], double[,], double[,], Func<double, double>> inPlaceSubtractHadamardActivationPrime,
-            [NotNull] Action<double[,], double[,], double[,], Func<double, double>> multiplyAndInPlaceActivationPrimeHadamard)
+            [NotNull] Action<double[,], double[,], double[,], ActivationFunction> inPlaceSubtractHadamardActivationPrime,
+            [NotNull] Action<double[,], double[,], double[,], ActivationFunction> multiplyAndInPlaceActivationPrimeHadamard)
         {
             _MultiplyOverride = multiply;
             _MultiplyWithSumOverride = multiplyWithSum;
@@ -102,13 +104,13 @@ namespace NeuralNetworkNET.Helpers
         /// A <see cref="Func{T, TResult}"/> that applies the activation function
         /// </summary>
         [CanBeNull]
-        private static Func<double[,], Func<double, double>, double[,]> _ActivationOverride;
+        private static Func<double[,], ActivationFunction, double[,]> _ActivationOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.Activation"/> method
         /// </summary>
         [Pure, NotNull]
-        public static double[,] Activation([NotNull] double[,] m, [NotNull] Func<double, double> activation)
+        public static double[,] Activation([NotNull] double[,] m, [NotNull] ActivationFunction activation)
         {
             return _ActivationOverride?.Invoke(m, activation) ?? m.Activation(activation);
         }
@@ -117,13 +119,13 @@ namespace NeuralNetworkNET.Helpers
         /// A <see cref="Func{T1, T2, TResult}"/> that multiplies two matrices and then applies the activation function
         /// </summary>
         [CanBeNull]
-        private static Func<double[,], double[,], Func<double, double>, double[,]> _MultiplyAndActivationOverride;
+        private static Func<double[,], double[,], ActivationFunction, double[,]> _MultiplyAndActivationOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.MultiplyAndActivation"/> method
         /// </summary>
         [Pure, NotNull]
-        public static double[,] MultiplyAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] Func<double, double> activation)
+        public static double[,] MultiplyAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction activation)
         {
             return _MultiplyAndActivationOverride?.Invoke(m1, m2, activation) ?? m1.MultiplyAndActivation(m2, activation);
         }
@@ -132,13 +134,13 @@ namespace NeuralNetworkNET.Helpers
         /// A <see cref="Func{T1, T2, T3, TResult}"/> that multiplies two matrices, sums the input vector and then applies the activation function
         /// </summary>
         [CanBeNull]
-        private static Func<double[,], double[,], double[], Func<double, double>, double[,]> _MultiplyWithSumAndActivationOverride;
+        private static Func<double[,], double[,], double[], ActivationFunction, double[,]> _MultiplyWithSumAndActivationOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.MultiplyWithSumAndActivation"/> method
         /// </summary>
         [Pure, NotNull]
-        public static double[,] MultiplyWithSumAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] Func<double, double> activation)
+        public static double[,] MultiplyWithSumAndActivation([NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] ActivationFunction activation)
         {
             return _MultiplyWithSumAndActivationOverride?.Invoke(m1, m2, v, activation) ?? m1.MultiplyWithSumAndActivation(m2, v, activation);
         }
@@ -166,12 +168,12 @@ namespace NeuralNetworkNET.Helpers
         /// An <see cref="Action{T1, T2, T3}"/> that performs the Hadamard product to the cost function prime, then applies the activation prime function
         /// </summary>
         [CanBeNull]
-        private static Action<double[,], double[,], double[,], Func<double, double>> _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride;
+        private static Action<double[,], double[,], double[,], ActivationFunction> _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime"/> method
         /// </summary>
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime([NotNull] double[,] m, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] Func<double, double> prime)
+        public static void InPlaceSubtractAndHadamardProductWithActivationPrime([NotNull] double[,] m, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] ActivationFunction prime)
         {
             if (_InPlaceSubtractAndHadamardProductWithActivationPrimeOverride == null) m.InPlaceSubtractAndHadamardProductWithActivationPrime(y, z, prime);
             else _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride?.Invoke(m, y, z, prime);
@@ -181,12 +183,12 @@ namespace NeuralNetworkNET.Helpers
         /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product with a matrix product
         /// </summary>
         [CanBeNull]
-        private static Action<double[,], double[,], double[,], Func<double, double>> _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride;
+        private static Action<double[,], double[,], double[,], ActivationFunction> _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct"/> method
         /// </summary>
-        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct([NotNull] double[,] m, [NotNull] double[,] di, [NotNull] double[,] wt, [NotNull] Func<double, double> prime)
+        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct([NotNull] double[,] m, [NotNull] double[,] di, [NotNull] double[,] wt, [NotNull] ActivationFunction prime)
         {
             if (_MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride == null) m.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(di, wt, prime);
             else _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride?.Invoke(m, di, wt, prime);

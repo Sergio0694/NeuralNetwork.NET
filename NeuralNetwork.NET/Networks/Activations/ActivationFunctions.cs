@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Networks.Architecture
+namespace NeuralNetworkNET.Networks.Activations
 {
     /// <summary>
     /// A static collection of available activation functions
