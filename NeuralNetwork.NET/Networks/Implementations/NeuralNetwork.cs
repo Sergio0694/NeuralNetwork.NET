@@ -32,6 +32,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Weights.Take(Weights.Count - 1).Select(w => w.GetLength(1)).ToArray());
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
+        public IReadOnlyList<ActivationFunction> ActivationFunctions { get; }
+
+        /// <inheritdoc/>
         public virtual NeuralNetworkType NetworkType { get; } = NeuralNetworkType.Unbiased;
 
         #endregion
@@ -60,54 +64,61 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Initializes a new instance with the given parameters
         /// </summary>
         /// <param name="weights">The weights in all the network layers</param>
-        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights)
+        /// <param name="activations">The activation functions to use in the new network</param>
+        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<ActivationFunction> activations)
         {
             // Input check
             if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
+            if (activations.Count != weights.Count) throw new ArgumentOutOfRangeException(nameof(activations), "The number of activations must be the same as the weights");
             for (int i = 0; i < weights.Count; i++)
             {
                 if (i > 0 && weights[i - 1].GetLength(1) != weights[i].GetLength(0))
                     throw new ArgumentOutOfRangeException(nameof(weights), "Some weight matrix doesn't have the right size");
+                if (activations[i] != ActivationFunction.Sigmoid && activations[i] != ActivationFunction.Tanh && i < weights.Count - 1)
+                    throw new ArgumentOutOfRangeException(nameof(activations), $"The {activations[i]} activation function can only be used in the output layer");
             }
 
             // Parameters setup
             Weights = weights;
+            ActivationFunctions = activations;
             TransposedWeights = new double[weights.Count][,];
         }
 
         /// <summary>
         /// Creates a new random instance with the given number of neurons in each layer
         /// </summary>
-        /// <param name="neurons">The number of neurons from the input to the output layer</param>
+        /// <param name="layers">The type of layers that make up the network</param>
         [NotNull]
-        internal static NeuralNetwork NewRandom([NotNull] params int[] neurons)
+        internal static NeuralNetwork NewRandom([NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
             // Check
-            if (neurons.Length < 2) throw new ArgumentOutOfRangeException(nameof(neurons), "The network must have at least two layers");
-
-            // Get the provider
-            Random random = new Random();
-            Func<int, int, double[,]> factory;
-            switch (NeuralNetworkSettings.ActivationFunctionType)
-            {
-                case ActivationFunction.Sigmoid:
-                    factory = (x, y) => random.NextSigmoidMatrix(x, y);
-                    break;
-                case ActivationFunction.Tanh:
-                    factory = (x, y) => random.NextTanhMatrix(x, y);
-                    break;
-                default:
-                    factory = (x, y) => random.NextXavierMatrix(x, y);
-                    break;
-            }
+            if (layers.Length < 2) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least two layers");
+            if (!(layers[0] is NetworkLayer.InputLayer)) throw new ArgumentException(nameof(layers), "The first layer isn't a valid input layer");
 
             // Initialize the weights
-            double[][,] weights = new double[neurons.Length - 1][,];
+            Random random = new Random();
+            double[][,] weights = new double[layers.Length - 1][,];
+            ActivationFunction[] activations = new ActivationFunction[weights.Length];
             for (int i = 0; i < weights.Length; i++)
             {
-                weights[i] = factory(neurons[i], neurons[i + 1]);
+                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
+                if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
+                    throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
+                activations[i] = fullyConnected.Activation;
+                switch (fullyConnected.Activation)
+                {
+                    case ActivationFunction.Sigmoid:
+                        weights[i] = random.NextSigmoidMatrix(fanIn, fanOut);
+                        break;
+                    case ActivationFunction.Tanh:
+                        weights[i] = random.NextTanhMatrix(fanIn, fanOut);
+                        break;
+                    default:
+                        weights[i] = random.NextXavierMatrix(fanIn, fanOut);
+                        break;
+                }
             }
-            return new NeuralNetwork(weights);
+            return new NeuralNetwork(weights, activations);
         }
 
         #endregion
@@ -237,31 +248,36 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Deserializes a neural network from the input weights and parameters
         /// </summary>
         /// <param name="data">The data representing the weights of the network</param>
-        /// <param name="neurons">The number of nodes in each network layer</param>
+        /// <param name="layers">The list of network layers</param>
         [PublicAPI]
         [Pure, NotNull]
-        internal static NeuralNetwork Deserialize([NotNull] double[] data, [NotNull] params int[] neurons)
+        internal static NeuralNetwork Deserialize([NotNull] double[] data, [NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
             // Checks
-            if (neurons.Length < 2) throw new ArgumentException("The network must have at least 2 layers");
+            if (layers.Length < 2) throw new ArgumentException("The network must have at least 2 layers");
+            if (!(layers[0] is NetworkLayer.InputLayer)) throw new ArgumentException(nameof(layers), "The first layer isn't a valid input layer");
 
             // Parse the input data
-            int depth = neurons.Length - 1;
+            int depth = layers.Length - 1;
             double[][,] weights = new double[depth][,];
+            ActivationFunction[] activations = new ActivationFunction[weights.Length];
             int position = 0;
             for (int i = 0; i < depth; i++)
             {
                 // Unpack the current weights
-                double[,] wi = new double[neurons[i], neurons[i + 1]];
+                double[,] wi = new double[layers[i].Neurons, layers[i + 1].Neurons];
                 int bytes = sizeof(double) * wi.Length;
                 Buffer.BlockCopy(data, position, wi, 0, bytes);
                 position += bytes;
                 weights[i] = wi;
+                if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
+                    throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
+                activations[i] = fullyConnected.Activation;
             }
             if (position / sizeof(double) != data.Length) throw new InvalidOperationException("Invalid network requested size");
 
             // Create the new network to use
-            return new NeuralNetwork(weights);
+            return new NeuralNetwork(weights, activations);
         }
 
         /// <summary>
@@ -303,7 +319,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (other.GetType() == typeof(NeuralNetwork) &&
                 other.InputLayerSize == InputLayerSize &&
                 other.OutputLayerSize == OutputLayerSize &&
-                other.HiddenLayers.SequenceEqual(HiddenLayers))
+                other.HiddenLayers.SequenceEqual(HiddenLayers) &&
+                other.ActivationFunctions.SequenceEqual(ActivationFunctions))
             {
                 // Compare each weight and bias value
                 NeuralNetwork network = (NeuralNetwork)other;

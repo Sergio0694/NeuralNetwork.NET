@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Architecture;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {
@@ -24,6 +25,12 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         [NotNull]
         IReadOnlyList<int> HiddenLayers { get; }
+
+        /// <summary>
+        /// Gets the list of activation functions used in the network layers
+        /// </summary>
+        [NotNull]
+        IReadOnlyList<ActivationFunction> ActivationFunctions { get; }
 
         /// <summary>
         /// Gets the type of the current instance
