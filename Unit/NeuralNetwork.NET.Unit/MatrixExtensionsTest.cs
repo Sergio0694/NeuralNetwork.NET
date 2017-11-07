@@ -166,5 +166,29 @@ namespace NeuralNetworkNET.Unit
                 t = mv.Flatten();
             Assert.IsTrue(t.ContentEquals(r));
         }
+
+        [TestMethod]
+        public void IndexOfMax1()
+        {
+            double[]
+                v1 = new double[0],
+                v2 = new double[1];
+            Assert.IsTrue(v1.IndexOfMax() == 0);
+            Assert.IsTrue(v2.IndexOfMax() == 0);
+        }
+
+        [TestMethod]
+        public void IndexOfMax2()
+        {
+            double[]
+                v1 = { 1d, 2d, 3d, 4d, 5d },
+                v2 = { 99d, 11d },
+                v3 = { -2d, -2.1d },
+                v4 = { 0d, 0d, 0d, 0d, 1d, 0d, 0d, 0d, 0d };
+            Assert.IsTrue(v1.IndexOfMax() == 4);
+            Assert.IsTrue(v2.IndexOfMax() == 0);
+            Assert.IsTrue(v3.IndexOfMax() == 0);
+            Assert.IsTrue(v4.IndexOfMax() == 4);
+        }
     }
 }

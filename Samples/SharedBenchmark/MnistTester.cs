@@ -7,6 +7,7 @@ using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Convolution.Operations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning;
 using NeuralNetworkNET.SupervisedLearning.Misc;
@@ -105,28 +106,12 @@ namespace SharedBenchmark
             int valid = 0;
             for (int i = 0; i < yHat.GetLength(0); i++)
             {
-                // Extracts the index of the maximum valud
-                int MaxIndex(double[] v)
-                {
-                    int index = 0;
-                    double max = 0;
-                    for (int j = 0; j < v.Length; j++)
-                    {
-                        if (v[j] > max)
-                        {
-                            max = v[j];
-                            index = j;
-                        }
-                    }
-                    return index;
-                }
-
                 // Iterate through every test sample
                 double[] temp = new double[10];
                 Buffer.BlockCopy(estimation, i * 10, temp, 0, sizeof(double) * 10);
-                int estimationIndex = MaxIndex(temp);
+                int estimationIndex = temp.IndexOfMax();
                 Buffer.BlockCopy(yHat, i * 10, temp, 0, sizeof(double) * 10);
-                int expectedIndex = MaxIndex(temp);
+                int expectedIndex = temp.IndexOfMax();
                 if (estimationIndex == expectedIndex) valid++;
             }
             Console.ForegroundColor = ConsoleColor.Gray;

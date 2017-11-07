@@ -908,6 +908,27 @@ namespace NeuralNetworkNET.Helpers
             if (!result) throw new Exception("Error while runnig the parallel loop");
         }
 
+        /// <summary>
+        /// Returns the index of the maximum value in the input vector
+        /// </summary>
+        /// <param name="v">The input vector to read from</param>
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static int IndexOfMax([NotNull] this double[] v)
+        {
+            if (v.Length < 2) return 0;
+            int index = 0;
+            double max = double.MinValue;
+            for (int j = 0; j < v.Length; j++)
+            {
+                if (v[j] > max)
+                {
+                    max = v[j];
+                    index = j;
+                }
+            }
+            return index;
+        }
+
         #endregion
 
         #region Content check
