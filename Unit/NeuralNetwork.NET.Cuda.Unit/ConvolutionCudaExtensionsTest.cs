@@ -546,44 +546,35 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             // Shared pipeline
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
-            ConvolutionOperation.Convolution3x3( // 10 kernels, 28*28*1 pixels >> 26*26*10
+            ConvolutionOperation.Convolution3x3( // 10 kernels, 28*28*1 pixels >> 26*26*6
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.Outline,
-                KernelsCollection.Sharpen,
-                KernelsCollection.BottomLeftEmboss,
-                KernelsCollection.TopRightEmboss,
-                KernelsCollection.TopLeftEmboss,
-                KernelsCollection.BottomRightEmboss),
+                KernelsCollection.Sharpen),
             ConvolutionOperation.ReLU, // Set minimum threshold
-            ConvolutionOperation.Pool2x2, // 26*26*10 >> 13*13*10,
+            ConvolutionOperation.Pool2x2, // 26*26*6 >> 13*13*6,
+            ConvolutionOperation.Convolution3x3(
+                KernelsCollection.TopSobel,
+                KernelsCollection.RightSobel,
+                KernelsCollection.LeftSobel,
+                KernelsCollection.BottomSobel),// 13*13*10 >> 11*11*24
+            ConvolutionOperation.ReLU, // Set minimum threshold
+            ConvolutionOperation.Pool2x2, // 11*11*24 >> 6*6*24,
             ConvolutionOperation.Convolution3x3(
                 KernelsCollection.TopSobel,
                 KernelsCollection.RightSobel,
                 KernelsCollection.LeftSobel,
                 KernelsCollection.BottomSobel,
-                KernelsCollection.Outline,
-                KernelsCollection.Sharpen),// 13*13*10 >> 11*11*60
+                KernelsCollection.Outline), // 6*6*24 >> 4*4*120
             ConvolutionOperation.ReLU, // Set minimum threshold
-            ConvolutionOperation.Pool2x2, // 11*11*60 >> 6*6*60,
-            ConvolutionOperation.Convolution3x3(
-                KernelsCollection.TopSobel,
-                KernelsCollection.RightSobel,
-                KernelsCollection.LeftSobel,
-                KernelsCollection.BottomSobel,
-                KernelsCollection.Outline,
-                KernelsCollection.Sharpen,
-                KernelsCollection.BottomRightEmboss,
-                KernelsCollection.TopLeftEmboss), // 6*6*60 >> 4*4*480
-            ConvolutionOperation.ReLU, // Set minimum threshold
-            ConvolutionOperation.Pool2x2, // 4*4*480 >> 2*2*480
-                ConvolutionOperation.Pool2x2); // 2*2*480 >> 1*1*480
+            ConvolutionOperation.Pool2x2, // 4*4*120 >> 2*2*120
+            ConvolutionOperation.Pool2x2); // 2*2*120 >> 1*1*120
 
             // Setup
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(20000, 784);
+            double[,] dataset = r.NextXavierMatrix(10000, 784);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 

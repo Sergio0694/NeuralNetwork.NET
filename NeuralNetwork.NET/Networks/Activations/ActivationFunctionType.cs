@@ -1,9 +1,9 @@
-﻿namespace NeuralNetworkNET.Networks.Architecture
+﻿namespace NeuralNetworkNET.Networks.Activations
 {
     /// <summary>
     /// Indicates an activation function to use in a neural network
     /// </summary>
-    public enum ActivationFunction
+    public enum ActivationFunctionType
     {
         /// <summary>
         /// The sigmoid function, 1 / (1 + e^(-x))

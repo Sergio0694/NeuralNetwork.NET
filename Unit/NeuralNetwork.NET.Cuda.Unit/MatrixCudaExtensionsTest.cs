@@ -6,7 +6,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.PublicAPIs;
+
 #pragma warning disable 162
 
 namespace NeuralNetworkNET.Cuda.Unit
@@ -42,7 +45,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             }
 
             return;
-            var network = NeuralNetwork.NewRandom(200, 100, 32, 10);
+            var network = NeuralNetwork.NewRandom(NetworkLayer.Inputs(200), NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(32, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
             var r = new Random();
             var input = r.NextGaussianMatrix(2000, 200);
             var y = r.NextGaussianMatrix(2000, 10);
@@ -132,14 +135,14 @@ namespace NeuralNetworkNET.Cuda.Unit
                 m1 = r.NextGaussianMatrix(13, 5),
                 m2 = r.NextGaussianMatrix(5, 4);
             double[] v = Enumerable.Range(0, 4).Select(i => (double)i).ToArray();
-            double[,] check = MatrixExtensions.MultiplyWithSumAndActivation(m1, m2, v);
-            double[,] test = MatrixGpuExtensions.MultiplyWithSumAndActivation(m1, m2, v);
+            double[,] check = MatrixExtensions.MultiplyWithSumAndActivation(m1, m2, v, ActivationFunctions.Sigmoid);
+            double[,] test = MatrixGpuExtensions.MultiplyWithSumAndActivation(m1, m2, v, ActivationFunctions.Sigmoid);
             Assert.IsTrue(test.ContentEquals(check));
             m1 = r.NextGaussianMatrix(1500, 800);
             m2 = r.NextGaussianMatrix(800, 40);
             v = Enumerable.Range(0, 40).Select(i => (double)i).ToArray();
-            check = MatrixExtensions.MultiplyWithSumAndActivation(m1, m2, v);
-            test = MatrixGpuExtensions.MultiplyWithSumAndActivation(m1, m2, v);
+            check = MatrixExtensions.MultiplyWithSumAndActivation(m1, m2, v, ActivationFunctions.Sigmoid);
+            test = MatrixGpuExtensions.MultiplyWithSumAndActivation(m1, m2, v, ActivationFunctions.Sigmoid);
             Assert.IsTrue(test.ContentEquals(check));
         }
 
@@ -150,13 +153,13 @@ namespace NeuralNetworkNET.Cuda.Unit
             double[,]
                 m1 = r.NextGaussianMatrix(7, 3),
                 m2 = r.NextGaussianMatrix(3, 4),
-                check = MatrixExtensions.MultiplyAndActivation(m1, m2);
-            double[,] test = MatrixGpuExtensions.MultiplyAndActivation(m1, m2);
+                check = MatrixExtensions.MultiplyAndActivation(m1, m2, ActivationFunctions.Sigmoid);
+            double[,] test = MatrixGpuExtensions.MultiplyAndActivation(m1, m2, ActivationFunctions.Sigmoid);
             Assert.IsTrue(test.ContentEquals(check));
             m1 = r.NextGaussianMatrix(1500, 800);
             m2 = r.NextGaussianMatrix(800, 40);
-            check = MatrixExtensions.MultiplyAndActivation(m1, m2);
-            test = MatrixGpuExtensions.MultiplyAndActivation(m1, m2);
+            check = MatrixExtensions.MultiplyAndActivation(m1, m2, ActivationFunctions.Sigmoid);
+            test = MatrixGpuExtensions.MultiplyAndActivation(m1, m2, ActivationFunctions.Sigmoid);
             Assert.IsTrue(test.ContentEquals(check));
         }
 
@@ -166,12 +169,12 @@ namespace NeuralNetworkNET.Cuda.Unit
             Random r = new Random();
             double[,]
                 m = r.NextGaussianMatrix(20, 35),
-                check = MatrixExtensions.Activation(m);
-            double[,] test = MatrixGpuExtensions.Activation(m);
+                check = MatrixExtensions.Activation(m, ActivationFunctions.Sigmoid);
+            double[,] test = MatrixGpuExtensions.Activation(m, ActivationFunctions.Sigmoid);
             Assert.IsTrue(test.ContentEquals(check));
             m = r.NextGaussianMatrix(1500, 800);
-            check = MatrixExtensions.Activation(m);
-            test = MatrixGpuExtensions.Activation(m);
+            check = MatrixExtensions.Activation(m, ActivationFunctions.Sigmoid);
+            test = MatrixGpuExtensions.Activation(m, ActivationFunctions.Sigmoid);
             Assert.IsTrue(test.ContentEquals(check));
         }
 
@@ -203,16 +206,16 @@ namespace NeuralNetworkNET.Cuda.Unit
                 m3 = r.NextGaussianMatrix(10, 10),
                 backup = new double[10, 10];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(double) * m1.Length);
-            MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(backup, m2, m3);
-            MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(m1, m2, m3);
+            MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(backup, m2, m3, ActivationFunctions.SigmoidPrime);
+            MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(m1, m2, m3, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
             m1 = r.NextGaussianMatrix(200, 200);
             m2 = r.NextGaussianMatrix(200, 200);
             m3 = r.NextGaussianMatrix(200, 200);
             backup = new double[200, 200];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(double) * m1.Length);
-            MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(backup, m2, m3);
-            MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(m1, m2, m3);
+            MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(backup, m2, m3, ActivationFunctions.SigmoidPrime);
+            MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(m1, m2, m3, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
         }
 
@@ -226,16 +229,16 @@ namespace NeuralNetworkNET.Cuda.Unit
                 m2 = r.NextGaussianMatrix(10, 10),
                 backup = new double[10, 10];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(double) * m1.Length);
-            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt);
-            MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt);
+            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt, ActivationFunctions.SigmoidPrime);
+            MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
             wt = r.NextGaussianMatrix(200, 200);
             m1 = r.NextGaussianMatrix(200, 200);
             m2 = r.NextGaussianMatrix(200, 200);
             backup = new double[200, 200];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(double) * m1.Length);
-            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt);
-            MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt);
+            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt, ActivationFunctions.SigmoidPrime);
+            MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
         }
     }

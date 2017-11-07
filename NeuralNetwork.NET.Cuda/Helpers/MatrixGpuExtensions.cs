@@ -2,7 +2,7 @@
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Architecture;
+using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Cuda.Helpers
 {
@@ -178,10 +178,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// </summary>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -204,7 +205,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
                     m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32(),
                     mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
-                Func<double, double> activation = ActivationFunctionProvider.Activation;
 
                 // Wrapper
                 void Kernel(int index)
@@ -301,10 +301,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix before applying the activation function</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -330,7 +331,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
                     m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32(),
                     mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
-                Func<double, double> activation = ActivationFunctionProvider.Activation;
 
                 // Wrapper
                 void Kernel(int index)
@@ -365,10 +365,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// <param name="a">The estimated y</param>
         /// <param name="y">The expected y</param>
         /// <param name="z">The activity on the last layer</param>
+        /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z)
+            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] ActivationFunction prime)
         {
             // Checks
             int
@@ -392,7 +393,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     a_gpu_pitch = a_gpu.PitchInElements.ToInt32(),
                     y_gpu_pitch = y_gpu.PitchInElements.ToInt32(),
                     z_gpu_pitch = z_gpu.PitchInElements.ToInt32();
-                Func<double, double> activation = ActivationFunctionProvider.ActivationPrime;
 
                 // Wrapper
                 void Kernel(int i)
@@ -406,7 +406,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         int a_gpu_target = i * a_gpu_pitch + j;
                         double
                             difference = pa_gpu[a_gpu_target] - py_gpu[y_gpu_offset + j],
-                            zPrime = activation(pz_gpu[z_gpu_offset + j]),
+                            zPrime = prime(pz_gpu[z_gpu_offset + j]),
                             hProduct = difference * zPrime;
                         pa_gpu[a_gpu_target] = hProduct;
                     }
@@ -426,10 +426,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// <param name="z">The activity on the previous layer</param>
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2)
+            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
             int h = m1.GetLength(0);
@@ -455,7 +456,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     z_gpu_pitch = z_gpu.PitchInElements.ToInt32(),
                     m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
                     m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
-                Func<double, double> activation = ActivationFunctionProvider.ActivationPrime;
 
                 // Wrapper
                 void Kernel(int index)
@@ -475,7 +475,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
 
                     // sum is now the final delta(l) value in position [i, j]
                     int z_target = i * z_gpu_pitch + j;
-                    pz_gpu[z_target] = activation(pz_gpu[z_target]) * sum;
+                    pz_gpu[z_target] = prime(pz_gpu[z_target]) * sum;
                 }
 
                 // Execute the multiplication in parallel
@@ -494,10 +494,11 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// Performs the activation function on the input matrix
         /// </summary>
         /// <param name="m">The input matrix</param>
+        /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Activation([NotNull] this double[,] m)
+        public static double[,] Activation([NotNull] this double[,] m, [NotNull] ActivationFunction activation)
         {
             // Setup
             int
@@ -514,7 +515,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 int
                     m_gpu_pitch = m_gpu.PitchInElements.ToInt32(),
                     mresult_gpu_pitch = mresult_gpu.PitchInElements.ToInt32();
-                Func<double, double> activation = ActivationFunctionProvider.Activation;
 
                 // Wrapper
                 void Kernel(int ki)

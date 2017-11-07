@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -29,27 +30,21 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                     outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
                 int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
                 double[][,] weights = jObject["Weights"].ToObject<double[][,]>();
+                double[][] biases = jObject["Biases"].ToObject<double[][]>();
+                ActivationFunctionType[] activations = jObject["ActivationFunctions"].ToObject<ActivationFunctionType[]>();
 
                 // Input checks
                 if (weights.Length < 1 || 
                     inputs != weights[0].GetLength(0) ||
                     outputs != weights[weights.Length - 1].GetLength(1)) return null;
+                if (biases.Length < 1 ||
+                    outputs != biases[biases.Length - 1].Length) return null;
                 for (int i = 0; i < layersInfo.Length; i++)
-                    if (layersInfo[i] != weights[i].GetLength(1)) return null;
+                    if (layersInfo[i] != weights[i].GetLength(1) ||
+                        layersInfo[i] != biases[i].Length) return null;
 
-                // Additional bias
-                if (jObject.TryGetValue("Biases", out JToken biasToken))
-                {
-                    double[][] biases = biasToken.ToObject<double[][]>();
-                    if (biases.Length < 1 ||
-                        outputs != biases[biases.Length - 1].Length) return null;
-                    for (int i = 0; i < layersInfo.Length; i++)
-                        if (layersInfo[i] != biases[i].Length) return null;
-                    return new BiasedNeuralNetwork(weights, biases);
-                }
-
-                // Try to reconstruct the network
-                return new NeuralNetwork(weights);
+                // Parse the network
+                return new NeuralNetwork(weights, biases, activations);
             }
             catch
             {

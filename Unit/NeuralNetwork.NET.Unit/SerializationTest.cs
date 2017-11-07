@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
 
@@ -15,24 +16,24 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void BinarySerialize()
         {
-            NeuralNetwork network = NeuralNetwork.NewRandom(5, 8, 4);
+            NeuralNetwork network = NeuralNetwork.NewRandom(NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
             double[] data = network.Serialize();
-            NeuralNetwork copy = NeuralNetwork.Deserialize(data, 5, 8, 4);
+            NeuralNetwork copy = NeuralNetwork.Deserialize(data, NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
             Assert.IsTrue(copy.Equals(network));
         }
 
         [TestMethod]
         public void BinaryDeserialize()
         {
-            NeuralNetwork network = NeuralNetwork.NewRandom(5, 8, 4);
+            NeuralNetwork network = NeuralNetwork.NewRandom(NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
             double[] data = network.Serialize();
-            Assert.ThrowsException<InvalidOperationException>(() => NeuralNetwork.Deserialize(data, 5, 7, 4));
+            Assert.ThrowsException<InvalidOperationException>(() => NeuralNetwork.Deserialize(data, NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(7, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid)));
         }
 
         [TestMethod]
         public void JsonSerialize()
         {
-            NeuralNetwork network = NeuralNetwork.NewRandom(5, 8, 4);
+            NeuralNetwork network = NeuralNetwork.NewRandom(NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
             String json = network.SerializeAsJSON();
             INeuralNetwork copy = NeuralNetworkDeserializer.TryDeserialize(json);
             Assert.IsTrue(copy != null);
