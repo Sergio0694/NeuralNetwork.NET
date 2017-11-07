@@ -46,6 +46,41 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Sums two matrices element-wise
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static double[,] Sum([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        {
+            // Execute the transposition in parallel
+            int
+                h = m1.GetLength(0),
+                w = m1.GetLength(1);
+            if (m2.GetLength(0) != h || m2.GetLength(1) != w) throw new ArgumentException(nameof(m2), "Invalid matrix size");
+            double[,] result = new double[h, w];
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm1 = m1, pm2 = m2)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            pr[target] = pm1[target] + pm2[target];
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            return result;
+        }
+
+        /// <summary>
         /// Sums a row vector to all the rows in the input matrix, with side effect
         /// </summary>
         /// <param name="m">The input matrix</param>
@@ -934,6 +969,29 @@ namespace NeuralNetworkNET.Helpers
                     max = v[j];
                     index = j;
                 }
+            }
+            return index;
+        }
+
+        /// <summary>
+        /// Returns the index of the maximum value in the input matrix
+        /// </summary>
+        /// <param name="m">The input matrix to read from</param>
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static int Argmax([NotNull] this double[,] m)
+        {
+            if (m.Length < 2) return 0;
+            int index = 0;
+            double max = double.MinValue;
+            unsafe
+            {
+                fixed (double* p = m)
+                    for (int i = 0; i < m.Length; i++)
+                        if (p[i] > max)
+                        {
+                            max = p[i];
+                            index = i;
+                        }
             }
             return index;
         }
