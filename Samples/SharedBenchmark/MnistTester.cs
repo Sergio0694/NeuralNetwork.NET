@@ -169,5 +169,53 @@ namespace SharedBenchmark
             ConvolutionOperation.ReLU, // Set minimum threshold
             ConvolutionOperation.Pool2x2,
             ConvolutionOperation.Pool2x2); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
+
+#if NET47
+        public static void ExtractDatasetImages(String path)
+        {
+            (double[,] x, double[,] xlabels, double[,] y, double[,] ylabels) = DataParser.ParseDataset();
+            String
+                root = Path.Combine(path, "MNIST_images"),
+                xPath = Path.Combine(root, "X"),
+                yPath = Path.Combine(root, "Y");
+            Directory.CreateDirectory(root);
+            Directory.CreateDirectory(xPath);
+            Directory.CreateDirectory(yPath);
+            int
+                hx = x.GetLength(0),
+                hy = y.GetLength(0);
+            void ExtractImages(double[,] data, double[,] dataLabels, int index, String dir)
+            {
+                double[] label = new double[10];
+                Buffer.BlockCopy(dataLabels, sizeof(double) * 10 * index, label, 0, sizeof(double) * 10);
+                double[] xyValue = new double[784];
+                Buffer.BlockCopy(data, sizeof(double) * 784 * index, xyValue, 0, sizeof(double) * 784);
+                int number = label.IndexOfMax();
+                String valuePath = Path.Combine(dir, number.ToString());
+                Directory.CreateDirectory(valuePath);
+                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(28, 28);
+                for (int j = 0; j < 28; j++)
+                    for (int k = 0; k < 28; k++)
+                    {
+                        int offset = j * 28 + k;
+                        double color = xyValue[offset];
+                        int normalized = (int)((1d - color) * 255d);
+                        bitmap.SetPixel(k, j, System.Drawing.Color.FromArgb(normalized, normalized, normalized));
+                    }
+                bitmap.Save(Path.Combine(valuePath, $"{index}.jpg"));
+            }
+            Parallel.For(0, hx, i =>
+            {
+                ExtractImages(x, xlabels, i, xPath);
+                if (i % 1000 == 0) Console.WriteLine($"X - {i}");
+            });
+            Parallel.For(0, hy, i =>
+            {
+                ExtractImages(y, ylabels, i, yPath);
+                if (i % 1000 == 0) Console.WriteLine($"Y - {i}");
+            });
+            Console.ReadKey();
+        }
+#endif
     }
 }
