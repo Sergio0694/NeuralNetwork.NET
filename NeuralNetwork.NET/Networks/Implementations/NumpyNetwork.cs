@@ -39,7 +39,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             sizes = neurons;
             var r = new Random();
             biases = neurons.Skip(1).Select(n => r.NextGaussianMatrix(n, 1)).ToArray();
-            weights = neurons.Take(neurons.Length - 1).Select((n, i) => r.NextGaussianMatrix(n, neurons[i + 1])).ToArray();
+            weights = neurons.Take(neurons.Length - 1).Select((n, i) => r.NextGaussianMatrix(neurons[i + 1], n)).ToArray();
         }
 
         public double[,] feedforward(double[,] a)
@@ -64,6 +64,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 var mini_batches = PythonExtensions.XRange(0, n / mini_batch_size).Select(i => training_data.Skip(i * mini_batch_size).Take(mini_batch_size).ToArray()).ToArray();
                 foreach (var mini_batch in mini_batches)
                     update_mini_batch(mini_batch, eta);
+
+                System.Diagnostics.Debug.WriteLine($"Epoch {j}: {evaluate(test_data)} / {n_test}");
                 Console.WriteLine($"Epoch {j}: {evaluate(test_data)} / {n_test}");
             }
         }

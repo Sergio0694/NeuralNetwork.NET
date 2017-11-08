@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -97,16 +98,16 @@ namespace NeuralNetworkNET.Unit
                         // Read the image pixel values
                         byte[] temp = new byte[784];
                         xGzip.Read(temp, 0, 784);
-                        double[,] sample = new double[1, 784];
+                        double[,] sample = new double[784, 1];
                         for (int j = 0; j < 784; j++)
                         {
-                            sample[0, j] = temp[j] / 255d;
+                            sample[j, 0] = temp[j] / 255d;
                         }
 
                         // Read the label
-                        double[,] label = new double[1, 10];
+                        double[,] label = new double[10, 1];
                         int l = yGzip.ReadByte();
-                        label[0, l] = 1;
+                        label[l, 0] = 1;
 
                         var tuple = (sample, label);
                         samples[i] = tuple;
@@ -123,9 +124,11 @@ namespace NeuralNetworkNET.Unit
         {
             var data = ParseMnistDataset();
             Console.WriteLine("Dataset PARSED");
+            Debug.WriteLine("Dataset PARSED");
             var net = new NumpyNetwork(784, 30, 10);
             var test = data.TestData.Select(t => (t.Item1, (double)t.Item2.Argmax())).ToArray();
-            net.SGD(data.TrainingData, 30, 10, 3.0, test);
+            net.SGD(data.TrainingData, 30, 100, 3.0, test);
+            Console.ReadKey();
         }
     }
 }
