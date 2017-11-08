@@ -47,20 +47,20 @@ namespace NeuralNetworkNET.Unit
                     [1] = new[,] { { -0.01439235 } }
                 }
             };
-            (double[][,] dJdw, double[][,] dJdb) = network.backprop(new[,] { { 1.2 } }, new[,] { { 1.2 } });
-            Assert.IsTrue(dJdw.Length == 2 &&
-                          dJdw[0].GetLength(0) == 2 && dJdw[0].GetLength(1) == 1 &&
-                          dJdw[1].Length == 1);
+            (double[][,] dJdb, double[][,] dJdw) = network.backprop(new[,] { { 1.2 } }, new[,] { { 1.2 } });
             Assert.IsTrue(dJdb.Length == 2 &&
                           dJdb[0].GetLength(0) == 2 && dJdb[0].GetLength(1) == 1 &&
-                          dJdb[1].GetLength(0) == 1 && dJdb[1].GetLength(1) == 2);
-            Assert.IsTrue(dJdw[0][0, 0].EqualsWithDelta(0.01375305, 1e-5) &&
-                          dJdw[0][1, 0].EqualsWithDelta(0.02834903, 1e-5) &&
-                          dJdw[1][0, 0].EqualsWithDelta(-0.18744699, 1e-5) &&
-                          dJdb[0][0, 0].EqualsWithDelta(0.01650366, 1e-5) &&
-                          dJdb[0][1, 0].EqualsWithDelta(0.03401884, 1e-5) &&
-                          dJdb[1][0, 0].EqualsWithDelta(-0.16645057, 1e-5) &&
-                          dJdb[1][0, 1].EqualsWithDelta(-0.06078609, 1e-5));
+                          dJdb[1].Length == 1);
+            Assert.IsTrue(dJdw.Length == 2 &&
+                          dJdw[0].GetLength(0) == 2 && dJdw[0].GetLength(1) == 1 &&
+                          dJdw[1].GetLength(0) == 1 && dJdw[1].GetLength(1) == 2);
+            Assert.IsTrue(dJdb[0][0, 0].EqualsWithDelta(0.01375305, 1e-5) &&
+                          dJdb[0][1, 0].EqualsWithDelta(0.02834903, 1e-5) &&
+                          dJdb[1][0, 0].EqualsWithDelta(-0.18744699, 1e-5) &&
+                          dJdw[0][0, 0].EqualsWithDelta(0.01650366, 1e-5) &&
+                          dJdw[0][1, 0].EqualsWithDelta(0.03401884, 1e-5) &&
+                          dJdw[1][0, 0].EqualsWithDelta(-0.16645057, 1e-5) &&
+                          dJdw[1][0, 1].EqualsWithDelta(-0.06078609, 1e-5));
         }
     }
 }
