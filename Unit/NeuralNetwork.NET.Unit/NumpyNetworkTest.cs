@@ -1,4 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Reflection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Implementations;
 
@@ -61,6 +67,65 @@ namespace NeuralNetworkNET.Unit
                           dJdw[0][1, 0].EqualsWithDelta(0.03401884, 1e-5) &&
                           dJdw[1][0, 0].EqualsWithDelta(-0.16645057, 1e-5) &&
                           dJdw[1][0, 1].EqualsWithDelta(-0.06078609, 1e-5));
+        }
+
+        private static (IReadOnlyList<(double[,], double[,])> TrainingData, IReadOnlyList<(double[,], double[,])> TestData) ParseMnistDataset()
+        {
+            const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
+            String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
+            const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
+            const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
+            String
+                code = Assembly.GetExecutingAssembly().Location,
+                dll = Path.GetFullPath(code),
+                root = Path.GetDirectoryName(dll),
+                path = Path.Combine(root, "Assets");
+            (double[,], double[,])[] ParseSamples(String valuePath, String labelsPath, int count)
+            {
+                (double[,], double[,])[] samples = new (double[,], double[,])[count];
+                using (FileStream
+                    xStream = File.OpenRead(Path.Combine(path, valuePath)),
+                    yStream = File.OpenRead(Path.Combine(path, labelsPath)))
+                using (GZipStream
+                    xGzip = new GZipStream(xStream, CompressionMode.Decompress),
+                    yGzip = new GZipStream(yStream, CompressionMode.Decompress))
+                {
+                    xGzip.Read(new byte[16], 0, 16);
+                    yGzip.Read(new byte[8], 0, 8);
+                    for (int i = 0; i < count; i++)
+                    {
+                        // Read the image pixel values
+                        byte[] temp = new byte[784];
+                        xGzip.Read(temp, 0, 784);
+                        double[,] sample = new double[1, 784];
+                        for (int j = 0; j < 784; j++)
+                        {
+                            sample[0, j] = temp[j] / 255d;
+                        }
+
+                        // Read the label
+                        double[,] label = new double[1, 10];
+                        int l = yGzip.ReadByte();
+                        label[0, l] = 1;
+
+                        var tuple = (sample, label);
+                        samples[i] = tuple;
+                    }
+                    return samples;
+                }
+            }
+            return (ParseSamples(Path.Combine(path, TrainingSetValuesFilename), Path.Combine(path, TrainingSetLabelsFilename), 50_000),
+                    ParseSamples(Path.Combine(path, TestSetValuesFilename), Path.Combine(path, TestSetLabelsFilename), 10_000));
+        }
+
+        [TestMethod]
+        public void TrainingTest1()
+        {
+            var data = ParseMnistDataset();
+            Console.WriteLine("Dataset PARSED");
+            var net = new NumpyNetwork(784, 30, 10);
+            var test = data.TestData.Select(t => (t.Item1, (double)t.Item2.Argmax())).ToArray();
+            net.SGD(data.TrainingData, 30, 10, 3.0, test);
         }
     }
 }
