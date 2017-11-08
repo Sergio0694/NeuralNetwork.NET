@@ -20,15 +20,16 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="value">The first value</param>
         /// <param name="other">The second value</param>
+        /// <param name="delta">The comparison threshold</param>
         [Pure]
-        public static bool EqualsWithDelta(this double value, double other)
+        public static bool EqualsWithDelta(this double value, double other, double delta = 1e-10)
         {
             if (double.IsNaN(value) ^ double.IsNaN(other)) return false;
             if (double.IsNaN(value) && double.IsNaN(other)) return true;
             if (double.IsInfinity(value) ^ double.IsInfinity(other)) return false;
             if (double.IsPositiveInfinity(value) && double.IsPositiveInfinity(other)) return true;
             if (double.IsNegativeInfinity(value) && double.IsNegativeInfinity(other)) return true;
-            return (value - other).Abs() < 1e-10;
+            return (value - other).Abs() < delta;
         }
 
         /// <summary>

@@ -57,11 +57,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             var n_test = test_data.Count;
             var n = training_data.Count;
-            foreach (var j in Enumerable.Range(0, epochs))
+            foreach (var j in PythonExtensions.XRange(0, epochs))
             {
                 var random = new Random();
                 training_data = training_data.OrderBy(_ => random.Next()).ToArray();
-                var mini_batches = Enumerable.Range(0, n / mini_batch_size).Select(i => training_data.Skip(i * mini_batch_size).Take(mini_batch_size).ToArray()).ToArray();
+                var mini_batches = PythonExtensions.XRange(0, n / mini_batch_size).Select(i => training_data.Skip(i * mini_batch_size).Take(mini_batch_size).ToArray()).ToArray();
                 foreach (var mini_batch in mini_batches)
                     update_mini_batch(mini_batch, eta);
                 Console.WriteLine($"Epoch {j}: {evaluate(test_data)} / {n_test}");
@@ -91,7 +91,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             }).ToArray();
         }
 
-        private (double[][,], double[][,]) backprop(double[,] x, double[,] y)
+        public (double[][,], double[][,]) backprop(double[,] x, double[,] y)
         {
             var nabla_b = biases.Select(b => new double[b.Length,1]).ToArray();
             var nabla_w = weights.Select(w => new double[w.GetLength(0), w.GetLength(1)]).ToArray();
@@ -113,7 +113,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             nabla_b[nabla_b.Length - 1] = delta;
             nabla_w[nabla_w.Length - 1] = delta.Multiply(activations[activations.Count - 2].Transpose());
 
-            foreach (var l in Enumerable.Range(2, num_layers))
+            foreach (var l in PythonExtensions.XRange(2, num_layers))
             {
                 var z = zs[zs.Count - l];
                 var sp = z.Activation(ActivationFunctions.SigmoidPrime);
@@ -125,7 +125,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             return (nabla_b, nabla_w);
         }
 
-        private object evaluate(IReadOnlyList<(double[,], double)> test_data)
+        public object evaluate(IReadOnlyList<(double[,], double)> test_data)
         {
             var test_results = test_data.Select(tuple => (feedforward(tuple.Item1).Argmax(), tuple.Item2));
             return test_results.Count(tuple => ((double)tuple.Item1).EqualsWithDelta(tuple.Item2));
@@ -134,6 +134,20 @@ namespace NeuralNetworkNET.Networks.Implementations
         private double[,] cost_derivative(double[,] output_activations, double[,] y)
         {
             return output_activations.Subtract(y);
+        }
+
+        public static class PythonExtensions
+        {
+            public static IEnumerable<int> XRange(int start, int stop, int step = 1)
+            {
+                if (step == 0) throw new ArgumentException("Parameter step cannot equal zero.");
+                if (start < stop && step > 0)
+                    for (var i = start; i < stop; i += step)
+                        yield return i;
+                else if (start > stop && step < 0)
+                    for (var i = start; i > stop; i += step)
+                        yield return i;
+            }
         }
     }
 }
