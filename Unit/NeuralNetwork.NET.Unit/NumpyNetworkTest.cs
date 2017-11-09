@@ -127,8 +127,8 @@ namespace NeuralNetworkNET.Unit
             Debug.WriteLine("Dataset PARSED");
             var net = new NumpyNetwork(784, 30, 10);
             var test = data.TestData.Select(t => (t.Item1, (double)t.Item2.Argmax())).ToArray();
-            net.SGD(data.TrainingData, 30, 100, 3.0, test);
-            Console.ReadKey();
+            net.SGD(data.TrainingData, 1, 10, 3.0, test);
+            Assert.IsTrue(net.evaluate(test) > 9000);
         }
     }
 }

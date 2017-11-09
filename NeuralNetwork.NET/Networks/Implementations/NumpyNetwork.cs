@@ -127,7 +127,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             return (nabla_b, nabla_w);
         }
 
-        public object evaluate(IReadOnlyList<(double[,], double)> test_data)
+        public int evaluate(IReadOnlyList<(double[,], double)> test_data)
         {
             var test_results = test_data.Select(tuple => (feedforward(tuple.Item1).Argmax(), tuple.Item2));
             return test_results.Count(tuple => ((double)tuple.Item1).EqualsWithDelta(tuple.Item2));
