@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -112,7 +113,7 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(dotResult.ContentEquals(pyGradient));
         }
 
-        private static (IReadOnlyList<(double[,], double[,])> TrainingData, IReadOnlyList<(double[,], double[,])> TestData) ParseMnistDataset()
+        private static ((double[,] X, double[,] Y) TrainingData, (double[,] X, double[,] Y) TestData) ParseMnistDataset()
         {
             const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
             String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
@@ -123,9 +124,11 @@ namespace NeuralNetworkNET.Unit
                 dll = Path.GetFullPath(code),
                 root = Path.GetDirectoryName(dll),
                 path = Path.Combine(root, "Assets");
-            (double[,], double[,])[] ParseSamples(String valuePath, String labelsPath, int count)
+            (double[,], double[,]) ParseSamples(String valuePath, String labelsPath, int count)
             {
-                (double[,], double[,])[] samples = new(double[,], double[,])[count];
+                double[,] 
+                    x = new double[count, 784],
+                    y = new double[count, 10];
                 using (FileStream
                     xStream = File.OpenRead(Path.Combine(path, valuePath)),
                     yStream = File.OpenRead(Path.Combine(path, labelsPath)))
@@ -140,10 +143,10 @@ namespace NeuralNetworkNET.Unit
                         // Read the image pixel values
                         byte[] temp = new byte[784];
                         xGzip.Read(temp, 0, 784);
-                        double[,] sample = new double[784, 1];
+                        double[] sample = new double[784];
                         for (int j = 0; j < 784; j++)
                         {
-                            sample[j, 0] = temp[j] / 255d;
+                            sample[j] = temp[j] / 255d;
                         }
 
                         // Read the label
@@ -151,14 +154,27 @@ namespace NeuralNetworkNET.Unit
                         int l = yGzip.ReadByte();
                         label[l, 0] = 1;
 
-                        var tuple = (sample, label);
-                        samples[i] = tuple;
+                        // Copy to result matrices
+                        Buffer.BlockCopy(sample, 0, x, sizeof(double) * i * 784, sizeof(double) * 784);
+                        Buffer.BlockCopy(label, 0, y, sizeof(double) * i * 10, sizeof(double) * 10);
                     }
-                    return samples;
+                    return (x, y);
                 }
             }
             return (ParseSamples(Path.Combine(path, TrainingSetValuesFilename), Path.Combine(path, TrainingSetLabelsFilename), 50_000),
                     ParseSamples(Path.Combine(path, TestSetValuesFilename), Path.Combine(path, TestSetLabelsFilename), 10_000));
+        }
+
+        [TestMethod]
+        public void Foo()
+        {
+            (var trainingSet, var testSet) = ParseMnistDataset();
+            var network = NeuralNetwork.NewRandom(
+                NetworkLayer.Inputs(784),
+                NetworkLayer.FullyConnected(30, ActivationFunctionType.Sigmoid),
+                NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
+            network.SGD(trainingSet, testSet, 1, 3);
+
         }
     }
 }
