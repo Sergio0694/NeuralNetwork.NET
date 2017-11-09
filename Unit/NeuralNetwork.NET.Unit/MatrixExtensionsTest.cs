@@ -190,5 +190,21 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(v3.IndexOfMax() == 0);
             Assert.IsTrue(v4.IndexOfMax() == 4);
         }
+
+        [TestMethod]
+        public void ToFormattedString()
+        {
+            double[,]
+                empty = { { } },
+                oneLine = { { 1.0, 2.0, 3.0 } },
+                complete = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
+            String
+                emptyString = "{ { } }",
+                oneLineString = "{ { 1, 2, 3 } }",
+                completeString = "{ { 1, 2, 3 },\n  { 4, 5, 6 } }";
+            Assert.IsTrue(empty.ToFormattedString().Equals(emptyString));
+            Assert.IsTrue(oneLine.ToFormattedString().Equals(oneLineString));
+            Assert.IsTrue(complete.ToFormattedString().Equals(completeString));
+        }
     }
 }

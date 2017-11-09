@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
@@ -46,7 +47,7 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Sums two matrices element-wise
+        /// Sums two matrices element-wise, where the second matrix is 1-column wide
         /// </summary>
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second matrix</param>
@@ -59,7 +60,7 @@ namespace NeuralNetworkNET.Helpers
             int
                 h = m1.GetLength(0),
                 w = m1.GetLength(1);
-            if (m2.GetLength(0) != h || m2.GetLength(1) != w) throw new ArgumentException(nameof(m2), "Invalid matrix size");
+            if (m2.GetLength(0) != h || m2.GetLength(1) != 1) throw new ArgumentException(nameof(m2), "Invalid matrix size");
             double[,] result = new double[h, w];
             bool loopResult = Parallel.For(0, h, i =>
             {
@@ -71,7 +72,7 @@ namespace NeuralNetworkNET.Helpers
                         for (int j = 0; j < w; j++)
                         {
                             int target = offset + j;
-                            pr[target] = pm1[target] + pm2[target];
+                            pr[target] = pm1[target] + pm2[i];
                         }
                     }
                 }
@@ -1030,6 +1031,39 @@ namespace NeuralNetworkNET.Helpers
             for (int i = 0; i < v.Length; i++)
                 if (!v[i].EqualsWithDelta(o[i])) return false;
             return true;
+        }
+
+        #endregion
+
+        #region Debug
+
+        /// <summary>
+        /// Returns a formatted representation of the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to convert to <see cref="String"/></param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static String ToFormattedString([NotNull] this double[,] m)
+        {
+            if (m.Length == 0) return "{ { } }";
+            int h = m.GetLength(0), w = m.GetLength(1);
+            StringBuilder builder = new StringBuilder();
+            builder.Append("{ ");
+            for (int i = 0; i < h; i++)
+            {
+                if (w > 0)
+                {
+                    builder.Append("{ ");
+                    for (int j = 0; j < w; j++)
+                    {
+                        builder.Append($"{m[i, j]}");
+                        if (j < w - 1) builder.Append(", ");
+                    }
+                    builder.Append(" }");
+                }
+                builder.Append(i < h - 1 ? ",\n  " : " }");
+            }
+            return builder.ToString();
         }
 
         #endregion
