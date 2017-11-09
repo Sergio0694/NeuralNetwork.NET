@@ -887,14 +887,18 @@ namespace NeuralNetworkNET.Helpers
             double[] vector = new double[w];
 
             // Compress the matrix
-            bool result = Parallel.For(0, h, i =>
+            bool result = Parallel.For(0, w, j =>
             {
                 unsafe
                 {
                     // Fix the pointers and add the current values
                     fixed (double* pm = m, pv = vector)
-                        for (int j = 0; j < w; j++)
-                            pv[j] += pm[i * w + j];
+                    {
+                        double sum = 0;
+                        for (int i = 0; i < h; i++)
+                            sum += pm[i * w + j];
+                        pv[j] = sum;
+                    }
                 }
             }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");

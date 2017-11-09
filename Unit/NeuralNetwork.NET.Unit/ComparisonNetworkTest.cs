@@ -92,8 +92,12 @@ namespace NeuralNetworkNET.Unit
 
             // Multiple samples
             Random r = new Random(7);
-            samples = r.NextGaussianMatrix(80, 1);
-            y = r.NextGaussianMatrix(80, 1);
+            samples = r.NextGaussianMatrix(160, 1);
+            y = r.NextGaussianMatrix(160, 1);
+            double[,] 
+                pyF = pyNet.feedforward(samples.Transpose()),
+                netF = dotNet.Forward(samples);
+            Assert.IsTrue(pyF.Transpose().ContentEquals(netF));
             pyResult = pyNet.backprop(samples.Transpose(), y.Transpose());
             dotResult = dotNet.ComputeGradient(samples, y);
             double[][] dbs = pyResult.dJdb.Select(b =>
@@ -105,8 +109,6 @@ namespace NeuralNetworkNET.Unit
                 return db;
             }).ToArray();
             pyGradient = pyResult.dJdw.Zip(dbs, (w, b) => w.Flatten().Concat(b).ToArray()).Aggregate(new double[0], (s, v) => s.Concat(v).ToArray()).ToArray();
-            Console.WriteLine($"NET: {{ {dotResult.Skip(1).Aggregate(dotResult[0].ToString(), (s, d) => s + $", {d}")} }}");
-            Console.WriteLine($"PYN: {{ {pyGradient.Skip(1).Aggregate(dotResult[0].ToString(), (s, d) => s + $", {d}")} }}");
             Assert.IsTrue(dotResult.ContentEquals(pyGradient));
         }
 
