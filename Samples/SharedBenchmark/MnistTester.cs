@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Convolution.Operations;
@@ -36,16 +37,15 @@ namespace SharedBenchmark
         public static async Task PerformBenchmarkAsync(LearningAlgorithmType type, int? batchSize, bool convolution, int? samplesLimit, bool cacheEnabled, params NetworkLayer[] layers)
         {
             Printf("Loading sample data");
-            //(double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(samplesLimit);
-            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = (null, null, null, null); // TODO
+            (var trainingSet, var testSet) = DataParser.LoadDatasets();
 
             double[,] x;
             if (convolution)
             {
                 Printf("Processing through the convolution layer");
-                x = SharedPipeline.Process(dataset);
+                x = SharedPipeline.Process(trainingSet.X);
             }
-            else x = dataset;
+            else x = trainingSet.X;
 
             INeuralNetwork previous;
             if (cacheEnabled)
@@ -79,9 +79,9 @@ namespace SharedBenchmark
                 Printf($"Iteration #{p.Iteration} >> {p.Cost}");
             });
             INeuralNetwork network = previous == null
-                ? await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(x, y, batchSize,
+                ? await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(x, trainingSet.Y, batchSize,
                     type, cts.Token, progress, layers)
-                : await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(x, y, batchSize,
+                : await BackpropagationNetworkTrainer.ComputeTrainedNetworkAsync(x, trainingSet.Y, batchSize,
                     previous, type, cts.Token, progress);
 
             if (cacheEnabled)
@@ -97,26 +97,26 @@ namespace SharedBenchmark
             if (convolution)
             {
                 Printf("Processing test data through the convolution layer");
-                xt = SharedPipeline.Process(test);
+                xt = SharedPipeline.Process(testSet.X);
             }
-            else xt = test;
+            else xt = testSet.X;
 
             Printf("Calculating error");
             double[,] estimation = network.Forward(xt);
             int valid = 0;
-            for (int i = 0; i < yHat.GetLength(0); i++)
+            for (int i = 0; i < 10_000; i++)
             {
                 // Iterate through every test sample
                 double[] temp = new double[10];
                 Buffer.BlockCopy(estimation, i * 10, temp, 0, sizeof(double) * 10);
                 int estimationIndex = temp.IndexOfMax();
-                Buffer.BlockCopy(yHat, i * 10, temp, 0, sizeof(double) * 10);
+                Buffer.BlockCopy(testSet.Y, i * 10, temp, 0, sizeof(double) * 10);
                 int expectedIndex = temp.IndexOfMax();
                 if (estimationIndex == expectedIndex) valid++;
             }
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.WriteLine("\n=======================\n");
-            Printf($"{valid}/{yHat.GetLength(0)}, {(double)valid / yHat.GetLength(0) * 100:###.##}%");
+            Printf($"{valid}/10000, {(double)valid / 10000 * 100:###.##}%");
             Console.ReadKey();
         }
 
@@ -168,54 +168,6 @@ namespace SharedBenchmark
                 KernelsCollection.TopLeftEmboss), // 5*5*60 >> 3*3*480
             ConvolutionOperation.ReLU, // Set minimum threshold
             ConvolutionOperation.Pool2x2,
-            ConvolutionOperation.Pool2x2); // 3*3*480 >> 1*1*480)); // Set minimum threshold);
-
-#if NET47
-        public static void ExtractDatasetImages(String path)
-        {
-            (double[,] x, double[,] xlabels, double[,] y, double[,] ylabels) = DataParser.ParseDataset();
-            String
-                root = Path.Combine(path, "MNIST_images"),
-                xPath = Path.Combine(root, "X"),
-                yPath = Path.Combine(root, "Y");
-            Directory.CreateDirectory(root);
-            Directory.CreateDirectory(xPath);
-            Directory.CreateDirectory(yPath);
-            int
-                hx = x.GetLength(0),
-                hy = y.GetLength(0);
-            void ExtractImages(double[,] data, double[,] dataLabels, int index, String dir)
-            {
-                double[] label = new double[10];
-                Buffer.BlockCopy(dataLabels, sizeof(double) * 10 * index, label, 0, sizeof(double) * 10);
-                double[] xyValue = new double[784];
-                Buffer.BlockCopy(data, sizeof(double) * 784 * index, xyValue, 0, sizeof(double) * 784);
-                int number = label.IndexOfMax();
-                String valuePath = Path.Combine(dir, number.ToString());
-                Directory.CreateDirectory(valuePath);
-                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(28, 28);
-                for (int j = 0; j < 28; j++)
-                    for (int k = 0; k < 28; k++)
-                    {
-                        int offset = j * 28 + k;
-                        double color = xyValue[offset];
-                        int normalized = (int)((1d - color) * 255d);
-                        bitmap.SetPixel(k, j, System.Drawing.Color.FromArgb(normalized, normalized, normalized));
-                    }
-                bitmap.Save(Path.Combine(valuePath, $"{index}.jpg"));
-            }
-            Parallel.For(0, hx, i =>
-            {
-                ExtractImages(x, xlabels, i, xPath);
-                if (i % 1000 == 0) Console.WriteLine($"X - {i}");
-            });
-            Parallel.For(0, hy, i =>
-            {
-                ExtractImages(y, ylabels, i, yPath);
-                if (i % 1000 == 0) Console.WriteLine($"Y - {i}");
-            });
-            Console.ReadKey();
-        }
-#endif
+            ConvolutionOperation.Pool2x2); // 3*3*480 >> 1*1*480)); // Set minimum threshold
     }
 }
