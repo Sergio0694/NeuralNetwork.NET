@@ -10,9 +10,12 @@ using JetBrains.Annotations;
 
 namespace MnistDatasetToolkit
 {
+    /// <summary>
+    /// A simple static class that downloads and parses the MNIST datasets
+    /// </summary>
     public static class DataParser
     {
-        private const int SamplesPixelSize = 784;
+        #region Constants
 
         private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
 
@@ -24,8 +27,19 @@ namespace MnistDatasetToolkit
 
         private const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
 
+        #endregion
+
+        #region Tools
+
+        /// <summary>
+        /// Extracts the name of the saved file from the given original filename
+        /// </summary>
+        /// <param name="filename">The MNIST filename to convert</param>
         private static String GetDecompressedDatasetFilename([NotNull] String filename) => filename.Split('.')[0].Replace("-idx", ".idx");
 
+        /// <summary>
+        /// Downloads the MNIST database and saves it in the current folder
+        /// </summary>
         private static String TryDownloadDataset()
         {
             String
@@ -41,12 +55,11 @@ namespace MnistDatasetToolkit
                 {
                     using (HttpClient client = new HttpClient())
                     using (Stream raw = client.GetStreamAsync($"{MnistHttpRootPath}{name}").Result)
-                    using (GZipStream gzip = new GZipStream(raw, CompressionMode.Decompress))
                     using (FileStream file = File.Create(Path.Combine(path, GetDecompressedDatasetFilename(name))))
                     {
                         byte[] block = new byte[1024];
                         int read;
-                        while ((read = gzip.Read(block, 0, 1024)) > 0)
+                        while ((read = raw.Read(block, 0, 1024)) > 0)
                         {
                             file.Write(block, 0, read);
                         }
@@ -56,75 +69,55 @@ namespace MnistDatasetToolkit
             return path;
         }
 
-        public static (double[,], double[,], double[,], double[,]) ParseDataset(int? limit = null)
+        #endregion
+
+        /// <summary>
+        /// Loads the MNIST dataset and returns both the training dataset and the test dataset
+        /// </summary>
+        [PublicAPI]
+        [MustUseReturnValue]
+        public static ((double[,] X, double[,] Y) TrainingData, (double[,] X, double[,] Y) TestData) LoadDatasets()
         {
             String path = TryDownloadDataset();
-            return (ParseDataset(Path.Combine(path, GetDecompressedDatasetFilename(TrainingSetValuesFilename)), limit),
-                    ParseY(Path.Combine(path, GetDecompressedDatasetFilename(TrainingSetLabelsFilename)), limit),
-                    ParseDataset(Path.Combine(path, GetDecompressedDatasetFilename(TestSetValuesFilename)), limit),
-                    ParseY(Path.Combine(path, GetDecompressedDatasetFilename(TestSetLabelsFilename)), limit));
-        }
-
-        [NotNull]
-        private static unsafe double[,] ParseDataset([NotNull] String path, int? limit = null)
-        {
-            using (FileStream data = File.OpenRead(path))
+            (double[,], double[,]) ParseSamples(String valuePath, String labelsPath, int count)
             {
-                // Seek to the size info (0x4)
-                int size;
-                if (limit == null)
+                double[,]
+                    x = new double[count, 784],
+                    y = new double[count, 10];
+                using (FileStream
+                    xStream = File.OpenRead(Path.Combine(path, GetDecompressedDatasetFilename(valuePath))),
+                    yStream = File.OpenRead(Path.Combine(path, GetDecompressedDatasetFilename(labelsPath))))
+                using (GZipStream
+                    xGzip = new GZipStream(xStream, CompressionMode.Decompress),
+                    yGzip = new GZipStream(yStream, CompressionMode.Decompress))
                 {
-                    data.Seek(4, SeekOrigin.Begin);
-                    byte[] length = new byte[4];
-                    data.Read(length, 0, 4);
-                    size = length.ToLittleEndian();
-                    data.Seek(8, SeekOrigin.Current);
-                }
-                else
-                {
-                    data.Seek(16, SeekOrigin.Begin);
-                    size = limit.Value;
-                }
-                double[,] dataset = new double[size, SamplesPixelSize]; // n 28*28 images
-
-                // Parse the sample images
-                for (int i = 0; i < size; i++)
-                {
-                    // Read the image pixel values
-                    byte[] temp = new byte[SamplesPixelSize];
-                    data.Read(temp, 0, SamplesPixelSize);
-                    fixed (double* p = dataset)
-                    fixed (byte* t = temp)
+                    xGzip.Read(new byte[16], 0, 16);
+                    yGzip.Read(new byte[8], 0, 8);
+                    for (int i = 0; i < count; i++)
                     {
-                        // Copy the values in the output matrix
-                        int offset = i * SamplesPixelSize;
-                        for (int j = 0; j < SamplesPixelSize; j++) p[offset + j] = t[j] / 255d; // Normalize to [0..1]
+                        // Read the image pixel values
+                        byte[] temp = new byte[784];
+                        xGzip.Read(temp, 0, 784);
+                        double[] sample = new double[784];
+                        for (int j = 0; j < 784; j++)
+                        {
+                            sample[j] = temp[j] / 255d;
+                        }
+
+                        // Read the label
+                        double[,] label = new double[10, 1];
+                        int l = yGzip.ReadByte();
+                        label[l, 0] = 1;
+
+                        // Copy to result matrices
+                        Buffer.BlockCopy(sample, 0, x, sizeof(double) * i * 784, sizeof(double) * 784);
+                        Buffer.BlockCopy(label, 0, y, sizeof(double) * i * 10, sizeof(double) * 10);
                     }
+                    return (x, y);
                 }
-                return dataset;
             }
+            return (ParseSamples(TrainingSetValuesFilename, TrainingSetLabelsFilename, 60_000),
+                    ParseSamples(TestSetValuesFilename, TestSetLabelsFilename, 10_000));
         }
-
-        private static double[,] ParseY([NotNull] String path, int? limit = null)
-        {
-            using (FileStream data = File.OpenRead(path))
-            {
-                data.Seek(4, SeekOrigin.Begin);
-                byte[] length = new byte[4];
-                data.Read(length, 0, 4);
-                int size = length.ToLittleEndian();
-                if (limit.HasValue && limit < size) size = limit.Value;
-                double[,] dataset = new double[size, 10]; // n samples
-                for (int i = 0; i < size; i++)
-                {
-                    int value = data.ReadByte();
-                    dataset[i, value] = 1;
-                }
-                return dataset;
-            }
-        }
-
-        // Converts a big endian byte array into a little endian integer
-        private static int ToLittleEndian([NotNull] this byte[] bytes) => bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
     }
 }

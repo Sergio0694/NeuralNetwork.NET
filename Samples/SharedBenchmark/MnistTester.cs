@@ -3,7 +3,6 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using MnistDatasetToolkit;
 using NeuralNetworkNET.Convolution;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Convolution.Operations;
@@ -37,7 +36,8 @@ namespace SharedBenchmark
         public static async Task PerformBenchmarkAsync(LearningAlgorithmType type, int? batchSize, bool convolution, int? samplesLimit, bool cacheEnabled, params NetworkLayer[] layers)
         {
             Printf("Loading sample data");
-            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(samplesLimit);
+            //(double[,] dataset, double[,] y, double[,] test, double[,] yHat) = DataParser.ParseDataset(samplesLimit);
+            (double[,] dataset, double[,] y, double[,] test, double[,] yHat) = (null, null, null, null); // TODO
 
             double[,] x;
             if (convolution)
