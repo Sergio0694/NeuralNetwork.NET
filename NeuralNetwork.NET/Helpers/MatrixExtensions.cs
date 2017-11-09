@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers.Misc;
 using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Helpers
@@ -47,22 +48,43 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Sums two matrices element-wise, where the second matrix is 1-column wide
+        /// Sums two matrices element-wise
         /// </summary>
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second matrix</param>
+        /// <param name="mode">Indicates the mode to use to sum the matrices</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Sum([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static double[,] Sum([NotNull] this double[,] m1, [NotNull] double[,] m2, MatrixSumMode mode)
         {
             // Execute the transposition in parallel
             int
                 h = m1.GetLength(0),
-                w = m1.GetLength(1);
-            if (m2.GetLength(0) != h || m2.GetLength(1) != 1) throw new ArgumentException(nameof(m2), "Invalid matrix size");
+                w = m1.GetLength(1),
+                m2w = m2.GetLength(1);
+            if (m2.GetLength(0) != h) throw new ArgumentException(nameof(m2), "Invalid matrix size");
             double[,] result = new double[h, w];
-            bool loopResult = Parallel.For(0, h, i =>
+
+            // Elementwise kernel
+            void ElementwiseSum(int i)
+            {
+                unsafe
+                {
+                    fixed (double* pr = result, pm1 = m1, pm2 = m2)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            pr[target] = pm1[target] + pm2[target];
+                        }
+                    }
+                }
+            }
+
+            // Column by column kernel
+            void ColumnByColumnSum(int i)
             {
                 unsafe
                 {
@@ -76,8 +98,24 @@ namespace NeuralNetworkNET.Helpers
                         }
                     }
                 }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
+            }
+
+            // Select and execute the right sum mode
+            ParallelLoopResult loopResult;
+            switch (mode)
+            {
+                case MatrixSumMode.Elementwise:
+                    if (m2w != w) throw new ArgumentException(nameof(m2), "The second matrix must have the same size as the first");
+                    loopResult = Parallel.For(0, h, ElementwiseSum);
+                    break;
+                case MatrixSumMode.ColumnByColumn:
+                    if (m2w != 1) throw new ArgumentException(nameof(m2), "The second matrix must be a column vector");
+                    loopResult = Parallel.For(0, h, ColumnByColumnSum);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("Unsupported sum mode");
+            }
+            if (!loopResult.IsCompleted) throw new Exception("Error while runnig the parallel loop");
             return result;
         }
 

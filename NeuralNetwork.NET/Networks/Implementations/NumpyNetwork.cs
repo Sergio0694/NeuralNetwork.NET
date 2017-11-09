@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Helpers.Misc;
 using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Networks.Implementations
@@ -47,7 +48,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             foreach ((var b, var w) in biases.Zip(weights, (b, w) => (b, w)))
             {
                 var mul = w.Multiply(a);
-                var sum = mul.Sum(b);
+                var sum = mul.Sum(b, MatrixSumMode.ColumnByColumn);
                 a = sum.Activation(ActivationFunctions.Sigmoid);
             }
             return a;
@@ -77,19 +78,19 @@ namespace NeuralNetworkNET.Networks.Implementations
             foreach ((var x, var y) in mini_batch)
             {
                 (var delta_nabla_b, var delta_nabla_w) = backprop(x, y);
-                nabla_b = nabla_b.Zip(delta_nabla_b, (nb, dnb) => nb.Sum(dnb)).ToArray();
-                nabla_w = nabla_w.Zip(delta_nabla_w, (nw, dnw) => nw.Sum(dnw)).ToArray();
+                nabla_b = nabla_b.Zip(delta_nabla_b, (nb, dnb) => nb.Sum(dnb, MatrixSumMode.Elementwise)).ToArray();
+                nabla_w = nabla_w.Zip(delta_nabla_w, (nw, dnw) => nw.Sum(dnw, MatrixSumMode.Elementwise)).ToArray();
             }
 
             weights = weights.Zip(nabla_w, (w, nw) =>
             {
                 nw.Tweak(d => -(eta / mini_batch.Count * d));
-                return w.Sum(nw);
+                return w.Sum(nw, MatrixSumMode.Elementwise);
             }).ToArray();
             biases = biases.Zip(nabla_b, (b, nb) =>
             {
                 nb.Tweak(d => -(eta / mini_batch.Count * d));
-                return b.Sum(nb);
+                return b.Sum(nb, MatrixSumMode.Elementwise);
             }).ToArray();
         }
 
@@ -104,7 +105,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             foreach ((var b, var w) in biases.Zip(weights, (b, w) => (b, w)))
             {
                 var z0 = w.Multiply(activation);
-                var z = z0.Sum(b);
+                var z = z0.Sum(b, MatrixSumMode.ColumnByColumn);
                 zs.Add(z);
                 activation = z.Activation(ActivationFunctions.Sigmoid);
                 activations.Add(activation);
