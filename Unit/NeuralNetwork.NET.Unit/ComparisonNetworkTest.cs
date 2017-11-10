@@ -171,9 +171,9 @@ namespace NeuralNetworkNET.Unit
             (var trainingSet, var testSet) = ParseMnistDataset();
             NeuralNetwork network = NeuralNetwork.NewRandom(
                 NetworkLayer.Inputs(784),
-                NetworkLayer.FullyConnected(30, ActivationFunctionType.Sigmoid),
+                NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
-            network.StochasticGradientDescent(trainingSet, testSet, 1, 10, 3);
+            network.StochasticGradientDescent(trainingSet, testSet, 10, 10, 0.5);
             int score = network.Evaluate(testSet);
             Console.WriteLine($"Accuracy: {score} / 10000, {score / 100d:###.###}%");
             Assert.IsTrue(score > 8000);

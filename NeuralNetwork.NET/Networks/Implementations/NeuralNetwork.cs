@@ -218,7 +218,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Calculate the gradient of C with respect to a, so (yHat - y)
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             double[,] dL = aList[aList.Length - 1];
-            MatrixServiceProvider.InPlaceSubtractAndHadamardProductWithActivationPrime(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
+            dL = dL.Subtract(y); // TODO: use side effect here to improve performances
 
             // Backpropagation
             double[][,] deltas = new double[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
