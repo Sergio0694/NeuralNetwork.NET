@@ -16,10 +16,10 @@ namespace NeuralNetworkNET.UnsupervisedLearning.Misc
         /// <summary>
         /// Gets the fitness score obtained by the neural network
         /// </summary>
-        public double Fitness { get; }
+        public float Fitness { get; }
 
         // Internal constructor
-        internal GeneticAlgorithmBestNetworkChangedEventArgs(INeuralNetwork network, double fitess)
+        internal GeneticAlgorithmBestNetworkChangedEventArgs(INeuralNetwork network, float fitess)
         {
             Network = network;
             Fitness = fitess;

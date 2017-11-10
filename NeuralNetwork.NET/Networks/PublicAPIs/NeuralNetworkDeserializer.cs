@@ -29,8 +29,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                     inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), 
                     outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
                 int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
-                double[][,] weights = jObject["Weights"].ToObject<double[][,]>();
-                double[][] biases = jObject["Biases"].ToObject<double[][]>();
+                float[][,] weights = jObject["Weights"].ToObject<float[][,]>();
+                float[][] biases = jObject["Biases"].ToObject<float[][]>();
                 ActivationFunctionType[] activations = jObject["ActivationFunctions"].ToObject<ActivationFunctionType[]>();
 
                 // Input checks

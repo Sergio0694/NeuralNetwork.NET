@@ -8,7 +8,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
     {
         public IProgress<BackpropagationProgressEventArgs> ProgressCallback { get; }
 
-        public TestParameters((double[,] X, double[,] Y) testSet, [NotNull] IProgress<BackpropagationProgressEventArgs> callback) : base(testSet)
+        public TestParameters((float[,] X, float[,] Y) testSet, [NotNull] IProgress<BackpropagationProgressEventArgs> callback) : base(testSet)
         {
             ProgressCallback = callback;
         }

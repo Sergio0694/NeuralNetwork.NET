@@ -18,21 +18,21 @@ namespace NeuralNetworkNET.Unit
         public void LinearMultiplication()
         {
             // Test values
-            double[,] m =
+            float[,] m =
             {
                 { 1, 1, 1, 1 },
                 { 0, 2, -1, 0 },
                 { 1, 1, 1, 1 },
                 { 0, 0, -1, 1 }
             };
-            double[]
-                v = { 1, 2, 0.1, -2 },
-                r = { 1.1, 5.1, 1.1, -0.9 },
+            float[]
+                v = { 1, 2, 0.1f, -2 },
+                r = { 1.1f, 5.1f, 1.1f, -0.9f },
                 t = v.Multiply(m);
             Assert.IsTrue(t.ContentEquals(r));
 
             // Exception test
-            double[] f = { 1, 2, 3, 4, 5, 6 };
+            float[] f = { 1, 2, 3, 4, 5, 6 };
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Multiply(m));
         }
 
@@ -43,31 +43,31 @@ namespace NeuralNetworkNET.Unit
         public void SpatialMultiplication()
         {
             // Test values
-            double[,]
+            float[,]
                 m1 =
                 {
                     { 1, 2, 3 },
-                    { 5, 0.1, -2 }
+                    { 5, 0.1f, -2 }
                 },
                 m2 =
                 {
                     { 5, 2, -1, 3 },
-                    { -5, 2, -7, 0.9 },
-                    { 0.1, 0.2, -0.1, 2 }
+                    { -5, 2, -7, 0.9f },
+                    { 0.1f, 0.2f, -0.1f, 2 }
                 },
                 r =
                 {
-                    { -4.7, 6.6, -15.3, 10.8 },
-                    { 24.3, 9.7999999999999989, -5.5, 11.09 }
+                    { -4.7f, 6.6f, -15.3f, 10.8f },
+                    { 24.3f, 9.7999999999999989f, -5.5f, 11.09f }
                 },
                 t = m1.Multiply(m2);
             Assert.IsTrue(t.ContentEquals(r));
 
             // Exception test
-            double[,] f =
+            float[,] f =
             {
                 { 1, 2, 1, 0, 0 },
-                { 5, 0.1, 0, 0, 0 }
+                { 5, 0.1f, 0, 0, 0 }
             };
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Multiply(m1));
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => m2.Multiply(f));
@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.Unit
         public void HadamardProductTest()
         {
             // Test values
-            double[,]
+            float[,]
                 m1 =
                 {
                     { 1, 2, 3 },
@@ -103,10 +103,10 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
 
             // Exception test
-            double[,] f =
+            float[,] f =
             {
                 { 1, 2, 1, 0, 0 },
-                { 5, 0.1, 0, 0, 0 }
+                { 5, 0.1f, 0, 0, 0 }
             };
             Assert.ThrowsException<ArgumentException>(() => f.HadamardProduct(m1));
             Assert.ThrowsException<ArgumentException>(() => m2.HadamardProduct(f));
@@ -119,7 +119,7 @@ namespace NeuralNetworkNET.Unit
         public void Transposition()
         {
             // Test values
-            double[,]
+            float[,]
                 m =
                 {
                     { 1, 1, 1, 1 },
@@ -143,26 +143,26 @@ namespace NeuralNetworkNET.Unit
         public void Flattening()
         {
             // Test values
-            double[][,] mv =
+            float[][,] mv =
             {
                 new[,]
                 {
-                    { 1.0, 2.0 },
-                    { 3.0, 4.0 }
+                    { 1.0f, 2.0f },
+                    { 3.0f, 4.0f }
                 },
                 new[,]
                 {
-                    { 0.1, 0.2 },
-                    { 0.3, 0.4 }
+                    { 0.1f, 0.2f },
+                    { 0.3f, 0.4f }
                 },
                 new[,]
                 {
-                    { -1.0, -2.0 },
-                    { -3.0, -4.0 }
+                    { -1.0f, -2.0f },
+                    { -3.0f, -4.0f }
                 }
             };
-            double[]
-                r = { 1.0, 2.0, 3.0, 4.0, 0.1, 0.2, 0.3, 0.4, -1.0, -2.0, -3.0, -4.0 },
+            float[]
+                r = { 1.0f, 2.0f, 3.0f, 4.0f, 0.1f, 0.2f, 0.3f, 0.4f, -1.0f, -2.0f, -3.0f, -4.0f },
                 t = mv.Flatten();
             Assert.IsTrue(t.ContentEquals(r));
         }
@@ -170,9 +170,9 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void IndexOfMax1()
         {
-            double[]
-                v1 = new double[0],
-                v2 = new double[1];
+            float[]
+                v1 = new float[0],
+                v2 = new float[1];
             Assert.IsTrue(v1.Argmax() == 0);
             Assert.IsTrue(v2.Argmax() == 0);
         }
@@ -180,11 +180,11 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void IndexOfMax2()
         {
-            double[]
-                v1 = { 1d, 2d, 3d, 4d, 5d },
-                v2 = { 99d, 11d },
-                v3 = { -2d, -2.1d },
-                v4 = { 0d, 0d, 0d, 0d, 1d, 0d, 0d, 0d, 0d };
+            float[]
+                v1 = { 1f, 2f, 3f, 4f, 5f },
+                v2 = { 99f, 11f },
+                v3 = { -2f, -2.1f },
+                v4 = { 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f };
             Assert.IsTrue(v1.Argmax() == 4);
             Assert.IsTrue(v2.Argmax() == 0);
             Assert.IsTrue(v3.Argmax() == 0);
@@ -194,10 +194,10 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void ToFormattedString()
         {
-            double[,]
+            float[,]
                 empty = { { } },
-                oneLine = { { 1.0, 2.0, 3.0 } },
-                complete = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
+                oneLine = { { 1.0f, 2.0f, 3.0f } },
+                complete = { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } };
             String
                 emptyString = "{ { } }",
                 oneLineString = "{ { 1, 2, 3 } }",

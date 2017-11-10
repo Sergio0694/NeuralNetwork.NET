@@ -30,9 +30,9 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         public int[] sizes;
 
-        public double[][,] biases;
+        public float[][,] biases;
 
-        public double[][,] weights;
+        public float[][,] weights;
 
         public NumpyNetwork(params int[] neurons)
         {
@@ -43,7 +43,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             weights = neurons.Take(neurons.Length - 1).Select((n, i) => r.NextGaussianMatrix(neurons[i + 1], n)).ToArray();
         }
 
-        public double[,] feedforward(double[,] a)
+        public float[,] feedforward(float[,] a)
         {
             foreach ((var b, var w) in biases.Zip(weights, (b, w) => (b, w)))
             {
@@ -54,7 +54,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             return a;
         }
 
-        public void SGD(IReadOnlyList<(double[,], double[,])> training_data, int epochs, int mini_batch_size, double eta, IReadOnlyList<(double[,], double)> test_data)
+        public void SGD(IReadOnlyList<(float[,], float[,])> training_data, int epochs, int mini_batch_size, float eta, IReadOnlyList<(float[,], float)> test_data)
         {
             var n_test = test_data.Count;
             var n = training_data.Count;
@@ -71,10 +71,10 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
         }
 
-        private void update_mini_batch(IReadOnlyList<(double[,], double[,])> mini_batch, double eta)
+        private void update_mini_batch(IReadOnlyList<(float[,], float[,])> mini_batch, float eta)
         {
-            var nabla_b = biases.Select(b => new double[b.Length, 1]).ToArray();
-            var nabla_w = weights.Select(w => new double[w.GetLength(0), w.GetLength(1)]).ToArray();
+            var nabla_b = biases.Select(b => new float[b.Length, 1]).ToArray();
+            var nabla_w = weights.Select(w => new float[w.GetLength(0), w.GetLength(1)]).ToArray();
             foreach ((var x, var y) in mini_batch)
             {
                 (var delta_nabla_b, var delta_nabla_w) = backprop(x, y);
@@ -94,13 +94,13 @@ namespace NeuralNetworkNET.Networks.Implementations
             }).ToArray();
         }
 
-        public (double[][,], double[][,]) backprop(double[,] x, double[,] y)
+        public (float[][,], float[][,]) backprop(float[,] x, float[,] y)
         {
-            var nabla_b = biases.Select(b => new double[b.Length,1]).ToArray();
-            var nabla_w = weights.Select(w => new double[w.GetLength(0), w.GetLength(1)]).ToArray();
+            var nabla_b = biases.Select(b => new float[b.Length,1]).ToArray();
+            var nabla_w = weights.Select(w => new float[w.GetLength(0), w.GetLength(1)]).ToArray();
             var activation = x;
-            var activations = new List<double[,]> { x };
-            var zs = new List<double[,]>();
+            var activations = new List<float[,]> { x };
+            var zs = new List<float[,]>();
 
             foreach ((var b, var w) in biases.Zip(weights, (b, w) => (b, w)))
             {
@@ -128,13 +128,13 @@ namespace NeuralNetworkNET.Networks.Implementations
             return (nabla_b, nabla_w);
         }
 
-        public int evaluate(IReadOnlyList<(double[,], double)> test_data)
+        public int evaluate(IReadOnlyList<(float[,], float)> test_data)
         {
             var test_results = test_data.Select(tuple => (feedforward(tuple.Item1).Argmax(), tuple.Item2));
-            return test_results.Count(tuple => ((double)tuple.Item1).EqualsWithDelta(tuple.Item2));
+            return test_results.Count(tuple => ((float)tuple.Item1).EqualsWithDelta(tuple.Item2));
         }
 
-        private double[,] cost_derivative(double[,] output_activations, double[,] y)
+        private float[,] cost_derivative(float[,] output_activations, float[,] y)
         {
             return output_activations.Subtract(y);
         }

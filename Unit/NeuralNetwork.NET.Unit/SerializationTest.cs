@@ -17,7 +17,7 @@ namespace NeuralNetworkNET.Unit
         public void BinarySerialize()
         {
             NeuralNetwork network = NeuralNetwork.NewRandom(NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
-            double[] data = network.Serialize();
+            float[] data = network.Serialize();
             NeuralNetwork copy = NeuralNetwork.Deserialize(data, NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
             Assert.IsTrue(copy.Equals(network));
         }
@@ -26,7 +26,7 @@ namespace NeuralNetworkNET.Unit
         public void BinaryDeserialize()
         {
             NeuralNetwork network = NeuralNetwork.NewRandom(NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(8, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid));
-            double[] data = network.Serialize();
+            float[] data = network.Serialize();
             Assert.ThrowsException<InvalidOperationException>(() => NeuralNetwork.Deserialize(data, NetworkLayer.Inputs(5), NetworkLayer.FullyConnected(7, ActivationFunctionType.Sigmoid), NetworkLayer.FullyConnected(4, ActivationFunctionType.Sigmoid)));
         }
 

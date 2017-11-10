@@ -7,5 +7,5 @@ namespace NeuralNetworkNET.UnsupervisedLearning
     /// </summary>
     /// <param name="input">The input data to process</param>
     [NotNull]
-    public delegate double[,] ForwardFunction([NotNull] double[,] input);
+    public delegate float[,] ForwardFunction([NotNull] float[,] input);
 }

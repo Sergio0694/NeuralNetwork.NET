@@ -31,8 +31,8 @@ namespace NeuralNetworkNET.SupervisedLearning
         [Pure, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
-            [NotNull] double[,] x,
-            [NotNull] double[,] ys,
+            [NotNull] float[,] x,
+            [NotNull] float[,] ys,
             int? batchSize,
             LearningAlgorithmType learningType,
             CancellationToken token,
@@ -57,15 +57,15 @@ namespace NeuralNetworkNET.SupervisedLearning
         [Pure, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
-            [NotNull] double[,] x,
-            [NotNull] double[,] ys,
+            [NotNull] float[,] x,
+            [NotNull] float[,] ys,
             int? batchSize,
             [NotNull] INeuralNetwork network,
             LearningAlgorithmType learningType,
             CancellationToken token,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress)
         {
-            double[] solution = (network as NeuralNetwork)?.Serialize() ?? throw new ArgumentException(nameof(network), "Invalid network instance");
+            float[] solution = (network as NeuralNetwork)?.Serialize() ?? throw new ArgumentException(nameof(network), "Invalid network instance");
             IEnumerable<NetworkLayer> layers = new[] { NetworkLayer.Inputs(network.InputLayerSize) }
                 .Concat(network.HiddenLayers.Select((n, i) => NetworkLayer.FullyConnected(n, network.ActivationFunctions[i])))
                 .Concat(new[] { NetworkLayer.FullyConnected(network.OutputLayerSize, network.ActivationFunctions.Last()) });
@@ -87,8 +87,8 @@ namespace NeuralNetworkNET.SupervisedLearning
         [Pure, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<INeuralNetwork> ComputeTrainedNetworkAsync(
-            [NotNull] double[,] x,
-            [NotNull] double[,] ys,
+            [NotNull] float[,] x,
+            [NotNull] float[,] ys,
             int? batchSize,
             [NotNull] String json,
             LearningAlgorithmType learningType,
@@ -104,12 +104,12 @@ namespace NeuralNetworkNET.SupervisedLearning
 
         // Private implementation
         private static async Task<INeuralNetwork> ComputeTrainedNetworkAsync(
-            [NotNull] double[,] x,
-            [NotNull] double[,] ys,
+            [NotNull] float[,] x,
+            [NotNull] float[,] ys,
             int batchSize,
             LearningAlgorithmType type,
             CancellationToken token,
-            [CanBeNull] double[] solution,
+            [CanBeNull] float[] solution,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> progress,
             [NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
@@ -125,7 +125,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             return null;
 
             // Initialize the network and the deserializer
-            /*double[] start = solution ?? NeuralNetwork.NewRandom(layers).Serialize();
+            /*float[] start = solution ?? NeuralNetwork.NewRandom(layers).Serialize();
 
             // Prepare the batches
             int iteration = 1;
@@ -151,11 +151,11 @@ namespace NeuralNetworkNET.SupervisedLearning
             optimizer.Gradient = GradientFunction;
 
             // Calculates the cost for a network with the input weights
-            double CostFunction(double[] weights)
+            float CostFunction(float[] weights)
             {
                 NeuralNetwork network = NeuralNetwork.Deserialize(weights, layers);
-                double cost = network.CalculateCost(x, ys);
-                if (!double.IsNaN(cost))
+                float cost = network.CalculateCost(x, ys);
+                if (!float.IsNaN(cost))
                 {
                     progress?.Report(new BackpropagationProgressEventArgs(iteration++, cost));
                 }
@@ -163,7 +163,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             }
 
             // Calculates the gradient for a network with the input weights
-            double[] GradientFunction(double[] weights)
+            float[] GradientFunction(float[] weights)
             {
                 NeuralNetwork network = NeuralNetwork.Deserialize(weights, layers);
                 TrainingBatch pick = batches.Next();
@@ -177,7 +177,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             if (type == LearningAlgorithmType.BoundedBFGSWithGradientDescentOnFirstConvergence && !token.IsCancellationRequested)
             {
                 // Reinitialize the optimizer
-                double[] partial = optimizer.Solution;
+                float[] partial = optimizer.Solution;
                 optimizer = new GradientDescent
                 {
                     NumberOfVariables = start.Length,

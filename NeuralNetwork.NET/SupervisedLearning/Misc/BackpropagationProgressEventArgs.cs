@@ -13,12 +13,12 @@
         /// <summary>
         /// Gets the current cost value for the network
         /// </summary>
-        public double Cost { get; }
+        public float Cost { get; }
 
         /// <summary>
         /// Gets the current percentage of correctly classified test samples
         /// </summary>
-        public double Accuracy { get; }
+        public float Accuracy { get; }
 
         /// <summary>
         /// Internal constructor for the event args base
@@ -26,7 +26,7 @@
         /// <param name="iteration">The current iteration</param>
         /// <param name="cost">The current function cost</param>
         /// <param name="accuracy">The current network accuracy</param>
-        internal BackpropagationProgressEventArgs(int iteration, double cost, double accuracy)
+        internal BackpropagationProgressEventArgs(int iteration, float cost, float accuracy)
         {
             Iteration = iteration;
             Cost = cost;

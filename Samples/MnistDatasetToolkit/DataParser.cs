@@ -76,14 +76,14 @@ namespace MnistDatasetToolkit
         /// </summary>
         [PublicAPI]
         [MustUseReturnValue]
-        public static ((double[,] X, double[,] Y) TrainingData, (double[,] X, double[,] Y) TestData) LoadDatasets()
+        public static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) LoadDatasets()
         {
             String path = TryDownloadDataset();
-            (double[,], double[,]) ParseSamples(String valuePath, String labelsPath, int count)
+            (float[,], float[,]) ParseSamples(String valuePath, String labelsPath, int count)
             {
-                double[,]
-                    x = new double[count, 784],
-                    y = new double[count, 10];
+                float[,]
+                    x = new float[count, 784],
+                    y = new float[count, 10];
                 using (FileStream
                     xStream = File.OpenRead(Path.Combine(path, GetDecompressedDatasetFilename(valuePath))),
                     yStream = File.OpenRead(Path.Combine(path, GetDecompressedDatasetFilename(labelsPath))))
@@ -98,20 +98,20 @@ namespace MnistDatasetToolkit
                         // Read the image pixel values
                         byte[] temp = new byte[784];
                         xGzip.Read(temp, 0, 784);
-                        double[] sample = new double[784];
+                        float[] sample = new float[784];
                         for (int j = 0; j < 784; j++)
                         {
-                            sample[j] = temp[j] / 255d;
+                            sample[j] = temp[j] / 255f;
                         }
 
                         // Read the label
-                        double[,] label = new double[10, 1];
+                        float[,] label = new float[10, 1];
                         int l = yGzip.ReadByte();
                         label[l, 0] = 1;
 
                         // Copy to result matrices
-                        Buffer.BlockCopy(sample, 0, x, sizeof(double) * i * 784, sizeof(double) * 784);
-                        Buffer.BlockCopy(label, 0, y, sizeof(double) * i * 10, sizeof(double) * 10);
+                        Buffer.BlockCopy(sample, 0, x, sizeof(float) * i * 784, sizeof(float) * 784);
+                        Buffer.BlockCopy(label, 0, y, sizeof(float) * i * 10, sizeof(float) * 10);
                     }
                     return (x, y);
                 }

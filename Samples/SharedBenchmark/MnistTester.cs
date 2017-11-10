@@ -39,7 +39,7 @@ namespace SharedBenchmark
             Printf("Loading sample data");
             (var trainingSet, var testSet) = DataParser.LoadDatasets();
 
-            double[,] x;
+            float[,] x;
             if (convolution)
             {
                 Printf("Processing through the convolution layer");
@@ -93,7 +93,7 @@ namespace SharedBenchmark
                 }
             }
 
-            double[,] xt;
+            float[,] xt;
             if (convolution)
             {
                 Printf("Processing test data through the convolution layer");
@@ -102,21 +102,21 @@ namespace SharedBenchmark
             else xt = testSet.X;
 
             Printf("Calculating error");
-            double[,] estimation = network.Forward(xt);
+            float[,] estimation = network.Forward(xt);
             int valid = 0;
             for (int i = 0; i < 10_000; i++)
             {
                 // Iterate through every test sample
-                double[] temp = new double[10];
-                Buffer.BlockCopy(estimation, i * 10, temp, 0, sizeof(double) * 10);
+                float[] temp = new float[10];
+                Buffer.BlockCopy(estimation, i * 10, temp, 0, sizeof(float) * 10);
                 int estimationIndex = temp.Argmax();
-                Buffer.BlockCopy(testSet.Y, i * 10, temp, 0, sizeof(double) * 10);
+                Buffer.BlockCopy(testSet.Y, i * 10, temp, 0, sizeof(float) * 10);
                 int expectedIndex = temp.Argmax();
                 if (estimationIndex == expectedIndex) valid++;
             }
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.WriteLine("\n=======================\n");
-            Printf($"{valid}/10000, {(double)valid / 10000 * 100:###.##}%");
+            Printf($"{valid}/10000, {(float)valid / 10000 * 100:###.##}%");
             Console.ReadKey();
         }
 

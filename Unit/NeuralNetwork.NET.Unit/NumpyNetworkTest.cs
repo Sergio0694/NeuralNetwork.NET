@@ -24,17 +24,17 @@ namespace NeuralNetworkNET.Unit
             {
                 weights =
                 {
-                    [0] = new[,] { { 1.34856747 }, { -1.16546082 } },
-                    [1] = new[,] { { -0.73764399, -0.69019199 } }
+                    [0] = new[,] { { 1.34856747f }, { -1.16546082f } },
+                    [1] = new[,] { { -0.73764399f, -0.69019199f } }
                 },
                 biases =
                 {
-                    [0] = new[,] { { 0.45206544 }, { 0.66440039 } },
-                    [1] = new[,] { { -0.01439235 } }
+                    [0] = new[,] { { 0.45206544f }, { 0.66440039f } },
+                    [1] = new[,] { { -0.01439235f } }
                 }
             };
-            double[,] value = network.feedforward(new[,] { { 1d } });
-            Assert.IsTrue((value[0, 0] - 0.28743771).Abs() < 0.1);
+            float[,] value = network.feedforward(new[,] { { 1f } });
+            Assert.IsTrue((value[0, 0] - 0.28743771f).Abs() < 0.1f);
         }
 
         [TestMethod]
@@ -44,32 +44,32 @@ namespace NeuralNetworkNET.Unit
             {
                 weights =
                 {
-                    [0] = new[,] { { 1.34856747 }, { -1.16546082 } },
-                    [1] = new[,] { { -0.73764399, -0.69019199 } }
+                    [0] = new[,] { { 1.34856747f }, { -1.16546082f } },
+                    [1] = new[,] { { -0.73764399f, -0.69019199f } }
                 },
                 biases =
                 {
-                    [0] = new[,] { { 0.45206544 }, { 0.66440039 } },
-                    [1] = new[,] { { -0.01439235 } }
+                    [0] = new[,] { { 0.45206544f }, { 0.66440039f } },
+                    [1] = new[,] { { -0.01439235f } }
                 }
             };
-            (double[][,] dJdb, double[][,] dJdw) = network.backprop(new[,] { { 1.2 } }, new[,] { { 1.2 } });
+            (float[][,] dJdb, float[][,] dJdw) = network.backprop(new[,] { { 1.2f } }, new[,] { { 1.2f } });
             Assert.IsTrue(dJdb.Length == 2 &&
                           dJdb[0].GetLength(0) == 2 && dJdb[0].GetLength(1) == 1 &&
                           dJdb[1].Length == 1);
             Assert.IsTrue(dJdw.Length == 2 &&
                           dJdw[0].GetLength(0) == 2 && dJdw[0].GetLength(1) == 1 &&
                           dJdw[1].GetLength(0) == 1 && dJdw[1].GetLength(1) == 2);
-            Assert.IsTrue(dJdb[0][0, 0].EqualsWithDelta(0.01375305, 1e-5) &&
-                          dJdb[0][1, 0].EqualsWithDelta(0.02834903, 1e-5) &&
-                          dJdb[1][0, 0].EqualsWithDelta(-0.18744699, 1e-5) &&
-                          dJdw[0][0, 0].EqualsWithDelta(0.01650366, 1e-5) &&
-                          dJdw[0][1, 0].EqualsWithDelta(0.03401884, 1e-5) &&
-                          dJdw[1][0, 0].EqualsWithDelta(-0.16645057, 1e-5) &&
-                          dJdw[1][0, 1].EqualsWithDelta(-0.06078609, 1e-5));
+            Assert.IsTrue(dJdb[0][0, 0].EqualsWithDelta(0.01375305f, 1e-5f) &&
+                          dJdb[0][1, 0].EqualsWithDelta(0.02834903f, 1e-5f) &&
+                          dJdb[1][0, 0].EqualsWithDelta(-0.18744699f, 1e-5f) &&
+                          dJdw[0][0, 0].EqualsWithDelta(0.01650366f, 1e-5f) &&
+                          dJdw[0][1, 0].EqualsWithDelta(0.03401884f, 1e-5f) &&
+                          dJdw[1][0, 0].EqualsWithDelta(-0.16645057f, 1e-5f) &&
+                          dJdw[1][0, 1].EqualsWithDelta(-0.06078609f, 1e-5f));
         }
 
-        private static (IReadOnlyList<(double[,], double[,])> TrainingData, IReadOnlyList<(double[,], double[,])> TestData) ParseMnistDataset()
+        private static (IReadOnlyList<(float[,], float[,])> TrainingData, IReadOnlyList<(float[,], float[,])> TestData) ParseMnistDataset()
         {
             const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
             String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
@@ -80,9 +80,9 @@ namespace NeuralNetworkNET.Unit
                 dll = Path.GetFullPath(code),
                 root = Path.GetDirectoryName(dll),
                 path = Path.Combine(root, "Assets");
-            (double[,], double[,])[] ParseSamples(String valuePath, String labelsPath, int count)
+            (float[,], float[,])[] ParseSamples(String valuePath, String labelsPath, int count)
             {
-                (double[,], double[,])[] samples = new (double[,], double[,])[count];
+                (float[,], float[,])[] samples = new (float[,], float[,])[count];
                 using (FileStream
                     xStream = File.OpenRead(Path.Combine(path, valuePath)),
                     yStream = File.OpenRead(Path.Combine(path, labelsPath)))
@@ -97,14 +97,14 @@ namespace NeuralNetworkNET.Unit
                         // Read the image pixel values
                         byte[] temp = new byte[784];
                         xGzip.Read(temp, 0, 784);
-                        double[,] sample = new double[784, 1];
+                        float[,] sample = new float[784, 1];
                         for (int j = 0; j < 784; j++)
                         {
-                            sample[j, 0] = temp[j] / 255d;
+                            sample[j, 0] = temp[j] / 255f;
                         }
 
                         // Read the label
-                        double[,] label = new double[10, 1];
+                        float[,] label = new float[10, 1];
                         int l = yGzip.ReadByte();
                         label[l, 0] = 1;
 
@@ -121,11 +121,11 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void TrainingTest1()
         {
-            (IReadOnlyList<(double[,], double[,])> TrainingData, 
-             IReadOnlyList<(double[,], double[,])> TestData) data = ParseMnistDataset();
+            (IReadOnlyList<(float[,], float[,])> TrainingData, 
+             IReadOnlyList<(float[,], float[,])> TestData) data = ParseMnistDataset();
             NumpyNetwork net = new NumpyNetwork(784, 30, 10);
-            (double[,], double)[] test = data.TestData.Select(t => (t.Item1, (double)t.Item2.Argmax())).ToArray();
-            net.SGD(data.TrainingData, 1, 10, 3.0, test);
+            (float[,], float)[] test = data.TestData.Select(t => (t.Item1, (float)t.Item2.Argmax())).ToArray();
+            net.SGD(data.TrainingData, 1, 10, 3.0f, test);
             Assert.IsTrue(net.evaluate(test) > 8000);
         }
     }

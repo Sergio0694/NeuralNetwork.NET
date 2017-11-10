@@ -17,7 +17,7 @@ namespace NeuralNetworkNET.Unit
         public void BatchDivisionTest1()
         {
             Random r = new Random();
-            double[,]
+            float[,]
                 x = r.NextXavierMatrix(60000, 784),
                 y = r.NextXavierMatrix(60000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
@@ -29,7 +29,7 @@ namespace NeuralNetworkNET.Unit
         public void BatchDivisionTest2()
         {
             Random r = new Random();
-            double[,]
+            float[,]
                 x = r.NextXavierMatrix(20000, 784),
                 y = r.NextXavierMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 333);

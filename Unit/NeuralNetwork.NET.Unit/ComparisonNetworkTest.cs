@@ -27,13 +27,13 @@ namespace NeuralNetworkNET.Unit
             {
                 weights =
                 {
-                    [0] = new[,] { { 1.34856747 }, { -1.16546082 } },
-                    [1] = new[,] { { -0.73764399, -0.69019199 } }
+                    [0] = new[,] { { 1.34856747f }, { -1.16546082f } },
+                    [1] = new[,] { { -0.73764399f, -0.69019199f } }
                 },
                 biases =
                 {
-                    [0] = new[,] { { 0.45206544 }, { 0.66440039 } },
-                    [1] = new[,] { { -0.01439235 } }
+                    [0] = new[,] { { 0.45206544f }, { 0.66440039f } },
+                    [1] = new[,] { { -0.01439235f } }
                 }
             };
             NeuralNetwork dotNet = new NeuralNetwork(
@@ -42,13 +42,13 @@ namespace NeuralNetworkNET.Unit
                 pyNet.weights.Select(_ => ActivationFunctionType.Sigmoid).ToArray());
 
             // Tests
-            double[,]
-                pyResult = pyNet.feedforward(new[,] { { 1.2 } }),
-                dotResult = dotNet.Forward(new[,] { { 1.2 } });
+            float[,]
+                pyResult = pyNet.feedforward(new[,] { { 1.2f } }),
+                dotResult = dotNet.Forward(new[,] { { 1.2f } });
             Assert.IsTrue(pyResult[0, 0].EqualsWithDelta(dotResult[0, 0]));
             
             // Multiple samples
-            double[,] samples = new Random().NextGaussianMatrix(80, 1);
+            float[,] samples = new Random().NextGaussianMatrix(80, 1);
             pyResult = pyNet.feedforward(samples.Transpose());
             dotResult = dotNet.Forward(samples);
             Assert.IsTrue(pyResult.Transpose().ContentEquals(dotResult));
@@ -61,13 +61,13 @@ namespace NeuralNetworkNET.Unit
             {
                 weights =
                 {
-                    [0] = new[,] { { 1.34856747 }, { -1.16546082 } },
-                    [1] = new[,] { { -0.73764399, -0.69019199 } }
+                    [0] = new[,] { { 1.34856747f }, { -1.16546082f } },
+                    [1] = new[,] { { -0.73764399f, -0.69019199f } }
                 },
                 biases =
                 {
-                    [0] = new[,] { { 0.45206544 }, { 0.66440039 } },
-                    [1] = new[,] { { -0.01439235 } }
+                    [0] = new[,] { { 0.45206544f }, { 0.66440039f } },
+                    [1] = new[,] { { -0.01439235f } }
                 }
             };
             NeuralNetwork dotNet = new NeuralNetwork(
@@ -76,15 +76,15 @@ namespace NeuralNetworkNET.Unit
                 pyNet.weights.Select(_ => ActivationFunctionType.Sigmoid).ToArray());
 
             // Tests
-            (double[][,] dJdb, double[][,] dJdw) pyResult = pyNet.backprop(new[,] { { 1.2 } }, new[,] { { 1.0 } });
-            double[] dotResult = dotNet.Backpropagate(new[,] { { 1.2 } }, new[,] { { 1.0 } }).Flatten();
-            double[] pyGradient = pyResult.dJdw.Zip(pyResult.dJdb, (w, b) => w.Flatten().Concat(b.Flatten()).ToArray()).Aggregate(new double[0], (s, v) => s.Concat(v).ToArray()).ToArray();
+            (float[][,] dJdb, float[][,] dJdw) pyResult = pyNet.backprop(new[,] { { 1.2f } }, new[,] { { 1.0f } });
+            float[] dotResult = dotNet.Backpropagate(new[,] { { 1.2f } }, new[,] { { 1.0f } }).Flatten();
+            float[] pyGradient = pyResult.dJdw.Zip(pyResult.dJdb, (w, b) => w.Flatten().Concat(b.Flatten()).ToArray()).Aggregate(new float[0], (s, v) => s.Concat(v).ToArray()).ToArray();
             Assert.IsTrue(dotResult.ContentEquals(pyGradient));
 
             // Additional Release/Debug test
-            double[,]
-                samples = { { 1.17 }, { 2.3 } },
-                y = { { 1.0 }, { 0.5 } };
+            float[,]
+                samples = { { 1.17f }, { 2.3f } },
+                y = { { 1.0f }, { 0.5f } };
             pyResult = pyNet.backprop(samples.Transpose(), y.Transpose());
             dotResult = dotNet.Backpropagate(samples, y).Flatten();
             Assert.IsTrue((pyResult.dJdb[0][0, 0] + pyResult.dJdb[0][0, 1]).EqualsWithDelta(dotResult[2]));
@@ -95,25 +95,25 @@ namespace NeuralNetworkNET.Unit
             Random r = new Random(7);
             samples = r.NextGaussianMatrix(160, 1);
             y = r.NextGaussianMatrix(160, 1);
-            double[,] 
+            float[,] 
                 pyF = pyNet.feedforward(samples.Transpose()),
                 netF = dotNet.Forward(samples);
             Assert.IsTrue(pyF.Transpose().ContentEquals(netF));
             pyResult = pyNet.backprop(samples.Transpose(), y.Transpose());
             dotResult = dotNet.Backpropagate(samples, y).Flatten();
-            double[][] dbs = pyResult.dJdb.Select(b =>
+            float[][] dbs = pyResult.dJdb.Select(b =>
             {
-                double[] db = new double[b.GetLength(0)];
+                float[] db = new float[b.GetLength(0)];
                 for (int i = 0; i < db.Length; i++)
                     for (int j = 0; j < b.GetLength(1); j++)
                         db[i] += b[i, j];
                 return db;
             }).ToArray();
-            pyGradient = pyResult.dJdw.Zip(dbs, (w, b) => w.Flatten().Concat(b).ToArray()).Aggregate(new double[0], (s, v) => s.Concat(v).ToArray()).ToArray();
+            pyGradient = pyResult.dJdw.Zip(dbs, (w, b) => w.Flatten().Concat(b).ToArray()).Aggregate(new float[0], (s, v) => s.Concat(v).ToArray()).ToArray();
             Assert.IsTrue(dotResult.ContentEquals(pyGradient));
         }
 
-        private static ((double[,] X, double[,] Y) TrainingData, (double[,] X, double[,] Y) TestData) ParseMnistDataset()
+        private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset()
         {
             const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
             String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
@@ -124,11 +124,11 @@ namespace NeuralNetworkNET.Unit
                 dll = Path.GetFullPath(code),
                 root = Path.GetDirectoryName(dll),
                 path = Path.Combine(root, "Assets");
-            (double[,], double[,]) ParseSamples(String valuePath, String labelsPath, int count)
+            (float[,], float[,]) ParseSamples(String valuePath, String labelsPath, int count)
             {
-                double[,] 
-                    x = new double[count, 784],
-                    y = new double[count, 10];
+                float[,] 
+                    x = new float[count, 784],
+                    y = new float[count, 10];
                 using (FileStream
                     xStream = File.OpenRead(Path.Combine(path, valuePath)),
                     yStream = File.OpenRead(Path.Combine(path, labelsPath)))
@@ -143,20 +143,20 @@ namespace NeuralNetworkNET.Unit
                         // Read the image pixel values
                         byte[] temp = new byte[784];
                         xGzip.Read(temp, 0, 784);
-                        double[] sample = new double[784];
+                        float[] sample = new float[784];
                         for (int j = 0; j < 784; j++)
                         {
-                            sample[j] = temp[j] / 255d;
+                            sample[j] = temp[j] / 255f;
                         }
 
                         // Read the label
-                        double[,] label = new double[10, 1];
+                        float[,] label = new float[10, 1];
                         int l = yGzip.ReadByte();
                         label[l, 0] = 1;
 
                         // Copy to result matrices
-                        Buffer.BlockCopy(sample, 0, x, sizeof(double) * i * 784, sizeof(double) * 784);
-                        Buffer.BlockCopy(label, 0, y, sizeof(double) * i * 10, sizeof(double) * 10);
+                        Buffer.BlockCopy(sample, 0, x, sizeof(float) * i * 784, sizeof(float) * 784);
+                        Buffer.BlockCopy(label, 0, y, sizeof(float) * i * 10, sizeof(float) * 10);
                     }
                     return (x, y);
                 }
@@ -173,8 +173,8 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayer.Inputs(784),
                 NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
-            network.StochasticGradientDescent(trainingSet, 5, 100, null, null, 0.5, 5);
-            (_, double accuracy) = network.Evaluate(testSet);
+            network.StochasticGradientDescent(trainingSet, 5, 100, null, null, 0.5f, 5);
+            (_, float accuracy) = network.Evaluate(testSet);
             Console.WriteLine($"Accuracy: accuracy%");
             Assert.IsTrue(accuracy > 80);
         }

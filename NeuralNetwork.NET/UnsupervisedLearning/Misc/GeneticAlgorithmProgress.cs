@@ -13,20 +13,20 @@
         /// <summary>
         /// The best score for the generation
         /// </summary>
-        public double Best { get; }
+        public float Best { get; }
 
         /// <summary>
         /// The average score for the generation
         /// </summary>
-        public double Average { get; }
+        public float Average { get; }
 
         /// <summary>
         /// The best score since the start of the genetic algorithm
         /// </summary>
-        public double AllTimeBest { get; }
+        public float AllTimeBest { get; }
 
         // Internal constructor
-        internal GeneticAlgorithmProgress(int generation, double best, double average, double allTime)
+        internal GeneticAlgorithmProgress(int generation, float best, float average, float allTime)
         {
             Generation = generation;
             Best = best;
