@@ -243,8 +243,21 @@ namespace NeuralNetworkNET.Helpers
                                 yi = py[target],
                                 yHati = pyHat[target],
                                 left = yi * Math.Log(yHati),
-                                right = (1 - yi) * Math.Log(1 - yHati);
-                            sum += left + right;
+                                right = (1 - yi) * Math.Log(1 - yHati),
+                                partial = left + right;
+                            switch (partial)
+                            {
+                                case double.NegativeInfinity:
+                                    sum += -double.MaxValue;
+                                    break;
+                                case double.NaN:
+                                    break;
+                                case double.PositiveInfinity:
+                                    throw new InvalidOperationException("Error calculating the cross-entropy cost");
+                                default:
+                                    sum += partial;
+                                    break;
+                            }
                         }
                         pv[i] = sum;
                     }

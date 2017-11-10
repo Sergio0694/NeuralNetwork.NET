@@ -7,8 +7,6 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
-using NeuralNetworkNET.SupervisedLearning.Optimization;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Abstract;
 
 namespace NeuralNetworkNET.SupervisedLearning
 {
