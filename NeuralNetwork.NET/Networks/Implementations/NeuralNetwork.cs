@@ -365,8 +365,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         public void StochasticGradientDescent(
             (double[,] X, double[,] Y) trainingSet,
             (double[,] X, double[,] Y) testSet,
-            int epochs, int batchSize, double eta)
+            int epochs, int batchSize, double eta = 0.5, double lambda = 0.1)
         {
+            int samples = trainingSet.X.GetLength(0);
+            double regularizationFactor = eta * lambda / samples;
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
             while (epochs-- > 0)
             {
@@ -380,6 +382,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     int
                         n = batch.X.GetLength(0),
                         blocks = Weights.Count * 2;
+                    double scale = eta / n;
                     bool loopResult = Parallel.For(0, blocks, i =>
                     {
                         // Get the index of the current layer and branch over weights/biases
@@ -401,7 +404,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                         for (int y = 0; y < w; y++)
                                         {
                                             int target = offset + y;
-                                            pw[target] -= eta / n * pdj[target];
+                                            pw[target] -= regularizationFactor * pw[target] + scale * pdj[target];
                                         }
                                     }
                                 }
