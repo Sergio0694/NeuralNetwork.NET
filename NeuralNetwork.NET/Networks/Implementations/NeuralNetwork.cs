@@ -261,108 +261,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        #region Tools
-
-        /// <summary>
-        /// Deserializes a neural network from the input weights and parameters
-        /// </summary>
-        /// <param name="data">The data representing the weights of the network</param>
-        /// <param name="layers">The list of network layers</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        internal static NeuralNetwork Deserialize([NotNull] float[] data, [NotNull, ItemNotNull] params NetworkLayer[] layers)
-        {
-            // Checks
-            if (layers.Length < 2) throw new ArgumentException("The network must have at least 2 layers");
-            if (!(layers[0] is NetworkLayer.InputLayer)) throw new ArgumentException(nameof(layers), "The first layer isn't a valid input layer");
-
-            // Parse the input data
-            int depth = layers.Length - 1;
-            float[][,] weights = new float[depth][,];
-            float[][] biases = new float[depth][];
-            ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
-            int position = 0;
-            for (int i = 0; i < depth; i++)
-            {
-                // Unpack the current weights
-                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
-                float[,] wi = new float[fanIn, fanOut];
-                int bytes = sizeof(float) * wi.Length;
-                Buffer.BlockCopy(data, position, wi, 0, bytes);
-                position += bytes;
-                weights[i] = wi;
-                if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
-                    throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
-                activations[i] = fullyConnected.Activation;
-
-                // Unpack the current bias vector
-                float[] bias = new float[fanOut];
-                bytes = sizeof(float) * bias.Length;
-                Buffer.BlockCopy(data, position, bias, 0, bytes);
-                position += bytes;
-                biases[i] = bias;
-            }
-            if (position / sizeof(float) != data.Length) throw new InvalidOperationException("Invalid network requested size");
-
-            // Create the new network to use
-            return new NeuralNetwork(weights, biases, activations);
-        }
-
-        /// <summary>
-        /// Serializes the current network into a binary representation
-        /// </summary>
-        /// <returns>A <see cref="float"/> array containing all the weights and biases of the network</returns>
-        [PublicAPI]
-        [Pure]
-        internal float[] Serialize()
-        {
-            // Allocate the output array
-            int length = Weights.Sum(layer => layer.Length) + Biases.Sum(bias => bias.Length);
-            float[] weights = new float[length];
-            int position = 0;
-            for (int i = 0; i < Weights.Count; i++)
-            {
-                // Populate the return array with the weights and biases for each layer
-                int bytes = sizeof(float) * Weights[i].Length;
-                Buffer.BlockCopy(Weights[i], 0, weights, position, bytes);
-                position += bytes;
-                bytes = sizeof(float) * Biases[i].Length;
-                Buffer.BlockCopy(Biases[i], 0, weights, position, bytes);
-                position += bytes;
-            }
-            return weights;
-        }
-
-        /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented);
-
-        // Creates a new instance from another network with the same structure
-        [Pure, NotNull]
-        internal NeuralNetwork Crossover([NotNull] NeuralNetwork other, [NotNull] Random random)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public bool Equals(INeuralNetwork other)
-        {
-            // Compare general features
-            if (other is NeuralNetwork network &&
-                other.InputLayerSize == InputLayerSize &&
-                other.OutputLayerSize == OutputLayerSize &&
-                other.HiddenLayers.SequenceEqual(HiddenLayers) &&
-                other.ActivationFunctions.SequenceEqual(ActivationFunctions))
-            {
-                // Compare each weight and bias value
-                for (int i = 0; i < Weights.Count; i++)
-                    if (!network.Weights[i].ContentEquals(Weights[i]) ||
-                        !network.Biases[i].ContentEquals(Biases[i])) return false;
-                return true;
-            }
-            return false;
-        }
-
-        #endregion
+        #region Training
 
         public TrainingStopReason StochasticGradientDescent(
             (float[,] X, float[,] Y) trainingSet,
@@ -414,7 +313,13 @@ namespace NeuralNetworkNET.Networks.Implementations
             return TrainingStopReason.EpochsCompleted;
         }
 
-        // TODO: add docs
+        /// <summary>
+        /// Updates the current network weights after a backpropagation on a training batch
+        /// </summary>
+        /// <param name="dJ">The gradient for the cost function over the last training batch</param>
+        /// <param name="batchSize">The size of the last training batch</param>
+        /// <param name="eta">The learning rate for the training session</param>
+        /// <param name="l2Factor">The L2 regularization factor</param>
         private void UpdateWeights([NotNull] IReadOnlyList<LayerGradient> dJ, int batchSize, float eta, float l2Factor)
         {
             int blocks = Weights.Count * 2;
@@ -456,7 +361,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         {
                             int w = bias.Length;
                             for (int x = 0; x < w; x++)
-                                pb[x] -= eta / batchSize * pdj[x];
+                                pb[x] -= scale * pdj[x];
                         }
                     }
                 }
@@ -464,14 +369,20 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
         }
 
-        // TODO: add docs
-        public (float Cost, int Classified) Evaluate((float[,] X, float[,] Y) evaluationSet)
+        /// <summary>
+        /// Calculates the current network performances with the given test samples
+        /// </summary>
+        /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
+        private (float Cost, int Classified) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
+            // Feedforward
             float[,] yHat = Forward(evaluationSet.X);
             int
                 h = evaluationSet.X.GetLength(0),
                 wy = evaluationSet.Y.GetLength(1),
                 total = 0;
+
+            // Check the correctly classified samples
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
@@ -485,10 +396,38 @@ namespace NeuralNetworkNET.Networks.Implementations
                         if (max == maxHat) Interlocked.Increment(ref total);
                     }
                 }
-                
+
             }).IsCompleted;
             if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
             return (yHat.CrossEntropyCost(evaluationSet.Y), total);
         }
+
+        #endregion
+
+        #region Tools
+
+        /// <inheritdoc/>
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented); // TODO: check and test
+
+        /// <inheritdoc/>
+        public bool Equals(INeuralNetwork other)
+        {
+            // Compare general features
+            if (other is NeuralNetwork network &&
+                other.InputLayerSize == InputLayerSize &&
+                other.OutputLayerSize == OutputLayerSize &&
+                other.HiddenLayers.SequenceEqual(HiddenLayers) &&
+                other.ActivationFunctions.SequenceEqual(ActivationFunctions))
+            {
+                // Compare each weight and bias value
+                for (int i = 0; i < Weights.Count; i++)
+                    if (!network.Weights[i].ContentEquals(Weights[i]) ||
+                        !network.Biases[i].ContentEquals(Biases[i])) return false;
+                return true;
+            }
+            return false;
+        }
+
+        #endregion
     }
 }

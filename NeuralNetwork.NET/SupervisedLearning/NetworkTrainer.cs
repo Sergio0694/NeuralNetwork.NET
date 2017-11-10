@@ -15,15 +15,21 @@ namespace NeuralNetworkNET.SupervisedLearning
     public static class NetworkTrainer
     {
         /// <summary>
-        /// Generates and trains a neural network suited for the input data and results
+        /// Generates and trains a neural network with the given parameters
         /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="ys">The results vector</param>
-        /// <param name="batchSize"></param>
-        /// <param name="learningType">The type of learning algorithm to use to train the network</param>
-        /// <param name="token">The cancellation token for the training session</param>
-        /// <param name="progress">An optional progress callback</param>
-        /// <param name="layers">The network layers to create</param>
+        /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> with the training samples and expected results</param>
+        /// <param name="epochs">The number of epochs to run with the training data</param>
+        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
+        /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
+        /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
+        /// <param name="layers">The desired layers of the network to create and train</param>
+        /// <remarks>
+        /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
+        /// <para>The <paramref name="lambda"/> parameter (optional) depends on both <paramref name="eta"/> and the number of training samples and should be scaled accordingly</para>
+        /// </remarks>
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
@@ -42,16 +48,21 @@ namespace NeuralNetworkNET.SupervisedLearning
         }
 
         /// <summary>
-        /// Generates and trains a neural network suited for the input data and results
+        /// Generates and trains a neural network with the given parameters
         /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="ys">The results vector</param>
-        /// <param name="batchSize"></param>
-        /// <param name="network">The previous network to use as a starting point, to continue a training session</param>
-        /// <param name="learningType">The type of learning algorithm to use to train the network</param>
-        /// <param name="token">The cancellation token for the training session</param>
-        /// <param name="progress">An optional progress callback</param>
-        /// <exception cref="ArgumentException">The input <see cref="INeuralNetwork"/> instance isn't valid</exception>
+        /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
+        /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> with the training samples and expected results</param>
+        /// <param name="epochs">The number of epochs to run with the training data</param>
+        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
+        /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
+        /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
+        /// <remarks>
+        /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
+        /// <para>The <paramref name="lambda"/> parameter (optional) depends on both <paramref name="eta"/> and the number of training samples and should be scaled accordingly</para>
+        /// </remarks>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<TrainingStopReason> TrainNetworkAsync(
