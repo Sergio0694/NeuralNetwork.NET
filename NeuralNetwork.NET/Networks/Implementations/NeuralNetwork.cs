@@ -364,12 +364,13 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        public void StochasticGradientDescent(
+        public TrainingStopReason StochasticGradientDescent(
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,
             ValidationParameters validationParameters = null,
             TestParameters testParameters = null,
-            float eta = 0.5f, float lambda = 0.1f)
+            float eta = 0.5f, float lambda = 0.1f,
+            CancellationToken token = default)
         {
             // Convergence manager for the validation dataset
             RelativeConvergence convergence = validationParameters == null
@@ -388,6 +389,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Gradient descent over the current batches
                 foreach (TrainingBatch batch in batches.NextEpoch())
                 {
+                    if (token.IsCancellationRequested) return TrainingStopReason.TrainingCanceled;
                     IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
                     int size = batch.X.GetLength(0);
                     UpdateWeights(dJ, size, eta, l2Factor);
@@ -398,7 +400,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     (_, int classified) = Evaluate(validationParameters.Dataset);
                     convergence.Value = (float)classified / validationSamples * 100;
-                    if (convergence.HasConverged) return;
+                    if (convergence.HasConverged) return TrainingStopReason.EarlyStopping;
                 }
 
                 // Report progress if necessary
@@ -409,6 +411,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, evaluation.Cost, accuracy));
                 }
             }
+            return TrainingStopReason.EpochsCompleted;
         }
 
         // TODO: add docs

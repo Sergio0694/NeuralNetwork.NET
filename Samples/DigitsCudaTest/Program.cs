@@ -23,10 +23,19 @@ namespace DigitsCudaTest
                 null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
-                    Console.WriteLine($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
+                    Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
                 })),
-                0.5f, 0.5f);
+                0.5f, 5f);
             Console.ReadKey();
+        }
+
+        // Prints an output message
+        private static void Printf(String text)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.Write(">> ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write($"{text}\n");
         }
     }
 }

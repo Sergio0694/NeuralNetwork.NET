@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.SupervisedLearning;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace NeuralNetworkNET.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="SupervisedLearning.BackpropagationNetworkTrainer"/> class and dependencies
+    /// Test class for the <see cref="NetworkTrainer"/> class and dependencies
     /// </summary>
     [TestClass]
     [TestCategory(nameof(TrainingTest))]
