@@ -6,7 +6,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
     /// <summary>
     /// A simple struct that keeps a reference of a training set and its expected results
     /// </summary>
-    public struct SupervisedDataset
+    public struct TrainingBatch
     {
         /// <summary>
         /// Gets the current dataset
@@ -25,7 +25,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// </summary>
         /// <param name="x">The batch data</param>
         /// <param name="y">The batch expected results</param>
-        public SupervisedDataset([NotNull] double[,] x, [NotNull] double[,] y)
+        public TrainingBatch([NotNull] double[,] x, [NotNull] double[,] y)
         {
             if (x.GetLength(0) != y.GetLength(0)) throw new ArgumentException("The number of samples in the data and results must be the same");
             X = x;

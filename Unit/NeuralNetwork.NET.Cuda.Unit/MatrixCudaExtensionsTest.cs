@@ -52,12 +52,12 @@ namespace NeuralNetworkNET.Cuda.Unit
             Benchmark(() =>
             {
                 NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
-                network.ComputeGradient(input, y);
+                network.Backpropagate(input, y);
             },
             () =>
             {
                 NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Cpu;
-                network.ComputeGradient(input, y);
+                network.Backpropagate(input, y);
             }, 10);
         }
 

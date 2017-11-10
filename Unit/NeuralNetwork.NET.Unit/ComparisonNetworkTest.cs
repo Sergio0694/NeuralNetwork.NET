@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -8,6 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.Unit
@@ -77,7 +77,7 @@ namespace NeuralNetworkNET.Unit
 
             // Tests
             (double[][,] dJdb, double[][,] dJdw) pyResult = pyNet.backprop(new[,] { { 1.2 } }, new[,] { { 1.0 } });
-            double[] dotResult = dotNet.ComputeGradient(new[,] { { 1.2 } }, new[,] { { 1.0 } });
+            double[] dotResult = dotNet.Backpropagate(new[,] { { 1.2 } }, new[,] { { 1.0 } }).Flatten();
             double[] pyGradient = pyResult.dJdw.Zip(pyResult.dJdb, (w, b) => w.Flatten().Concat(b.Flatten()).ToArray()).Aggregate(new double[0], (s, v) => s.Concat(v).ToArray()).ToArray();
             Assert.IsTrue(dotResult.ContentEquals(pyGradient));
 
@@ -86,7 +86,7 @@ namespace NeuralNetworkNET.Unit
                 samples = { { 1.17 }, { 2.3 } },
                 y = { { 1.0 }, { 0.5 } };
             pyResult = pyNet.backprop(samples.Transpose(), y.Transpose());
-            dotResult = dotNet.ComputeGradient(samples, y);
+            dotResult = dotNet.Backpropagate(samples, y).Flatten();
             Assert.IsTrue((pyResult.dJdb[0][0, 0] + pyResult.dJdb[0][0, 1]).EqualsWithDelta(dotResult[2]));
             Assert.IsTrue((pyResult.dJdb[0][1, 0] + pyResult.dJdb[0][1, 1]).EqualsWithDelta(dotResult[3]));
             Assert.IsTrue((pyResult.dJdb[1][0, 0] + pyResult.dJdb[1][0, 1]).EqualsWithDelta(dotResult[6]));
@@ -100,7 +100,7 @@ namespace NeuralNetworkNET.Unit
                 netF = dotNet.Forward(samples);
             Assert.IsTrue(pyF.Transpose().ContentEquals(netF));
             pyResult = pyNet.backprop(samples.Transpose(), y.Transpose());
-            dotResult = dotNet.ComputeGradient(samples, y);
+            dotResult = dotNet.Backpropagate(samples, y).Flatten();
             double[][] dbs = pyResult.dJdb.Select(b =>
             {
                 double[] db = new double[b.GetLength(0)];
@@ -173,8 +173,7 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayer.Inputs(784),
                 NetworkLayer.FullyConnected(30, ActivationFunctionType.Sigmoid),
                 NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
-            network.SGD(trainingSet, testSet, 1, 3);
-
+            network.StochasticGradientDescent(trainingSet, testSet, 1, 10, 3);
         }
     }
 }

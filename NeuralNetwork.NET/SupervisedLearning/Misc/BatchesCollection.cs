@@ -14,7 +14,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
     {
         // The source list of batches to use
         [NotNull]
-        private readonly SupervisedDataset[] Batches;
+        private readonly TrainingBatch[] Batches;
 
         /// <summary>
         /// Gets the number of training batches in the current collection
@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         private Random RandomProvider { get; }
 
         // Private constructor from a given collection
-        private BatchesCollection([NotNull] SupervisedDataset[] batches)
+        private BatchesCollection([NotNull] TrainingBatch[] batches)
         {
             Batches = batches;
             Count = batches.Length;
@@ -46,7 +46,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset(SupervisedDataset dataset, int size)
+        public static BatchesCollection FromDataset((double[,] X ,double[,] Y) dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
@@ -61,7 +61,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                 nBatches = samples / size,
                 nBatchMod = samples % size;
             bool oddBatchPresent = nBatchMod > 0;
-            SupervisedDataset[] batches = new SupervisedDataset[nBatches + (oddBatchPresent ? 1 : 0)];
+            TrainingBatch[] batches = new TrainingBatch[nBatches + (oddBatchPresent ? 1 : 0)];
             for (int i = 0; i < batches.Length; i++)
             {
                 if (oddBatchPresent && i == batches.Length - 1)
@@ -71,7 +71,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                         batchY = new double[nBatchMod, wy];
                     Buffer.BlockCopy(dataset.X, sizeof(double) * (dataset.X.Length - batch.Length), batch, 0, sizeof(double) * batch.Length);
                     Buffer.BlockCopy(dataset.Y, sizeof(double) * (dataset.Y.Length - batchY.Length), batchY, 0, sizeof(double) * batchY.Length);
-                    batches[batches.Length - 1] = new SupervisedDataset(batch, batchY);
+                    batches[batches.Length - 1] = new TrainingBatch(batch, batchY);
                 }
                 else
                 {
@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                         batchY = new double[size, wy];
                     Buffer.BlockCopy(dataset.X, sizeof(double) * i * batch.Length, batch, 0, sizeof(double) * batch.Length);
                     Buffer.BlockCopy(dataset.Y, sizeof(double) * i * batchY.Length, batchY, 0, sizeof(double) * batchY.Length);
-                    batches[i] = new SupervisedDataset(batch, batchY);
+                    batches[i] = new TrainingBatch(batch, batchY);
                 }
             }
             return new BatchesCollection(batches);
@@ -102,7 +102,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
             bool result = Parallel.For(0, couples.Count, i =>
             {
                 (int a, int b) = couples[i];
-                SupervisedDataset setA = Batches[a], setB = Batches[b];
+                TrainingBatch setA = Batches[a], setB = Batches[b];
                 Random r = new Random(a ^ b ^ setA.GetHashCode() ^ setB.GetHashCode());
                 int
                     hA = setA.X.GetLength(0),
@@ -117,7 +117,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                 {
                     int k = r.Next(0, bound) % bound;
                     bound--;
-                    SupervisedDataset
+                    TrainingBatch
                         targetA = r.NextBool() ? setA : setB,
                         targetB = r.NextBool() ? setA : setB;
 
@@ -145,7 +145,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// </summary>
         /// <returns></returns>
         [Pure, NotNull]
-        public IEnumerable<SupervisedDataset> NextEpoch()
+        public IEnumerable<TrainingBatch> NextEpoch()
         {
             CrossShuffle();
             return Batches;

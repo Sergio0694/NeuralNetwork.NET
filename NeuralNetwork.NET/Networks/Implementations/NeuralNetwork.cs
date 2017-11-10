@@ -153,7 +153,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal IReadOnlyList<LayerGradient> ComputeGradient([NotNull] double[] x, [NotNull] double[] y) => Backpropagate(x.ToMatrix(), y.ToMatrix());
+        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] double[] x, [NotNull] double[] y) => Backpropagate(x.ToMatrix(), y.ToMatrix());
 
         #endregion
 
@@ -363,8 +363,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         #endregion
 
         public void StochasticGradientDescent(
-            SupervisedDataset trainingSet, 
-            SupervisedDataset testSet, 
+            (double[,] X, double[,] Y) trainingSet,
+            (double[,] X, double[,] Y) testSet,
             int epochs, int batchSize, double eta)
         {
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
@@ -388,7 +388,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
                 Console.WriteLine($"{total} / {testSet.Y.GetLength(0)}");
 
-                foreach (SupervisedDataset batch in batches.NextEpoch())
+                foreach (TrainingBatch batch in batches.NextEpoch())
                 {
                     IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
                     bool loopResult = Parallel.For(0, Weights.Count, i =>
