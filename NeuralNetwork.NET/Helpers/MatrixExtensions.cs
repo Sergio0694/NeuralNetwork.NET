@@ -215,6 +215,53 @@ namespace NeuralNetworkNET.Helpers
             return cost / 2;
         }
 
+        /// <summary>
+        /// Calculates the cross-entropy cost for a given feedforward result
+        /// </summary>
+        /// <param name="yHat">The current results</param>
+        /// <param name="y">The expected results for the dataset</param>
+        public static double CrossEntropyCost([NotNull] this double[,] yHat, [NotNull] double[,] y)
+        {
+            // Detect the size of the inputs
+            int h = yHat.GetLength(0), w = yHat.GetLength(1);
+            if (h != y.GetLength(0) || w != y.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
+
+            // Calculates the components for each training sample
+            double[] v = new double[h];
+            bool result = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (double* pyHat = yHat, py = y, pv = v)
+                    {
+                        int offset = i * w;
+                        double sum = 0;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            double
+                                yi = py[target],
+                                yHati = pyHat[target],
+                                left = yi * Math.Log(yHati),
+                                right = (1 - yi) * Math.Log(1 - yHati);
+                            sum += left + right;
+                        }
+                        pv[i] = sum;
+                    }
+                }
+            }).IsCompleted;
+            if (!result) throw new Exception("Error while runnig the parallel loop");
+
+            // Sum the partial results and normalize
+            double cost = 0;
+            unsafe
+            {
+                fixed (double* pv = v)
+                    for (int i = 0; i < h; i++) cost += pv[i];
+            }
+            return -cost / h;
+        }
+
         #endregion
 
         #region Multiplication
@@ -993,6 +1040,28 @@ namespace NeuralNetworkNET.Helpers
                 }
             }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
+        }
+
+        /// <summary>
+        /// Returns the index of the maximum value in the input vector
+        /// </summary>
+        /// <param name="p">A pointer to the buffer to read</param>
+        /// <param name="length">The length of the buffer to consider</param>
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe int Argmax(double* p, int length)
+        {
+            if (length < 2) return 0;
+            int index = 0;
+            double max = double.MinValue;
+            for (int j = 0; j < length; j++)
+            {
+                if (p[j] > max)
+                {
+                    max = p[j];
+                    index = j;
+                }
+            }
+            return index;
         }
 
         /// <summary>
