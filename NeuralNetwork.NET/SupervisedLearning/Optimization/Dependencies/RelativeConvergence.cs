@@ -24,6 +24,8 @@
 //    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 using System;
+using System.Collections.Generic;
+using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
 {
@@ -62,14 +64,13 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
     ///   double value = criteria.OldValue; // 1234.56
     /// </code>
     /// </example>
-    public class RelativeConvergence
+    internal class RelativeConvergence
     {
         private double _Tolerance;
 
         /// <summary>
-        ///   Gets or sets the maximum relative change in the watched value
-        ///   after an iteration of the algorithm used to detect convergence.
-        ///   Default is zero
+        /// Gets or sets the maximum relative change in the watched value
+        /// after an iteration of the algorithm used to detect convergence
         /// </summary>
         public double Tolerance
         {
@@ -77,111 +78,65 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
             set => _Tolerance = value < 0 ? throw new ArgumentOutOfRangeException("value", "Tolerance should be positive") : value;
         }
 
-        private int _MaxIterations = 100;
+        /// <summary>
+        /// Gets the size of the convergence window
+        /// </summary>
+        private readonly int ConvergenceWindow;
 
         /// <summary>
-        ///   Gets or sets the maximum number of iterations
-        ///   performed by the iterative algorithm. 
-        ///   Default is 100
+        /// Initializes a new instance of the <see cref="RelativeConvergence"/> class
         /// </summary>
-        public int MaxIterations
+        public RelativeConvergence(double tolerance, int window)
         {
-            get => _MaxIterations;
-            set => _MaxIterations = value < 0 ? throw new ArgumentOutOfRangeException("value", "The maximum number of iterations should be positive") : value;
+            if (tolerance <= 0) throw new ArgumentOutOfRangeException(nameof(tolerance), "The tolerance must be a positive value");
+            if (window < 1) throw new ArgumentOutOfRangeException(nameof(window), "The tolerance window must be at least equal to 1");
+            Tolerance = tolerance;
+            ConvergenceWindow = window;
         }
 
-        // The initial value for the function to minimize
-        private readonly double StartValue;
+        // The previous value for the convergence check
+        private readonly Queue<double> _PreviousValues = new Queue<double>();
 
-        // The maximum number of consecutive function evaluations
-        private readonly int MaxChecks;
+        private double _Value;
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="RelativeConvergence"/> class
+        /// Gets or sets the watched value after the iteration
         /// </summary>
-        public RelativeConvergence()
+        public double Value
         {
-            MaxIterations = 100;
-            Tolerance = 0;
-            MaxChecks = 1;
-            StartValue = 0;
-            Clear();
-        }
-
-        /// <summary>
-        ///   Gets or sets the watched value before the iteration
-        /// </summary>
-        public double OldValue { get; private set; }
-
-        private double _NewValue;
-
-        /// <summary>
-        ///   Gets or sets the watched value after the iteration
-        /// </summary>
-        public double NewValue
-        {
-            get => _NewValue;
+            get => _Value;
             set
             {
-                OldValue = _NewValue;
-                _NewValue = value;
-                CurrentIteration++;
+                if (_PreviousValues.Count == ConvergenceWindow) _PreviousValues.Dequeue();
+                _PreviousValues.Enqueue(value);
+                _Value = value;
             }
         }
 
         /// <summary>
-        ///   Gets the current iteration number
-        /// </summary>
-        public int CurrentIteration { get; set; }
-
-        // Local counter
-        private int _Checks;
-
-        /// <summary>
-        ///   Gets whether the algorithm has converged
+        /// Gets whether the algorithm has converged
         /// </summary>
         public bool HasConverged
         {
             get
             {
-                bool converged = CheckConvergence();
-                _Checks = converged ? _Checks + 1 : 0;
-                return _Checks >= MaxChecks;
+                if (_PreviousValues.Count < ConvergenceWindow) return false;
+                double[] values = _PreviousValues.ToArray();
+                double min = double.MinValue, max = double.MaxValue;
+                unsafe
+                {
+                    fixed (double* p = values)
+                    {
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            double value = p[i];
+                            if (value > max) max = value;
+                            if (value < min) min = value;
+                        }
+                    }
+                }
+                return (max - min).Abs() < Tolerance;
             }
-        }
-
-        // Simple function that checks the function convergence given the current parameters
-        private bool CheckConvergence()
-        {
-            // Iterations count
-            if (MaxIterations > 0 && CurrentIteration >= MaxIterations) return true;
-
-            // Stopping criteria is likelihood convergence
-            if (Tolerance > 0)
-            {
-                if (Delta <= Tolerance * Math.Abs(OldValue)) return true;
-            }
-
-            // Check if we have reached an invalid or perfectly separable answer
-            return double.IsNaN(NewValue) || double.IsInfinity(NewValue);
-        }
-
-        /// <summary>
-        ///   Gets the absolute difference between the <see cref="NewValue"/> and <see cref="OldValue"/>
-        ///   as as <c>Math.Abs(OldValue - NewValue)</c>
-        /// </summary>
-        public double Delta => Math.Abs(OldValue - NewValue);
-
-        /// <summary>
-        ///   Resets this instance, reverting all iteration statistics
-        ///   statistics (number of iterations, last error) back to zero
-        /// </summary>
-        public void Clear()
-        {
-            NewValue = StartValue;
-            OldValue = StartValue;
-            CurrentIteration = 0;
-            _Checks = 0;
         }
     }
 }

@@ -9,6 +9,8 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
@@ -180,7 +182,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             double[,] yHat = Forward(input);
 
             // Calculate the cost (half the squared difference)
-            return MatrixServiceProvider.HalfSquaredDifference(yHat, y);
+            return yHat.CrossEntropyCost(y);
         }
 
         /// <summary>
@@ -364,96 +366,126 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         public void StochasticGradientDescent(
             (double[,] X, double[,] Y) trainingSet,
-            (double[,] X, double[,] Y) testSet,
-            int epochs, int batchSize, double eta = 0.5, double lambda = 0.1)
+            int epochs, int batchSize,
+            ValidationParameters validationParameters = null,
+            TestParameters testParameters = null,
+            double eta = 0.5, double lambda = 0.1)
         {
-            int samples = trainingSet.X.GetLength(0);
-            double regularizationFactor = eta * lambda / samples;
+            // Convergence manager for the validation dataset
+            RelativeConvergence convergence = validationParameters == null
+                ? null
+                : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
+
+            // Create the training batches
+            int
+                trainingSamples = trainingSet.X.GetLength(0),
+                validationSamples = validationParameters?.Dataset.X.GetLength(0) ?? 0,
+                testSamples = testParameters?.Dataset.X.GetLength(0) ?? 0;
+            double l2Factor = eta * lambda / trainingSamples;
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            while (epochs-- > 0)
+            for (int i = 0; i < epochs; i++)
             {
-                double cost = CalculateCost(trainingSet.X, trainingSet.Y);
-                Console.WriteLine($"Cost: {cost}");
-                int total = Evaluate(testSet);
-                Console.WriteLine($"{total} / {testSet.Y.GetLength(0)}");
+                // Gradient descent over the current batches
                 foreach (TrainingBatch batch in batches.NextEpoch())
                 {
                     IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
-                    int
-                        n = batch.X.GetLength(0),
-                        blocks = Weights.Count * 2;
-                    double scale = eta / n;
-                    bool loopResult = Parallel.For(0, blocks, i =>
-                    {
-                        // Get the index of the current layer and branch over weights/biases
-                        int l = i / 2;
-                        if (i % 2 == 0)
-                        {
-                            double[,] weight = Weights[l];
-                            unsafe
-                            {
-                                // Tweak the weights of the lth layer
-                                fixed (double* pw = weight, pdj = dJ[l].DJdw)
-                                {
-                                    int
-                                        h = weight.GetLength(0),
-                                        w = weight.GetLength(1);
-                                    for (int x = 0; x < h; x++)
-                                    {
-                                        int offset = x * w;
-                                        for (int y = 0; y < w; y++)
-                                        {
-                                            int target = offset + y;
-                                            pw[target] -= regularizationFactor * pw[target] + scale * pdj[target];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Tweak the biases of the lth layer
-                            double[] bias = Biases[l];
-                            unsafe
-                            {
-                                fixed (double* pb = bias, pdj = dJ[l].Djdb)
-                                {
-                                    int w = bias.Length;
-                                    for (int x = 0; x < w; x++)
-                                        pb[x] -= eta / n * pdj[x];
-                                }
-                            }
-                        }
-                    }).IsCompleted;
-                    if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
+                    int size = batch.X.GetLength(0);
+                    UpdateWeights(dJ, size, eta, l2Factor);
+                }
+
+                // Check the validation dataset
+                if (convergence != null)
+                {
+                    (_, int classified) = Evaluate(validationParameters.Dataset);
+                    convergence.Value = (double)classified / validationSamples * 100;
+                    if (convergence.HasConverged) return;
+                }
+
+                // Report progress if necessary
+                if (testParameters != null)
+                {
+                    var evaluation = Evaluate(testParameters.Dataset);
+                    double accuracy = (double)evaluation.Classified / testSamples * 100;
+                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, evaluation.Cost, accuracy));
                 }
             }
         }
 
         // TODO: add docs
-        public int Evaluate((double[,] X, double[,] Y) evaluationSet)
+        private void UpdateWeights([NotNull] IReadOnlyList<LayerGradient> dJ, int batchSize, double eta, double l2Factor)
+        {
+            int blocks = Weights.Count * 2;
+            double scale = eta / batchSize;
+            bool loopResult = Parallel.For(0, blocks, i =>
+            {
+                // Get the index of the current layer and branch over weights/biases
+                int l = i / 2;
+                if (i % 2 == 0)
+                {
+                    double[,] weight = Weights[l];
+                    unsafe
+                    {
+                        // Tweak the weights of the lth layer
+                        fixed (double* pw = weight, pdj = dJ[l].DJdw)
+                        {
+                            int
+                                h = weight.GetLength(0),
+                                w = weight.GetLength(1);
+                            for (int x = 0; x < h; x++)
+                            {
+                                int offset = x * w;
+                                for (int y = 0; y < w; y++)
+                                {
+                                    int target = offset + y;
+                                    pw[target] -= l2Factor * pw[target] + scale * pdj[target];
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Tweak the biases of the lth layer
+                    double[] bias = Biases[l];
+                    unsafe
+                    {
+                        fixed (double* pb = bias, pdj = dJ[l].Djdb)
+                        {
+                            int w = bias.Length;
+                            for (int x = 0; x < w; x++)
+                                pb[x] -= eta / batchSize * pdj[x];
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
+        }
+
+        // TODO: add docs
+        public (double Cost, int Classified) Evaluate((double[,] X, double[,] Y) evaluationSet)
         {
             double[,] yHat = Forward(evaluationSet.X);
             int
                 h = evaluationSet.X.GetLength(0),
                 wy = evaluationSet.Y.GetLength(1),
-                yRowSize = sizeof(double) * wy,
                 total = 0;
             bool loopResult = Parallel.For(0, h, i =>
             {
-                double[]
-                    yHatSample = new double[wy],
-                    ySample = new double[wy];
-                int offset = yRowSize * i;
-                Buffer.BlockCopy(yHat, offset, yHatSample, 0, yRowSize);
-                Buffer.BlockCopy(evaluationSet.Y, offset, ySample, 0, yRowSize);
-                int
-                    maxHat = yHatSample.Argmax(),
-                    max = ySample.Argmax();
-                if (max == maxHat) Interlocked.Increment(ref total);
+                unsafe
+                {
+                    fixed (double* pyHat = yHat, pY = evaluationSet.Y)
+                    {
+                        int
+                            offset = i * wy,
+                            maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
+                            max = MatrixExtensions.Argmax(pY + offset, wy);
+                        if (max == maxHat) Interlocked.Increment(ref total);
+                    }
+                }
+                
             }).IsCompleted;
             if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
-            return total;
+            return (yHat.CrossEntropyCost(evaluationSet.Y), total);
         }
     }
 }

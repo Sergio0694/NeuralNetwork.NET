@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
     public class GradientDescent : GradientOptimizationMethodBase
     {
         // Gets the current convergence instance to monitor the progress
-        private readonly RelativeConvergence Convergence = new RelativeConvergence();
+        private readonly RelativeConvergence Convergence = null;
         
         // Optimization parameter during the minimization
         private readonly int NumberOfUpdatesBeforeConvergenceCheck = 1;
@@ -51,21 +51,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         /// <summary>
-        ///   Gets or sets the maximum number of iterations
-        ///   performed by the learning algorithm. Default is 0
-        /// </summary>
-        public int Iterations
-        {
-            get => Convergence.MaxIterations;
-            set => Convergence.MaxIterations = value;
-        }
-
-        /// <summary>
         ///   Creates a new instance of the GD optimization algorithm
         /// </summary>
         public GradientDescent()
         {
-            Iterations = 0;
             Tolerance = 1e-5;
         }
 
@@ -81,7 +70,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// </summary>
         protected override bool Optimize()
         {
-            Convergence.Clear();
             int updates = 0;
             while (true)
             {
@@ -98,7 +86,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 updates++;
                 if (updates >= NumberOfUpdatesBeforeConvergenceCheck)
                 {
-                    Convergence.NewValue = Function(Solution);
+                   // Convergence.NewValue = Function(Solution);
                     updates = 0;
                 }
 
