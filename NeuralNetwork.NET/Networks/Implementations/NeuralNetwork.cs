@@ -383,23 +383,43 @@ namespace NeuralNetworkNET.Networks.Implementations
                         blocks = Weights.Count * 2;
                     bool loopResult = Parallel.For(0, blocks, i =>
                     {
+                        // Get the index of the current layer and branch over weights/biases
                         int l = i / 2;
                         if (i % 2 == 0)
                         {
                             double[,] weight = Weights[l];
-                            int
-                                h = weight.GetLength(0),
-                                w = weight.GetLength(1);
-                            for (int x = 0; x < h; x++)
-                                for (int y = 0; y < w; y++)
-                                    weight[x, y] -= eta / n * dJ[l].DJdw[x, y];
+                            unsafe
+                            {
+                                // Tweak the weights of the lth layer
+                                fixed (double* pw = weight, pdj = dJ[l].DJdw)
+                                {
+                                    int
+                                        h = weight.GetLength(0),
+                                        w = weight.GetLength(1);
+                                    for (int x = 0; x < h; x++)
+                                    {
+                                        int offset = x * w;
+                                        for (int y = 0; y < w; y++)
+                                        {
+                                            int target = offset + y;
+                                            pw[target] -= eta / n * pdj[target];
+                                        }
+                                    }
+                                }
+                            }
                         }
                         else
                         {
+                            // Tweak the biases of the lth layer
                             double[] bias = Biases[l];
-                            for (int x = 0; x < Biases[l].Length; x++)
+                            unsafe
                             {
-                                bias[x] -= eta / n * dJ[l].Djdb[x];
+                                fixed (double* pb = bias, pdj = dJ[l].Djdb)
+                                {
+                                    int w = bias.Length;
+                                    for (int x = 0; x < w; x++)
+                                        pb[x] -= eta / n * pdj[x];
+                                }
                             }
                         }
                     }).IsCompleted;
