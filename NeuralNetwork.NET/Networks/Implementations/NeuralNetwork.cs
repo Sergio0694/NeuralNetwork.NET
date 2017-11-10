@@ -241,8 +241,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Compute the gradient
-            int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.GetLength(1));
-            LayerGradient[] gradient = new LayerGradient[dLength]; // One gradient item for layer
+            LayerGradient[] gradient = new LayerGradient[Weights.Count]; // One gradient item for layer
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Store the target delta
