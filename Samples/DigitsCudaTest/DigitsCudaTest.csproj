@@ -17,5 +17,4 @@
     <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
     <ProjectReference Include="..\MnistDatasetToolkit\MnistDatasetToolkit.csproj" />
   </ItemGroup>
-  <Import Project="..\SharedBenchmark\SharedBenchmark.projitems" Label="Shared" />
 </Project>
