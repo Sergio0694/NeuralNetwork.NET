@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="other">The second value</param>
         /// <param name="delta">The comparison threshold</param>
         [Pure]
-        public static bool EqualsWithDelta(this float value, float other, float delta = 1e-10f)
+        public static bool EqualsWithDelta(this float value, float other, float delta = 1e-6f)
         {
             if (float.IsNaN(value) ^ float.IsNaN(other)) return false;
             if (float.IsNaN(value) && float.IsNaN(other)) return true;

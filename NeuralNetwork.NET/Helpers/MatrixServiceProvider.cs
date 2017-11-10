@@ -157,7 +157,8 @@ namespace NeuralNetworkNET.Helpers
         [Pure]
         public static float HalfSquaredDifference([NotNull] float[,] m1, [NotNull] float[,] m2)
         {
-            return _HalfSquaredDifferenceOverride?.Invoke(m1, m2) ?? m1.HalfSquaredDifference(m2);
+            return 0; // TODO: replace with cross-entropy
+            //return _HalfSquaredDifferenceOverride?.Invoke(m1, m2) ?? m1.HalfSquaredDifference(m2);
         }
 
         #endregion

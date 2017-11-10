@@ -183,39 +183,6 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Calculates half the sum of the squared difference of each value pair in the two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second matrix</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float HalfSquaredDifference([NotNull] this float[,] m1, [NotNull] float[,] m2)
-        {
-            // Detect the size of the inputs
-            int h = m1.GetLength(0), w = m1.GetLength(1);
-            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
-
-            // Calculate the cost (half the squared difference)
-            float[] v = new float[h];
-            bool result = Parallel.For(0, h, i =>
-            {
-                for (int j = 0; j < w; j++)
-                {
-                    float
-                        delta = m1[i, j] - m2[i, j],
-                        square = delta * delta;
-                    v[i] += square;
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial costs
-            float cost = 0;
-            for (int i = 0; i < h; i++) cost += v[i];
-            return cost / 2;
-        }
-
-        /// <summary>
         /// Calculates the cross-entropy cost for a given feedforward result
         /// </summary>
         /// <param name="yHat">The current results</param>
