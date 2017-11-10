@@ -123,8 +123,11 @@ namespace NeuralNetworkNET.SupervisedLearning
             if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
             if (batchSize > x.GetLength(0)) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be less or equal than the number of training samples");
 
+
+            return null;
+
             // Initialize the network and the deserializer
-            double[] start = solution ?? NeuralNetwork.NewRandom(layers).Serialize();
+            /*double[] start = solution ?? NeuralNetwork.NewRandom(layers).Serialize();
 
             // Prepare the batches
             int iteration = 1;
@@ -192,6 +195,7 @@ namespace NeuralNetworkNET.SupervisedLearning
 
             // Return the result network
             return NeuralNetwork.Deserialize(optimizer.Solution, layers);
+         */
         }
     }
 }

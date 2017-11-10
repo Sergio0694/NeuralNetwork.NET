@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.SupervisedLearning.Misc;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
@@ -13,7 +16,7 @@ namespace NeuralNetworkNET.Networks.Implementations
     /// A complete and fully connected neural network with an arbitrary number of hidden layers
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class NeuralNetwork : INeuralNetwork
+    public sealed class NeuralNetwork : INeuralNetwork
     {
         #region Public parameters
 
@@ -70,7 +73,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="weights">The weights in all the network layers</param>
         /// <param name="biases">The bias vectors to use in the network</param>
         /// <param name="activations">The activation functions to use in the new network</param>
-        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<double[]> biases, [NotNull] IReadOnlyList<ActivationFunctionType> activations)
+        public NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<double[]> biases, [NotNull] IReadOnlyList<ActivationFunctionType> activations)
         {
             // Input check
             if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
@@ -98,7 +101,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="layers">The type of layers that make up the network</param>
         [NotNull]
-        internal static NeuralNetwork NewRandom([NotNull, ItemNotNull] params NetworkLayer[] layers)
+        public static NeuralNetwork NewRandom([NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
             // Check
             if (layers.Length < 2) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least two layers");
@@ -150,7 +153,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[] x, [NotNull] double[] y) => ComputeGradient(x.ToMatrix(), y.ToMatrix());
+        internal IReadOnlyList<LayerGradient> ComputeGradient([NotNull] double[] x, [NotNull] double[] y) => Backpropagate(x.ToMatrix(), y.ToMatrix());
 
         #endregion
 
@@ -187,7 +190,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
+        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] double[,] x, [NotNull] double[,] y)
         {
             // Feedforward
             int steps = Weights.Count;  // Number of forward hops through the network
@@ -238,28 +241,18 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Compute the gradient
             int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.GetLength(1));
-            double[] gradient = new double[dLength]; // One gradient item for each weight and bias
-            int position = 0;
+            LayerGradient[] gradient = new LayerGradient[dLength]; // One gradient item for layer
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Store the target delta
                 double[,] di = deltas[i];
 
-                // Compute dJdw(l)
+                // Compute dJdw(l) and dJdb(l)
                 double[,] dJdw = i == 0
                     ? MatrixServiceProvider.TransposeAndMultiply(x, di)             // dJdW1, transposed input * first delta
                     : MatrixServiceProvider.TransposeAndMultiply(aList[i - 1], di); // dJdWi, previous activation transposed * current delta
-
-                // Populate the gradient vector
-                int bytes = sizeof(double) * dJdw.Length;
-                Buffer.BlockCopy(dJdw, 0, gradient, position, bytes);
-                position += bytes;
-
-                // Handle the gradient with respect to the current bias vector
                 double[] dJdb = di.CompressVertically();
-                bytes = sizeof(double) * dJdb.Length;
-                Buffer.BlockCopy(dJdb, 0, gradient, position, bytes);
-                position += bytes;
+                gradient[i] = new LayerGradient(dJdw, dJdb);
             }
             return gradient;
         }
@@ -368,5 +361,52 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         #endregion
+
+        public void StochasticGradientDescent(
+            SupervisedDataset trainingSet, 
+            SupervisedDataset testSet, 
+            int epochs, int batchSize, double eta)
+        {
+            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
+            while (epochs-- > 0)
+            {
+                double cost = CalculateCost(testSet.X, testSet.Y);
+                Console.WriteLine($"Cost: {cost}");
+                double[,] yHat = Forward(testSet.X);
+                int total = 0;
+                for (int i = 0; i < yHat.GetLength(0); i++)
+                {
+                    double[]
+                        yHatSample = new double[10],
+                        ySample = new double[10];
+                    Buffer.BlockCopy(yHat, sizeof(double) * i * 10, yHatSample, 0, sizeof(double) * 10);
+                    Buffer.BlockCopy(testSet.Y, sizeof(double) * i * 10, ySample, 0, sizeof(double) * 10);
+                    int
+                        maxHat = yHatSample.IndexOfMax(),
+                        max = ySample.IndexOfMax();
+                    if (max == maxHat) total++;
+                }
+                Console.WriteLine($"{total} / {testSet.Y.GetLength(0)}");
+
+                foreach (SupervisedDataset batch in batches.NextEpoch())
+                {
+                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
+                    bool loopResult = Parallel.For(0, Weights.Count, i =>
+                    {
+                        for (int x = 0; x < Weights[i].GetLength(0); x++)
+                        for (int y = 0; y < Weights[i].GetLength(1); y++)
+                        {
+                            Weights[i][x, y] -= eta / batch.X.GetLength(0) * dJ[i].DJdw[x, y];
+                        }
+
+                        for (int x = 0; x < Biases[i].Length; x++)
+                        {
+                            Biases[i][x] -= eta / batch.X.GetLength(0) * dJ[i].Djdb[x];
+                        }
+                    }).IsCompleted;
+                    if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
+                }
+            }
+        }
     }
 }

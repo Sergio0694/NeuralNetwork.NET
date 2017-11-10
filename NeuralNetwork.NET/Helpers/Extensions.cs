@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -62,6 +65,24 @@ namespace NeuralNetworkNET.Helpers
                 n1 = (n + x / n) / 2;
             }
             return n;
+        }
+
+        /// <summary>
+        /// Shuffles the input list using the provider <see cref="Random"/> instance
+        /// </summary>
+        /// <param name="list">The list to shuffle</param>
+        /// <param name="random">The <see cref="Random"/> instance used to randomize the target list</param>
+        public static void Shuffle<T>(this IList<T> list, [NotNull] Random random)
+        {
+            int n = list.Count;
+            while (n > 1)
+            {
+                int k = random.Next(0, n) % n;
+                n--;
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
         }
     }
 }
