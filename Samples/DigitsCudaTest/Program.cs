@@ -25,7 +25,7 @@ namespace DigitsCudaTest
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
                 })),
-                0.5f, 5f);
+                0.1f, 5f);
             Console.ReadKey();
         }
 

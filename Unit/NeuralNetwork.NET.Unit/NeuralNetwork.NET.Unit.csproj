@@ -8,6 +8,14 @@
     <RootNamespace>NeuralNetworkNET.Unit</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Assets\t10k-images-idx3-ubyte.gz" />
     <None Remove="Assets\t10k-labels-idx1-ubyte.gz" />
