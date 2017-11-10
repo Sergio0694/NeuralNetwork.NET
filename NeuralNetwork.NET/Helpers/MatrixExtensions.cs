@@ -153,33 +153,30 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second</param>
         [PublicAPI]
-        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Subtract([NotNull] this float[,] m1, [NotNull] float[,] m2)
+        public static void Subtract([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
             // Execute the transposition in parallel
             int
                 h = m1.GetLength(0),
                 w = m1.GetLength(1);
             if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
-            float[,] result = new float[h, w];
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
-                    fixed (float* pr = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pm1 = m1, pm2 = m2)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
                         {
                             int position = offset + j;
-                            pr[position] = pm1[position] - pm2[position];
+                            pm1[position] -= pm2[position];
                         }
                     }
                 }
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
         }
 
         /// <summary>
