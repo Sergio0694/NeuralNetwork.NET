@@ -109,9 +109,9 @@ namespace SharedBenchmark
                 // Iterate through every test sample
                 double[] temp = new double[10];
                 Buffer.BlockCopy(estimation, i * 10, temp, 0, sizeof(double) * 10);
-                int estimationIndex = temp.IndexOfMax();
+                int estimationIndex = temp.Argmax();
                 Buffer.BlockCopy(testSet.Y, i * 10, temp, 0, sizeof(double) * 10);
-                int expectedIndex = temp.IndexOfMax();
+                int expectedIndex = temp.Argmax();
                 if (estimationIndex == expectedIndex) valid++;
             }
             Console.ForegroundColor = ConsoleColor.Gray;

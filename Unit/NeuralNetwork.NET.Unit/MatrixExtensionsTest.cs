@@ -173,8 +173,8 @@ namespace NeuralNetworkNET.Unit
             double[]
                 v1 = new double[0],
                 v2 = new double[1];
-            Assert.IsTrue(v1.IndexOfMax() == 0);
-            Assert.IsTrue(v2.IndexOfMax() == 0);
+            Assert.IsTrue(v1.Argmax() == 0);
+            Assert.IsTrue(v2.Argmax() == 0);
         }
 
         [TestMethod]
@@ -185,10 +185,10 @@ namespace NeuralNetworkNET.Unit
                 v2 = { 99d, 11d },
                 v3 = { -2d, -2.1d },
                 v4 = { 0d, 0d, 0d, 0d, 1d, 0d, 0d, 0d, 0d };
-            Assert.IsTrue(v1.IndexOfMax() == 4);
-            Assert.IsTrue(v2.IndexOfMax() == 0);
-            Assert.IsTrue(v3.IndexOfMax() == 0);
-            Assert.IsTrue(v4.IndexOfMax() == 4);
+            Assert.IsTrue(v1.Argmax() == 4);
+            Assert.IsTrue(v2.Argmax() == 0);
+            Assert.IsTrue(v3.Argmax() == 0);
+            Assert.IsTrue(v4.Argmax() == 4);
         }
 
         [TestMethod]

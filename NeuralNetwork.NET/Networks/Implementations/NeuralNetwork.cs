@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
@@ -370,43 +371,67 @@ namespace NeuralNetworkNET.Networks.Implementations
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
             while (epochs-- > 0)
             {
-                double cost = CalculateCost(testSet.X, testSet.Y);
+                double cost = CalculateCost(trainingSet.X, trainingSet.Y);
                 Console.WriteLine($"Cost: {cost}");
-                double[,] yHat = Forward(testSet.X);
-                int total = 0;
-                for (int i = 0; i < yHat.GetLength(0); i++)
-                {
-                    double[]
-                        yHatSample = new double[10],
-                        ySample = new double[10];
-                    Buffer.BlockCopy(yHat, sizeof(double) * i * 10, yHatSample, 0, sizeof(double) * 10);
-                    Buffer.BlockCopy(testSet.Y, sizeof(double) * i * 10, ySample, 0, sizeof(double) * 10);
-                    int
-                        maxHat = yHatSample.IndexOfMax(),
-                        max = ySample.IndexOfMax();
-                    if (max == maxHat) total++;
-                }
+                int total = Evaluate(testSet);
                 Console.WriteLine($"{total} / {testSet.Y.GetLength(0)}");
-
                 foreach (TrainingBatch batch in batches.NextEpoch())
                 {
                     IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
-                    bool loopResult = Parallel.For(0, Weights.Count, i =>
+                    int
+                        n = batch.X.GetLength(0),
+                        blocks = Weights.Count * 2;
+                    bool loopResult = Parallel.For(0, blocks, i =>
                     {
-                        for (int x = 0; x < Weights[i].GetLength(0); x++)
-                        for (int y = 0; y < Weights[i].GetLength(1); y++)
+                        int l = i / 2;
+                        if (i % 2 == 0)
                         {
-                            Weights[i][x, y] -= eta / batch.X.GetLength(0) * dJ[i].DJdw[x, y];
+                            double[,] weight = Weights[l];
+                            int
+                                h = weight.GetLength(0),
+                                w = weight.GetLength(1);
+                            for (int x = 0; x < h; x++)
+                                for (int y = 0; y < w; y++)
+                                    weight[x, y] -= eta / n * dJ[l].DJdw[x, y];
                         }
-
-                        for (int x = 0; x < Biases[i].Length; x++)
+                        else
                         {
-                            Biases[i][x] -= eta / batch.X.GetLength(0) * dJ[i].Djdb[x];
+                            double[] bias = Biases[l];
+                            for (int x = 0; x < Biases[l].Length; x++)
+                            {
+                                bias[x] -= eta / n * dJ[l].Djdb[x];
+                            }
                         }
                     }).IsCompleted;
                     if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
                 }
             }
+        }
+
+        // TODO: add docs
+        public int Evaluate((double[,] X, double[,] Y) evaluationSet)
+        {
+            double[,] yHat = Forward(evaluationSet.X);
+            int
+                h = evaluationSet.X.GetLength(0),
+                wy = evaluationSet.Y.GetLength(1),
+                yRowSize = sizeof(double) * wy,
+                total = 0;
+            bool loopResult = Parallel.For(0, h, i =>
+            {
+                double[]
+                    yHatSample = new double[wy],
+                    ySample = new double[wy];
+                int offset = yRowSize * i;
+                Buffer.BlockCopy(yHat, offset, yHatSample, 0, yRowSize);
+                Buffer.BlockCopy(evaluationSet.Y, offset, ySample, 0, yRowSize);
+                int
+                    maxHat = yHatSample.Argmax(),
+                    max = ySample.Argmax();
+                if (max == maxHat) Interlocked.Increment(ref total);
+            }).IsCompleted;
+            if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
+            return total;
         }
     }
 }

@@ -1000,7 +1000,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The input vector to read from</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static int IndexOfMax([NotNull] this double[] v)
+        public static int Argmax([NotNull] this double[] v)
         {
             if (v.Length < 2) return 0;
             int index = 0;

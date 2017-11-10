@@ -125,7 +125,7 @@ namespace NeuralNetworkNET.Unit
              IReadOnlyList<(double[,], double[,])> TestData) data = ParseMnistDataset();
             NumpyNetwork net = new NumpyNetwork(784, 30, 10);
             (double[,], double)[] test = data.TestData.Select(t => (t.Item1, (double)t.Item2.Argmax())).ToArray();
-            net.SGD(data.TrainingData, 1, 30, 3.0, test);
+            net.SGD(data.TrainingData, 1, 10, 3.0, test);
             Assert.IsTrue(net.evaluate(test) > 8000);
         }
     }
