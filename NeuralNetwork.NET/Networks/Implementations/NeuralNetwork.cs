@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Misc;
@@ -277,10 +278,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
 
             // Create the training batches
-            int
-                trainingSamples = trainingSet.X.GetLength(0),
-                validationSamples = validationParameters?.Dataset.X.GetLength(0) ?? 0,
-                testSamples = testParameters?.Dataset.X.GetLength(0) ?? 0;
+            int trainingSamples = trainingSet.X.GetLength(0);
             float l2Factor = eta * lambda / trainingSamples;
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
             for (int i = 0; i < epochs; i++)
@@ -297,17 +295,16 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Check the validation dataset
                 if (convergence != null)
                 {
-                    (_, int classified) = Evaluate(validationParameters.Dataset);
-                    convergence.Value = (float)classified / validationSamples * 100;
+                    (_, _, float accuracy) = Evaluate(validationParameters.Dataset);
+                    convergence.Value = accuracy;
                     if (convergence.HasConverged) return TrainingStopReason.EarlyStopping;
                 }
 
                 // Report progress if necessary
                 if (testParameters != null)
                 {
-                    var evaluation = Evaluate(testParameters.Dataset);
-                    float accuracy = (float)evaluation.Classified / testSamples * 100;
-                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, evaluation.Cost, accuracy));
+                    (float cost, _, float accuracy) = Evaluate(testParameters.Dataset);
+                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
                 }
             }
             return TrainingStopReason.EpochsCompleted;
@@ -322,31 +319,31 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="l2Factor">The L2 regularization factor</param>
         private void UpdateWeights([NotNull] IReadOnlyList<LayerGradient> dJ, int batchSize, float eta, float l2Factor)
         {
+            // Divide the workload
             int blocks = Weights.Count * 2;
             float scale = eta / batchSize;
-            bool loopResult = Parallel.For(0, blocks, i =>
+
+            // Function to update the weights from the calculated gradient
+            unsafe void Kernel(int i)
             {
                 // Get the index of the current layer and branch over weights/biases
                 int l = i / 2;
                 if (i % 2 == 0)
                 {
+                    // Tweak the weights of the lth layer
                     float[,] weight = Weights[l];
-                    unsafe
+                    fixed (float* pw = weight, pdj = dJ[l].DJdw)
                     {
-                        // Tweak the weights of the lth layer
-                        fixed (float* pw = weight, pdj = dJ[l].DJdw)
+                        int
+                            h = weight.GetLength(0),
+                            w = weight.GetLength(1);
+                        for (int x = 0; x < h; x++)
                         {
-                            int
-                                h = weight.GetLength(0),
-                                w = weight.GetLength(1);
-                            for (int x = 0; x < h; x++)
+                            int offset = x * w;
+                            for (int y = 0; y < w; y++)
                             {
-                                int offset = x * w;
-                                for (int y = 0; y < w; y++)
-                                {
-                                    int target = offset + y;
-                                    pw[target] -= l2Factor * pw[target] + scale * pdj[target];
-                                }
+                                int target = offset + y;
+                                pw[target] -= l2Factor * pw[target] + scale * pdj[target];
                             }
                         }
                     }
@@ -355,25 +352,22 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     // Tweak the biases of the lth layer
                     float[] bias = Biases[l];
-                    unsafe
+                    fixed (float* pb = bias, pdj = dJ[l].Djdb)
                     {
-                        fixed (float* pb = bias, pdj = dJ[l].Djdb)
-                        {
-                            int w = bias.Length;
-                            for (int x = 0; x < w; x++)
-                                pb[x] -= scale * pdj[x];
-                        }
+                        int w = bias.Length;
+                        for (int x = 0; x < w; x++)
+                            pb[x] -= scale * pdj[x];
                     }
                 }
-            }).IsCompleted;
-            if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
+            }
+            Parallel.For(0, blocks, Kernel).AssertCompleted();
         }
 
         /// <summary>
         /// Calculates the current network performances with the given test samples
         /// </summary>
         /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
-        private (float Cost, int Classified) Evaluate((float[,] X, float[,] Y) evaluationSet)
+        private (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
             // Feedforward
             float[,] yHat = Forward(evaluationSet.X);
@@ -382,24 +376,23 @@ namespace NeuralNetworkNET.Networks.Implementations
                 wy = evaluationSet.Y.GetLength(1),
                 total = 0;
 
-            // Check the correctly classified samples
-            bool loopResult = Parallel.For(0, h, i =>
+            // Function that counts the correctly classified items
+            unsafe void Kernel(int i)
             {
-                unsafe
+                fixed (float* pyHat = yHat, pY = evaluationSet.Y)
                 {
-                    fixed (float* pyHat = yHat, pY = evaluationSet.Y)
-                    {
-                        int
-                            offset = i * wy,
-                            maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
-                            max = MatrixExtensions.Argmax(pY + offset, wy);
-                        if (max == maxHat) Interlocked.Increment(ref total);
-                    }
+                    int
+                        offset = i * wy,
+                        maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
+                        max = MatrixExtensions.Argmax(pY + offset, wy);
+                    if (max == maxHat) Interlocked.Increment(ref total);
                 }
+            }
 
-            }).IsCompleted;
-            if (!loopResult) throw new InvalidOperationException("Error performing the parallel loop");
-            return (yHat.CrossEntropyCost(evaluationSet.Y), total);
+            // Check the correctly classified samples
+            Parallel.For(0, h, Kernel).AssertCompleted();
+            float accuracy = (float)total / h * 100;
+            return (yHat.CrossEntropyCost(evaluationSet.Y), total, accuracy);
         }
 
         #endregion

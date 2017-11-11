@@ -25,7 +25,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="random">The random instance</param>
         [PublicAPI]
-        public static bool NextBool([NotNull] this Random random) => random.Next() % 2 == 0;
+        public static bool NextBool([NotNull] this Random random) => random.NextDouble() >= 0.5;
 
         /// <summary>
         /// Returns the next couple of indexes from within a given range (second value greater than the first one)
