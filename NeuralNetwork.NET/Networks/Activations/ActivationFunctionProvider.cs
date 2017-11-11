@@ -13,7 +13,7 @@ namespace NeuralNetworkNET.Networks.Activations
         /// Gets an activation function for the given type
         /// </summary>
         /// <param name="type">The activation function type</param>
-        [NotNull]
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ActivationFunction GetActivation(ActivationFunctionType type)
         {
@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.Networks.Activations
         /// Gets the derivative of the activation function requested
         /// </summary>
         /// <param name="type">The activation function type</param>
-        [NotNull]
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ActivationFunction GetActivationPrime(ActivationFunctionType type)
         {

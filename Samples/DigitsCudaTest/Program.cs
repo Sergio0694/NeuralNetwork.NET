@@ -2,8 +2,9 @@
 using MnistDatasetToolkit;
 using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 
@@ -18,7 +19,7 @@ namespace DigitsCudaTest
             NeuralNetwork network = NeuralNetwork.NewRandom(
                 NetworkLayer.Inputs(784),
                 NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid),
-                NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
+                NetworkLayer.Outputs(10, ActivationFunctionType.Sigmoid, CostFunctionType.Quadratic));
             network.StochasticGradientDescent((training.X, training.Y), 100, 10, 
                 null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>

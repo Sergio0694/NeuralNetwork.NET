@@ -44,7 +44,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                         layersInfo[i] != biases[i].Length) return null;
 
                 // Parse the network
-                return new NeuralNetwork(weights, biases, activations);
+                //return new NeuralNetwork(weights, biases, activations);
+                throw new NotImplementedException();
             }
             catch
             {

@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.Networks.PublicAPIs;
@@ -43,6 +44,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
         public IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
 
+        /// <inheritdoc/>
+        [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
+        public CostFunctionType CostFunction { get; }
+
         #endregion
 
         #region Local fields
@@ -78,7 +83,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="weights">The weights in all the network layers</param>
         /// <param name="biases">The bias vectors to use in the network</param>
         /// <param name="activations">The activation functions to use in the new network</param>
-        public NeuralNetwork([NotNull] IReadOnlyList<float[,]> weights, [NotNull] IReadOnlyList<float[]> biases, [NotNull] IReadOnlyList<ActivationFunctionType> activations)
+        /// <param name="costFunction">The desired cost function to use</param>
+        public NeuralNetwork(
+            [NotNull] IReadOnlyList<float[,]> weights, 
+            [NotNull] IReadOnlyList<float[]> biases, 
+            [NotNull] IReadOnlyList<ActivationFunctionType> activations, CostFunctionType costFunction)
         {
             // Input check
             if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
@@ -99,6 +108,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             Biases = biases;
             ActivationFunctions = activations;
             TransposedWeights = new float[weights.Count][,];
+            CostFunction = costFunction;
         }
 
         /// <summary>
@@ -126,7 +136,10 @@ namespace NeuralNetworkNET.Networks.Implementations
                 weights[i] = random.NextXavierMatrix(fanIn, fanOut);
                 biases[i] = random.NextGaussianVector(fanOut);
             }
-            return new NeuralNetwork(weights, biases, activations);
+            if (!(layers[layers.Length - 1] is NetworkLayer.OutputLayer output))
+                throw new ArgumentException(nameof(layers), "The last layer isn't a valid output layer");
+            CostFunctionType costFunction = output.Cost;
+            return new NeuralNetwork(weights, biases, activations, costFunction);
         }
 
         #endregion
@@ -379,10 +392,12 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
 
-            // Check the correctly classified samples
+            // Check the correctly classified samples and calculate the cost
             Parallel.For(0, h, Kernel).AssertCompleted();
-            float accuracy = (float)total / h * 100;
-            return (yHat.CrossEntropyCost(evaluationSet.Y), total, accuracy);
+            float
+                cost = CostFunctionProvider.GetCostFunction(CostFunction).Invoke(yHat, evaluationSet.Y),
+                accuracy = (float)total / h * 100;
+            return (cost, total, accuracy);
         }
 
         #endregion

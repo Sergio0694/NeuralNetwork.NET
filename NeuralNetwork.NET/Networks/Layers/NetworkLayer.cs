@@ -1,7 +1,8 @@
 ﻿using System;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 
-namespace NeuralNetworkNET.Networks.PublicAPIs
+namespace NeuralNetworkNET.Networks.Layers
 {
     /// <summary>
     /// A class that represents a single layer in a multilayer neural network
@@ -34,6 +35,14 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         public static NetworkLayer FullyConnected(int neurons, ActivationFunctionType activation) => new FullyConnectedLayer(neurons, activation);
 
         /// <summary>
+        /// Creates a new fully connected layer with the specified number of neurons and activation function
+        /// </summary>
+        /// <param name="neurons">The number of neurons in the fully connected layer</param>
+        /// <param name="activation">The activation funtion to use in the current layer</param>
+        /// <param name="cost">The desired cost function for the network</param>
+        public static NetworkLayer Outputs(int neurons, ActivationFunctionType activation, CostFunctionType cost) => new OutputLayer(neurons, activation, cost);
+
+        /// <summary>
         /// An internal class representing the input layer of a neural network
         /// </summary>
         internal sealed class InputLayer : NetworkLayer
@@ -44,7 +53,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// <summary>
         /// An internal class representing a fully connected layer with a specific activation function
         /// </summary>
-        internal sealed class FullyConnectedLayer : NetworkLayer
+        internal class FullyConnectedLayer : NetworkLayer
         {
             /// <summary>
             /// Gets the activation function for the current layer
@@ -54,6 +63,16 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
             public FullyConnectedLayer(int neurons, ActivationFunctionType activation) : base(neurons)
             {
                 Activation = activation;
+            }
+        }
+
+        internal class OutputLayer : FullyConnectedLayer
+        {
+            public CostFunctionType Cost { get; }
+
+            public OutputLayer(int neurons, ActivationFunctionType activation, CostFunctionType cost) : base(neurons, activation)
+            {
+                Cost = cost;
             }
         }
     }

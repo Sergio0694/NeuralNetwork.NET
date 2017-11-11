@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {
@@ -10,6 +11,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
     /// </summary>
     public interface INeuralNetwork : IEquatable<INeuralNetwork>
     {
+        #region Properties
+
         /// <summary>
         /// Gets the size of the input layer
         /// </summary>
@@ -31,6 +34,15 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         [NotNull]
         IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
+
+        /// <summary>
+        /// Gets the cost function that the network uses to calculate its accuracy and to backpropagate its error
+        /// </summary>
+        CostFunctionType CostFunction { get; }
+
+        #endregion
+
+        #region Methods
 
         /// <summary>
         /// Forwards the input through the network
@@ -68,5 +80,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         [Pure, NotNull]
         String SerializeAsJSON();
+
+        #endregion
     }
 }

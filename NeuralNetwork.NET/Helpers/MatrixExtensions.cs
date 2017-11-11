@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers.Misc;
 using NeuralNetworkNET.Networks.Activations;
 
@@ -177,66 +178,6 @@ namespace NeuralNetworkNET.Helpers
                 }
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-        }
-
-        /// <summary>
-        /// Calculates the cross-entropy cost for a given feedforward result
-        /// </summary>
-        /// <param name="yHat">The current results</param>
-        /// <param name="y">The expected results for the dataset</param>
-        public static float CrossEntropyCost([NotNull] this float[,] yHat, [NotNull] float[,] y)
-        {
-            // Detect the size of the inputs
-            int h = yHat.GetLength(0), w = yHat.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
-
-            // Calculates the components for each training sample
-            float[] v = new float[h];
-            bool result = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    fixed (float* pyHat = yHat, py = y, pv = v)
-                    {
-                        int offset = i * w;
-                        float sum = 0;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int target = offset + j;
-                            float
-                                yi = py[target],
-                                yHati = pyHat[target],
-                                left = yi * (float)Math.Log(yHati),
-                                right = (1 - yi) * (float)Math.Log(1 - yHati),
-                                partial = left + right;
-                            switch (partial)
-                            {
-                                case float.NegativeInfinity:
-                                    sum += -float.MaxValue;
-                                    break;
-                                case float.NaN:
-                                    break;
-                                case float.PositiveInfinity:
-                                    throw new InvalidOperationException("Error calculating the cross-entropy cost");
-                                default:
-                                    sum += partial;
-                                    break;
-                            }
-                        }
-                        pv[i] = sum;
-                    }
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial results and normalize
-            float cost = 0;
-            unsafe
-            {
-                fixed (float* pv = v)
-                    for (int i = 0; i < h; i++) cost += pv[i];
-            }
-            return -cost / h;
         }
 
         #endregion
@@ -900,6 +841,28 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
+        }
+
+        /// <summary>
+        /// Splits the input matrix into two matrices with the desired number of rows each
+        /// </summary>
+        /// <param name="m">The source matrix to read from</param>
+        /// <param name="rows">The number of rows in the first returned matrix</param>
+        [PublicAPI]
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        private static (float[,], float[,]) SplitRows([NotNull] float[,] m, int rows)
+        {
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            if (rows >= h) throw new ArgumentOutOfRangeException(nameof(rows), "The number of rows must be smaller than the original height");
+                float[,]
+                m1 = new float[rows, w],
+                m2 = new float[h - rows, w];
+            Buffer.BlockCopy(m, 0, m1, 0, sizeof(float) * m1.Length);
+            Buffer.BlockCopy(m, sizeof(float) * w * rows, m2, 0, sizeof(float) * m2.Length);
+            return (m1, m2);
         }
 
         /// <summary>
