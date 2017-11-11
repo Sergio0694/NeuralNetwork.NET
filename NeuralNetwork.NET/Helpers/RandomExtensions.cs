@@ -97,35 +97,7 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Returns a new matrix with random values suited for the sigmoid activation function
-        /// </summary>
-        /// <param name="random">The random instance</param>
-        /// <param name="x">The height of the matrix</param>
-        /// <param name="y">The width of the matrix</param>
-        [PublicAPI]
-        [NotNull]
-        public static float[,] NextSigmoidMatrix([NotNull] this Random random, int x, int y)
-        {
-            float range = 4 * (float)Math.Sqrt(6d / (x + y));
-            return random.NextMatrix(x, y, r => (float)r.NextDouble() * 2 * range - range);
-        }
-
-        /// <summary>
-        /// Returns a new matrix with random values suited for the tanh activation function
-        /// </summary>
-        /// <param name="random">The random instance</param>
-        /// <param name="x">The height of the matrix</param>
-        /// <param name="y">The width of the matrix</param>
-        [PublicAPI]
-        [NotNull]
-        public static float[,] NextTanhMatrix([NotNull] this Random random, int x, int y)
-        {
-            float range = (float)Math.Sqrt(6d / (x + y));
-            return random.NextMatrix(x, y, r => (float)r.NextDouble() * 2 * range - range);
-        }
-
-        /// <summary>
-        /// Returns a new matrix filled with values from the Xavier initialization
+        /// Returns a new matrix filled with values from the Xavier initialization (random~N(0,1) over the square of the number of input neurons)
         /// </summary>
         /// <param name="random">The random instance</param>
         /// <param name="x">The height of the matrix</param>

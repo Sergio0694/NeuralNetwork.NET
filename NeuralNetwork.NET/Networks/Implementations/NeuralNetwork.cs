@@ -8,6 +8,7 @@ using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Misc;
+using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
@@ -122,18 +123,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
                     throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
                 activations[i] = fullyConnected.Activation;
-                switch (fullyConnected.Activation)
-                {
-                    case ActivationFunctionType.Sigmoid:
-                        weights[i] = random.NextSigmoidMatrix(fanIn, fanOut);
-                        break;
-                    case ActivationFunctionType.Tanh:
-                        weights[i] = random.NextTanhMatrix(fanIn, fanOut);
-                        break;
-                    default:
-                        weights[i] = random.NextXavierMatrix(fanIn, fanOut);
-                        break;
-                }
+                weights[i] = random.NextXavierMatrix(fanIn, fanOut);
                 biases[i] = random.NextGaussianVector(fanOut);
             }
             return new NeuralNetwork(weights, biases, activations);
