@@ -4,9 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers.Misc;
-using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -588,50 +587,6 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
-        }
-
-        /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
-        /// </summary>
-        /// <param name="a">The estimated y</param>
-        /// <param name="y">The expected y</param>
-        /// <param name="z">The activity on the last layer</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this float[,] a, [NotNull] float[,] y, [NotNull] float[,] z, [NotNull] ActivationFunction prime)
-        {
-            // Checks
-            int
-                h = a.GetLength(0),
-                w = a.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1) ||
-                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
-
-            // Execute the multiplication in parallel
-            bool loopResult = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    // Get the pointers and iterate fo each row
-                    fixed (float* pa = a, py = y, pz = z)
-                    {
-                        // Save the index and iterate for each column
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int index = offset + j;
-                            float
-                                difference = pa[index] - py[index],
-                                zPrime = prime(pz[index]),
-                                hProduct = difference * zPrime;
-                            pa[index] = hProduct;
-                        }
-                    }
-                }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
         }
 
         /// <summary>

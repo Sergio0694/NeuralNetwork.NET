@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.Layers;
@@ -224,7 +225,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Calculate the gradient of C with respect to a, so (yHat - y)
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             float[,] dL = aList[aList.Length - 1];
-            dL.Subtract(y);
+            CostFunctionProvider.GetCostFunctionPrime(CostFunction).Invoke(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
 
             // Backpropagation
             float[][,] deltas = new float[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
@@ -370,7 +371,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Calculates the current network performances with the given test samples
         /// </summary>
         /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
-        private (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
+        internal (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
             // Feedforward
             float[,] yHat = Forward(evaluationSet.X);

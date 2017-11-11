@@ -6,8 +6,9 @@ using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.Networks.Layers;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -32,7 +33,7 @@ namespace NeuralNetworkNET.Unit
                 new[] { 0.45206544f, 0.66440039f },
                 new[] { -0.01439235f }
             };
-            NeuralNetwork dotNet = new NeuralNetwork(weights, biases, weights.Select(_ => ActivationFunctionType.Sigmoid).ToArray());
+            NeuralNetwork dotNet = new NeuralNetwork(weights, biases, weights.Select(_ => ActivationFunctionType.Sigmoid).ToArray(), CostFunctionType.CrossEntropy);
 
             // Tests
             float[,] dotResult = dotNet.Forward(new[,] { { 1.2f } });
@@ -98,9 +99,9 @@ namespace NeuralNetworkNET.Unit
             NeuralNetwork network = NeuralNetwork.NewRandom(
                 NetworkLayer.Inputs(784),
                 NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid),
-                NetworkLayer.FullyConnected(10, ActivationFunctionType.Sigmoid));
+                NetworkLayer.Outputs(10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             network.StochasticGradientDescent(trainingSet, 5, 100, null, null, 0.5f, 5);
-            (_, float accuracy) = network.Evaluate(testSet);
+            (_, _, float accuracy) = network.Evaluate(testSet);
             Assert.IsTrue(accuracy > 80);
         }
     }

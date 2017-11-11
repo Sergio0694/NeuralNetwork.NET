@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Networks.Cost
+namespace NeuralNetworkNET.Networks.Cost.Delegates
 {
     /// <summary>
     /// A delegate that represents a cost function used to compute the accuracy of a neural network

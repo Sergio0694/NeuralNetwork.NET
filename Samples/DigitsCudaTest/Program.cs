@@ -14,12 +14,12 @@ namespace DigitsCudaTest
     {
         static void Main()
         {
-            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Cpu;
+            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             (var training, var test) = DataParser.LoadDatasets();
             NeuralNetwork network = NeuralNetwork.NewRandom(
                 NetworkLayer.Inputs(784),
                 NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid),
-                NetworkLayer.Outputs(10, ActivationFunctionType.Sigmoid, CostFunctionType.Quadratic));
+                NetworkLayer.Outputs(10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             network.StochasticGradientDescent((training.X, training.Y), 100, 10, 
                 null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>

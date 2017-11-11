@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Networks.Activations
 {
