@@ -1,7 +1,9 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {
@@ -22,25 +24,28 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
             try
             {
                 // Get the general parameters and the hidden layers info
-                dynamic deserialized = JsonConvert.DeserializeObject(json);
-                int inputs = deserialized.Inputs, outputs = deserialized.Outputs;
-                int[] layersInfo = (int[])deserialized.HiddenLayers.ToObject(typeof(int[]));
-                double[][,] weights = (double[][,])deserialized.Weights.ToObject(typeof(double[][,]));
+                JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
+                int 
+                    inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), 
+                    outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
+                int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
+                float[][,] weights = jObject["Weights"].ToObject<float[][,]>();
+                float[][] biases = jObject["Biases"].ToObject<float[][]>();
+                ActivationFunctionType[] activations = jObject["ActivationFunctionTypes"].ToObject<ActivationFunctionType[]>();
 
-                //Checks
-                if (weights.Length == 0) return null; // Missing weights info
-                if (weights.Length != layersInfo.Length + 1) return null; // Inconsistent layers info
-                if (inputs != weights[0].GetLength(0)) return null; // Invalid inputs >> first layer weights
-                if (weights[weights.Length - 1].GetLength(1) != outputs) return null; // Invalid last layer >> output weights
-                for (int i = 0; i < weights.Length - 1; i++)
-                    if (weights[i].GetLength(1) != weights[i + 1].GetLength(0)) return null; // Inconsistent weights
+                // Input checks
+                if (weights.Length < 1 || 
+                    inputs != weights[0].GetLength(0) ||
+                    outputs != weights[weights.Length - 1].GetLength(1)) return null;
+                if (biases.Length < 1 ||
+                    outputs != biases[biases.Length - 1].Length) return null;
+                for (int i = 0; i < layersInfo.Length; i++)
+                    if (layersInfo[i] != weights[i].GetLength(1) ||
+                        layersInfo[i] != biases[i].Length) return null;
 
-                // Parse the right network type
-                if (weights.Length == 1)
-                    return new LinearPerceptron(inputs, outputs, weights[0]);
-                if (weights.Length == 2)
-                    return new SingleLayerPerceptron(weights[0], weights[1]);
-                return null;
+                // Parse the network
+                //return new NeuralNetwork(weights, biases, activations);
+                throw new NotImplementedException();
             }
             catch
             {

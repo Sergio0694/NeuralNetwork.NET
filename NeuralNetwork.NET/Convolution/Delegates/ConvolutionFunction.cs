@@ -11,5 +11,5 @@ namespace NeuralNetworkNET.Convolution.Delegates
     /// <remarks>This delegate is used to wrap the desired convolution function: it is possible to use one from the
     /// library or a custom one, that can work with a kernel of arbitrary size</remarks>
     [NotNull]
-    public delegate double[,] ConvolutionFunction([NotNull] double[,] data, [NotNull] double[,] kernel);
+    internal delegate float[,] ConvolutionFunction([NotNull] float[,] data, [NotNull] float[,] kernel);
 }

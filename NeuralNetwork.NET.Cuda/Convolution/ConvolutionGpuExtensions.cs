@@ -1,0 +1,488 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Alea;
+using Alea.Parallel;
+using JetBrains.Annotations;
+using NeuralNetworkNET.Cuda.APIs;
+using NeuralNetworkNET.Helpers;
+
+namespace NeuralNetworkNET.Cuda.Convolution
+{
+    /// <summary>
+    /// A static class that contains some GPU-accelerated convolution extension methods
+    /// </summary>
+    public static class ConvolutionGpuExtensions
+    {
+        /// <summary>
+        /// The minimum threshold when checking memory limits
+        /// </summary>
+        private const ulong MemoryLimitThreshold = 100_663_296; // ~100MB
+
+        /// <summary>
+        /// Performs a 3*3 convolution on the source matrix, using the given kernel, in parallel
+        /// </summary>
+        /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
+        /// <param name="subdivision">The number of images in the data volume associated to each sample</param>
+        /// <param name="kernels">The list of convolution kernels to apply to each image</param>
+        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[][,] Convolute3x3([NotNull] this float[,] source, int subdivision, [NotNull]  params float[][,] kernels)
+        {
+            // Checks
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (subdivision < 1) throw new ArgumentOutOfRangeException(nameof(subdivision), "The number of images per row can't be lower than 1");
+            if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels list can't be empty");
+            if (kernels.Any(k => k.GetLength(0) != 3 || k.GetLength(1) != 3))
+                throw new ArgumentException(nameof(kernels), "One of the input kernels doesn't have a valid size");
+
+            // Local parameters
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                klen = kernels.Length,
+                imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            if (imgSize < 9) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
+            int
+                inner = imgAxis - 2,                                            // Size of each image edge after the convolution
+                convolutionOutputSize = inner * inner,                          // Size of each processed image
+                finalWidth = inner * inner * subdivision * kernels.Length,      // Final size of each sample row
+                iterationsPerSubdivision = klen * inner,                        // GPU iterations for each sample sub-image
+                iterationsPerSample = subdivision * iterationsPerSubdivision;   // GPU iterations for each dataset entry
+
+            // Prepare the kernels info
+            float[] norms = new float[klen];
+
+            // Precompute the normalization factors
+            unsafe
+            {
+                fixed (float* pnorms = norms)
+                {
+                    for (int i = 0; i < klen; i++)
+                    {
+                        fixed (float* pk = kernels[i])
+                        {
+                            float factor = 0;
+                            for (int j = 0; j < 3; j++)
+                                for (int k = 0; k < 3; k++)
+                                    factor += pk[j * 3 + k].Abs();
+                            pnorms[i] = factor;
+                        }
+                    }
+                }
+            }
+
+            // Preallocate shared data
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<float> kernels_gpu = gpu.AllocateDevice<float>(kernels.Length, 9))  // Series of 3*3 kernels
+            using (DeviceMemory<float> norms_gpu = gpu.AllocateDevice(norms))
+            {
+                // Manage the kernels
+                deviceptr<float>
+                    pkernels_gpu = kernels_gpu.Ptr,
+                    pnorms_gpu = norms_gpu.Ptr;
+                int kernels_gpu_pitch = kernels_gpu.PitchInElements.ToInt32();
+                for (int i = 0; i < klen; i++)
+                {
+                    Gpu.Copy(kernels[i], 0, gpu, pkernels_gpu + i * kernels_gpu_pitch, 9);
+                }
+
+                // Calculate the worksize
+                ulong
+                    sourceBytes = sizeof(float) * (ulong)h * (ulong)w,
+                    resultBytes = sizeof(float) * (ulong)h * (ulong)finalWidth,
+                    rowBytes = sizeof(float) * ((ulong)w + (ulong)finalWidth),
+                    totalBytes = sourceBytes + resultBytes,
+                    vramThreshold = gpu.Device.TotalMemory - MemoryLimitThreshold,
+                    free = vramThreshold > NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit ? NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit : vramThreshold;
+
+                // Inner function that works on chunks of the original data
+                void Convolute3x3(int offsetIn, int hIn, int offsetOut, float[,] target)
+                {
+                    // Process the convolution in parallel
+                    using (DeviceMemory2D<float>
+                        source_gpu = gpu.AllocateDevice<float>(hIn, w),
+                        result_gpu = gpu.AllocateDevice<float>(hIn, finalWidth))
+                    {
+                        // Copy the source data
+                        Gpu.Copy2D(source, source_gpu, new MemoryCopy2DRegion(offsetIn, 0, 0, 0, hIn, w));
+
+                        // Pointers and pitches
+                        deviceptr<float>
+                            psource_gpu = source_gpu.Ptr,
+                            presult_gpu = result_gpu.Ptr;
+                        int
+                            source_gpu_pitch = source_gpu.PitchInElements.ToInt32(),
+                            result_gpu_pitch = result_gpu.PitchInElements.ToInt32();
+
+                        // Convolution kernel
+                        void Kernel(int index)
+                        {
+                            // Calculate the current indexes
+                            int
+                                i = index / iterationsPerSample,            // Sample index
+                                i_mod = index % iterationsPerSample,
+                                j = i_mod / iterationsPerSubdivision,       // Subdivision index
+                                j_mod = i_mod % iterationsPerSubdivision,
+                                k = j_mod / inner,                          // Kernel index
+                                x = j_mod % inner;                          // Sub-image x index
+
+                            // Assuming [x, y] are the indexes of the jth image for sample i, applying kernel k
+                            int
+                                sample_offset = i * source_gpu_pitch,
+                                image_offset = sample_offset + j * imgSize,
+                                kernel_offset = k * kernels_gpu_pitch,
+                                base_upper_offset = image_offset + x * imgAxis,
+                                base_middle_offset = image_offset + (x + 1) * imgAxis,
+                                base_lower_offset = image_offset + (x + 2) * imgAxis,
+                                base_target_offset =
+                                    i * result_gpu_pitch +
+                                    j * convolutionOutputSize * klen +
+                                    k * convolutionOutputSize +
+                                    x * inner;
+
+                            // Iterate over the columns in the current row and process the convolution
+                            for (int y = 0; y < inner; y++)
+                            {
+                                int
+                                    upper_offset = base_upper_offset + y,
+                                    middle_offset = base_middle_offset + y,
+                                    lower_offset = base_lower_offset + y;
+                                float
+                                    partial =
+                                        psource_gpu[upper_offset] * pkernels_gpu[kernel_offset] +
+                                        psource_gpu[upper_offset + 1] * pkernels_gpu[kernel_offset + 1] +
+                                        psource_gpu[upper_offset + 2] * pkernels_gpu[kernel_offset + 2] +
+                                        psource_gpu[middle_offset] * pkernels_gpu[kernel_offset + 3] +
+                                        psource_gpu[middle_offset + 1] * pkernels_gpu[kernel_offset + 4] +
+                                        psource_gpu[middle_offset + 2] * pkernels_gpu[kernel_offset + 5] +
+                                        psource_gpu[lower_offset] * pkernels_gpu[kernel_offset + 6] +
+                                        psource_gpu[lower_offset + 1] * pkernels_gpu[kernel_offset + 7] +
+                                        psource_gpu[lower_offset + 2] * pkernels_gpu[kernel_offset + 8],
+                                    normalized = partial / pnorms_gpu[k];
+                                presult_gpu[base_target_offset + y] = normalized;
+                            }
+                        }
+
+                        // Convolute in parallel
+                        gpu.For(0, hIn * iterationsPerSample, Kernel);
+
+                        // Return the processed results
+                        Gpu.Copy2D(result_gpu, target, new MemoryCopy2DRegion(0, 0, offsetOut, 0, hIn, finalWidth));
+                    }
+                }
+
+                // Local function to calculate the size fo each memory block
+                (int HBlock, int HMod, int Blocks, int Last) CalculateBlocksSize(ulong memory)
+                {
+                    int
+                        hBlock = (int)(memory / rowBytes),
+                        hMod = h % hBlock,
+                        blocks = h / hBlock + (hMod == 0 ? 0 : 1),
+                        last = blocks - 1;
+                    return (hBlock, hMod, blocks, last);
+                }
+
+                // Check the memory status
+                float[][,] result;
+                bool
+                    canAllocateCpu = totalBytes < int.MaxValue,
+                    canAllocateGpu = free - MemoryLimitThreshold > totalBytes;
+                if (canAllocateCpu && canAllocateGpu)
+                {
+                    // Process the whole data in a single step
+                    float[,] temp = new float[h, finalWidth];
+                    Convolute3x3(0, h, 0, temp);
+                    result = new[] { temp };
+                }
+                else if (canAllocateGpu)
+                {
+                    // Object bigger than 2GB, but able to be copied on the GPU
+                    var blockInfo = CalculateBlocksSize(int.MaxValue);
+                    result = new float[blockInfo.Blocks][,];
+                    for (int i = 0; i < blockInfo.Blocks; i++)
+                    {
+                        if (i == blockInfo.Last)
+                        {
+                            // Remainder
+                            float[,] block = new float[blockInfo.HMod, finalWidth];
+                            Convolute3x3(blockInfo.HBlock * i, blockInfo.HMod, 0, block);
+                            result[i] = block;
+                        }
+                        else
+                        {
+                            float[,] block = new float[blockInfo.HBlock, finalWidth];
+                            Convolute3x3(blockInfo.HBlock * i, blockInfo.HBlock, 0, block);
+                            result[i] = block;
+                        }
+                    }
+                }
+                else if (canAllocateCpu)
+                {
+                    // Not enough GPU space, but result able to be allocated on RAM
+                    float[,] temp = new float[h, finalWidth];
+                    var blockInfo = CalculateBlocksSize(free);
+                    for (int i = 0; i < blockInfo.Blocks; i++)
+                    {
+                        Convolute3x3(blockInfo.HBlock * i, i == blockInfo.Last ? blockInfo.HMod : blockInfo.HBlock, blockInfo.HBlock * i, temp);
+                    }
+                    result = new[] { temp };
+                }
+                else
+                {
+                    // Not enough space both on GPU and RAM
+                    var blockInfo = CalculateBlocksSize(int.MaxValue <= free ? int.MaxValue : free);
+                    result = new float[blockInfo.Blocks][,];
+                    for (int i = 0; i < blockInfo.Blocks; i++)
+                    {
+                        if (i == blockInfo.Last)
+                        {
+                            // Remainder
+                            float[,] block = new float[blockInfo.HMod, finalWidth];
+                            Convolute3x3(blockInfo.HBlock * i, blockInfo.HMod, 0, block);
+                            result[i] = block;
+                        }
+                        else
+                        {
+                            float[,] block = new float[blockInfo.HBlock, finalWidth];
+                            Convolute3x3(blockInfo.HBlock * i, blockInfo.HBlock, 0, block);
+                            result[i] = block;
+                        }
+                    }
+                }
+                Gpu.FreeAllImplicitMemory(true);
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Performs the in place Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
+        /// </summary>
+        /// <param name="m">The input matrix to edit</param>
+        /// <remarks>This method is still executed on the CPU, as it only costs O(n^2) and more parallelization wouldn't help</remarks>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void ReLU([NotNull] this float[,] m)
+        {
+            int h = m.GetLength(0), w = m.GetLength(1);
+            bool result = Parallel.For(0, h, i =>
+            {
+                unsafe
+                {
+                    fixed (float* p = m)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            int target = offset + j;
+                            if (p[target] < 0) p[target] = 0;
+                        }
+                    }
+                }
+            }).IsCompleted;
+            if (!result) throw new InvalidOperationException("There was an error while executing the operation");
+        }
+
+        /// <summary>
+        /// Performs a normalization on the input matrix, considering the results of a previous convolution, in parallel
+        /// </summary>
+        /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
+        /// <param name="subdivision">The number of images in the data volume associated to each sample</param>
+        /// <exception cref="ArgumentException">The size of the matrix isn't valid</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void Normalize([NotNull] this float[,] source, int subdivision)
+        {
+            // Checks
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (subdivision < 1) throw new ArgumentOutOfRangeException(nameof(subdivision), "The number of images per row can't be lower than 1");
+
+            // Local parameters
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                iterations = h * subdivision,
+                imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+
+            // Process the convolution in parallel
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<float> source_gpu = gpu.AllocateDevice(source))
+            using (DeviceMemory<float> norms_gpu = gpu.AllocateDevice<float>(h * subdivision))    // Normalization factors
+            {
+                // Pointers and pitches
+                deviceptr<float>
+                    psource_gpu = source_gpu.Ptr,
+                    pnorms_gpu = norms_gpu.Ptr;
+                int source_gpu_pitch = source_gpu.PitchInElements.ToInt32();
+
+                // Precalculation kernel
+                void Kernel0(int index)
+                {
+                    // Calculate the current indexes
+                    int
+                        i = index / subdivision,    // Sample index
+                        j = index % subdivision,    // Subdivision index
+                        sample_offset = i * source_gpu_pitch,
+                        image_offset = sample_offset + j * imgSize;
+
+                    // Compute the current normalization factor
+                    float sum = 0;
+                    for (int k = 0; k < imgSize; k++)
+                        sum += psource_gpu[image_offset + k];
+                    pnorms_gpu[i * j] = sum;
+                }
+
+                // Normalization kernel
+                void Kernel1(int index)
+                {
+                    // Calculate the current indexes
+                    int
+                        i = index / subdivision,    // Sample index
+                        j = index % subdivision,    // Subdivision index
+                        sample_offset = i * source_gpu_pitch,
+                        image_offset = sample_offset + j * imgSize;
+
+                    // Normalize the sub-matrix
+                    float factor = pnorms_gpu[i * j];
+                    for (int k = 0; k < imgSize; k++)
+                        psource_gpu[image_offset + k] /= factor;
+                }
+
+                // Start the normalization
+                gpu.For(0, iterations, Kernel0);
+                gpu.For(0, iterations, Kernel1);
+
+                // Copy the results back
+                Gpu.Copy2D(source_gpu, source);
+            }
+            Gpu.FreeAllImplicitMemory(true);
+        }
+
+        /// <summary>
+        /// Pools the input matrix with a window of 2 and a stride of 2
+        /// </summary>
+        /// <param name="source">The input matrix to pool</param>
+        /// <param name="subdivision">The number of images in the data volume associated to each sample</param>
+        /// <exception cref="ArgumentException">The size of the matrix isn't valid</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[,] Pool2x2([NotNull] this float[,] source, int subdivision)
+        {
+            // Checks
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (subdivision < 1) throw new ArgumentOutOfRangeException(nameof(subdivision), "The number of images per row can't be lower than 1");
+
+            // Local parameters
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                imgSize = w % subdivision == 0 ? w / subdivision : throw new ArgumentException(nameof(source), "Invalid subdivision parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();          // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The width of the input matrix isn't valid");
+            bool odd = imgAxis % 2 == 1;
+            int
+                inner = imgAxis - 1,    // Limit index for the edge cases
+                scaledImageAxis = imgAxis / 2 + (odd ? 1 : 0),
+                iterationsPerSample = subdivision * scaledImageAxis,
+                scaledInner = scaledImageAxis - 1,
+                scaledImageSize = scaledImageAxis * scaledImageAxis,
+                finalWidth = scaledImageSize * subdivision;
+
+            // Prepare the GPU memory
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<float>
+                source_gpu = gpu.AllocateDevice(source),
+                result_gpu = gpu.AllocateDevice<float>(h, finalWidth))
+            {
+                // Pointers and pitches
+                deviceptr<float>
+                    psource_gpu = source_gpu.Ptr,
+                    presult_gpu = result_gpu.Ptr;
+                int
+                    source_gpu_pitch = source_gpu.PitchInElements.ToInt32(),
+                    result_gpu_pitch = result_gpu.PitchInElements.ToInt32();
+
+                // Pooling kernel
+                void Kernel(int index)
+                {
+                    // Calculate the current indexes
+                    int
+                        i = index / iterationsPerSample,        // Sample index
+                        i_mod = index % iterationsPerSample,
+                        j = i_mod / scaledImageAxis,            // Subdivision index
+                        x_plain = i_mod % scaledImageAxis,
+                        x = x_plain * 2;                        // Subdivision row index
+
+                    // Assuming [x, y] are the indexes of the jth image for sample i
+                    int
+                        sample_offset = i * source_gpu_pitch,
+                        image_offset = sample_offset + j * imgSize,
+                        target_up = image_offset + x * imgAxis,
+                        target_down = image_offset + (x + 1) * imgAxis,
+                        result_offset = i * result_gpu_pitch + j * scaledImageSize + x_plain * scaledImageAxis;
+                    if (x == inner)
+                    {
+                        // Last row
+                        for (int y = 0; y < inner; y += 2)
+                        {
+                            int offset = target_up + y;
+                            float
+                                left = psource_gpu[offset],
+                                right = psource_gpu[offset + 1],
+                                max = left >= right ? left : right;
+                            presult_gpu[result_offset + y / 2] = max;
+                        }
+
+                        // At this point the axis length must be an odd number
+                        presult_gpu[result_offset + scaledInner] = psource_gpu[target_up + inner];
+                    }
+                    else
+                    {
+                        // Compute the maximum value of the current block
+                        for (int y = 0; y < inner; y += 2)
+                        {
+                            int
+                                up_offset = target_up + y,
+                                down_offset = target_down + y;
+                            float
+                                upLeft = psource_gpu[up_offset],
+                                upRight = psource_gpu[up_offset + 1],
+                                downLeft = psource_gpu[down_offset],
+                                downRight = psource_gpu[down_offset + 1],
+                                upMax = upLeft >= upRight ? upLeft : upRight,
+                                downMax = downLeft >= downRight ? downLeft : downRight,
+                                max = upMax >= downMax ? upMax : downMax;
+                            presult_gpu[result_offset + y / 2] = max;
+                        }
+                        if (odd)
+                        {
+                            float
+                                up = psource_gpu[target_up + inner],
+                                down = psource_gpu[target_down + inner],
+                                max = up > down ? up : down;
+                            presult_gpu[result_offset + scaledInner] = max;
+                        }
+                    }
+                }
+
+                // Process the pooling operation
+                gpu.For(0, h * iterationsPerSample, Kernel);
+
+                // Return the results
+                Gpu.FreeAllImplicitMemory(true);
+                return Gpu.Copy2DToHost(result_gpu);
+            }
+        }
+    }
+}
