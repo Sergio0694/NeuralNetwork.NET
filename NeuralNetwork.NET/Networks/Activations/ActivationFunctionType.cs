@@ -31,6 +31,11 @@
         LeakyReLU,
 
         /// <summary>
+        /// The softmax function, e^x/sum{k}(e^x(k))
+        /// </summary>
+        Softmax,
+
+        /// <summary>
         /// The softplus function, ln(1 + e^x)
         /// </summary>
         Softplus,

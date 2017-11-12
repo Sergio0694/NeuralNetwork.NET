@@ -19,35 +19,35 @@ namespace NeuralNetworkNET.Cuda.Convolution
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Process([NotNull] IReadOnlyList<ConvolutionOperation> pipeline, [NotNull] double[,] input)
+        public static float[,] Process([NotNull] IReadOnlyList<ConvolutionOperation> pipeline, [NotNull] float[,] input)
         {
             int h = input.GetLength(0), w = input.GetLength(1);
-            double[,] copy = new double[h, w];
-            Buffer.BlockCopy(input, 0, copy, 0, sizeof(double) * w * h);
-            double[][,] result = { copy };
+            float[,] copy = new float[h, w];
+            Buffer.BlockCopy(input, 0, copy, 0, sizeof(float) * w * h);
+            float[][,] result = { copy };
             int subdivision = 1;
             foreach (ConvolutionOperation operation in pipeline)
             {
                 switch (operation)
                 {
                     case KernelConvolution k when k.OperationType == ConvolutionOperationType.Convolution3x3:
-                        List<double[,]> convolutions = new List<double[,]>();
+                        List<float[,]> convolutions = new List<float[,]>();
                         for (int i = 0; i < result.Length; i++)
                         {
-                            double[][,] partial = result[i].Convolute3x3(subdivision, k.Kernels);
+                            float[][,] partial = result[i].Convolute3x3(subdivision, k.Kernels);
                             convolutions.AddRange(partial);
                         }
                         result = convolutions.ToArray();
                         subdivision *= k.Kernels.Length;
                         break;
                     case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.Normalization:
-                        foreach (double[,] m in result) m.Normalize(subdivision);
+                        foreach (float[,] m in result) m.Normalize(subdivision);
                         break;
                     case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.Pool2x2:
                         for (int i = 0; i < result.Length; i++) result[i] = result[i].Pool2x2(subdivision);
                         break;
                     case ConvolutionOperation op when op.OperationType == ConvolutionOperationType.ReLU:
-                        foreach (double[,] m in result) m.ReLU();
+                        foreach (float[,] m in result) m.ReLU();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException("Unsupported convolution operation");

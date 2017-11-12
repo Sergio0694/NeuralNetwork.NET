@@ -46,7 +46,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset((double[,] X ,double[,] Y) dataset, int size)
+        public static BatchesCollection FromDataset((float[,] X ,float[,] Y) dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
@@ -66,20 +66,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
             {
                 if (oddBatchPresent && i == batches.Length - 1)
                 {
-                    double[,]
-                        batch = new double[nBatchMod, w],
-                        batchY = new double[nBatchMod, wy];
-                    Buffer.BlockCopy(dataset.X, sizeof(double) * (dataset.X.Length - batch.Length), batch, 0, sizeof(double) * batch.Length);
-                    Buffer.BlockCopy(dataset.Y, sizeof(double) * (dataset.Y.Length - batchY.Length), batchY, 0, sizeof(double) * batchY.Length);
+                    float[,]
+                        batch = new float[nBatchMod, w],
+                        batchY = new float[nBatchMod, wy];
+                    Buffer.BlockCopy(dataset.X, sizeof(float) * (dataset.X.Length - batch.Length), batch, 0, sizeof(float) * batch.Length);
+                    Buffer.BlockCopy(dataset.Y, sizeof(float) * (dataset.Y.Length - batchY.Length), batchY, 0, sizeof(float) * batchY.Length);
                     batches[batches.Length - 1] = new TrainingBatch(batch, batchY);
                 }
                 else
                 {
-                    double[,]
-                        batch = new double[size, w],
-                        batchY = new double[size, wy];
-                    Buffer.BlockCopy(dataset.X, sizeof(double) * i * batch.Length, batch, 0, sizeof(double) * batch.Length);
-                    Buffer.BlockCopy(dataset.Y, sizeof(double) * i * batchY.Length, batchY, 0, sizeof(double) * batchY.Length);
+                    float[,]
+                        batch = new float[size, w],
+                        batchY = new float[size, wy];
+                    Buffer.BlockCopy(dataset.X, sizeof(float) * i * batch.Length, batch, 0, sizeof(float) * batch.Length);
+                    Buffer.BlockCopy(dataset.Y, sizeof(float) * i * batchY.Length, batchY, 0, sizeof(float) * batchY.Length);
                     batches[i] = new TrainingBatch(batch, batchY);
                 }
             }
@@ -110,9 +110,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                     wy = setA.Y.GetLength(1),
                     hB = setB.X.GetLength(0),
                     bound = hA > hB ? hB : hA;
-                double[]
-                    tempX = new double[wx],
-                    tempY = new double[wy];
+                float[]
+                    tempX = new float[wx],
+                    tempY = new float[wy];
                 while (bound > 1)
                 {
                     int k = r.Next(0, bound) % bound;
@@ -122,16 +122,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                         targetB = r.NextBool() ? setA : setB;
 
                     // Rows from A[k] to temp
-                    Buffer.BlockCopy(targetA.X, sizeof(double) * wx * k, tempX, 0, sizeof(double) * wx);
-                    Buffer.BlockCopy(targetA.Y, sizeof(double) * wy * k, tempY, 0, sizeof(double) * wy);
+                    Buffer.BlockCopy(targetA.X, sizeof(float) * wx * k, tempX, 0, sizeof(float) * wx);
+                    Buffer.BlockCopy(targetA.Y, sizeof(float) * wy * k, tempY, 0, sizeof(float) * wy);
 
                     // Rows from B[bound] to A[k]
-                    Buffer.BlockCopy(targetB.X, sizeof(double) * wx * bound, targetA.X, sizeof(double) * wx * k, sizeof(double) * wx);
-                    Buffer.BlockCopy(targetB.Y, sizeof(double) * wy * bound, targetA.Y, sizeof(double) * wy * k, sizeof(double) * wy);
+                    Buffer.BlockCopy(targetB.X, sizeof(float) * wx * bound, targetA.X, sizeof(float) * wx * k, sizeof(float) * wx);
+                    Buffer.BlockCopy(targetB.Y, sizeof(float) * wy * bound, targetA.Y, sizeof(float) * wy * k, sizeof(float) * wy);
 
                     // Rows from temp to B[bound]
-                    Buffer.BlockCopy(tempX, 0, targetB.X, sizeof(double) * wx * bound, sizeof(double) * wx);
-                    Buffer.BlockCopy(tempY, 0, targetB.Y, sizeof(double) * wy * bound, sizeof(double) * wy);
+                    Buffer.BlockCopy(tempX, 0, targetB.X, sizeof(float) * wx * bound, sizeof(float) * wx);
+                    Buffer.BlockCopy(tempY, 0, targetB.Y, sizeof(float) * wy * bound, sizeof(float) * wy);
                 }
             }).IsCompleted;
             if (!result) throw new InvalidOperationException("Failed to perform the parallel loop");

@@ -12,20 +12,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// Gets the current dataset
         /// </summary>
         [NotNull]
-        public double[,] X { get; }
+        public float[,] X { get; }
 
         /// <summary>
         /// Gets the expected results for the current dataset
         /// </summary>
         [NotNull]
-        public double[,] Y { get; }
+        public float[,] Y { get; }
 
         /// <summary>
         /// Creates a new dataset wrapper batch with the given data
         /// </summary>
         /// <param name="x">The batch data</param>
         /// <param name="y">The batch expected results</param>
-        public TrainingBatch([NotNull] double[,] x, [NotNull] double[,] y)
+        public TrainingBatch([NotNull] float[,] x, [NotNull] float[,] y)
         {
             if (x.GetLength(0) != y.GetLength(0)) throw new ArgumentException("The number of samples in the data and results must be the same");
             X = x;

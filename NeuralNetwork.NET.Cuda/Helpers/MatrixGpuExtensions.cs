@@ -2,7 +2,7 @@
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Cuda.Helpers
 {
@@ -20,18 +20,18 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Transpose([NotNull] this double[,] m)
+        public static float[,] Transpose([NotNull] this float[,] m)
         {
             // Setup
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m_gpu = gpu.AllocateDevice(m))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(w, h))
+            using (DeviceMemory2D<float> m_gpu = gpu.AllocateDevice(m))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(w, h))
             {
                 // Local parameters
-                deviceptr<double>
+                deviceptr<float>
                     pm_gpu = m_gpu.Ptr,
                     pmresult_gpu = mresult_gpu.Ptr;
                 int
@@ -62,7 +62,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static float[,] Multiply([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -72,12 +72,12 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
+            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Local parameters
-                deviceptr<double>
+                deviceptr<float>
                     pm1_gpu = m1_gpu.Ptr,
                     pm2_gpu = m2_gpu.Ptr,
                     pmresult_gpu = mresult_gpu.Ptr;
@@ -95,7 +95,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         j = index % w;
 
                     // Perform the multiplication
-                    double sum = 0;
+                    float sum = 0;
                     int m1_offset = i * m1_gpu_pitch; // Constant within the loop
                     for (int k = 0; k < l; k++)
                     {
@@ -120,7 +120,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] TransposeAndMultiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static float[,] TransposeAndMultiply([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
             // Checks
             if (m1.GetLength(0) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -130,12 +130,12 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(l, w)) // The first matrix will be transposed
+            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(l, w)) // The first matrix will be transposed
             {
                 // Local parameters
-                deviceptr<double>
+                deviceptr<float>
                     pm1_gpu = m1_gpu.Ptr,
                     pm2_gpu = m2_gpu.Ptr,
                     pmresult_gpu = mresult_gpu.Ptr;
@@ -153,7 +153,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         j = index % w;
 
                     // Perform the multiplication
-                    double sum = 0;
+                    float sum = 0;
                     for (int k = 0; k < h; k++)
                     {
                         sum += pm1_gpu[k * m1_gpu_pitch + i] * pm2_gpu[k * m2_gpu_pitch + j];
@@ -182,7 +182,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction activation)
+        public static float[,] MultiplyAndActivation([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -192,12 +192,12 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
+            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Local parameters
-                deviceptr<double>
+                deviceptr<float>
                     pm1_gpu = m1_gpu.Ptr,
                     pm2_gpu = m2_gpu.Ptr,
                     pmresult_gpu = mresult_gpu.Ptr;
@@ -215,7 +215,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         j = index % w;
 
                     // Perform the multiplication
-                    double sum = 0;
+                    float sum = 0;
                     int m1_offset = i * m1_gpu_pitch; // Constant within the loop
                     for (int k = 0; k < l; k++)
                     {
@@ -242,7 +242,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSum([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        public static float[,] MultiplyWithSum([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -253,13 +253,13 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
-            using (DeviceMemory<double> v_gpu = gpu.AllocateDevice(v))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
+            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory<float> v_gpu = gpu.AllocateDevice(v))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Pointers and pitches
-                deviceptr<double>
+                deviceptr<float>
                     pm1_gpu = m1_gpu.Ptr,
                     pm2_gpu = m2_gpu.Ptr,
                     pv_gpu = v_gpu.Ptr,
@@ -278,7 +278,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         j = index % w;
 
                     // Perform the multiplication
-                    double sum = 0;
+                    float sum = 0;
                     int pm1_offset = i * m1_gpu_pitch;
                     for (int k = 0; k < l; k++)
                     {
@@ -305,7 +305,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] ActivationFunction activation)
+        public static float[,] MultiplyWithSumAndActivation([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -316,13 +316,13 @@ namespace NeuralNetworkNET.Cuda.Helpers
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
-            using (DeviceMemory<double> v_gpu = gpu.AllocateDevice(v))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
+            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory<float> v_gpu = gpu.AllocateDevice(v))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Pointers and pitches
-                deviceptr<double>
+                deviceptr<float>
                     pm1_gpu = m1_gpu.Ptr,
                     pm2_gpu = m2_gpu.Ptr,
                     pv_gpu = v_gpu.Ptr,
@@ -341,7 +341,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         j = index % w;
 
                     // Perform the multiplication
-                    double sum = 0;
+                    float sum = 0;
                     int pm1_offset = i * m1_gpu_pitch;
                     for (int k = 0; k < l; k++)
                     {
@@ -360,67 +360,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
         }
 
         /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
-        /// </summary>
-        /// <param name="a">The estimated y</param>
-        /// <param name="y">The expected y</param>
-        /// <param name="z">The activity on the last layer</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] ActivationFunction prime)
-        {
-            // Checks
-            int
-                h = a.GetLength(0),
-                w = a.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1) ||
-                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
-
-            // Initialize the parameters and the result matrix
-            Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> a_gpu = gpu.AllocateDevice(a))
-            using (DeviceMemory2D<double> y_gpu = gpu.AllocateDevice(y))
-            using (DeviceMemory2D<double> z_gpu = gpu.AllocateDevice(z))
-            {
-                // Pointers and pitches
-                deviceptr<double>
-                    pa_gpu = a_gpu.Ptr,
-                    py_gpu = y_gpu.Ptr,
-                    pz_gpu = z_gpu.Ptr;
-                int
-                    a_gpu_pitch = a_gpu.PitchInElements.ToInt32(),
-                    y_gpu_pitch = y_gpu.PitchInElements.ToInt32(),
-                    z_gpu_pitch = z_gpu.PitchInElements.ToInt32();
-
-                // Wrapper
-                void Kernel(int i)
-                {
-                    // Save the index and iterate for each column
-                    int
-                        y_gpu_offset = i * y_gpu_pitch,
-                        z_gpu_offset = i * z_gpu_pitch;
-                    for (int j = 0; j < w; j++)
-                    {
-                        int a_gpu_target = i * a_gpu_pitch + j;
-                        double
-                            difference = pa_gpu[a_gpu_target] - py_gpu[y_gpu_offset + j],
-                            zPrime = prime(pz_gpu[z_gpu_offset + j]),
-                            hProduct = difference * zPrime;
-                        pa_gpu[a_gpu_target] = hProduct;
-                    }
-                }
-
-                // Execute the multiplication in parallel
-                gpu.For(0, h, Kernel);
-
-                // Copy the results back
-                Gpu.Copy2D(a_gpu, a);
-            }
-        }
-
-        /// <summary>
         /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
@@ -430,7 +369,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction prime)
+            [NotNull] this float[,] z, [NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
             int h = m1.GetLength(0);
@@ -443,12 +382,12 @@ namespace NeuralNetworkNET.Cuda.Helpers
 
             // Initialize the parameters and the result matrix
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> z_gpu = gpu.AllocateDevice(z))
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<float> z_gpu = gpu.AllocateDevice(z))
+            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
+            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
             {
                 // Pointers and pitches
-                deviceptr<double>
+                deviceptr<float>
                     pz_gpu = z_gpu.Ptr,
                     pm1_gpu = m1_gpu.Ptr,
                     pm2_gpu = m2_gpu.Ptr;
@@ -466,7 +405,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                         j = index % w;
 
                     // Perform the multiplication
-                    double sum = 0;
+                    float sum = 0;
                     int m1_offset = i * m1_gpu_pitch; // Constant within the loop
                     for (int k = 0; k < l; k++)
                     {
@@ -498,18 +437,18 @@ namespace NeuralNetworkNET.Cuda.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Activation([NotNull] this double[,] m, [NotNull] ActivationFunction activation)
+        public static float[,] Activation([NotNull] this float[,] m, [NotNull] ActivationFunction activation)
         {
             // Setup
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m_gpu = gpu.AllocateDevice(m))
-            using (DeviceMemory2D<double> mresult_gpu = gpu.AllocateDevice<double>(h, w))
+            using (DeviceMemory2D<float> m_gpu = gpu.AllocateDevice(m))
+            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Local parameters
-                deviceptr<double>
+                deviceptr<float>
                     pm_gpu = m_gpu.Ptr,
                     pmresult_gpu = mresult_gpu.Ptr;
                 int
@@ -535,117 +474,24 @@ namespace NeuralNetworkNET.Cuda.Helpers
         }
 
         /// <summary>
-        /// Calculates half the sum of the squared difference of each value pair in the two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second matrix</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double HalfSquaredDifference([NotNull] this double[,] m1, [NotNull] double[,] m2)
-        {
-            // Detect the size of the inputs
-            int h = m1.GetLength(0), w = m1.GetLength(1);
-            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
-
-            // Allocate parameters
-            Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<double> m2_gpu = gpu.AllocateDevice(m2))
-            {
-                // Check Compute Capability (64bit atomicAdd function requires Compute 6.x)
-                if (gpu.Device.Arch.Major >= 6)
-                {
-                    using (DeviceMemory<double> result_gpu = gpu.AllocateDevice<double>(1))
-                    {
-                        // Local parameters
-                        deviceptr<double>
-                            pm1_gpu = m1_gpu.Ptr,
-                            pm2_gpu = m2_gpu.Ptr,
-                            presult_gpu = result_gpu.Ptr;
-                        int
-                            m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
-                            m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
-
-                        // Wrapper
-                        void Kernel(int i)
-                        {
-                            // Local sum over each row
-                            double row = 0;
-                            int
-                                m1_offset = i * m1_gpu_pitch,
-                                m2_offset = i * m2_gpu_pitch;
-                            for (int j = 0; j < w; j++)
-                            {
-                                double delta = pm1_gpu[m1_offset + j] - pm2_gpu[m2_offset + j];
-                                row += delta * delta;
-                            }
-                            DeviceFunction.AtomicAdd(presult_gpu, row);
-                        }
-
-                        // Compute the total sum
-                        gpu.For(0, h, Kernel);
-
-                        // Return the result
-                        double[] result = Gpu.CopyToHost(result_gpu);
-                        return result[0] / 2;
-                    }
-                }
-
-                // Legacy code
-                using (DeviceMemory<double> result_gpu = gpu.AllocateDevice<double>(h))
-                {
-                    // Local parameters
-                    deviceptr<double>
-                        pm1_gpu = m1_gpu.Ptr,
-                        pm2_gpu = m2_gpu.Ptr,
-                        presult_gpu = result_gpu.Ptr;
-                    int
-                        m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
-                        m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
-
-                    // Wrapper
-                    void Kernel(int i)
-                    {
-                        // Local sum over each row
-                        double row = 0;
-                        int
-                            m1_offset = i * m1_gpu_pitch,
-                            m2_offset = i * m2_gpu_pitch;
-                        for (int j = 0; j < w; j++)
-                        {
-                            double delta = pm1_gpu[m1_offset + j] - pm2_gpu[m2_offset + j];
-                            row += delta * delta;
-                        }
-                        presult_gpu[i] = row;
-                    }
-
-                    // Compute the total sum
-                    gpu.For(0, h, Kernel);
-                    double AggregateKernel(double a, double b) => a + b;
-                    return gpu.Aggregate(presult_gpu, h, AggregateKernel) / 2;
-                }
-            }
-        }
-
-        /// <summary>
         /// Compresses a matrix into a row vector by summing the components column by column
         /// </summary>
         /// <param name="m">The matrix to compress</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] CompressVertically([NotNull] this double[,] m)
+        public static float[] CompressVertically([NotNull] this float[,] m)
         {
             // Setup
             Gpu gpu = Gpu.Default;
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
-            using (DeviceMemory2D<double> m_gpu = gpu.AllocateDevice(m))
-            using (DeviceMemory<double> vresult_gpu = gpu.AllocateDevice<double>(w))
+            using (DeviceMemory2D<float> m_gpu = gpu.AllocateDevice(m))
+            using (DeviceMemory<float> vresult_gpu = gpu.AllocateDevice<float>(w))
             {
                 // Pointers
-                deviceptr<double>
+                deviceptr<float>
                     pm_gpu = m_gpu.Ptr,
                     pvresult_gpu = vresult_gpu.Ptr;
                 int pitch = m_gpu.PitchInElements.ToInt32();
@@ -669,7 +515,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     // Legacy wrapper 
                     void Kernel(int kj)
                     {
-                        double sum = 0;
+                        float sum = 0;
                         for (int i = 0; i < h; i++)
                             sum += pm_gpu[i * pitch + kj];
                         pvresult_gpu[kj] = sum;

@@ -27,7 +27,7 @@ using System;
 using System.Collections.Generic;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
+namespace NeuralNetworkNET.SupervisedLearning.Optimization.Misc
 {
     /// <summary>
     ///   Relative convergence criteria
@@ -61,18 +61,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
     ///   // of 1234.56:
     ///   
     ///   int iterations = criteria.CurrentIteration; // 11
-    ///   double value = criteria.OldValue; // 1234.56
+    ///   float value = criteria.OldValue; // 1234.56
     /// </code>
     /// </example>
     internal class RelativeConvergence
     {
-        private double _Tolerance;
+        private float _Tolerance;
 
         /// <summary>
         /// Gets or sets the maximum relative change in the watched value
         /// after an iteration of the algorithm used to detect convergence
         /// </summary>
-        public double Tolerance
+        public float Tolerance
         {
             get => _Tolerance;
             set => _Tolerance = value < 0 ? throw new ArgumentOutOfRangeException("value", "Tolerance should be positive") : value;
@@ -86,7 +86,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         /// <summary>
         /// Initializes a new instance of the <see cref="RelativeConvergence"/> class
         /// </summary>
-        public RelativeConvergence(double tolerance, int window)
+        public RelativeConvergence(float tolerance, int window)
         {
             if (tolerance <= 0) throw new ArgumentOutOfRangeException(nameof(tolerance), "The tolerance must be a positive value");
             if (window < 1) throw new ArgumentOutOfRangeException(nameof(window), "The tolerance window must be at least equal to 1");
@@ -95,14 +95,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
         }
 
         // The previous value for the convergence check
-        private readonly Queue<double> _PreviousValues = new Queue<double>();
+        private readonly Queue<float> _PreviousValues = new Queue<float>();
 
-        private double _Value;
+        private float _Value;
 
         /// <summary>
         /// Gets or sets the watched value after the iteration
         /// </summary>
-        public double Value
+        public float Value
         {
             get => _Value;
             set
@@ -121,15 +121,15 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Dependencies
             get
             {
                 if (_PreviousValues.Count < ConvergenceWindow) return false;
-                double[] values = _PreviousValues.ToArray();
-                double min = double.MinValue, max = double.MaxValue;
+                float[] values = _PreviousValues.ToArray();
+                float min = float.MinValue, max = float.MaxValue;
                 unsafe
                 {
-                    fixed (double* p = values)
+                    fixed (float* p = values)
                     {
                         for (int i = 0; i < values.Length; i++)
                         {
-                            double value = p[i];
+                            float value = p[i];
                             if (value > max) max = value;
                             if (value < min) min = value;
                         }

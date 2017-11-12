@@ -38,7 +38,7 @@ namespace NeuralNetworkNET.Convolution.Operations
         /// Creates a new instance that represents a 3x3 convolution with the given kernels
         /// </summary>
         /// <param name="kernels">The kernels to use to perform the convolution</param>
-        public static ConvolutionOperation Convolution3x3(params double[][,] kernels)
+        public static ConvolutionOperation Convolution3x3(params float[][,] kernels)
         {
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels list can't be empty");
             int h = kernels[0].GetLength(0), w = kernels[0].GetLength(1);

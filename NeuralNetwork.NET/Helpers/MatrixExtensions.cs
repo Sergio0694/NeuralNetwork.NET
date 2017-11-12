@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers.Misc;
-using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -24,18 +25,18 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Sum([NotNull] this double[,] m, [NotNull] double[] v)
+        public static float[,] Sum([NotNull] this float[,] m, [NotNull] float[] v)
         {
             // Execute the transposition in parallel
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
-                    fixed (double* pr = result, pm = m, pv = v)
+                    fixed (float* pr = result, pm = m, pv = v)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
@@ -56,7 +57,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Sum([NotNull] this double[,] m1, [NotNull] double[,] m2, MatrixSumMode mode)
+        public static float[,] Sum([NotNull] this float[,] m1, [NotNull] float[,] m2, MatrixSumMode mode)
         {
             // Execute the transposition in parallel
             int
@@ -64,14 +65,14 @@ namespace NeuralNetworkNET.Helpers
                 w = m1.GetLength(1),
                 m2w = m2.GetLength(1);
             if (m2.GetLength(0) != h) throw new ArgumentException(nameof(m2), "Invalid matrix size");
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Elementwise kernel
             void ElementwiseSum(int i)
             {
                 unsafe
                 {
-                    fixed (double* pr = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pr = result, pm1 = m1, pm2 = m2)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
@@ -88,7 +89,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 unsafe
                 {
-                    fixed (double* pr = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pr = result, pm1 = m1, pm2 = m2)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
@@ -126,7 +127,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="v">The vector to sum</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceSum([NotNull] this double[,] m, [NotNull] double[] v)
+        public static void InPlaceSum([NotNull] this float[,] m, [NotNull] float[] v)
         {
             // Execute the transposition in parallel
             int
@@ -136,7 +137,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 unsafe
                 {
-                    fixed (double* pm = m, pv = v)
+                    fixed (float* pm = m, pv = v)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
@@ -153,126 +154,30 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second</param>
         [PublicAPI]
-        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Subtract([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static void Subtract([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
             // Execute the transposition in parallel
             int
                 h = m1.GetLength(0),
                 w = m1.GetLength(1);
             if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
-            double[,] result = new double[h, w];
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
-                    fixed (double* pr = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pm1 = m1, pm2 = m2)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
                         {
                             int position = offset + j;
-                            pr[position] = pm1[position] - pm2[position];
+                            pm1[position] -= pm2[position];
                         }
                     }
                 }
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
-        }
-
-        /// <summary>
-        /// Calculates half the sum of the squared difference of each value pair in the two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second matrix</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double HalfSquaredDifference([NotNull] this double[,] m1, [NotNull] double[,] m2)
-        {
-            // Detect the size of the inputs
-            int h = m1.GetLength(0), w = m1.GetLength(1);
-            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
-
-            // Calculate the cost (half the squared difference)
-            double[] v = new double[h];
-            bool result = Parallel.For(0, h, i =>
-            {
-                for (int j = 0; j < w; j++)
-                {
-                    double
-                        delta = m1[i, j] - m2[i, j],
-                        square = delta * delta;
-                    v[i] += square;
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial costs
-            double cost = 0;
-            for (int i = 0; i < h; i++) cost += v[i];
-            return cost / 2;
-        }
-
-        /// <summary>
-        /// Calculates the cross-entropy cost for a given feedforward result
-        /// </summary>
-        /// <param name="yHat">The current results</param>
-        /// <param name="y">The expected results for the dataset</param>
-        public static double CrossEntropyCost([NotNull] this double[,] yHat, [NotNull] double[,] y)
-        {
-            // Detect the size of the inputs
-            int h = yHat.GetLength(0), w = yHat.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
-
-            // Calculates the components for each training sample
-            double[] v = new double[h];
-            bool result = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    fixed (double* pyHat = yHat, py = y, pv = v)
-                    {
-                        int offset = i * w;
-                        double sum = 0;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int target = offset + j;
-                            double
-                                yi = py[target],
-                                yHati = pyHat[target],
-                                left = yi * Math.Log(yHati),
-                                right = (1 - yi) * Math.Log(1 - yHati),
-                                partial = left + right;
-                            switch (partial)
-                            {
-                                case double.NegativeInfinity:
-                                    sum += -double.MaxValue;
-                                    break;
-                                case double.NaN:
-                                    break;
-                                case double.PositiveInfinity:
-                                    throw new InvalidOperationException("Error calculating the cross-entropy cost");
-                                default:
-                                    sum += partial;
-                                    break;
-                            }
-                        }
-                        pv[i] = sum;
-                    }
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-
-            // Sum the partial results and normalize
-            double cost = 0;
-            unsafe
-            {
-                fixed (double* pv = v)
-                    for (int i = 0; i < h; i++) cost += pv[i];
-            }
-            return -cost / h;
         }
 
         #endregion
@@ -287,14 +192,14 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Multiply([NotNull] this double[] v, [NotNull] double[,] m)
+        public static float[] Multiply([NotNull] this float[] v, [NotNull] float[,] m)
         {
             // Check
             if (v.Length != m.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid inputs sizes");
 
             // Initialize the parameters and the result vector
             int w = m.GetLength(1);
-            double[] result = new double[w];
+            float[] result = new float[w];
 
             // Loop in parallel
             bool loopResult = Parallel.For(0, w, j =>
@@ -302,11 +207,11 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Get the pointers and iterate fo each column
-                    fixed (double* pm = result, p1 = v, p2 = m)
+                    fixed (float* pm = result, p1 = v, p2 = m)
                     {
                         // Perform the multiplication
                         int j2 = j;
-                        double res = 0;
+                        float res = 0;
                         for (int k = 0; k < v.Length; k++, j2 += w)
                         {
                             res += p1[k] * p2[j2];
@@ -327,14 +232,14 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] HadamardProduct([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static float[,] HadamardProduct([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
             // Check
             int
                 h = m1.GetLength(0),
                 w = m1.GetLength(1);
             if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Loop in parallel
             bool loopResult = Parallel.For(0, h, i =>
@@ -342,7 +247,7 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Get the pointers and iterate fo each column
-                    fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pm = result, pm1 = m1, pm2 = m2)
                     {
                         // Perform the product
                         int offset = i * w;
@@ -366,7 +271,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Multiply([NotNull] this double[,] m1, [NotNull] double[,] m2)
+        public static float[,] Multiply([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -375,7 +280,7 @@ namespace NeuralNetworkNET.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Execute the multiplication in parallel
             bool loopResult = Parallel.For(0, h, i =>
@@ -383,7 +288,7 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Get the pointers and iterate fo each row
-                    fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pm = result, pm1 = m1, pm2 = m2)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
@@ -391,7 +296,7 @@ namespace NeuralNetworkNET.Helpers
                         {
                             // Perform the multiplication
                             int i2 = j;
-                            double res = 0;
+                            float res = 0;
                             for (int k = 0; k < l; k++, i2 += w)
                             {
                                 res += pm1[i1 + k] * pm2[i2];
@@ -417,9 +322,9 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Activation([NotNull] this double[] v, [NotNull] ActivationFunction activation)
+        public static float[] Activation([NotNull] this float[] v, [NotNull] ActivationFunction activation)
         {
-            double[] result = new double[v.Length];
+            float[] result = new float[v.Length];
             for (int i = 0; i < v.Length; i++)
                 result[i] = activation(v[i]);
             return result;
@@ -433,18 +338,18 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Activation([NotNull] this double[,] m, [NotNull] ActivationFunction activation)
+        public static float[,] Activation([NotNull] this float[,] m, [NotNull] ActivationFunction activation)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Execute the activation in parallel
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
-                    fixed (double* pr = result, pm = m)
+                    fixed (float* pr = result, pm = m)
                     {
                         for (int j = 0; j < w; j++)
                             pr[i * w + j] = activation(pm[i * w + j]);
@@ -462,7 +367,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="activation">The activation function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void InPlaceActivation([NotNull] this double[,] m, [NotNull] ActivationFunction activation)
+        public static void InPlaceActivation([NotNull] this float[,] m, [NotNull] ActivationFunction activation)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -472,7 +377,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 unsafe
                 {
-                    fixed (double* pm = m)
+                    fixed (float* pm = m)
                     {
                         for (int j = 0; j < w; j++)
                         {
@@ -486,53 +391,38 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Returns the result of the input after the activation function primed has been applied
+        /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
         /// </summary>
-        /// <param name="v">The input to process</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] ActivationPrime([NotNull] this double[] v, [NotNull] ActivationFunction prime)
-        {
-            double[] result = new double[v.Length];
-            for (int i = 0; i < v.Length; i++)
-            {
-                result[i] = prime(v[i]);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Returns the result of the input after the activation function primed has been applied
-        /// </summary>
-        /// <param name="m">The input to process</param>
-        /// <param name="prime">The activation pime function to use</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] ActivationPrime([NotNull] this double[,] m, [NotNull] ActivationFunction prime)
+        /// <param name="m">The matrix to normalize</param>
+        public static void InPlaceSoftmaxNormalization([NotNull] this float[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h, w];
+            float[] partials = new float[h];
 
-            // Execute the activation prime in parallel
-            bool loopResult = Parallel.For(0, h, i =>
+            // Partial sum
+            unsafe void PartialSum(int i)
             {
-                unsafe
+                int offset = i * w;
+                fixed (float* pp = partials, pm = m)
                 {
-                    fixed (double* pr = result, pm = m)
-                    {
-                        for (int j = 0; j < w; j++)
-                        {
-                            pr[i * w + j] = prime(pm[i * w + j]);
-                        }
-                    }
+                    float sum = 0;
+                    for (int j = 0; j < w; j++)
+                        sum += pm[offset + j];
+                    pp[i] = sum;
                 }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
+            }
+            Parallel.For(0, h, PartialSum).AssertCompleted();
+
+            // Normalization of the matrix values
+            unsafe void NormalizationKernel(int i)
+            {
+                int offset = i * w;
+                fixed (float* p = m, pp = partials)
+                    for (int j = 0; j < w; j++)
+                        p[offset + j] /= pp[i];
+            }
+            Parallel.For(0, h, NormalizationKernel);
         }
 
         #endregion
@@ -548,7 +438,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction activation)
+        public static float[,] MultiplyAndActivation([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -557,7 +447,7 @@ namespace NeuralNetworkNET.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Execute the multiplication in parallel
             bool loopResult = Parallel.For(0, h, i =>
@@ -565,7 +455,7 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Get the pointers and iterate fo each row
-                    fixed (double* pm = result, pm1 = m1, pm2 = m2)
+                    fixed (float* pm = result, pm1 = m1, pm2 = m2)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
@@ -573,7 +463,7 @@ namespace NeuralNetworkNET.Helpers
                         {
                             // Perform the multiplication
                             int i2 = j;
-                            double res = 0;
+                            float res = 0;
                             for (int k = 0; k < l; k++, i2 += w)
                             {
                                 res += pm1[i1 + k] * pm2[i2];
@@ -596,7 +486,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSum([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v)
+        public static float[,] MultiplyWithSum([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -605,7 +495,7 @@ namespace NeuralNetworkNET.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Execute the multiplication in parallel
             bool loopResult = Parallel.For(0, h, i =>
@@ -613,7 +503,7 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Get the pointers and iterate fo each row
-                    fixed (double* pm = result, pm1 = m1, pm2 = m2, pv = v)
+                    fixed (float* pm = result, pm1 = m1, pm2 = m2, pv = v)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
@@ -621,7 +511,7 @@ namespace NeuralNetworkNET.Helpers
                         {
                             // Perform the multiplication
                             int i2 = j;
-                            double res = 0;
+                            float res = 0;
                             for (int k = 0; k < l; k++, i2 += w)
                             {
                                 res += pm1[i1 + k] * pm2[i2];
@@ -645,7 +535,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MultiplyWithSumAndActivation([NotNull] this double[,] m1, [NotNull] double[,] m2, [NotNull] double[] v, [NotNull] ActivationFunction activation)
+        public static float[,] MultiplyWithSumAndActivation([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v, [NotNull] ActivationFunction activation)
         {
             // Checks
             if (m1.GetLength(1) != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -654,7 +544,7 @@ namespace NeuralNetworkNET.Helpers
             int h = m1.GetLength(0);
             int w = m2.GetLength(1);
             int l = m1.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Execute the multiplication in parallel
             bool loopResult = Parallel.For(0, h, i =>
@@ -662,7 +552,7 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Get the pointers and iterate fo each row
-                    fixed (double* pm = result, pm1 = m1, pm2 = m2, pv = v)
+                    fixed (float* pm = result, pm1 = m1, pm2 = m2, pv = v)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
@@ -670,7 +560,7 @@ namespace NeuralNetworkNET.Helpers
                         {
                             // Perform the multiplication
                             int i2 = j;
-                            double res = 0;
+                            float res = 0;
                             for (int k = 0; k < l; k++, i2 += w)
                             {
                                 res += pm1[i1 + k] * pm2[i2];
@@ -686,50 +576,6 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
-        /// </summary>
-        /// <param name="a">The estimated y</param>
-        /// <param name="y">The expected y</param>
-        /// <param name="z">The activity on the last layer</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this double[,] a, [NotNull] double[,] y, [NotNull] double[,] z, [NotNull] ActivationFunction prime)
-        {
-            // Checks
-            int
-                h = a.GetLength(0),
-                w = a.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1) ||
-                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
-
-            // Execute the multiplication in parallel
-            bool loopResult = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    // Get the pointers and iterate fo each row
-                    fixed (double* pa = a, py = y, pz = z)
-                    {
-                        // Save the index and iterate for each column
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int index = offset + j;
-                            double
-                                difference = pa[index] - py[index],
-                                zPrime = prime(pz[index]),
-                                hProduct = difference * zPrime;
-                            pa[index] = hProduct;
-                        }
-                    }
-                }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-        }
-
-        /// <summary>
         /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
@@ -739,7 +585,7 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this double[,] z, [NotNull] double[,] m1, [NotNull] double[,] m2, [NotNull] ActivationFunction prime)
+            [NotNull] this float[,] z, [NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
             int h = m1.GetLength(0);
@@ -755,7 +601,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 unsafe
                 {
-                    fixed (double* pz = z, pm1 = m1, pm2 = m2)
+                    fixed (float* pz = z, pm1 = m1, pm2 = m2)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
@@ -763,7 +609,7 @@ namespace NeuralNetworkNET.Helpers
                         {
                             // Perform the multiplication
                             int i2 = j;
-                            double res = 0;
+                            float res = 0;
                             for (int k = 0; k < l; k++, i2 += w)
                             {
                                 res += pm1[i1 + k] * pm2[i2];
@@ -790,18 +636,18 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Transpose([NotNull] this double[,] m)
+        public static float[,] Transpose([NotNull] this float[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[w, h];
+            float[,] result = new float[w, h];
 
             // Execute the transposition in parallel
             bool loopResult = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
-                    fixed (double* pr = result, pm = m)
+                    fixed (float* pr = result, pm = m)
                     {
                         for (int j = 0; j < w; j++)
                             pr[j * h + i] = pm[i * w + j];
@@ -816,7 +662,7 @@ namespace NeuralNetworkNET.Helpers
         /// Calculates the position and the value of the biggest item in a matrix
         /// </summary>
         /// <param name="m">The input matrix</param>
-        public static (int x, int y, double value) Max([NotNull] this double[,] m)
+        public static (int x, int y, float value) Max([NotNull] this float[,] m)
         {
             // Checks and local variables setup
             if (m.Length == 0) throw new ArgumentOutOfRangeException("The input matrix can't be empty");
@@ -825,7 +671,7 @@ namespace NeuralNetworkNET.Helpers
                 h = m.GetLength(0),
                 w = m.GetLength(1),
                 x = 0, y = 0;
-            double max = Double.MinValue;
+            float max = float.MinValue;
 
             // Find the maximum value and its position
             for (int i = 0; i < h; i++)
@@ -845,13 +691,13 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m">The input matrix to normalize</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static double[,] Normalize([NotNull] this double[,] m)
+        public static float[,] Normalize([NotNull] this float[,] m)
         {
             // Setup
-            if (m.Length == 0) return new double[0, 0];
+            if (m.Length == 0) return new float[0, 0];
             int h = m.GetLength(0), w = m.GetLength(1);
-            (_, _, double max) = m.Max();
-            double[,] normalized = new double[h, w];
+            (_, _, float max) = m.Max();
+            float[,] normalized = new float[h, w];
 
             // Populate the normalized matrix
             bool result = Parallel.For(0, h, i =>
@@ -859,7 +705,7 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Fix the pointers and iterate on the current row
-                    fixed (double* pn = normalized, pm = m)
+                    fixed (float* pn = normalized, pm = m)
                     {
                         for (int j = 0; j < w; j++)
                         {
@@ -880,15 +726,15 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] ToMatrix([NotNull] this double[] v)
+        public static float[,] ToMatrix([NotNull] this float[] v)
         {
             // Preliminary checks and declarations
             if (v.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
             int length = v.Length;
-            double[,] result = new double[1, length];
+            float[,] result = new float[1, length];
 
             // Copy the content
-            Buffer.BlockCopy(v, 0, result, 0, sizeof(double) * length);
+            Buffer.BlockCopy(v, 0, result, 0, sizeof(float) * length);
             return result;
         }
 
@@ -899,15 +745,15 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Flatten([NotNull] this double[,] m)
+        public static float[] Flatten([NotNull] this float[,] m)
         {
             // Preliminary checks and declarations
             if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
             int length = m.Length;
-            double[] result = new double[length];
+            float[] result = new float[length];
 
             // Copy the content
-            Buffer.BlockCopy(m, 0, result, 0, sizeof(double) * length);
+            Buffer.BlockCopy(m, 0, result, 0, sizeof(float) * length);
             return result;
         }
 
@@ -918,15 +764,15 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<double[,]> volume)
+        public static float[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<float[,]> volume)
         {
             // Preliminary checks and declarations
             if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
             int
                 depth = volume.Count,
                 length = volume[0].Length,
-                bytes = sizeof(double) * length;
-            double[] result = new double[depth * length];
+                bytes = sizeof(float) * length;
+            float[] result = new float[depth * length];
 
             // Execute the copy in parallel
             bool loopResult = Parallel.For(0, depth, i =>
@@ -939,27 +785,49 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Splits the input matrix into two matrices with the desired number of rows each
+        /// </summary>
+        /// <param name="m">The source matrix to read from</param>
+        /// <param name="rows">The number of rows in the first returned matrix</param>
+        [PublicAPI]
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        private static (float[,], float[,]) SplitRows([NotNull] float[,] m, int rows)
+        {
+            int
+                h = m.GetLength(0),
+                w = m.GetLength(1);
+            if (rows >= h) throw new ArgumentOutOfRangeException(nameof(rows), "The number of rows must be smaller than the original height");
+                float[,]
+                m1 = new float[rows, w],
+                m2 = new float[h - rows, w];
+            Buffer.BlockCopy(m, 0, m1, 0, sizeof(float) * m1.Length);
+            Buffer.BlockCopy(m, sizeof(float) * w * rows, m2, 0, sizeof(float) * m2.Length);
+            return (m1, m2);
+        }
+
+        /// <summary>
         /// Merges the rows of the input matrices into a single matrix
         /// </summary>
         /// <param name="blocks">The matrices to merge</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] MergeRows([NotNull, ItemNotNull] this IReadOnlyList<double[,]> blocks)
+        public static float[,] MergeRows([NotNull, ItemNotNull] this IReadOnlyList<float[,]> blocks)
         {
             // Preliminary checks and declarations
             if (blocks.Count == 0) throw new ArgumentOutOfRangeException("The blocks list can't be empty");
             int
                 h = blocks.Sum(b => b.GetLength(0)),
                 w = blocks[0].GetLength(1),
-                rowBytes = sizeof(double) * w;
-            double[,] result = new double[h, w];
+                rowBytes = sizeof(float) * w;
+            float[,] result = new float[h, w];
 
             // Execute the copy in parallel
             int position = 0;
             for (int i = 0; i < blocks.Count; i++)
             {
-                double[,] next = blocks[i];
+                float[,] next = blocks[i];
                 if (next.GetLength(1) != w) throw new ArgumentOutOfRangeException("The blocks must all have the same width");
                 int rows = next.GetLength(0);
                 Buffer.BlockCopy(next, 0, result, rowBytes * position, rowBytes * rows);
@@ -975,14 +843,14 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[] CompressVertically([NotNull] this double[,] m)
+        public static float[] CompressVertically([NotNull] this float[,] m)
         {
             // Preliminary checks and declarations
             if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
-            double[] vector = new double[w];
+            float[] vector = new float[w];
 
             // Compress the matrix
             bool result = Parallel.For(0, w, j =>
@@ -990,9 +858,9 @@ namespace NeuralNetworkNET.Helpers
                 unsafe
                 {
                     // Fix the pointers and add the current values
-                    fixed (double* pm = m, pv = vector)
+                    fixed (float* pm = m, pv = vector)
                     {
-                        double sum = 0;
+                        float sum = 0;
                         for (int i = 0; i < h; i++)
                             sum += pm[i * w + j];
                         pv[j] = sum;
@@ -1010,18 +878,18 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[][,] Extract3DVolume([NotNull] this double[,] m)
+        public static float[][,] Extract3DVolume([NotNull] this float[,] m)
         {
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1),
                 axis = w.IntegerSquare();
             if (axis * axis != w) throw new ArgumentOutOfRangeException("Invalid matrix size");
-            double[][,] raw = new double[h][,];
-            int bytesize = sizeof(double) * w;
+            float[][,] raw = new float[h][,];
+            int bytesize = sizeof(float) * w;
             Parallel.For(0, h, i =>
             {
-                double[,] _2d = new double[axis, axis];
+                float[,] _2d = new float[axis, axis];
                 Buffer.BlockCopy(m, i * bytesize, _2d, 0, bytesize);
                 raw[i] = _2d;
             });
@@ -1034,14 +902,14 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m">The matrix to edit</param>
         /// <param name="f">The function to modify the matrix elements</param>
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void Tweak([NotNull] this double[,] m, Func<double, double> f)
+        public static void Tweak([NotNull] this float[,] m, Func<float, float> f)
         {
             int w = m.GetLength(1);
             bool result = Parallel.For(0, m.GetLength(0), i =>
             {
                 unsafe
                 {
-                    fixed (double* p = m)
+                    fixed (float* p = m)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
@@ -1061,11 +929,11 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="p">A pointer to the buffer to read</param>
         /// <param name="length">The length of the buffer to consider</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe int Argmax(double* p, int length)
+        public static unsafe int Argmax(float* p, int length)
         {
             if (length < 2) return 0;
             int index = 0;
-            double max = double.MinValue;
+            float max = float.MinValue;
             for (int j = 0; j < length; j++)
             {
                 if (p[j] > max)
@@ -1082,11 +950,11 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The input vector to read from</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static int Argmax([NotNull] this double[] v)
+        public static int Argmax([NotNull] this float[] v)
         {
             if (v.Length < 2) return 0;
             int index = 0;
-            double max = double.MinValue;
+            float max = float.MinValue;
             for (int j = 0; j < v.Length; j++)
             {
                 if (v[j] > max)
@@ -1103,14 +971,14 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The input matrix to read from</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static int Argmax([NotNull] this double[,] m)
+        public static int Argmax([NotNull] this float[,] m)
         {
             if (m.Length < 2) return 0;
             int index = 0;
-            double max = double.MinValue;
+            float max = float.MinValue;
             unsafe
             {
-                fixed (double* p = m)
+                fixed (float* p = m)
                     for (int i = 0; i < m.Length; i++)
                         if (p[i] > max)
                         {
@@ -1130,7 +998,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
-        public static bool ContentEquals([CanBeNull] this double[,] m, [CanBeNull] double[,] o)
+        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o)
         {
             if (m == null && o == null) return true;
             if (m == null || o == null) return false;
@@ -1147,7 +1015,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The first vector to test</param>
         /// <param name="o">The second vector to test</param>
-        public static bool ContentEquals([CanBeNull] this double[] v, [CanBeNull] double[] o)
+        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o)
         {
             if (v == null && o == null) return true;
             if (v == null || o == null) return false;
@@ -1167,7 +1035,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="m">The matrix to convert to <see cref="String"/></param>
         [PublicAPI]
         [Pure, NotNull]
-        public static String ToFormattedString([NotNull] this double[,] m)
+        public static String ToFormattedString([NotNull] this float[,] m)
         {
             if (m.Length == 0) return "{ { } }";
             int h = m.GetLength(0), w = m.GetLength(1);

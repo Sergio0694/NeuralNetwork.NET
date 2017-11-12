@@ -13,19 +13,19 @@ namespace NeuralNetworkNET.Convolution.Misc
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Normalize([NotNull] this double[,] m)
+        public static float[,] Normalize([NotNull] this float[,] m)
         {
             // Prepare the result matrix
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
 
             // Pool the input matrix
             unsafe
             {
-                fixed (double* p = m, r = result)
+                fixed (float* p = m, r = result)
                 {
                     // Get the max value
-                    double max = 0;
+                    float max = 0;
                     for (int i = 0; i < m.Length; i++)
                         if (p[i] > max) max = p[i];
 
@@ -44,11 +44,11 @@ namespace NeuralNetworkNET.Convolution.Misc
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Pool2x2([NotNull] this double[,] m)
+        public static float[,] Pool2x2([NotNull] this float[,] m)
         {
             // Prepare the result matrix
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h / 2 + (h % 2 == 0 ? 0 : 1), w / 2 + (w % 2 == 0 ? 0 : 1)];
+            float[,] result = new float[h / 2 + (h % 2 == 0 ? 0 : 1), w / 2 + (w % 2 == 0 ? 0 : 1)];
 
             // Pool the input matrix
             int x = 0;
@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                     // Last row
                     for (int j = 0; j < w; j += 2)
                     {
-                        double max;
+                        float max;
                         if (j == w - 1)
                         {
                             // Last column
@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                 {
                     for (int j = 0; j < w; j += 2)
                     {
-                        double max;
+                        float max;
                         if (j == w - 1)
                         {
                             // Last column
@@ -82,7 +82,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                         }
                         else
                         {
-                            double
+                            float
                                 maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],
                                 maxDown = m[i + 1, j] > m[i + 1, j + 1] ? m[i + 1, j] : m[i + 1, j + 1];
                             max = maxUp > maxDown ? maxUp : maxDown;
@@ -102,10 +102,10 @@ namespace NeuralNetworkNET.Convolution.Misc
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] ReLU([NotNull] this double[,] m)
+        public static float[,] ReLU([NotNull] this float[,] m)
         {
             int h = m.GetLength(0), w = m.GetLength(1);
-            double[,] result = new double[h, w];
+            float[,] result = new float[h, w];
             for (int i = 0; i < h; i++)
                 for (int j = 0; j < w; j++)
                     result[i, j] = m[i, j] >= 0 ? m[i, j] : 0;
@@ -120,16 +120,16 @@ namespace NeuralNetworkNET.Convolution.Misc
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Convolute3x3([NotNull] this double[,] m, [NotNull] double[,] kernel)
+        public static float[,] Convolute3x3([NotNull] this float[,] m, [NotNull] float[,] kernel)
         {
             // Prepare the output matrix
             if (kernel.GetLength(0) != 3 || kernel.GetLength(1) != 3) throw new ArgumentOutOfRangeException("The input kernel must be 3x3");
             int h = m.GetLength(0), w = m.GetLength(1);
             if (h < 3 || w < 3) throw new ArgumentOutOfRangeException("The input matrix must be at least 3x3");
-            double[,] result = new double[h - 2, w - 2];
+            float[,] result = new float[h - 2, w - 2];
 
             // Calculate the normalization factor
-            double factor = 0;
+            float factor = 0;
             for (int i = 0; i < 3; i++)
                 for (int j = 0; j < 3; j++)
                     factor += kernel[i, j].Abs();
@@ -141,7 +141,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                 int y = 0;
                 for (int j = 1; j < w - 1; j++)
                 {
-                    double
+                    float
                         partial =
                             m[i - 1, j - 1] * kernel[0, 0] +
                             m[i - 1, j] * kernel[0, 1] +

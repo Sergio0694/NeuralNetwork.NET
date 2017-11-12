@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -16,7 +14,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="value">The input value</param>
         [Pure]
-        public static double Abs(this double value) => value >= 0 ? value : -value;
+        public static float Abs(this float value) => value >= 0 ? value : -value;
 
         /// <summary>
         /// Calculates if two values are within a given distance from one another
@@ -25,13 +23,13 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="other">The second value</param>
         /// <param name="delta">The comparison threshold</param>
         [Pure]
-        public static bool EqualsWithDelta(this double value, double other, double delta = 1e-10)
+        public static bool EqualsWithDelta(this float value, float other, float delta = 1e-6f)
         {
-            if (double.IsNaN(value) ^ double.IsNaN(other)) return false;
-            if (double.IsNaN(value) && double.IsNaN(other)) return true;
-            if (double.IsInfinity(value) ^ double.IsInfinity(other)) return false;
-            if (double.IsPositiveInfinity(value) && double.IsPositiveInfinity(other)) return true;
-            if (double.IsNegativeInfinity(value) && double.IsNegativeInfinity(other)) return true;
+            if (float.IsNaN(value) ^ float.IsNaN(other)) return false;
+            if (float.IsNaN(value) && float.IsNaN(other)) return true;
+            if (float.IsInfinity(value) ^ float.IsInfinity(other)) return false;
+            if (float.IsPositiveInfinity(value) && float.IsPositiveInfinity(other)) return true;
+            if (float.IsNegativeInfinity(value) && float.IsNegativeInfinity(other)) return true;
             return (value - other).Abs() < delta;
         }
 
@@ -42,7 +40,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="b">The second value <c>b</c></param>
         /// <param name="c">The third value <c>c</c></param>
         [Pure]
-        public static double Max(double a, double b, double c)
+        public static float Max(float a, float b, float c)
         {
             if (a > b) return c > a ? c : a;
             return c > b ? c : b;

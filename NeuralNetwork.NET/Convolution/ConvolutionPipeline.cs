@@ -44,13 +44,13 @@ namespace NeuralNetworkNET.Convolution
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public double[,] Process([NotNull] double[,] input)
+        public float[,] Process([NotNull] float[,] input)
         {
             // Execute the override, if present
             if (ProcessOverride != null) return ProcessOverride(Pipeline, input);
 
             // Local function that processes a 2D layer
-            ConvolutionsStack ProcessLayer(double[,] layer)
+            ConvolutionsStack ProcessLayer(float[,] layer)
             {
                 ConvolutionsStack processed = ConvolutionsStack.From2DLayer(layer);
                 foreach (ConvolutionOperation operation in Pipeline)
@@ -77,7 +77,7 @@ namespace NeuralNetworkNET.Convolution
             }
 
             // Process the whole dataset in parallel
-            IReadOnlyList<double[,]> volume = input.Extract3DVolume();
+            IReadOnlyList<float[,]> volume = input.Extract3DVolume();
             ConvolutionsStack[] results = new ConvolutionsStack[volume.Count];
             bool result = Parallel.For(0, volume.Count, i => results[i] = ProcessLayer(volume[i])).IsCompleted;
             if (!result) throw new Exception("Error executing the parallel loop");

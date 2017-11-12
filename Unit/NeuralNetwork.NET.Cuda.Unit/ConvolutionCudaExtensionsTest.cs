@@ -24,12 +24,12 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void ReLU1()
         {
             // Test values
-            double[,]
+            float[,]
                 m =
                 {
-                    { -1, -0.1, 2 },
+                    { -1, -0.1f, 2 },
                     { 1, 1, 2 },
-                    { 0, -0.3, 99 }
+                    { 0, -0.3f, 99 }
                 },
                 r =
                 {
@@ -45,16 +45,16 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void ReLU2()
         {
             // Test values
-            double[,]
+            float[,]
                 m =
                 {
-                    { 0.77, -0.11, 0.11, 0.33, 0.55, -0.11, 0.33 },
-                    { -0.11, 1, -0.11, 0.33, -0.11, 0.11, -0.11 },
-                    { 0.11, -0.11, 1, -0.33, 0.11, -0.11, 0.55 },
-                    { 0.33, 0.33, -0.33, 0.55, -0.33, 0.33, 0.33 },
-                    { 0.55, -0.11, 0.11, -0.33, 1, -0.11, 0.11 },
-                    { -0.11, 0.11, -0.11, 0.33, -0.11, 1, -0.11 },
-                    { 0.33, -0.11, 0.55, 0.33, 0.11, -0.11, 0.77 }
+                    { 0.77f, -0.11f, 0.11f, 0.33f, 0.55f, -0.11f, 0.33f },
+                    { -0.11f, 1, -0.11f, 0.33f, -0.11f, 0.11f, -0.11f },
+                    { 0.11f, -0.11f, 1, -0.33f, 0.11f, -0.11f, 0.55f },
+                    { 0.33f, 0.33f, -0.33f, 0.55f, -0.33f, 0.33f, 0.33f },
+                    { 0.55f, -0.11f, 0.11f, -0.33f, 1, -0.11f, 0.11f },
+                    { -0.11f, 0.11f, -0.11f, 0.33f, -0.11f, 1, -0.11f },
+                    { 0.33f, -0.11f, 0.55f, 0.33f, 0.11f, -0.11f, 0.77f }
                 },
                 check = ConvolutionExtensions.ReLU(m);
             ConvolutionGpuExtensions.ReLU(m);
@@ -71,15 +71,15 @@ namespace NeuralNetworkNET.Cuda.Unit
                     square = size * size,
                     half = size / 2,
                     halfSquare = half * half;
-                double[,]
-                    source = new double[1, square],
+                float[,]
+                    source = new float[1, square],
                     m = r.NextXavierMatrix(size, size),
                     check = ConvolutionExtensions.Pool2x2(m);
-                Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * square);
-                double[,]
+                Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * square);
+                float[,]
                     m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                    unpacked = new double[half, half];
-                Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * halfSquare);
+                    unpacked = new float[half, half];
+                Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * halfSquare);
                 Assert.IsTrue(unpacked.ContentEquals(check));
             }
         }
@@ -88,15 +88,15 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void Pool2x2_2()
         {
             Random r = new Random();
-            double[,]
-                source = new double[1, 49],
+            float[,]
+                source = new float[1, 49],
                 m = r.NextXavierMatrix(7, 7),
                 check = ConvolutionExtensions.Pool2x2(m);
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * 49);
-            double[,]
+            Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * 49);
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                unpacked = new double[4, 4];
-            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * 16);
+                unpacked = new float[4, 4];
+            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * 16);
             Assert.IsTrue(unpacked.ContentEquals(check));
         }
 
@@ -104,15 +104,15 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void Pool2x2_3()
         {
             Random r = new Random();
-            double[,]
-                source = new double[1, 9],
+            float[,]
+                source = new float[1, 9],
                 m = r.NextXavierMatrix(3, 3),
                 check = ConvolutionExtensions.Pool2x2(m);
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * 9);
-            double[,]
+            Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * 9);
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                unpacked = new double[2, 2];
-            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * 4);
+                unpacked = new float[2, 2];
+            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * 4);
             Assert.IsTrue(unpacked.ContentEquals(check));
         }
 
@@ -120,20 +120,20 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void Pool2x2_4()
         {
             Random r = new Random();
-            double[,]
-                source = new double[1, 18],
+            float[,]
+                source = new float[1, 18],
                 m1 = r.NextXavierMatrix(3, 3),
                 m2 = r.NextXavierMatrix(3, 3),
                 check1 = ConvolutionExtensions.Pool2x2(m1),
                 check2 = ConvolutionExtensions.Pool2x2(m2);
-            Buffer.BlockCopy(m1, 0, source, 0, sizeof(double) * 9);
-            Buffer.BlockCopy(m2, 0, source, sizeof(double) * 9, sizeof(double) * 9);
-            double[,]
+            Buffer.BlockCopy(m1, 0, source, 0, sizeof(float) * 9);
+            Buffer.BlockCopy(m2, 0, source, sizeof(float) * 9, sizeof(float) * 9);
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 2),
-                unpacked1 = new double[2, 2],
-                unpacked2 = new double[2, 2];
-            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, sizeof(double) * 4);
-            Buffer.BlockCopy(m_gpu, sizeof(double) * 4, unpacked2, 0, sizeof(double) * 4);
+                unpacked1 = new float[2, 2],
+                unpacked2 = new float[2, 2];
+            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, sizeof(float) * 4);
+            Buffer.BlockCopy(m_gpu, sizeof(float) * 4, unpacked2, 0, sizeof(float) * 4);
             Assert.IsTrue(unpacked1.ContentEquals(check1));
             Assert.IsTrue(unpacked2.ContentEquals(check2));
         }
@@ -142,20 +142,20 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void Pool2x2_5()
         {
             Random r = new Random();
-            double[,]
-                source = new double[2, 16],
+            float[,]
+                source = new float[2, 16],
                 m1 = r.NextXavierMatrix(4, 4),
                 m2 = r.NextXavierMatrix(4, 4),
                 check1 = ConvolutionExtensions.Pool2x2(m1),
                 check2 = ConvolutionExtensions.Pool2x2(m2);
-            Buffer.BlockCopy(m1, 0, source, 0, sizeof(double) * 16);
-            Buffer.BlockCopy(m2, 0, source, sizeof(double) * 16, sizeof(double) * 16);
-            double[,]
+            Buffer.BlockCopy(m1, 0, source, 0, sizeof(float) * 16);
+            Buffer.BlockCopy(m2, 0, source, sizeof(float) * 16, sizeof(float) * 16);
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                unpacked1 = new double[2, 2],
-                unpacked2 = new double[2, 2];
-            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, sizeof(double) * 4);
-            Buffer.BlockCopy(m_gpu, sizeof(double) * 4, unpacked2, 0, sizeof(double) * 4);
+                unpacked1 = new float[2, 2],
+                unpacked2 = new float[2, 2];
+            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, sizeof(float) * 4);
+            Buffer.BlockCopy(m_gpu, sizeof(float) * 4, unpacked2, 0, sizeof(float) * 4);
             Assert.IsTrue(unpacked1.ContentEquals(check1));
             Assert.IsTrue(unpacked2.ContentEquals(check2));
         }
@@ -164,8 +164,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void Pool2x2_6()
         {
             Random r = new Random();
-            double[,]
-                source = new double[2, 32],
+            float[,]
+                source = new float[2, 32],
                 m1 = r.NextXavierMatrix(4, 4),
                 m2 = r.NextXavierMatrix(4, 4),
                 m3 = r.NextXavierMatrix(4, 4),
@@ -174,18 +174,18 @@ namespace NeuralNetworkNET.Cuda.Unit
                 check2 = ConvolutionExtensions.Pool2x2(m2),
                 check3 = ConvolutionExtensions.Pool2x2(m3),
                 check4 = ConvolutionExtensions.Pool2x2(m4);
-            int size = 16, bytesize = sizeof(double) * size;
+            int size = 16, bytesize = sizeof(float) * size;
             Buffer.BlockCopy(m1, 0, source, 0, bytesize);
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
             Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
             Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
-            double[,]
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 2),
-                unpacked1 = new double[2, 2],
-                unpacked2 = new double[2, 2],
-                unpacked3 = new double[2, 2],
-                unpacked4 = new double[2, 2];
-            int halfBytesize = sizeof(double) * 4;
+                unpacked1 = new float[2, 2],
+                unpacked2 = new float[2, 2],
+                unpacked3 = new float[2, 2],
+                unpacked4 = new float[2, 2];
+            int halfBytesize = sizeof(float) * 4;
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, halfBytesize);
             Buffer.BlockCopy(m_gpu, halfBytesize, unpacked2, 0, halfBytesize);
             Buffer.BlockCopy(m_gpu, halfBytesize * 2, unpacked3, 0, halfBytesize);
@@ -204,17 +204,17 @@ namespace NeuralNetworkNET.Cuda.Unit
             int square = size * size;
             var ms = Enumerable.Range(0, 12).Select(_ => r.NextXavierMatrix(size, size)).ToArray();
             var checks = ms.Select(ConvolutionExtensions.Pool2x2).ToArray();
-            double[,] source = new double[4, square * 3];
+            float[,] source = new float[4, square * 3];
             for (int i = 0; i < 12; i++)
             {
-                Buffer.BlockCopy(ms[i], 0, source, sizeof(double) * i * square, sizeof(double) * square);
+                Buffer.BlockCopy(ms[i], 0, source, sizeof(float) * i * square, sizeof(float) * square);
             }
-            double[,] m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 3);
+            float[,] m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 3);
             int half = size / 2, halfSquare = half * half;
-            var test = new double[4, halfSquare * 3];
+            var test = new float[4, halfSquare * 3];
             for (int i = 0; i < 12; i++)
             {
-                Buffer.BlockCopy(checks[i], 0, test, sizeof(double) * i * halfSquare, sizeof(double) * halfSquare);
+                Buffer.BlockCopy(checks[i], 0, test, sizeof(float) * i * halfSquare, sizeof(float) * halfSquare);
             }
             Assert.IsTrue(test.ContentEquals(m_gpu));
         }
@@ -222,7 +222,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void Convolute3x3_1()
         {
-            double[,]
+            float[,]
                 m =
                 {
                     { -1, -1, -1 },
@@ -238,17 +238,17 @@ namespace NeuralNetworkNET.Cuda.Unit
                 r = ConvolutionExtensions.Convolute3x3(m, k);
             const int size = 3;
             int square = size * size;
-            double[,] source = new double[1, square];
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * square);
-            double[][,] m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k);
-            double[,] unpacked = m_gpu.MergeRows();
+            float[,] source = new float[1, square];
+            Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * square);
+            float[][,] m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k);
+            float[,] unpacked = m_gpu.MergeRows();
             Assert.IsTrue(unpacked.ContentEquals(r));
         }
 
         [TestMethod]
         public void Convolute3x3_2()
         {
-            double[,]
+            float[,]
                 m =
                 {
                     { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
@@ -273,12 +273,12 @@ namespace NeuralNetworkNET.Cuda.Unit
                 square = size * size,
                 inner = size - 2,
                 innerSquare = inner * inner;
-            double[,] source = new double[1, square];
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(double) * square);
-            double[,]
+            float[,] source = new float[1, square];
+            Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * square);
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k).MergeRows(),
-                unpacked = new double[inner, inner];
-            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(double) * innerSquare);
+                unpacked = new float[inner, inner];
+            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * innerSquare);
             Assert.IsTrue(unpacked.ContentEquals(r));
         }
 
@@ -289,27 +289,27 @@ namespace NeuralNetworkNET.Cuda.Unit
             int 
                 size = 3, 
                 area = size * size, 
-                bytesize = sizeof(double) * area,
+                bytesize = sizeof(float) * area,
                 inner = size - 2,
-                innerBytesize = sizeof(double) * inner;
-            double[,]
+                innerBytesize = sizeof(float) * inner;
+            float[,]
                 k =
                 {
                     { 1, -1, -1 },
                     { -1, 1, -1 },
                     { -1, -1, 1 }
                 },
-                source = new double[1, area * 2],
+                source = new float[1, area * 2],
                 m1 = r.NextXavierMatrix(size, size),
                 m2 = r.NextXavierMatrix(size, size),
                 check1 = ConvolutionExtensions.Convolute3x3(m1, k),
                 check2 = ConvolutionExtensions.Convolute3x3(m2, k);
             Buffer.BlockCopy(m1, 0, source, 0, bytesize);
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
-            double[,]
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k).MergeRows(),
-                unpacked1 = new double[inner, inner],
-                unpacked2 = new double[inner, inner];
+                unpacked1 = new float[inner, inner],
+                unpacked2 = new float[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
             Buffer.BlockCopy(m_gpu, innerBytesize, unpacked2, 0, innerBytesize);
             Assert.IsTrue(unpacked1.ContentEquals(check1));
@@ -323,28 +323,28 @@ namespace NeuralNetworkNET.Cuda.Unit
             int
                 size = 9,
                 area = size * size,
-                bytesize = sizeof(double) * area,
+                bytesize = sizeof(float) * area,
                 inner = size - 2,
                 innerArea = inner * inner,
-                innerBytesize = sizeof(double) * innerArea;
-            double[,]
+                innerBytesize = sizeof(float) * innerArea;
+            float[,]
                 k =
                 {
                     { 1, -1, -1 },
                     { -1, 1, -1 },
                     { -1, -1, 1 }
                 },
-                source = new double[2, area],
+                source = new float[2, area],
                 m1 = r.NextXavierMatrix(size, size),
                 m2 = r.NextXavierMatrix(size, size),
                 check1 = ConvolutionExtensions.Convolute3x3(m1, k),
                 check2 = ConvolutionExtensions.Convolute3x3(m2, k);
             Buffer.BlockCopy(m1, 0, source, 0, bytesize);
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
-            double[,]
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 1, k).MergeRows(),
-                unpacked1 = new double[inner, inner],
-                unpacked2 = new double[inner, inner];
+                unpacked1 = new float[inner, inner],
+                unpacked2 = new float[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
             Buffer.BlockCopy(m_gpu, innerBytesize, unpacked2, 0, innerBytesize);
             Assert.IsTrue(unpacked1.ContentEquals(check1));
@@ -358,18 +358,18 @@ namespace NeuralNetworkNET.Cuda.Unit
             int
                 size = 9,
                 area = size * size,
-                bytesize = sizeof(double) * area,
+                bytesize = sizeof(float) * area,
                 inner = size - 2,
                 innerArea = inner * inner,
-                innerBytesize = sizeof(double) * innerArea;
-            double[,]
+                innerBytesize = sizeof(float) * innerArea;
+            float[,]
                 k =
                 {
                     { 1, -1, -1 },
                     { -1, 1, -1 },
                     { -1, -1, 1 }
                 },
-                source = new double[2, area * 2],
+                source = new float[2, area * 2],
                 m1 = r.NextXavierMatrix(size, size),
                 m2 = r.NextXavierMatrix(size, size),
                 m3 = r.NextXavierMatrix(size, size),
@@ -382,12 +382,12 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
             Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
             Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
-            double[,]
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k).MergeRows(),
-                unpacked1 = new double[inner, inner],
-                unpacked2 = new double[inner, inner],
-                unpacked3 = new double[inner, inner],
-                unpacked4 = new double[inner, inner];
+                unpacked1 = new float[inner, inner],
+                unpacked2 = new float[inner, inner],
+                unpacked3 = new float[inner, inner],
+                unpacked4 = new float[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
             Buffer.BlockCopy(m_gpu, innerBytesize, unpacked2, 0, innerBytesize);
             Buffer.BlockCopy(m_gpu, innerBytesize * 2, unpacked3, 0, innerBytesize);
@@ -405,18 +405,18 @@ namespace NeuralNetworkNET.Cuda.Unit
             int
                 size = 9,
                 area = size * size,
-                bytesize = sizeof(double) * area,
+                bytesize = sizeof(float) * area,
                 inner = size - 2,
                 innerArea = inner * inner,
-                innerBytesize = sizeof(double) * innerArea;
-            double[,]
+                innerBytesize = sizeof(float) * innerArea;
+            float[,]
                 k =
                 {
                     { 1, -1, -1 },
                     { -1, 1, -1 },
                     { -1, -1, 1 }
                 },
-                source = new double[2, area * 2],
+                source = new float[2, area * 2],
                 m1 = r.NextXavierMatrix(size, size),
                 m2 = r.NextXavierMatrix(size, size),
                 m3 = r.NextXavierMatrix(size, size),
@@ -429,12 +429,12 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
             Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
             Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
-            double[,]
+            float[,]
                 m_gpu = ConvolutionGpuExtensions.Convolute3x3(source, 2, k).MergeRows(),
-                unpacked1 = new double[inner, inner],
-                unpacked2 = new double[inner, inner],
-                unpacked3 = new double[inner, inner],
-                unpacked4 = new double[inner, inner];
+                unpacked1 = new float[inner, inner],
+                unpacked2 = new float[inner, inner],
+                unpacked3 = new float[inner, inner],
+                unpacked4 = new float[inner, inner];
             Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, innerBytesize);
             Buffer.BlockCopy(m_gpu, innerBytesize, unpacked2, 0, innerBytesize);
             Buffer.BlockCopy(m_gpu, innerBytesize * 2, unpacked3, 0, innerBytesize);
@@ -449,7 +449,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void PipelineTest1()
         {
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(1, 9);
+            float[,] dataset = r.NextXavierMatrix(1, 9);
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 3*3*1 pixels >> 1*1*3
@@ -457,8 +457,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                     KernelsCollection.TopSobel,
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss));
-            double[,] result_cpu = pipeline.Process(dataset);
-            double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
+            float[,] result_cpu = pipeline.Process(dataset);
+            float[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.TopLeftEmboss).MergeRows();
@@ -471,7 +471,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void PipelineTest2()
         {
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(1, 9);
+            float[,] dataset = r.NextXavierMatrix(1, 9);
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 3*3*1 pixels >> 1*1*3
@@ -480,8 +480,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss),
                 ConvolutionOperation.ReLU);
-            double[,] result_cpu = pipeline.Process(dataset);
-            double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
+            float[,] result_cpu = pipeline.Process(dataset);
+            float[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.TopLeftEmboss).MergeRows();
@@ -495,7 +495,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void PipelineTest3()
         {
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(2, 9);
+            float[,] dataset = r.NextXavierMatrix(2, 9);
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 3*3*1 pixels >> 1*1*3
@@ -504,8 +504,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                     KernelsCollection.BottomSobel,
                     KernelsCollection.TopLeftEmboss),
                 ConvolutionOperation.ReLU);
-            double[,] result_cpu = pipeline.Process(dataset);
-            double[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
+            float[,] result_cpu = pipeline.Process(dataset);
+            float[,] result_gpu = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.TopLeftEmboss).MergeRows();
@@ -519,7 +519,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void PipelineTest4()
         {
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(10, 81);
+            float[,] dataset = r.NextXavierMatrix(10, 81);
             ConvolutionPipeline pipeline = new ConvolutionPipeline(
 
                 // 3 kernels, 9*9*1 pixels >> 7*7*3
@@ -529,13 +529,13 @@ namespace NeuralNetworkNET.Cuda.Unit
                     KernelsCollection.TopLeftEmboss),
                 ConvolutionOperation.ReLU,
                 ConvolutionOperation.Pool2x2); // 7*7*3 >> 4*4*3
-            double[,] result_cpu = pipeline.Process(dataset);
-            double[,] p1 = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
+            float[,] result_cpu = pipeline.Process(dataset);
+            float[,] p1 = ConvolutionGpuExtensions.Convolute3x3(dataset, 1,
                 KernelsCollection.TopSobel,
                 KernelsCollection.BottomSobel,
                 KernelsCollection.TopLeftEmboss).MergeRows();
             ConvolutionGpuExtensions.ReLU(p1);
-            double[,] result_gpu = ConvolutionGpuExtensions.Pool2x2(p1, 3);
+            float[,] result_gpu = ConvolutionGpuExtensions.Pool2x2(p1, 3);
             Assert.IsTrue(result_cpu.GetLength(0) == result_gpu.GetLength(0));
             Assert.IsTrue(result_cpu.GetLength(1) == result_gpu.GetLength(1));
             Assert.IsTrue(result_cpu.ContentEquals(result_gpu));
@@ -574,20 +574,20 @@ namespace NeuralNetworkNET.Cuda.Unit
 
             // Setup
             Random r = new Random();
-            double[,] dataset = r.NextXavierMatrix(10000, 784);
+            float[,] dataset = r.NextXavierMatrix(10000, 784);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
             // GPU
             NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
-            double[,] result_gpu = pipeline.Process(dataset);
+            float[,] result_gpu = pipeline.Process(dataset);
             timer.Stop();
             var t1 = timer.ElapsedMilliseconds;
 
             // CPU
             NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Cpu;
             timer.Restart();
-            double[,] result_cpu = pipeline.Process(dataset);
+            float[,] result_cpu = pipeline.Process(dataset);
             timer.Stop();
             long t2 = timer.ElapsedMilliseconds;
             Console.WriteLine($"GPU: {t1}, CPU: {t2}");

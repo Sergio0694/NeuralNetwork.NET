@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.SupervisedLearning;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace NeuralNetworkNET.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="SupervisedLearning.BackpropagationNetworkTrainer"/> class and dependencies
+    /// Test class for the <see cref="NetworkTrainer"/> class and dependencies
     /// </summary>
     [TestClass]
     [TestCategory(nameof(TrainingTest))]
@@ -17,7 +18,7 @@ namespace NeuralNetworkNET.Unit
         public void BatchDivisionTest1()
         {
             Random r = new Random();
-            double[,]
+            float[,]
                 x = r.NextXavierMatrix(60000, 784),
                 y = r.NextXavierMatrix(60000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
@@ -29,7 +30,7 @@ namespace NeuralNetworkNET.Unit
         public void BatchDivisionTest2()
         {
             Random r = new Random();
-            double[,]
+            float[,]
                 x = r.NextXavierMatrix(20000, 784),
                 y = r.NextXavierMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 333);

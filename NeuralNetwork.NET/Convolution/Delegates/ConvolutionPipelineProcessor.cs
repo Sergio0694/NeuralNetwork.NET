@@ -10,5 +10,5 @@ namespace NeuralNetworkNET.Convolution.Delegates
     /// <param name="pipeline">The list of operations to perform</param>
     /// <param name="input">The input to process</param>
     [NotNull]
-    internal delegate double[,] ConvolutionPipelineProcessor([NotNull] IReadOnlyList<ConvolutionOperation> pipeline, [NotNull] double[,] input);
+    internal delegate float[,] ConvolutionPipelineProcessor([NotNull] IReadOnlyList<ConvolutionOperation> pipeline, [NotNull] float[,] input);
 }

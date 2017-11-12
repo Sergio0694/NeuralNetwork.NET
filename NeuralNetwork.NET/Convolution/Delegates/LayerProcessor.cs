@@ -8,5 +8,5 @@ namespace NeuralNetworkNET.Convolution.Delegates
     /// <param name="data">The source data</param>
     /// <remarks>The resulting data matrix should have the same size of the original</remarks>
     [NotNull]
-    internal delegate double[,] LayerProcessor([NotNull] double[,] data);
+    internal delegate float[,] LayerProcessor([NotNull] float[,] data);
 }
