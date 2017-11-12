@@ -10,7 +10,7 @@
         /// <summary>
         /// { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 }
         /// </summary>
-        public static double[,] TopSobel { get; } =
+        public static float[,] TopSobel { get; } =
         {
             { 1, 2, 1 },
             { 0, 0, 0 },
@@ -20,7 +20,7 @@
         /// <summary>
         /// { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 }
         /// </summary>
-        public static double[,] BottomSobel { get; } =
+        public static float[,] BottomSobel { get; } =
         {
             { -1, -2, -1 },
             { 0, 0, 0 },
@@ -30,7 +30,7 @@
         /// <summary>
         /// { 1, 0, -1 }, { 2, 0, -2 }, { 1, 0, -1 }
         /// </summary>
-        public static double[,] LeftSobel { get; } =
+        public static float[,] LeftSobel { get; } =
         {
             { 1, 0, -1 },
             { 2, 0, -2 },
@@ -40,7 +40,7 @@
         /// <summary>
         /// { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 }
         /// </summary>
-        public static double[,] RightSobel { get; } =
+        public static float[,] RightSobel { get; } =
         {
             { -1, 0, 1 },
             { -2, 0, 2 },
@@ -50,7 +50,7 @@
         /// <summary>
         /// { 0, -1, 0 }, { 0, 2, 0 }, { 0, -1, 0 }
         /// </summary>
-        public static double[,] VerticalSobel { get; } =
+        public static float[,] VerticalSobel { get; } =
         {
             { 0, -1, 0 },
             { 0, 2, 0 },
@@ -60,7 +60,7 @@
         /// <summary>
         /// { 0, 0, 0 }, { -1, 2, -1 }, { 0, 0, 0 }
         /// </summary>
-        public static double[,] HorizontalSobel { get; } =
+        public static float[,] HorizontalSobel { get; } =
         {
             { 0, 0, 0 },
             { -1, 2, -1 },
@@ -72,7 +72,7 @@
         /// <summary>
         /// Gets a sharpening kernel with a maximum value of 5
         /// </summary>
-        public static double[,] Sharpen { get; } =
+        public static float[,] Sharpen { get; } =
         {
             { 0, -1, 0 },
             { -1, 5, -1 },
@@ -82,7 +82,7 @@
         /// <summary>
         /// Gets an outline kernel with a maximum value of 8
         /// </summary>
-        public static double[,] Outline { get; } =
+        public static float[,] Outline { get; } =
         {
             { -1, -1, -1 },
             { -1, 2, -1 },
@@ -94,7 +94,7 @@
         /// <summary>
         /// { -2, -1, 0 }, { -1, 1, 1 }, { 0, 1, 2 }
         /// </summary>
-        public static double[,] BottomRightEmboss { get; } =
+        public static float[,] BottomRightEmboss { get; } =
         {
             { -2, -1, 0 },
             { -1, 1, 1 },
@@ -104,7 +104,7 @@
         /// <summary>
         /// { 0, 1, 2 }, { -1, 1, 1 }, { -2, -1, 0 }
         /// </summary>
-        public static double[,] TopRightEmboss { get; } =
+        public static float[,] TopRightEmboss { get; } =
         {
             { 0, 1, 2 },
             { -1, 1, 1 },
@@ -114,7 +114,7 @@
         /// <summary>
         /// { 2, 1, 0 }, { 1, 1, -1 }, { 0, -1, -2 }
         /// </summary>
-        public static double[,] TopLeftEmboss { get; } =
+        public static float[,] TopLeftEmboss { get; } =
         {
             { 2, 1, 0 },
             { 1, 1, -1 },
@@ -124,7 +124,7 @@
         /// <summary>
         /// { 0, -1, -2 }, { 1, 1, -1 }, { 2, 1, 0 }
         /// </summary>
-        public static double[,] BottomLeftEmboss { get; } =
+        public static float[,] BottomLeftEmboss { get; } =
         {
             { 0, -1, -2 },
             { 1, 1, -1 },
@@ -138,7 +138,7 @@
         /// <summary>
         /// N
         /// </summary>
-        public static double[,] KirschG1 { get; } =
+        public static float[,] KirschG1 { get; } =
         {
             { 5, 5, 5 },
             { -3, 0, -3 },
@@ -148,7 +148,7 @@
         /// <summary>
         /// NW
         /// </summary>
-        public static double[,] KirschG2 { get; } =
+        public static float[,] KirschG2 { get; } =
         {
             { 5, 5, -3 },
             { 5, 0, -3 },
@@ -158,7 +158,7 @@
         /// <summary>
         /// W
         /// </summary>
-        public static double[,] KirschG3 { get; } =
+        public static float[,] KirschG3 { get; } =
         {
             { 5, -3, -3 },
             { 5, 0, -3 },
@@ -168,7 +168,7 @@
         /// <summary>
         /// SW
         /// </summary>
-        public static double[,] KirschG4 { get; } =
+        public static float[,] KirschG4 { get; } =
         {
             { -3, -3, -3 },
             { 5, 0, -3 },
@@ -178,7 +178,7 @@
         /// <summary>
         /// S
         /// </summary>
-        public static double[,] KirschG5 { get; } =
+        public static float[,] KirschG5 { get; } =
         {
             { -3, -3, -3 },
             { -3, 0, -3 },
@@ -188,7 +188,7 @@
         /// <summary>
         /// SE
         /// </summary>
-        public static double[,] KirschG6 { get; } =
+        public static float[,] KirschG6 { get; } =
         {
             { -3, -3, -3 },
             { -3, 0, 5 },
@@ -198,7 +198,7 @@
         /// <summary>
         /// E
         /// </summary>
-        public static double[,] KirschG7 { get; } =
+        public static float[,] KirschG7 { get; } =
         {
             { -3, -3, 5 },
             { -3, 0, 5 },
@@ -208,7 +208,7 @@
         /// <summary>
         /// NE
         /// </summary>
-        public static double[,] KirschG8 { get; } =
+        public static float[,] KirschG8 { get; } =
         {
             { -3, 5, 5 },
             { -3, 0, 5 },

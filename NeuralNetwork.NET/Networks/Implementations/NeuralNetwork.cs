@@ -1,10 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
+using NeuralNetworkNET.Networks.Cost;
+using NeuralNetworkNET.Networks.Cost.Delegates;
+using NeuralNetworkNET.Networks.Implementations.Misc;
+using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
@@ -13,7 +24,7 @@ namespace NeuralNetworkNET.Networks.Implementations
     /// A complete and fully connected neural network with an arbitrary number of hidden layers
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class NeuralNetwork : INeuralNetwork
+    public sealed class NeuralNetwork : INeuralNetwork
     {
         #region Public parameters
 
@@ -32,8 +43,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Weights.Take(Weights.Count - 1).Select(w => w.GetLength(1)).ToArray());
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
-        public IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
+        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
+        public IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
+        public CostFunctionType CostFunctionType { get; }
 
         #endregion
 
@@ -44,21 +59,39 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Weights), Required = Required.Always)]
-        private readonly IReadOnlyList<double[,]> Weights;
+        private readonly IReadOnlyList<float[,]> Weights;
 
         /// <summary>
         /// The precalculated list of transposed weight matrices to use inthe gradient function
         /// </summary>
         /// <remarks>The first item is always null (to save space), as it isn't needed to calculate the gradient</remarks>
         [NotNull, ItemCanBeNull]
-        private readonly double[][,] TransposedWeights;
+        private readonly float[][,] TransposedWeights;
 
         /// <summary>
         /// The list of bias vectors for the network
         /// </summary>
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Biases), Required = Required.Always)]
-        private readonly IReadOnlyList<double[]> Biases;
+        private readonly IReadOnlyList<float[]> Biases;
+
+        /// <summary>
+        /// Gets the <see cref="CostFunction"/> used to evaluate the neural network
+        /// </summary>
+        [NotNull]
+        private readonly CostFunction CostFunction;
+
+        /// <summary>
+        /// Gets the <see cref="CostFunctionPrime"/> used in the gradient descent algorithm
+        /// </summary>
+        [NotNull]
+        private readonly CostFunctionPrime CostFunctionPrime;
+
+        /// <summary>
+        /// Gets the list of activation and activation prime functions used in the network
+        /// </summary>
+        [NotNull]
+        private readonly IReadOnlyList<(ActivationFunction Activation, ActivationFunction ActivationPrime)> ActivationFunctions;
 
         #endregion
 
@@ -70,7 +103,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="weights">The weights in all the network layers</param>
         /// <param name="biases">The bias vectors to use in the network</param>
         /// <param name="activations">The activation functions to use in the new network</param>
-        internal NeuralNetwork([NotNull] IReadOnlyList<double[,]> weights, [NotNull] IReadOnlyList<double[]> biases, [NotNull] IReadOnlyList<ActivationFunctionType> activations)
+        /// <param name="costFunction">The desired cost function to use</param>
+        public NeuralNetwork(
+            [NotNull] IReadOnlyList<float[,]> weights, 
+            [NotNull] IReadOnlyList<float[]> biases, 
+            [NotNull] IReadOnlyList<ActivationFunctionType> activations, CostFunctionType costFunction)
         {
             // Input check
             if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
@@ -89,8 +126,11 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Parameters setup
             Weights = weights;
             Biases = biases;
-            ActivationFunctions = activations;
-            TransposedWeights = new double[weights.Count][,];
+            ActivationFunctionTypes = activations;
+            TransposedWeights = new float[weights.Count][,];
+            CostFunctionType = costFunction;
+            (CostFunction, CostFunctionPrime) = CostFunctionProvider.GetCostFunctions(costFunction);
+            ActivationFunctions = activations.Select(ActivationFunctionProvider.GetActivations).ToArray();
         }
 
         /// <summary>
@@ -98,7 +138,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="layers">The type of layers that make up the network</param>
         [NotNull]
-        internal static NeuralNetwork NewRandom([NotNull, ItemNotNull] params NetworkLayer[] layers)
+        public static NeuralNetwork NewRandom([NotNull, ItemNotNull] params NetworkLayer[] layers)
         {
             // Check
             if (layers.Length < 2) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least two layers");
@@ -106,30 +146,28 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Initialize the weights
             Random random = new Random();
-            double[][,] weights = new double[layers.Length - 1][,];
-            double[][] biases = new double[layers.Length - 1][];
+            float[][,] weights = new float[layers.Length - 1][,];
+            float[][] biases = new float[layers.Length - 1][];
             ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
             for (int i = 0; i < weights.Length; i++)
             {
-                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
+                // Layer checks
                 if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
                     throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
+                if (i < weights.Length - 1 && layers[i] is NetworkLayer.FullyConnectedLayer layer &&
+                    layer.Activation == ActivationFunctionType.Softmax)
+                    throw new ArgumentException(nameof(layers), "The softmax activation function can only be used in the output layer");
+
+                // Initialization
+                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
                 activations[i] = fullyConnected.Activation;
-                switch (fullyConnected.Activation)
-                {
-                    case ActivationFunctionType.Sigmoid:
-                        weights[i] = random.NextSigmoidMatrix(fanIn, fanOut);
-                        break;
-                    case ActivationFunctionType.Tanh:
-                        weights[i] = random.NextTanhMatrix(fanIn, fanOut);
-                        break;
-                    default:
-                        weights[i] = random.NextXavierMatrix(fanIn, fanOut);
-                        break;
-                }
+                weights[i] = random.NextXavierMatrix(fanIn, fanOut);
                 biases[i] = random.NextGaussianVector(fanOut);
             }
-            return new NeuralNetwork(weights, biases, activations);
+            if (!(layers[layers.Length - 1] is NetworkLayer.OutputLayer output))
+                throw new ArgumentException(nameof(layers), "The last layer isn't a valid output layer");
+            CostFunctionType costFunction = output.Cost;
+            return new NeuralNetwork(weights, biases, activations, costFunction);
         }
 
         #endregion
@@ -137,10 +175,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Single processing
 
         /// <inheritdoc/>
-        public double[] Forward(double[] x) => Forward(x.ToMatrix()).Flatten();
+        public float[] Forward(float[] x) => Forward(x.ToMatrix()).Flatten();
 
         /// <inheritdoc/>
-        public double CalculateCost(double[] x, double[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
+        public float CalculateCost(float[] x, float[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
 
         /// <summary>
         /// Calculates the gradient of the cost function with respect to the individual weights and biases
@@ -150,33 +188,36 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[] x, [NotNull] double[] y) => ComputeGradient(x.ToMatrix(), y.ToMatrix());
+        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[] x, [NotNull] float[] y) => Backpropagate(x.ToMatrix(), y.ToMatrix());
 
         #endregion
 
         #region Batch processing
 
         /// <inheritdoc/>
-        public double[,] Forward(double[,] x)
+        public float[,] Forward(float[,] x)
         {
-            double[,] a0 = x;
+            float[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
                 // A(l) = activation(W(l) * A(l - 1) + b(l))
-                ActivationFunction activation = ActivationFunctionProvider.GetActivation(ActivationFunctions[i]);
-                a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], activation);
+                a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], ActivationFunctions[i].Activation);
             }
+
+            // Apply the softmax normalization to the output layer, if needed
+            if (CostFunctionType == CostFunctionType.LogLikelyhood)
+                a0.InPlaceSoftmaxNormalization();
             return a0; // At least one weight matrix, so a0 != x
         }
 
         /// <inheritdoc/>
-        public double CalculateCost(double[,] input, double[,] y)
+        public float CalculateCost(float[,] input, float[,] y)
         {
             // Forward the input
-            double[,] yHat = Forward(input);
+            float[,] yHat = Forward(input);
 
-            // Calculate the cost (half the squared difference)
-            return MatrixServiceProvider.HalfSquaredDifference(yHat, y);
+            // Calculate the cost
+            return CostFunction(yHat, y);
         }
 
         /// <summary>
@@ -187,42 +228,41 @@ namespace NeuralNetworkNET.Networks.Implementations
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal double[] ComputeGradient([NotNull] double[,] x, [NotNull] double[,] y)
+        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y)
         {
             // Feedforward
             int steps = Weights.Count;  // Number of forward hops through the network
-            double[][,]
-                zList = new double[steps][,],
-                aList = new double[steps][,];
-            ActivationFunction[] activationPrimes = new ActivationFunction[Weights.Count];
-            double[,] a0 = x;
+            float[][,]
+                zList = new float[steps][,],
+                aList = new float[steps][,];
+            float[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Save the intermediate steps to be able to reuse them later
-                double[,] zi = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
-                zList[i] = zi;
-                ActivationFunctionType type = ActivationFunctions[i];
-                activationPrimes[i] = ActivationFunctionProvider.GetActivationPrime(type);
-                ActivationFunction activation = ActivationFunctionProvider.GetActivation(type);
-                aList[i] = a0 = MatrixServiceProvider.Activation(zi, activation);
+                zList[i] = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
+                aList[i] = a0 = MatrixServiceProvider.Activation(zList[i], ActivationFunctions[i].Activation);
             }
+
+            // Apply the softmax normalization to the output layer, if needed
+            if (CostFunctionType == CostFunctionType.LogLikelyhood)
+                aList[aList.Length - 1].InPlaceSoftmaxNormalization();
 
             /* ============================
              * Calculate delta(L) in place
              * ============================
              * Perform the sigmoid prime of zL, the activity on the last layer
-             * Calculate the gradient of C with respect to a, so (yHat - y)
+             * Calculate the gradient of C with respect to a
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
-            double[,] dL = aList[aList.Length - 1];
-            MatrixServiceProvider.InPlaceSubtractAndHadamardProductWithActivationPrime(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
+            float[,] dL = aList[aList.Length - 1];
+            CostFunctionPrime(dL, y, zList[zList.Length - 1], ActivationFunctions[ActivationFunctions.Count - 1].ActivationPrime);
 
             // Backpropagation
-            double[][,] deltas = new double[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
+            float[][,] deltas = new float[steps][,];        // One additional delta for each hop, delta(L) has already been calculated
             deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {
                 // Prepare d(l + 1) and W(l + 1)T
-                double[,]
+                float[,]
                     transposed = TransposedWeights[l + 1] ?? (TransposedWeights[l + 1] = Weights[l + 1].Transpose()), // Calculate W[l + 1]T if needed
                     dl = zList[l]; // Local reference on the delta to calculate in place
 
@@ -232,121 +272,170 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed, activationPrimes[l]);
+                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed, ActivationFunctions[l].ActivationPrime);
                 deltas[l] = dl;
             }
 
             // Compute the gradient
-            int dLength = Weights.Sum(w => w.Length) + deltas.Sum(d => d.GetLength(1));
-            double[] gradient = new double[dLength]; // One gradient item for each weight and bias
-            int position = 0;
+            LayerGradient[] gradient = new LayerGradient[Weights.Count]; // One gradient item for layer
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Store the target delta
-                double[,] di = deltas[i];
+                float[,] di = deltas[i];
 
-                // Compute dJdw(l)
-                double[,] dJdw = i == 0
+                // Compute dJdw(l) and dJdb(l)
+                float[,] dJdw = i == 0
                     ? MatrixServiceProvider.TransposeAndMultiply(x, di)             // dJdW1, transposed input * first delta
                     : MatrixServiceProvider.TransposeAndMultiply(aList[i - 1], di); // dJdWi, previous activation transposed * current delta
-
-                // Populate the gradient vector
-                int bytes = sizeof(double) * dJdw.Length;
-                Buffer.BlockCopy(dJdw, 0, gradient, position, bytes);
-                position += bytes;
-
-                // Handle the gradient with respect to the current bias vector
-                double[] dJdb = di.CompressVertically();
-                bytes = sizeof(double) * dJdb.Length;
-                Buffer.BlockCopy(dJdb, 0, gradient, position, bytes);
-                position += bytes;
+                float[] dJdb = di.CompressVertically();
+                gradient[i] = new LayerGradient(dJdw, dJdb);
             }
             return gradient;
         }
 
         #endregion
 
+        #region Training
+
+        public TrainingStopReason StochasticGradientDescent(
+            (float[,] X, float[,] Y) trainingSet,
+            int epochs, int batchSize,
+            ValidationParameters validationParameters = null,
+            TestParameters testParameters = null,
+            float eta = 0.5f, float lambda = 0.1f,
+            CancellationToken token = default)
+        {
+            // Convergence manager for the validation dataset
+            RelativeConvergence convergence = validationParameters == null
+                ? null
+                : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
+
+            // Create the training batches
+            int trainingSamples = trainingSet.X.GetLength(0);
+            float l2Factor = eta * lambda / trainingSamples;
+            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
+            for (int i = 0; i < epochs; i++)
+            {
+                // Gradient descent over the current batches
+                foreach (TrainingBatch batch in batches.NextEpoch())
+                {
+                    if (token.IsCancellationRequested) return TrainingStopReason.TrainingCanceled;
+                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
+                    int size = batch.X.GetLength(0);
+                    UpdateWeights(dJ, size, eta, l2Factor);
+                }
+
+                // Check the validation dataset
+                if (convergence != null)
+                {
+                    (_, _, float accuracy) = Evaluate(validationParameters.Dataset);
+                    convergence.Value = accuracy;
+                    if (convergence.HasConverged) return TrainingStopReason.EarlyStopping;
+                }
+
+                // Report progress if necessary
+                if (testParameters != null)
+                {
+                    (float cost, _, float accuracy) = Evaluate(testParameters.Dataset);
+                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
+                }
+            }
+            return TrainingStopReason.EpochsCompleted;
+        }
+
+        /// <summary>
+        /// Updates the current network weights after a backpropagation on a training batch
+        /// </summary>
+        /// <param name="dJ">The gradient for the cost function over the last training batch</param>
+        /// <param name="batchSize">The size of the last training batch</param>
+        /// <param name="eta">The learning rate for the training session</param>
+        /// <param name="l2Factor">The L2 regularization factor</param>
+        private void UpdateWeights([NotNull] IReadOnlyList<LayerGradient> dJ, int batchSize, float eta, float l2Factor)
+        {
+            // Divide the workload
+            int blocks = Weights.Count * 2;
+            float scale = eta / batchSize;
+
+            // Function to update the weights from the calculated gradient
+            unsafe void Kernel(int i)
+            {
+                // Get the index of the current layer and branch over weights/biases
+                int l = i / 2;
+                if (i % 2 == 0)
+                {
+                    // Tweak the weights of the lth layer
+                    float[,] weight = Weights[l];
+                    fixed (float* pw = weight, pdj = dJ[l].DJdw)
+                    {
+                        int
+                            h = weight.GetLength(0),
+                            w = weight.GetLength(1);
+                        for (int x = 0; x < h; x++)
+                        {
+                            int offset = x * w;
+                            for (int y = 0; y < w; y++)
+                            {
+                                int target = offset + y;
+                                pw[target] -= l2Factor * pw[target] + scale * pdj[target];
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Tweak the biases of the lth layer
+                    float[] bias = Biases[l];
+                    fixed (float* pb = bias, pdj = dJ[l].Djdb)
+                    {
+                        int w = bias.Length;
+                        for (int x = 0; x < w; x++)
+                            pb[x] -= scale * pdj[x];
+                    }
+                }
+            }
+            Parallel.For(0, blocks, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Calculates the current network performances with the given test samples
+        /// </summary>
+        /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
+        internal (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
+        {
+            // Feedforward
+            float[,] yHat = Forward(evaluationSet.X);
+            int
+                h = evaluationSet.X.GetLength(0),
+                wy = evaluationSet.Y.GetLength(1),
+                total = 0;
+
+            // Function that counts the correctly classified items
+            unsafe void Kernel(int i)
+            {
+                fixed (float* pyHat = yHat, pY = evaluationSet.Y)
+                {
+                    int
+                        offset = i * wy,
+                        maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
+                        max = MatrixExtensions.Argmax(pY + offset, wy);
+                    if (max == maxHat) Interlocked.Increment(ref total);
+                }
+            }
+
+            // Check the correctly classified samples and calculate the cost
+            Parallel.For(0, h, Kernel).AssertCompleted();
+            float
+                cost = CostFunction(yHat, evaluationSet.Y),
+                accuracy = (float)total / h * 100;
+            return (cost, total, accuracy);
+        }
+
+        #endregion
+
         #region Tools
 
-        /// <summary>
-        /// Deserializes a neural network from the input weights and parameters
-        /// </summary>
-        /// <param name="data">The data representing the weights of the network</param>
-        /// <param name="layers">The list of network layers</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        internal static NeuralNetwork Deserialize([NotNull] double[] data, [NotNull, ItemNotNull] params NetworkLayer[] layers)
-        {
-            // Checks
-            if (layers.Length < 2) throw new ArgumentException("The network must have at least 2 layers");
-            if (!(layers[0] is NetworkLayer.InputLayer)) throw new ArgumentException(nameof(layers), "The first layer isn't a valid input layer");
-
-            // Parse the input data
-            int depth = layers.Length - 1;
-            double[][,] weights = new double[depth][,];
-            double[][] biases = new double[depth][];
-            ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
-            int position = 0;
-            for (int i = 0; i < depth; i++)
-            {
-                // Unpack the current weights
-                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
-                double[,] wi = new double[fanIn, fanOut];
-                int bytes = sizeof(double) * wi.Length;
-                Buffer.BlockCopy(data, position, wi, 0, bytes);
-                position += bytes;
-                weights[i] = wi;
-                if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
-                    throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
-                activations[i] = fullyConnected.Activation;
-
-                // Unpack the current bias vector
-                double[] bias = new double[fanOut];
-                bytes = sizeof(double) * bias.Length;
-                Buffer.BlockCopy(data, position, bias, 0, bytes);
-                position += bytes;
-                biases[i] = bias;
-            }
-            if (position / sizeof(double) != data.Length) throw new InvalidOperationException("Invalid network requested size");
-
-            // Create the new network to use
-            return new NeuralNetwork(weights, biases, activations);
-        }
-
-        /// <summary>
-        /// Serializes the current network into a binary representation
-        /// </summary>
-        /// <returns>A <see cref="double"/> array containing all the weights and biases of the network</returns>
-        [PublicAPI]
-        [Pure]
-        internal double[] Serialize()
-        {
-            // Allocate the output array
-            int length = Weights.Sum(layer => layer.Length) + Biases.Sum(bias => bias.Length);
-            double[] weights = new double[length];
-            int position = 0;
-            for (int i = 0; i < Weights.Count; i++)
-            {
-                // Populate the return array with the weights and biases for each layer
-                int bytes = sizeof(double) * Weights[i].Length;
-                Buffer.BlockCopy(Weights[i], 0, weights, position, bytes);
-                position += bytes;
-                bytes = sizeof(double) * Biases[i].Length;
-                Buffer.BlockCopy(Biases[i], 0, weights, position, bytes);
-                position += bytes;
-            }
-            return weights;
-        }
-
         /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented);
-
-        // Creates a new instance from another network with the same structure
-        [Pure, NotNull]
-        internal NeuralNetwork Crossover([NotNull] NeuralNetwork other, [NotNull] Random random)
-        {
-            throw new NotImplementedException();
-        }
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented); // TODO: check and test
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)
@@ -356,7 +445,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 other.InputLayerSize == InputLayerSize &&
                 other.OutputLayerSize == OutputLayerSize &&
                 other.HiddenLayers.SequenceEqual(HiddenLayers) &&
-                other.ActivationFunctions.SequenceEqual(ActivationFunctions))
+                other.ActivationFunctionTypes.SequenceEqual(ActivationFunctionTypes))
             {
                 // Compare each weight and bias value
                 for (int i = 0; i < Weights.Count; i++)

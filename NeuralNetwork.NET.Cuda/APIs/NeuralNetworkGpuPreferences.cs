@@ -37,8 +37,6 @@ namespace NeuralNetworkNET.Cuda.APIs
                                 MatrixGpuExtensions.MultiplyAndActivation,
                                 MatrixGpuExtensions.MultiplyWithSumAndActivation,
                                 MatrixGpuExtensions.Activation,
-                                MatrixGpuExtensions.HalfSquaredDifference,
-                                MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime,
                                 MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct);
                             ConvolutionPipeline.ProcessOverride = ConvolutionGpuPipeline.Process;
                             break;

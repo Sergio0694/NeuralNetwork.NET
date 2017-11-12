@@ -11,12 +11,12 @@ namespace NeuralNetworkNET.Convolution
     /// <summary>
     /// A class that represents a volume of data resulting from a convolution pipeline executed on a 2D input
     /// </summary>
-    public sealed class ConvolutionsStack : IReadOnlyList<double[,]>
+    public sealed class ConvolutionsStack : IReadOnlyList<float[,]>
     {
         #region Parameters
 
         // The actual 3D stack
-        private readonly IReadOnlyList<double[,]> Stack;
+        private readonly IReadOnlyList<float[,]> Stack;
 
         /// <summary>
         /// Gets the depth of the convolutions volume
@@ -39,7 +39,7 @@ namespace NeuralNetworkNET.Convolution
         #endregion
 
         // Internal constructor
-        internal ConvolutionsStack([NotNull, ItemNotNull] IReadOnlyList<double[,]> stack)
+        internal ConvolutionsStack([NotNull, ItemNotNull] IReadOnlyList<float[,]> stack)
         {
             if (stack.Count == 0 || stack[0].Length == 0) throw new ArgumentOutOfRangeException("The volume can't be empty");
             Stack = stack;
@@ -54,7 +54,7 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="data">The input layer</param>
         [PublicAPI]
         [NotNull]
-        public static ConvolutionsStack From2DLayer([NotNull] double[,] data) => new ConvolutionsStack(new[] { data });
+        public static ConvolutionsStack From2DLayer([NotNull] float[,] data) => new ConvolutionsStack(new[] { data });
 
         /// <summary>
         /// Gets the value in the target position inside the data volume
@@ -63,7 +63,7 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="x">The horizontal offset in the 2D layer</param>
         /// <param name="y">The vertical offset in the target 2D layer</param>
         [PublicAPI]
-        public double this[int z, int x, int y] => Stack[z][x, y];
+        public float this[int z, int x, int y] => Stack[z][x, y];
 
         /// <summary>
         /// Gets the 2D layer at the target depth in the data volume
@@ -71,7 +71,7 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="z">The depth of the target 2D layer to retrieve</param>
         [PublicAPI]
         [NotNull]
-        public double[,] this[int z] => Stack[z];
+        public float[,] this[int z] => Stack[z];
 
         /// <summary>
         /// Expands the curret data volume with the input convolution function and a series of convolution kernels
@@ -81,10 +81,10 @@ namespace NeuralNetworkNET.Convolution
         /// <remarks>The resulting volume will have a depth equals to the current one multiplied by the number of kernels used</remarks>
         [PublicAPI]
         [Pure, NotNull]
-        internal ConvolutionsStack Expand([NotNull] ConvolutionFunction func, params double[][,] kernels)
+        internal ConvolutionsStack Expand([NotNull] ConvolutionFunction func, params float[][,] kernels)
         {
-            double[][][,] expansion = this.Select(layer => kernels.Select(k => func(layer, k)).ToArray()).ToArray();
-            double[][,] stack = expansion.SelectMany(volume => volume).ToArray();
+            float[][][,] expansion = this.Select(layer => kernels.Select(k => func(layer, k)).ToArray()).ToArray();
+            float[][,] stack = expansion.SelectMany(volume => volume).ToArray();
             return new ConvolutionsStack(stack);
         }
 
@@ -96,7 +96,7 @@ namespace NeuralNetworkNET.Convolution
         [Pure, NotNull]
         internal ConvolutionsStack Process([NotNull] LayerProcessor processor)
         {
-            double[][,] data = this.Select(layer => processor(layer)).ToArray();
+            float[][,] data = this.Select(layer => processor(layer)).ToArray();
             return new ConvolutionsStack(data);
         }
 
@@ -106,7 +106,7 @@ namespace NeuralNetworkNET.Convolution
         /// <param name="data">The data to convert</param>
         [PublicAPI]
         [Pure]
-        public static double[,] ConvertToMatrix([NotNull, ItemNotNull] params ConvolutionsStack[] data)
+        public static float[,] ConvertToMatrix([NotNull, ItemNotNull] params ConvolutionsStack[] data)
         {
             // Checks
             if (data.Length == 0) throw new ArgumentOutOfRangeException("The data array can't be empty");
@@ -124,7 +124,7 @@ namespace NeuralNetworkNET.Convolution
                 throw new ArgumentException("The input data isn't coherent");
 
             // Setup the matrix with all the batched inputs
-            double[,] x = new double[data.Length, volume];
+            float[,] x = new float[data.Length, volume];
 
             // Populate the matrix, iterate over all the volumes
             bool result = Parallel.For(0, data.Length, i =>
@@ -132,7 +132,7 @@ namespace NeuralNetworkNET.Convolution
                 unsafe
                 {
                     // Fix the pointers
-                    fixed (double* px = x)
+                    fixed (float* px = x)
                     {
                         ConvolutionsStack stack = data[i];
                         for (int j = 0; j < depth; j++) // Iterate over all the depth layer in each volume
@@ -149,7 +149,7 @@ namespace NeuralNetworkNET.Convolution
         #region IEnumerable
 
         // Forwards the stack iterator
-        public IEnumerator<double[,]> GetEnumerator() => Stack.GetEnumerator();
+        public IEnumerator<float[,]> GetEnumerator() => Stack.GetEnumerator();
 
         // Default enumerator
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

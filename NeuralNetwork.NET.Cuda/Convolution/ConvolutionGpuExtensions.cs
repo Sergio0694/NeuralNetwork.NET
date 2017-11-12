@@ -31,7 +31,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[][,] Convolute3x3([NotNull] this double[,] source, int subdivision, [NotNull]  params double[][,] kernels)
+        public static float[][,] Convolute3x3([NotNull] this float[,] source, int subdivision, [NotNull]  params float[][,] kernels)
         {
             // Checks
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
@@ -57,18 +57,18 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 iterationsPerSample = subdivision * iterationsPerSubdivision;   // GPU iterations for each dataset entry
 
             // Prepare the kernels info
-            double[] norms = new double[klen];
+            float[] norms = new float[klen];
 
             // Precompute the normalization factors
             unsafe
             {
-                fixed (double* pnorms = norms)
+                fixed (float* pnorms = norms)
                 {
                     for (int i = 0; i < klen; i++)
                     {
-                        fixed (double* pk = kernels[i])
+                        fixed (float* pk = kernels[i])
                         {
-                            double factor = 0;
+                            float factor = 0;
                             for (int j = 0; j < 3; j++)
                                 for (int k = 0; k < 3; k++)
                                     factor += pk[j * 3 + k].Abs();
@@ -80,11 +80,11 @@ namespace NeuralNetworkNET.Cuda.Convolution
 
             // Preallocate shared data
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> kernels_gpu = gpu.AllocateDevice<double>(kernels.Length, 9))  // Series of 3*3 kernels
-            using (DeviceMemory<double> norms_gpu = gpu.AllocateDevice(norms))
+            using (DeviceMemory2D<float> kernels_gpu = gpu.AllocateDevice<float>(kernels.Length, 9))  // Series of 3*3 kernels
+            using (DeviceMemory<float> norms_gpu = gpu.AllocateDevice(norms))
             {
                 // Manage the kernels
-                deviceptr<double>
+                deviceptr<float>
                     pkernels_gpu = kernels_gpu.Ptr,
                     pnorms_gpu = norms_gpu.Ptr;
                 int kernels_gpu_pitch = kernels_gpu.PitchInElements.ToInt32();
@@ -95,26 +95,26 @@ namespace NeuralNetworkNET.Cuda.Convolution
 
                 // Calculate the worksize
                 ulong
-                    sourceBytes = sizeof(double) * (ulong)h * (ulong)w,
-                    resultBytes = sizeof(double) * (ulong)h * (ulong)finalWidth,
-                    rowBytes = sizeof(double) * ((ulong)w + (ulong)finalWidth),
+                    sourceBytes = sizeof(float) * (ulong)h * (ulong)w,
+                    resultBytes = sizeof(float) * (ulong)h * (ulong)finalWidth,
+                    rowBytes = sizeof(float) * ((ulong)w + (ulong)finalWidth),
                     totalBytes = sourceBytes + resultBytes,
                     vramThreshold = gpu.Device.TotalMemory - MemoryLimitThreshold,
                     free = vramThreshold > NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit ? NeuralNetworkGpuPreferences.GPUMemoryAllocationLimit : vramThreshold;
 
                 // Inner function that works on chunks of the original data
-                void Convolute3x3(int offsetIn, int hIn, int offsetOut, double[,] target)
+                void Convolute3x3(int offsetIn, int hIn, int offsetOut, float[,] target)
                 {
                     // Process the convolution in parallel
-                    using (DeviceMemory2D<double>
-                        source_gpu = gpu.AllocateDevice<double>(hIn, w),
-                        result_gpu = gpu.AllocateDevice<double>(hIn, finalWidth))
+                    using (DeviceMemory2D<float>
+                        source_gpu = gpu.AllocateDevice<float>(hIn, w),
+                        result_gpu = gpu.AllocateDevice<float>(hIn, finalWidth))
                     {
                         // Copy the source data
                         Gpu.Copy2D(source, source_gpu, new MemoryCopy2DRegion(offsetIn, 0, 0, 0, hIn, w));
 
                         // Pointers and pitches
-                        deviceptr<double>
+                        deviceptr<float>
                             psource_gpu = source_gpu.Ptr,
                             presult_gpu = result_gpu.Ptr;
                         int
@@ -154,7 +154,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                                     upper_offset = base_upper_offset + y,
                                     middle_offset = base_middle_offset + y,
                                     lower_offset = base_lower_offset + y;
-                                double
+                                float
                                     partial =
                                         psource_gpu[upper_offset] * pkernels_gpu[kernel_offset] +
                                         psource_gpu[upper_offset + 1] * pkernels_gpu[kernel_offset + 1] +
@@ -190,14 +190,14 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 }
 
                 // Check the memory status
-                double[][,] result;
+                float[][,] result;
                 bool
                     canAllocateCpu = totalBytes < int.MaxValue,
                     canAllocateGpu = free - MemoryLimitThreshold > totalBytes;
                 if (canAllocateCpu && canAllocateGpu)
                 {
                     // Process the whole data in a single step
-                    double[,] temp = new double[h, finalWidth];
+                    float[,] temp = new float[h, finalWidth];
                     Convolute3x3(0, h, 0, temp);
                     result = new[] { temp };
                 }
@@ -205,19 +205,19 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 {
                     // Object bigger than 2GB, but able to be copied on the GPU
                     var blockInfo = CalculateBlocksSize(int.MaxValue);
-                    result = new double[blockInfo.Blocks][,];
+                    result = new float[blockInfo.Blocks][,];
                     for (int i = 0; i < blockInfo.Blocks; i++)
                     {
                         if (i == blockInfo.Last)
                         {
                             // Remainder
-                            double[,] block = new double[blockInfo.HMod, finalWidth];
+                            float[,] block = new float[blockInfo.HMod, finalWidth];
                             Convolute3x3(blockInfo.HBlock * i, blockInfo.HMod, 0, block);
                             result[i] = block;
                         }
                         else
                         {
-                            double[,] block = new double[blockInfo.HBlock, finalWidth];
+                            float[,] block = new float[blockInfo.HBlock, finalWidth];
                             Convolute3x3(blockInfo.HBlock * i, blockInfo.HBlock, 0, block);
                             result[i] = block;
                         }
@@ -226,7 +226,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 else if (canAllocateCpu)
                 {
                     // Not enough GPU space, but result able to be allocated on RAM
-                    double[,] temp = new double[h, finalWidth];
+                    float[,] temp = new float[h, finalWidth];
                     var blockInfo = CalculateBlocksSize(free);
                     for (int i = 0; i < blockInfo.Blocks; i++)
                     {
@@ -238,19 +238,19 @@ namespace NeuralNetworkNET.Cuda.Convolution
                 {
                     // Not enough space both on GPU and RAM
                     var blockInfo = CalculateBlocksSize(int.MaxValue <= free ? int.MaxValue : free);
-                    result = new double[blockInfo.Blocks][,];
+                    result = new float[blockInfo.Blocks][,];
                     for (int i = 0; i < blockInfo.Blocks; i++)
                     {
                         if (i == blockInfo.Last)
                         {
                             // Remainder
-                            double[,] block = new double[blockInfo.HMod, finalWidth];
+                            float[,] block = new float[blockInfo.HMod, finalWidth];
                             Convolute3x3(blockInfo.HBlock * i, blockInfo.HMod, 0, block);
                             result[i] = block;
                         }
                         else
                         {
-                            double[,] block = new double[blockInfo.HBlock, finalWidth];
+                            float[,] block = new float[blockInfo.HBlock, finalWidth];
                             Convolute3x3(blockInfo.HBlock * i, blockInfo.HBlock, 0, block);
                             result[i] = block;
                         }
@@ -268,14 +268,14 @@ namespace NeuralNetworkNET.Cuda.Convolution
         /// <remarks>This method is still executed on the CPU, as it only costs O(n^2) and more parallelization wouldn't help</remarks>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void ReLU([NotNull] this double[,] m)
+        public static void ReLU([NotNull] this float[,] m)
         {
             int h = m.GetLength(0), w = m.GetLength(1);
             bool result = Parallel.For(0, h, i =>
             {
                 unsafe
                 {
-                    fixed (double* p = m)
+                    fixed (float* p = m)
                     {
                         int offset = i * w;
                         for (int j = 0; j < w; j++)
@@ -298,7 +298,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void Normalize([NotNull] this double[,] source, int subdivision)
+        public static void Normalize([NotNull] this float[,] source, int subdivision)
         {
             // Checks
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
@@ -315,11 +315,11 @@ namespace NeuralNetworkNET.Cuda.Convolution
 
             // Process the convolution in parallel
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double> source_gpu = gpu.AllocateDevice(source))
-            using (DeviceMemory<double> norms_gpu = gpu.AllocateDevice<double>(h * subdivision))    // Normalization factors
+            using (DeviceMemory2D<float> source_gpu = gpu.AllocateDevice(source))
+            using (DeviceMemory<float> norms_gpu = gpu.AllocateDevice<float>(h * subdivision))    // Normalization factors
             {
                 // Pointers and pitches
-                deviceptr<double>
+                deviceptr<float>
                     psource_gpu = source_gpu.Ptr,
                     pnorms_gpu = norms_gpu.Ptr;
                 int source_gpu_pitch = source_gpu.PitchInElements.ToInt32();
@@ -335,7 +335,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                         image_offset = sample_offset + j * imgSize;
 
                     // Compute the current normalization factor
-                    double sum = 0;
+                    float sum = 0;
                     for (int k = 0; k < imgSize; k++)
                         sum += psource_gpu[image_offset + k];
                     pnorms_gpu[i * j] = sum;
@@ -352,7 +352,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                         image_offset = sample_offset + j * imgSize;
 
                     // Normalize the sub-matrix
-                    double factor = pnorms_gpu[i * j];
+                    float factor = pnorms_gpu[i * j];
                     for (int k = 0; k < imgSize; k++)
                         psource_gpu[image_offset + k] /= factor;
                 }
@@ -377,7 +377,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static double[,] Pool2x2([NotNull] this double[,] source, int subdivision)
+        public static float[,] Pool2x2([NotNull] this float[,] source, int subdivision)
         {
             // Checks
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
@@ -401,12 +401,12 @@ namespace NeuralNetworkNET.Cuda.Convolution
 
             // Prepare the GPU memory
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<double>
+            using (DeviceMemory2D<float>
                 source_gpu = gpu.AllocateDevice(source),
-                result_gpu = gpu.AllocateDevice<double>(h, finalWidth))
+                result_gpu = gpu.AllocateDevice<float>(h, finalWidth))
             {
                 // Pointers and pitches
-                deviceptr<double>
+                deviceptr<float>
                     psource_gpu = source_gpu.Ptr,
                     presult_gpu = result_gpu.Ptr;
                 int
@@ -437,7 +437,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                         for (int y = 0; y < inner; y += 2)
                         {
                             int offset = target_up + y;
-                            double
+                            float
                                 left = psource_gpu[offset],
                                 right = psource_gpu[offset + 1],
                                 max = left >= right ? left : right;
@@ -455,7 +455,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                             int
                                 up_offset = target_up + y,
                                 down_offset = target_down + y;
-                            double
+                            float
                                 upLeft = psource_gpu[up_offset],
                                 upRight = psource_gpu[up_offset + 1],
                                 downLeft = psource_gpu[down_offset],
@@ -467,7 +467,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                         }
                         if (odd)
                         {
-                            double
+                            float
                                 up = psource_gpu[target_up + inner],
                                 down = psource_gpu[target_down + inner],
                                 max = up > down ? up : down;
