@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="y">The expected results for the dataset</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float QuadraticCost([NotNull] this float[,] yHat, [NotNull] float[,] y)
+        public static float QuadraticCost([NotNull] float[,] yHat, [NotNull] float[,] y)
         {
             // Detect the size of the inputs
             int h = yHat.GetLength(0), w = yHat.GetLength(1);
@@ -63,7 +63,7 @@ namespace NeuralNetworkNET.Networks.Cost
         /// </summary>
         /// <param name="yHat">The current results</param>
         /// <param name="y">The expected results for the dataset</param>
-        public static float CrossEntropyCost([NotNull] this float[,] yHat, [NotNull] float[,] y)
+        public static float CrossEntropyCost([NotNull] float[,] yHat, [NotNull] float[,] y)
         {
             // Detect the size of the inputs
             int h = yHat.GetLength(0), w = yHat.GetLength(1);

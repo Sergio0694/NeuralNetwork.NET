@@ -9,6 +9,7 @@ using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Cost;
+using NeuralNetworkNET.Networks.Cost.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.Networks.PublicAPIs;
@@ -42,12 +43,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Weights.Take(Weights.Count - 1).Select(w => w.GetLength(1)).ToArray());
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
-        public IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
+        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
+        public IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctions), Required = Required.Always)]
-        public CostFunctionType CostFunction { get; }
+        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
+        public CostFunctionType CostFunctionType { get; }
 
         #endregion
 
@@ -73,6 +74,18 @@ namespace NeuralNetworkNET.Networks.Implementations
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Biases), Required = Required.Always)]
         private readonly IReadOnlyList<float[]> Biases;
+
+        /// <summary>
+        /// Gets the <see cref="CostFunction"/> used to evaluate the neural network
+        /// </summary>
+        [NotNull]
+        private readonly CostFunction CostFunction;
+
+        /// <summary>
+        /// Gets the <see cref="CostFunctionPrime"/> used in the gradient descent algorithm
+        /// </summary>
+        [NotNull]
+        private readonly CostFunctionPrime CostFunctionPrime;
 
         #endregion
 
@@ -107,9 +120,10 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Parameters setup
             Weights = weights;
             Biases = biases;
-            ActivationFunctions = activations;
+            ActivationFunctionTypes = activations;
             TransposedWeights = new float[weights.Count][,];
-            CostFunction = costFunction;
+            CostFunctionType = costFunction;
+            (CostFunction, CostFunctionPrime) = CostFunctionProvider.GetCostFunctions(costFunction);
         }
 
         /// <summary>
@@ -174,7 +188,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 // A(l) = activation(W(l) * A(l - 1) + b(l))
-                ActivationFunction activation = ActivationFunctionProvider.GetActivation(ActivationFunctions[i]);
+                ActivationFunction activation = ActivationFunctionProvider.GetActivation(ActivationFunctionTypes[i]);
                 a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], activation);
             }
             return a0; // At least one weight matrix, so a0 != x
@@ -186,8 +200,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Forward the input
             float[,] yHat = Forward(input);
 
-            // Calculate the cost (half the squared difference)
-            return yHat.CrossEntropyCost(y);
+            // Calculate the cost
+            return CostFunction(yHat, y);
         }
 
         /// <summary>
@@ -212,7 +226,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Save the intermediate steps to be able to reuse them later
                 float[,] zi = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
                 zList[i] = zi;
-                ActivationFunctionType type = ActivationFunctions[i];
+                ActivationFunctionType type = ActivationFunctionTypes[i];
                 activationPrimes[i] = ActivationFunctionProvider.GetActivationPrime(type);
                 ActivationFunction activation = ActivationFunctionProvider.GetActivation(type);
                 aList[i] = a0 = MatrixServiceProvider.Activation(zi, activation);
@@ -225,7 +239,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Calculate the gradient of C with respect to a, so (yHat - y)
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             float[,] dL = aList[aList.Length - 1];
-            CostFunctionProvider.GetCostFunctionPrime(CostFunction).Invoke(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
+            CostFunctionPrime(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
 
             // Backpropagation
             float[][,] deltas = new float[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
@@ -396,7 +410,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Check the correctly classified samples and calculate the cost
             Parallel.For(0, h, Kernel).AssertCompleted();
             float
-                cost = CostFunctionProvider.GetCostFunction(CostFunction).Invoke(yHat, evaluationSet.Y),
+                cost = CostFunction(yHat, evaluationSet.Y),
                 accuracy = (float)total / h * 100;
             return (cost, total, accuracy);
         }
@@ -416,7 +430,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 other.InputLayerSize == InputLayerSize &&
                 other.OutputLayerSize == OutputLayerSize &&
                 other.HiddenLayers.SequenceEqual(HiddenLayers) &&
-                other.ActivationFunctions.SequenceEqual(ActivationFunctions))
+                other.ActivationFunctionTypes.SequenceEqual(ActivationFunctionTypes))
             {
                 // Compare each weight and bias value
                 for (int i = 0; i < Weights.Count; i++)
