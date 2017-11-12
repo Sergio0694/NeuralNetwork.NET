@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {
@@ -141,16 +142,16 @@ namespace NeuralNetworkNET.Cuda.Unit
                 m3 = r.NextGaussianMatrix(10, 10),
                 backup = new float[10, 10];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(float) * m1.Length);
-            MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(backup, m2, m3, ActivationFunctions.SigmoidPrime);
-            MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(m1, m2, m3, ActivationFunctions.SigmoidPrime);
+            CostFunctions.QuadraticCostPrime(backup, m2, m3, ActivationFunctions.SigmoidPrime);
+            CostFunctions.QuadraticCostPrime(m1, m2, m3, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
             m1 = r.NextGaussianMatrix(200, 200);
             m2 = r.NextGaussianMatrix(200, 200);
             m3 = r.NextGaussianMatrix(200, 200);
             backup = new float[200, 200];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(float) * m1.Length);
-            MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(backup, m2, m3, ActivationFunctions.SigmoidPrime);
-            MatrixGpuExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime(m1, m2, m3, ActivationFunctions.SigmoidPrime);
+            CostFunctions.QuadraticCostPrime(backup, m2, m3, ActivationFunctions.SigmoidPrime);
+            CostFunctions.QuadraticCostPrime(m1, m2, m3, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
         }
 

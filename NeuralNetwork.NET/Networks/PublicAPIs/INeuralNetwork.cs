@@ -33,12 +33,12 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// Gets the list of activation functions used in the network layers
         /// </summary>
         [NotNull]
-        IReadOnlyList<ActivationFunctionType> ActivationFunctions { get; }
+        IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
 
         /// <summary>
         /// Gets the cost function that the network uses to calculate its accuracy and to backpropagate its error
         /// </summary>
-        CostFunctionType CostFunction { get; }
+        CostFunctionType CostFunctionType { get; }
 
         #endregion
 

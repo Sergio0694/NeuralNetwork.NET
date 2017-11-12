@@ -19,8 +19,8 @@ namespace DigitsCudaTest
             NeuralNetwork network = NeuralNetwork.NewRandom(
                 NetworkLayer.Inputs(784),
                 NetworkLayer.FullyConnected(100, ActivationFunctionType.Sigmoid),
-                NetworkLayer.Outputs(10, ActivationFunctionType.Sigmoid, CostFunctionType.Quadratic));
-            network.StochasticGradientDescent((training.X, training.Y), 100, 10, 
+                NetworkLayer.Outputs(10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+            network.StochasticGradientDescent((training.X, training.Y), 60, 10, 
                 null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {

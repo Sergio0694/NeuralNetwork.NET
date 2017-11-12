@@ -1,6 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 #pragma warning disable 1574
 
@@ -23,8 +23,6 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Func<float[,], float[,], ActivationFunction, float[,]> multiplyActivation,
             [NotNull] Func<float[,], float[,], float[], ActivationFunction, float[,]> multiplyWithSumAndActivation,
             [NotNull] Func<float[,], ActivationFunction, float[,]> activation,
-            [NotNull] Func<float[,], float[,], float> halfSquaredDifference,
-            [NotNull] Action<float[,], float[,], float[,], ActivationFunction> inPlaceSubtractHadamardActivationPrime,
             [NotNull] Action<float[,], float[,], float[,], ActivationFunction> multiplyAndInPlaceActivationPrimeHadamard)
         {
             _MultiplyOverride = multiply;
@@ -33,8 +31,6 @@ namespace NeuralNetworkNET.Helpers
             _MultiplyAndActivationOverride = multiplyActivation;
             _MultiplyWithSumAndActivationOverride = multiplyWithSumAndActivation;
             _ActivationOverride = activation;
-            _HalfSquaredDifferenceOverride = halfSquaredDifference;
-            _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = inPlaceSubtractHadamardActivationPrime;
             _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride = multiplyAndInPlaceActivationPrimeHadamard;
         }
 
@@ -46,8 +42,6 @@ namespace NeuralNetworkNET.Helpers
             _MultiplyOverride = _TransposeAndMultiplyOverride = null;
             _MultiplyAndActivationOverride = null;
             _ActivationOverride = null;
-            _HalfSquaredDifferenceOverride = null;
-            _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride = null;
             _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride = null;
         }
 
@@ -145,40 +139,9 @@ namespace NeuralNetworkNET.Helpers
             return _MultiplyWithSumAndActivationOverride?.Invoke(m1, m2, v, activation) ?? m1.MultiplyWithSumAndActivation(m2, v, activation);
         }
 
-        /// <summary>
-        /// A <see cref="Func{T1, T2, TResult}"/> that calculates half the squared difference of two matrices
-        /// </summary>
-        [CanBeNull]
-        private static Func<float[,], float[,], float> _HalfSquaredDifferenceOverride;
-
-        /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.HalfSquaredDifference"/> method
-        /// </summary>
-        [Pure]
-        public static float HalfSquaredDifference([NotNull] float[,] m1, [NotNull] float[,] m2)
-        {
-            return 0; // TODO: replace with cross-entropy
-            //return _HalfSquaredDifferenceOverride?.Invoke(m1, m2) ?? m1.HalfSquaredDifference(m2);
-        }
-
         #endregion
 
         #region Side effect
-
-        /// <summary>
-        /// An <see cref="Action{T1, T2, T3}"/> that performs the Hadamard product to the cost function prime, then applies the activation prime function
-        /// </summary>
-        [CanBeNull]
-        private static Action<float[,], float[,], float[,], ActivationFunction> _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride;
-
-        /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.InPlaceSubtractAndHadamardProductWithActivationPrime"/> method
-        /// </summary>
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime([NotNull] float[,] m, [NotNull] float[,] y, [NotNull] float[,] z, [NotNull] ActivationFunction prime)
-        {
-            if (_InPlaceSubtractAndHadamardProductWithActivationPrimeOverride == null) m.InPlaceSubtractAndHadamardProductWithActivationPrime(y, z, prime);
-            else _InPlaceSubtractAndHadamardProductWithActivationPrimeOverride?.Invoke(m, y, z, prime);
-        }
 
         /// <summary>
         /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product with a matrix product

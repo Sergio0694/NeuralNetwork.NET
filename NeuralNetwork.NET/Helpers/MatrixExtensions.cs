@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers.Misc;
-using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -391,53 +391,38 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Returns the result of the input after the activation function primed has been applied
+        /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
         /// </summary>
-        /// <param name="v">The input to process</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[] ActivationPrime([NotNull] this float[] v, [NotNull] ActivationFunction prime)
-        {
-            float[] result = new float[v.Length];
-            for (int i = 0; i < v.Length; i++)
-            {
-                result[i] = prime(v[i]);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Returns the result of the input after the activation function primed has been applied
-        /// </summary>
-        /// <param name="m">The input to process</param>
-        /// <param name="prime">The activation pime function to use</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ActivationPrime([NotNull] this float[,] m, [NotNull] ActivationFunction prime)
+        /// <param name="m">The matrix to normalize</param>
+        public static void InPlaceSoftmaxNormalization([NotNull] this float[,] m)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[h, w];
+            float[] partials = new float[h];
 
-            // Execute the activation prime in parallel
-            bool loopResult = Parallel.For(0, h, i =>
+            // Partial sum
+            unsafe void PartialSum(int i)
             {
-                unsafe
+                int offset = i * w;
+                fixed (float* pp = partials, pm = m)
                 {
-                    fixed (float* pr = result, pm = m)
-                    {
-                        for (int j = 0; j < w; j++)
-                        {
-                            pr[i * w + j] = prime(pm[i * w + j]);
-                        }
-                    }
+                    float sum = 0;
+                    for (int j = 0; j < w; j++)
+                        sum += pm[offset + j];
+                    pp[i] = sum;
                 }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
+            }
+            Parallel.For(0, h, PartialSum).AssertCompleted();
+
+            // Normalization of the matrix values
+            unsafe void NormalizationKernel(int i)
+            {
+                int offset = i * w;
+                fixed (float* p = m, pp = partials)
+                    for (int j = 0; j < w; j++)
+                        p[offset + j] /= pp[i];
+            }
+            Parallel.For(0, h, NormalizationKernel);
         }
 
         #endregion
@@ -588,50 +573,6 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!loopResult) throw new Exception("Error while runnig the parallel loop");
             return result;
-        }
-
-        /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
-        /// </summary>
-        /// <param name="a">The estimated y</param>
-        /// <param name="y">The expected y</param>
-        /// <param name="z">The activity on the last layer</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this float[,] a, [NotNull] float[,] y, [NotNull] float[,] z, [NotNull] ActivationFunction prime)
-        {
-            // Checks
-            int
-                h = a.GetLength(0),
-                w = a.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1) ||
-                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
-
-            // Execute the multiplication in parallel
-            bool loopResult = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    // Get the pointers and iterate fo each row
-                    fixed (float* pa = a, py = y, pz = z)
-                    {
-                        // Save the index and iterate for each column
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int index = offset + j;
-                            float
-                                difference = pa[index] - py[index],
-                                zPrime = prime(pz[index]),
-                                hProduct = difference * zPrime;
-                            pa[index] = hProduct;
-                        }
-                    }
-                }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
         }
 
         /// <summary>

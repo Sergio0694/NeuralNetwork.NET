@@ -2,7 +2,7 @@
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Cuda.Helpers
 {
@@ -360,67 +360,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
         }
 
         /// <summary>
-        /// Calculates d(L) by applying the Hadamard product of (yHat - y) and the activation prime of z
-        /// </summary>
-        /// <param name="a">The estimated y</param>
-        /// <param name="y">The expected y</param>
-        /// <param name="z">The activity on the last layer</param>
-        /// <param name="prime">The activation prime function to use</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static void InPlaceSubtractAndHadamardProductWithActivationPrime(
-            [NotNull] this float[,] a, [NotNull] float[,] y, [NotNull] float[,] z, [NotNull] ActivationFunction prime)
-        {
-            // Checks
-            int
-                h = a.GetLength(0),
-                w = a.GetLength(1);
-            if (h != y.GetLength(0) || w != y.GetLength(1) ||
-                h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
-
-            // Initialize the parameters and the result matrix
-            Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<float> a_gpu = gpu.AllocateDevice(a))
-            using (DeviceMemory2D<float> y_gpu = gpu.AllocateDevice(y))
-            using (DeviceMemory2D<float> z_gpu = gpu.AllocateDevice(z))
-            {
-                // Pointers and pitches
-                deviceptr<float>
-                    pa_gpu = a_gpu.Ptr,
-                    py_gpu = y_gpu.Ptr,
-                    pz_gpu = z_gpu.Ptr;
-                int
-                    a_gpu_pitch = a_gpu.PitchInElements.ToInt32(),
-                    y_gpu_pitch = y_gpu.PitchInElements.ToInt32(),
-                    z_gpu_pitch = z_gpu.PitchInElements.ToInt32();
-
-                // Wrapper
-                void Kernel(int i)
-                {
-                    // Save the index and iterate for each column
-                    int
-                        y_gpu_offset = i * y_gpu_pitch,
-                        z_gpu_offset = i * z_gpu_pitch;
-                    for (int j = 0; j < w; j++)
-                    {
-                        int a_gpu_target = i * a_gpu_pitch + j;
-                        float
-                            difference = pa_gpu[a_gpu_target] - py_gpu[y_gpu_offset + j],
-                            zPrime = prime(pz_gpu[z_gpu_offset + j]),
-                            hProduct = difference * zPrime;
-                        pa_gpu[a_gpu_target] = hProduct;
-                    }
-                }
-
-                // Execute the multiplication in parallel
-                gpu.For(0, h, Kernel);
-
-                // Copy the results back
-                Gpu.Copy2D(a_gpu, a);
-            }
-        }
-
-        /// <summary>
         /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
@@ -531,99 +470,6 @@ namespace NeuralNetworkNET.Cuda.Helpers
 
                 // Return the result
                 return Gpu.Copy2DToHost(mresult_gpu);
-            }
-        }
-
-        /// <summary>
-        /// Calculates half the sum of the squared difference of each value pair in the two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second matrix</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float HalfSquaredDifference([NotNull] this float[,] m1, [NotNull] float[,] m2)
-        {
-            // Detect the size of the inputs
-            int h = m1.GetLength(0), w = m1.GetLength(1);
-            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
-
-            // Allocate parameters
-            Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
-            {
-                // Check Compute Capability (64bit atomicAdd function requires Compute 6.x)
-                if (gpu.Device.Arch.Major >= 6)
-                {
-                    using (DeviceMemory<float> result_gpu = gpu.AllocateDevice<float>(1))
-                    {
-                        // Local parameters
-                        deviceptr<float>
-                            pm1_gpu = m1_gpu.Ptr,
-                            pm2_gpu = m2_gpu.Ptr,
-                            presult_gpu = result_gpu.Ptr;
-                        int
-                            m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
-                            m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
-
-                        // Wrapper
-                        void Kernel(int i)
-                        {
-                            // Local sum over each row
-                            float row = 0;
-                            int
-                                m1_offset = i * m1_gpu_pitch,
-                                m2_offset = i * m2_gpu_pitch;
-                            for (int j = 0; j < w; j++)
-                            {
-                                float delta = pm1_gpu[m1_offset + j] - pm2_gpu[m2_offset + j];
-                                row += delta * delta;
-                            }
-                            DeviceFunction.AtomicAdd(presult_gpu, row);
-                        }
-
-                        // Compute the total sum
-                        gpu.For(0, h, Kernel);
-
-                        // Return the result
-                        float[] result = Gpu.CopyToHost(result_gpu);
-                        return result[0] / 2;
-                    }
-                }
-
-                // Legacy code
-                using (DeviceMemory<float> result_gpu = gpu.AllocateDevice<float>(h))
-                {
-                    // Local parameters
-                    deviceptr<float>
-                        pm1_gpu = m1_gpu.Ptr,
-                        pm2_gpu = m2_gpu.Ptr,
-                        presult_gpu = result_gpu.Ptr;
-                    int
-                        m1_gpu_pitch = m1_gpu.PitchInElements.ToInt32(),
-                        m2_gpu_pitch = m2_gpu.PitchInElements.ToInt32();
-
-                    // Wrapper
-                    void Kernel(int i)
-                    {
-                        // Local sum over each row
-                        float row = 0;
-                        int
-                            m1_offset = i * m1_gpu_pitch,
-                            m2_offset = i * m2_gpu_pitch;
-                        for (int j = 0; j < w; j++)
-                        {
-                            float delta = pm1_gpu[m1_offset + j] - pm2_gpu[m2_offset + j];
-                            row += delta * delta;
-                        }
-                        presult_gpu[i] = row;
-                    }
-
-                    // Compute the total sum
-                    gpu.For(0, h, Kernel);
-                    float AggregateKernel(float a, float b) => a + b;
-                    return gpu.Aggregate(presult_gpu, h, AggregateKernel) / 2;
-                }
             }
         }
 
