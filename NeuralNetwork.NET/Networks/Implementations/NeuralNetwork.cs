@@ -151,9 +151,15 @@ namespace NeuralNetworkNET.Networks.Implementations
             ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
             for (int i = 0; i < weights.Length; i++)
             {
-                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
+                // Layer checks
                 if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
                     throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
+                if (i < weights.Length - 1 && layers[i] is NetworkLayer.FullyConnectedLayer layer &&
+                    layer.Activation == ActivationFunctionType.Softmax)
+                    throw new ArgumentException(nameof(layers), "The softmax activation function can only be used in the output layer");
+
+                // Initialization
+                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
                 activations[i] = fullyConnected.Activation;
                 weights[i] = random.NextXavierMatrix(fanIn, fanOut);
                 biases[i] = random.NextGaussianVector(fanOut);
@@ -197,6 +203,10 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // A(l) = activation(W(l) * A(l - 1) + b(l))
                 a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], ActivationFunctions[i].Activation);
             }
+
+            // Apply the softmax normalization to the output layer, if needed
+            if (CostFunctionType == CostFunctionType.LogLikelyhood)
+                a0.InPlaceSoftmaxNormalization();
             return a0; // At least one weight matrix, so a0 != x
         }
 
@@ -229,22 +239,25 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Save the intermediate steps to be able to reuse them later
-                float[,] zi = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
-                zList[i] = zi;
-                aList[i] = a0 = MatrixServiceProvider.Activation(zi, ActivationFunctions[i].Activation);
+                zList[i] = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
+                aList[i] = a0 = MatrixServiceProvider.Activation(zList[i], ActivationFunctions[i].Activation);
             }
+
+            // Apply the softmax normalization to the output layer, if needed
+            if (CostFunctionType == CostFunctionType.LogLikelyhood)
+                aList[aList.Length - 1].InPlaceSoftmaxNormalization();
 
             /* ============================
              * Calculate delta(L) in place
              * ============================
              * Perform the sigmoid prime of zL, the activity on the last layer
-             * Calculate the gradient of C with respect to a, so (yHat - y)
+             * Calculate the gradient of C with respect to a
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             float[,] dL = aList[aList.Length - 1];
             CostFunctionPrime(dL, y, zList[zList.Length - 1], ActivationFunctions[ActivationFunctions.Count - 1].ActivationPrime);
 
             // Backpropagation
-            float[][,] deltas = new float[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
+            float[][,] deltas = new float[steps][,];        // One additional delta for each hop, delta(L) has already been calculated
             deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
             for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
             {

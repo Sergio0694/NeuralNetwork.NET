@@ -20,7 +20,7 @@ namespace NeuralNetworkNET.Networks.Cost
             {
                 case CostFunctionType.Quadratic: return (CostFunctions.QuadraticCost, CostFunctions.QuadraticCostPrime);
                 case CostFunctionType.CrossEntropy: return (CostFunctions.CrossEntropyCost, CostFunctions.CrossEntropyCostPrime);
-                case CostFunctionType.LogLikelyhood: return (null, null); // TODO
+                case CostFunctionType.LogLikelyhood: return (CostFunctions.LogLikelyhoodCost, CostFunctions.CrossEntropyCostPrime);
                 default:
                     throw new InvalidOperationException("Unsupported cost function");
             }

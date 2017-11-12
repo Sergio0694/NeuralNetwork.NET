@@ -105,6 +105,16 @@ namespace NeuralNetworkNET.Networks.Activations
         public static float LeakyReLUPrime(this float x) => x > 0 ? 1 : 0.01f;
 
         /// <summary>
+        /// Applies the the numerator part of the softmax activation function, e^x
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        /// <remarks>The derivative is not available, as it doesn't appear in the derivative of the log-likelyhood cost function</remarks>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Softmax(this float x) => (float)Math.Exp(x);
+
+        /// <summary>
         /// Applies the softplus function, ln(1 + e^x)
         /// </summary>
         /// <param name="x">The input to process</param>

@@ -36,14 +36,16 @@ namespace NeuralNetworkNET.Networks.Cost
                 fixed (float* pv = v, pyHat = yHat, py = y)
                 {
                     int offset = i * w;
+                    float sum = 0;
                     for (int j = 0; j < w; j++)
                     {
                         int target = offset + j;
                         float
                             delta = pyHat[target] - py[target],
                             square = delta * delta;
-                        pv[i] += square;
+                        sum += square;
                     }
+                    pv[i] = sum;
                 }
             }
             Parallel.For(0, h, Kernel).AssertCompleted();
@@ -115,6 +117,45 @@ namespace NeuralNetworkNET.Networks.Cost
                     for (int i = 0; i < h; i++) cost += pv[i];
             }
             return -cost / h;
+        }
+
+        /// <summary>
+        /// Calculates the log-likelyhood cost for the given outputs and expected results
+        /// </summary>
+        /// <param name="yHat">The current results</param>
+        /// <param name="y">The expected results for the dataset</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float LogLikelyhoodCost([NotNull] float[,] yHat, [NotNull] float[,] y)
+        {
+            // Detect the size of the inputs
+            int h = yHat.GetLength(0), w = yHat.GetLength(1);
+            if (h != y.GetLength(0) || w != y.GetLength(1)) throw new ArgumentException("The two matrices must have the same size");
+
+            // Calculate the cost (half the squared difference)
+            float[] v = new float[h];
+
+            // Kernel to compute the partial sum
+            unsafe void Kernel(int i)
+            {
+                fixed (float* pv = v, pyHat = yHat, py = y)
+                {
+                    int
+                        offset = i * w,
+                        iy = MatrixExtensions.Argmax(py + offset, w);
+                    pv[i] = -(float)Math.Log(pyHat[offset + iy]);
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+
+            // Sum the partial costs
+            float cost = 0;
+            unsafe
+            {
+                fixed (float* pv = v)
+                    for (int i = 0; i < h; i++) cost += pv[i];
+            }
+            return cost;
         }
 
         #endregion

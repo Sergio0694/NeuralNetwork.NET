@@ -66,12 +66,21 @@ namespace NeuralNetworkNET.Networks.Layers
             }
         }
 
+        /// <summary>
+        /// An internal class that represents a fully connected output layer with an associated cost function
+        /// </summary>
         internal class OutputLayer : FullyConnectedLayer
         {
+            /// <summary>
+            /// Gets the chosed cost function to use in the output layer
+            /// </summary>
             public CostFunctionType Cost { get; }
 
             public OutputLayer(int neurons, ActivationFunctionType activation, CostFunctionType cost) : base(neurons, activation)
             {
+                if (activation == ActivationFunctionType.Softmax && cost != CostFunctionType.LogLikelyhood ||
+                    cost == CostFunctionType.LogLikelyhood && activation != ActivationFunctionType.Softmax)
+                    throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together");
                 Cost = cost;
             }
         }
