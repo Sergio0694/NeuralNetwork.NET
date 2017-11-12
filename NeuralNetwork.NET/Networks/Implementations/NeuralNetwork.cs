@@ -87,6 +87,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         [NotNull]
         private readonly CostFunctionPrime CostFunctionPrime;
 
+        /// <summary>
+        /// Gets the list of activation and activation prime functions used in the network
+        /// </summary>
+        [NotNull]
+        private readonly IReadOnlyList<(ActivationFunction Activation, ActivationFunction ActivationPrime)> ActivationFunctions;
+
         #endregion
 
         #region Initialization
@@ -124,6 +130,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             TransposedWeights = new float[weights.Count][,];
             CostFunctionType = costFunction;
             (CostFunction, CostFunctionPrime) = CostFunctionProvider.GetCostFunctions(costFunction);
+            ActivationFunctions = activations.Select(ActivationFunctionProvider.GetActivations).ToArray();
         }
 
         /// <summary>
@@ -188,8 +195,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < Weights.Count; i++)
             {
                 // A(l) = activation(W(l) * A(l - 1) + b(l))
-                ActivationFunction activation = ActivationFunctionProvider.GetActivation(ActivationFunctionTypes[i]);
-                a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], activation);
+                a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], ActivationFunctions[i].Activation);
             }
             return a0; // At least one weight matrix, so a0 != x
         }
@@ -219,17 +225,13 @@ namespace NeuralNetworkNET.Networks.Implementations
             float[][,]
                 zList = new float[steps][,],
                 aList = new float[steps][,];
-            ActivationFunction[] activationPrimes = new ActivationFunction[Weights.Count];
             float[,] a0 = x;
             for (int i = 0; i < Weights.Count; i++)
             {
                 // Save the intermediate steps to be able to reuse them later
                 float[,] zi = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
                 zList[i] = zi;
-                ActivationFunctionType type = ActivationFunctionTypes[i];
-                activationPrimes[i] = ActivationFunctionProvider.GetActivationPrime(type);
-                ActivationFunction activation = ActivationFunctionProvider.GetActivation(type);
-                aList[i] = a0 = MatrixServiceProvider.Activation(zi, activation);
+                aList[i] = a0 = MatrixServiceProvider.Activation(zi, ActivationFunctions[i].Activation);
             }
 
             /* ============================
@@ -239,7 +241,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Calculate the gradient of C with respect to a, so (yHat - y)
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
             float[,] dL = aList[aList.Length - 1];
-            CostFunctionPrime(dL, y, zList[zList.Length - 1], activationPrimes[activationPrimes.Length - 1]);
+            CostFunctionPrime(dL, y, zList[zList.Length - 1], ActivationFunctions[ActivationFunctions.Count - 1].ActivationPrime);
 
             // Backpropagation
             float[][,] deltas = new float[steps][,];      // One additional delta for each hop, delta(L) has already been calculated
@@ -257,7 +259,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed, activationPrimes[l]);
+                MatrixServiceProvider.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(dl, deltas[l + 1], transposed, ActivationFunctions[l].ActivationPrime);
                 deltas[l] = dl;
             }
 
