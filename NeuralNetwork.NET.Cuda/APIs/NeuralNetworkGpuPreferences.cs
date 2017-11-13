@@ -1,6 +1,4 @@
 ﻿using System;
-using NeuralNetworkNET.Convolution;
-using NeuralNetworkNET.Cuda.Convolution;
 using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 
@@ -27,7 +25,6 @@ namespace NeuralNetworkNET.Cuda.APIs
                     {
                         case ProcessingMode.Cpu:
                             MatrixServiceProvider.ResetInjections();
-                            ConvolutionPipeline.ProcessOverride = null;
                             break;
                         case ProcessingMode.Gpu:
                             MatrixServiceProvider.SetupInjections(
@@ -38,7 +35,6 @@ namespace NeuralNetworkNET.Cuda.APIs
                                 MatrixGpuExtensions.MultiplyWithSumAndActivation,
                                 MatrixGpuExtensions.Activation,
                                 MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct);
-                            ConvolutionPipeline.ProcessOverride = ConvolutionGpuPipeline.Process;
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value), value, null);
