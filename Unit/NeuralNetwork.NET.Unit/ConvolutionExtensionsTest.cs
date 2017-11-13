@@ -128,99 +128,72 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void Convolution3x3_1()
+        public void Convolution1()
         {
-            // Test values
             float[,]
-                m =
+                l1 =
                 {
-                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
-                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
-                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
-                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
-                    { -1, -1, -1, -1, 1, -1, -1, -1, -1 },
-                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
-                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
-                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
-                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 }
+                    { 0, 0, 0, 1, 0 },
+                    { 1, 2, 1, 2, 2 },
+                    { 0, 2, 1, 2, 2 },
+                    { 1, 0, 0, 0, 0 },
+                    { 1, 1, 1, 0, 1 }
                 },
-                k =
+                l2 =
                 {
-                    { 1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
+                    { 1, 1, 2, 0, 1 },
+                    { 0, 1, 2, 1, 1 },
+                    { 2, 0, 0, 0, 1 },
+                    { 0, 2, 2, 1, 2 },
+                    { 1, 0, 1, 0, 0 }
                 },
-                r =
+                l3 =
                 {
-                    { 0.77f, -0.11f, 0.11f, 0.33f, 0.55f, -0.11f, 0.33f },
-                    { -0.11f, 1, -0.11f, 0.33f, -0.11f, 0.11f, -0.11f },
-                    { 0.11f, -0.11f, 1, -0.33f, 0.11f, -0.11f, 0.55f },
-                    { 0.33f, 0.33f, -0.33f, 0.55f, -0.33f, 0.33f, 0.33f },
-                    { 0.55f, -0.11f, 0.11f, -0.33f, 1, -0.11f, 0.11f },
-                    { -0.11f, 0.11f, -0.11f, 0.33f, -0.11f, 1, -0.11f },
-                    { 0.33f, -0.11f, 0.55f, 0.33f, 0.11f, -0.11f, 0.77f }
+                    { 2, 1, 0, 1, 1 },
+                    { 2, 2, 0, 2, 0 },
+                    { 2, 1, 1, 0, 1 },
+                    { 2, 1, 0, 2, 1 },
+                    { 1, 2, 0, 0, 1 }
                 },
-                t = m.Convolute3x3(k);
-            t.Tweak(d => (float)Math.Truncate(d * 100) / 100f);
-            Assert.IsTrue(t.ContentEquals(r));
-        }
-
-        [TestMethod]
-        public void Convolution3x3_2()
-        {
-            // Test values
+                k1 =
+                {
+                    { 1, 1, -1 },
+                    { 0, 1, -1 },
+                    { 1, 1, -1 }
+                },
+                k2 =
+                {
+                    { 0, -1, -1 },
+                    { -1, 0, -1 },
+                    { 1, -1, -1 }
+                },
+                k3 =
+                {
+                    { 1, 1, 0 },
+                    { -1, 1, 1 },
+                    { -1, 1, 1 }
+                };
             float[,]
-                m =
-                {
-                    { -1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                k =
-                {
-                    { 1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                r =
-                {
-                    { 0.77f }
-                },
-                t = m.Convolute3x3(k);
-            t.Tweak(d => (float)Math.Truncate(d * 100) / 100f);
-            Assert.IsTrue(t.ContentEquals(r));
-        }
-
-        [TestMethod]
-        public void Convolution3x3_3()
-        {
-            // Test values
-            float[,]
-                m =
-                {
-                    { -1, -1, -1, -1, -1, -1 },
-                    { -1, 1, -1, -1, -1, -1 },
-                    { -1, -1, 1, -1, -1, -1 },
-                    { -1, -1, -1, 1, -1, 1 },
-                    { -1, -1, -1, -1, 1, -1 },
-                    { -1, -1, -1, 1, -1, 1 }
-                },
-                k =
-                {
-                    { 1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                r =
-                {
-                    { 0.77f, -0.11f, 0.11f, 0.33f },
-                    { -0.11f, 1, -0.11f, 0.33f },
-                    { 0.11f, -0.11f, 1, -0.33f },
-                    { 0.33f, 0.33f, -0.33f, 0.55f }
-                },
-                t = m.Convolute3x3(k);
-            t.Tweak(d => (float)Math.Truncate(d * 100) / 100f);
-            Assert.IsTrue(t.ContentEquals(r));
+                source = new float[1, 75],
+                kernels = new float[1, 27];
+            Buffer.BlockCopy(l1, 0, source, 0, sizeof(float) * 25);
+            Buffer.BlockCopy(l2, 0, source, sizeof(float) * 25, sizeof(float) * 25);
+            Buffer.BlockCopy(l3, 0, source, sizeof(float) * 50, sizeof(float) * 25);
+            Buffer.BlockCopy(k1, 0, kernels, 0, sizeof(float) * 9);
+            Buffer.BlockCopy(k2, 0, kernels, sizeof(float) * 9, sizeof(float) * 9);
+            Buffer.BlockCopy(k3, 0, kernels, sizeof(float) * 18, sizeof(float) * 9);
+            float[,] result = source.Convolute(3, kernels, ConvolutionMode.Valid);
+            Assert.IsTrue(result.GetLength(0) == 1);
+            Assert.IsTrue(result.GetLength(1) == 9);
+            float[,] check = new float[3, 3];
+            Buffer.BlockCopy(result, 0, check, 0, sizeof(float) * 9);
+            float[,] expected =
+            {
+                { 2, -4, 0 },
+                { -2, -1, 2 },
+                { 3, 0, 2 }
+            };
+            Assert.IsTrue(check.ContentEquals(expected));
         }
     }
 }
