@@ -10,6 +10,22 @@ namespace NeuralNetworkNET.Helpers
     public static class Extensions
     {
         /// <summary>
+        /// Returns the maximum value between two numbers
+        /// </summary>
+        /// <param name="a">The first number</param>
+        /// <param name="b">The second number</param>
+        [Pure]
+        public static int Max(this int a, int b) => a >= b ? a : b;
+
+        /// <summary>
+        /// Returns the minimum value between two numbers
+        /// </summary>
+        /// <param name="a">The first number</param>
+        /// <param name="b">The second number</param>
+        [Pure]
+        public static int Min(this int a, int b) => a <= b ? a : b;
+
+        /// <summary>
         /// Calculates the absolute value of the input number
         /// </summary>
         /// <param name="value">The input value</param>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
@@ -175,7 +176,7 @@ namespace NeuralNetworkNET.Convolution.Misc
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Convolute([NotNull] this float[,] source, int depth, [NotNull] float[,] kernels, ConvolutionMode mode)
+        public static unsafe float[,] Convolute([NotNull] this float[,] source, int depth, [NotNull] float[,] kernels, ConvolutionMode mode)
         {
             // Checks and local parameters
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
@@ -213,7 +214,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                     // Calculate the current indexes
                     int
                         i = index / klen,   // Sample index
-                        k = index % klen;   //Kernel index
+                        k = index % klen;   // Kernel index
 
                     fixed (float* presult = result, psource = source, pk = kernels)
                     {
@@ -258,7 +259,111 @@ namespace NeuralNetworkNET.Convolution.Misc
             // Full convolution
             if (mode == ConvolutionMode.Full)
             {
-                throw new NotImplementedException();
+                int
+                    edge = kAxis - 1,
+                    inner = imgAxis - kAxis + 1 + 2 * edge,         // Size of each image edge after the convolution
+                    convolutionOutputSize = inner * inner,          // Size of each processed image
+                    finalWidth = convolutionOutputSize * klen;      // Final size of each sample row
+
+                // Process the whole data in a single step
+                float[,] result = new float[h, finalWidth];
+
+                for (int index = 0; index < h * klen; index++)
+                {
+                    // Calculate the current indexes
+                    int
+                        i = index / klen,   // Sample index
+                        k = index % klen;   // Kernel index
+
+                    fixed (float* presult = result, psource = source, pk = kernels)
+                    {
+                        int
+                            sampleOffset = i * w,
+                            kOffset = k * ksize,
+                            resultOffset = i * finalWidth + k * convolutionOutputSize;
+                        for (int x = 0; x < inner; x++)
+                        {
+                            int
+                                hResultOffset = resultOffset + x * inner,
+                                xAxisOffset = x * imgAxis;
+                            for (int y = 0; y < inner; y++)
+                            {
+                                float convolution = 0;
+                                int xyAxisOffset = xAxisOffset + y;
+                                for (int kz = 0; kz < depth; kz++)
+                                {
+                                    int
+                                        kzOffset = kOffset + kz * ksize,
+                                        kzSourceOffset = sampleOffset + kz * imgSize + xyAxisOffset;
+
+                                    int kxStart, kxEnd;
+                                    if (x >= inner + edge)
+                                    {
+                                        kxStart = 0;
+                                        kxEnd = inner - x;
+                                    }
+                                    else if (x < edge)
+                                    {
+                                        kxStart = kAxis - x - 1;
+                                        kxEnd = kAxis;
+                                    }
+                                    else
+                                    {
+                                        kxStart = 0;
+                                        kxEnd = kAxis;
+                                    }
+                                    Debug.Assert(0.Max(kAxis - x - 1) == kxStart);
+                                    Debug.Assert(kAxis.Min(inner - x + 1) == kxEnd);
+
+                                    for (int kx = kxStart; kx < kxEnd; kx++)
+                                    {
+                                        int
+                                            kxOffset = kzOffset + kx * kAxis,
+                                            sourceOffset = kzSourceOffset + (imgAxis - kx - 1) * imgAxis;
+                                        int sourceX = imgAxis - kx - 1;
+
+                                        int kyStart, kyEnd, yStart;
+                                        if (y >= inner + edge)
+                                        {
+                                            yStart = imgAxis - kAxis + 1;
+                                            kyStart = 0;
+                                            kyEnd = inner - y;
+                                        }
+                                        else if (y < edge)
+                                        {
+                                            yStart = 0;
+                                            kyStart = kAxis - y - 1;
+                                            kyEnd = kAxis;
+                                        }
+                                        else
+                                        {
+                                            kyStart = yStart = 0;
+                                            kyEnd = kAxis;
+                                        }
+                                        for (int ky = kyStart; ky < kyEnd; ky++)
+                                        {
+                                            int sourceY = yStart + ky;
+
+
+
+
+
+                                            float pkv = pk[kxOffset + ky];
+                                            float psv = psource[sourceOffset + sourceY];
+                                            
+                                            convolution += pk[kxOffset + ky] * psource[sourceOffset + imgAxis - ky - 1];
+                                        }
+                                    }
+                                }
+                                presult[hResultOffset + y] = convolution;
+                            }
+                        }
+                    }
+                }
+
+                // Convolute in parallel
+                //Parallel.For(0, h * klen, Kernel).AssertCompleted();
+                return result;
             }
             throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported convolution mode");
         }

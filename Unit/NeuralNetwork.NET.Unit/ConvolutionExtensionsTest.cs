@@ -195,5 +195,38 @@ namespace NeuralNetworkNET.Unit
             };
             Assert.IsTrue(check.ContentEquals(expected));
         }
+
+        [TestMethod]
+        public void Convolution2()
+        {
+            float[,]
+                l =
+                {
+                    { 0, 1 },
+                    { -1, 2 }
+                },
+                k =
+                {
+                    { 1, 1 },
+                    { 0, 1 }
+                };
+            float[,]
+                source = new float[1, 4],
+                kernels = new float[1, 4];
+            Buffer.BlockCopy(l, 0, source, 0, sizeof(float) * 4);
+            Buffer.BlockCopy(k, 0, kernels, 0, sizeof(float) * 4);
+            float[,] result = source.Convolute(1, kernels, ConvolutionMode.Full);
+            Assert.IsTrue(result.GetLength(0) == 1);
+            Assert.IsTrue(result.GetLength(1) == 9);
+            float[,] check = new float[3, 3];
+            Buffer.BlockCopy(result, 0, check, 0, sizeof(float) * 9);
+            float[,] expected =
+            {
+                { 0, 1, 0 },
+                { -1, 3, 1 },
+                { -1, 2, 2 }
+            };
+            Assert.IsTrue(check.ContentEquals(expected));
+        }
     }
 }
