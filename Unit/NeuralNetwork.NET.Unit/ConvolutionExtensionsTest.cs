@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 
@@ -127,106 +126,74 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
         }
 
+        // 1-depth, 3*3 with 2*2 = 2*2 result
         [TestMethod]
-        public void Convolution1()
+        public void Convolution2DValid1()
         {
             float[,]
-                l1 =
-                {
-                    { 0, 0, 0, 1, 0 },
-                    { 1, 2, 1, 2, 2 },
-                    { 0, 2, 1, 2, 2 },
-                    { 1, 0, 0, 0, 0 },
-                    { 1, 1, 1, 0, 1 }
-                },
-                l2 =
-                {
-                    { 1, 1, 2, 0, 1 },
-                    { 0, 1, 2, 1, 1 },
-                    { 2, 0, 0, 0, 1 },
-                    { 0, 2, 2, 1, 2 },
-                    { 1, 0, 1, 0, 0 }
-                },
-                l3 =
-                {
-                    { 2, 1, 0, 1, 1 },
-                    { 2, 2, 0, 2, 0 },
-                    { 2, 1, 1, 0, 1 },
-                    { 2, 1, 0, 2, 1 },
-                    { 1, 2, 0, 0, 1 }
-                },
-                k1 =
-                {
-                    { 1, 1, -1 },
-                    { 0, 1, -1 },
-                    { 1, 1, -1 }
-                },
-                k2 =
-                {
-                    { 0, -1, -1 },
-                    { -1, 0, -1 },
-                    { 1, -1, -1 }
-                },
-                k3 =
-                {
-                    { 1, 1, 0 },
-                    { -1, 1, 1 },
-                    { -1, 1, 1 }
-                };
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },  // 3*3
+                k = { { 1, 1, 0, 1 } };                 // 2*2
+            float[,] result = l.Convolute(1, k, ConvolutionMode.Valid);
+            float[,] expected = { { 2, 2, 4, 1 } };     // 2*2 
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        // 1-depth, 2 sample 3*3 with 2*2 = 2 sample 2*2 result
+        [TestMethod]
+        public void Convolution2DValid2()
+        {
             float[,]
-                source = new float[1, 75],
-                kernels = new float[1, 27];
-            Buffer.BlockCopy(l1, 0, source, 0, sizeof(float) * 25);
-            Buffer.BlockCopy(l2, 0, source, sizeof(float) * 25, sizeof(float) * 25);
-            Buffer.BlockCopy(l3, 0, source, sizeof(float) * 50, sizeof(float) * 25);
-            Buffer.BlockCopy(k1, 0, kernels, 0, sizeof(float) * 9);
-            Buffer.BlockCopy(k2, 0, kernels, sizeof(float) * 9, sizeof(float) * 9);
-            Buffer.BlockCopy(k3, 0, kernels, sizeof(float) * 18, sizeof(float) * 9);
-            float[,] result = source.Convolute(3, kernels, ConvolutionMode.Valid);
-            Assert.IsTrue(result.GetLength(0) == 1);
-            Assert.IsTrue(result.GetLength(1) == 9);
-            float[,] check = new float[3, 3];
-            Buffer.BlockCopy(result, 0, check, 0, sizeof(float) * 9);
-            float[,] expected =
-            {
-                { 2, -4, 0 },
-                { -2, -1, 2 },
-                { 3, 0, 2 }
-            };
-            Assert.IsTrue(check.ContentEquals(expected));
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 }, { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },   // 2 sample, 3*3
+                k = { { 1, 1, 0, 1 } };                                                 // 2*2
+            float[,] result = l.Convolute(1, k, ConvolutionMode.Valid);
+            float[,] expected = { { 2, 2, 4, 1 }, { 2, 2, 4, 1 } };                     // 2 sample, 2*2
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        // 1-depth, 3*3 with 2 kernels 2*2 = 2-depth 2*2 result
+        [TestMethod]
+        public void Convolution2DValid3()
+        {
+            float[,]
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },              // 3*3
+                k = { { 1, 1, 0, 1 }, { 0, 1, 2, 0 } };             // 2 kernels 2*2
+            float[,] result = l.Convolute(1, k, ConvolutionMode.Valid);
+            float[,] expected = { { 2, 2, 4, 1, 4, 0, 1, 3 } };     // 2-depth, 2*2 result
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        // 2-depth, 3*3 with 2-depth kernel = 2*2 result
+        [TestMethod]
+        public void Convolution2DValid4()
+        {
+            float[,]
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 2, 1, 0, 1, 1 } },   // 2-depth 3*3
+                k = { { 1, 1, 0, 1, 0, 1, 1, 0 } };                                 // 2-depth 2*2 kernel
+            float[,] result = l.Convolute(1, k, ConvolutionMode.Valid);
+            float[,] expected = { { 2, 4, 6, 3 } };                                 // 2*2 result
+            Assert.IsTrue(result.ContentEquals(expected));
         }
 
         [TestMethod]
-        public void Convolution2()
+        public void ConvolutionBackupFull()
         {
-            float[,]
-                l =
-                {
-                    { 0, 1 },
-                    { -1, 2 }
-                },
-                k =
-                {
-                    { 1, 1 },
-                    { 0, 1 }
-                };
-            float[,]
-                source = new float[1, 4],
-                kernels = new float[1, 4];
-            Buffer.BlockCopy(l, 0, source, 0, sizeof(float) * 4);
-            Buffer.BlockCopy(k, 0, kernels, 0, sizeof(float) * 4);
-            float[,] result = source.Convolute(1, kernels, ConvolutionMode.Full);
-            Assert.IsTrue(result.GetLength(0) == 1);
-            Assert.IsTrue(result.GetLength(1) == 9);
-            float[,] check = new float[3, 3];
-            Buffer.BlockCopy(result, 0, check, 0, sizeof(float) * 9);
-            float[,] expected =
-            {
-                { 0, 1, 0 },
-                { -1, 3, 1 },
-                { -1, 2, 2 }
-            };
-            Assert.IsTrue(check.ContentEquals(expected));
+            float[]
+                l = { 0, 1, -1, 2 },
+                k = { 1, 1, 0, 1 };
+            float[] result = ConvolutionExtensions.convolute(l, 2, 2, k, 2, 2, ConvolutionMode.Full);
+            float[] expected = { 0, 1, 1, -1, 1, 3, 0, -1, 2 };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void ConvolutionBackupValid()
+        {
+            float[]
+                l = { 0, 1, 0, 2, 0, 1, 1, 1, 0 },
+                k = { 1, 1, 0, 1 };
+            float[] result = ConvolutionExtensions.convolute(l, 3, 3, k, 2, 2, ConvolutionMode.Valid);
+            float[] expected = { 2, 2, 4, 1 };
+            Assert.IsTrue(result.ContentEquals(expected));
         }
     }
 }
