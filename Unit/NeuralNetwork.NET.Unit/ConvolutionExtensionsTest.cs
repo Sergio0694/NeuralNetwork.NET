@@ -169,7 +169,7 @@ namespace NeuralNetworkNET.Unit
             float[,]
                 l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 2, 1, 0, 1, 1 } },   // 2-depth 3*3
                 k = { { 1, 1, 0, 1, 0, 1, 1, 0 } };                                 // 2-depth 2*2 kernel
-            float[,] result = l.Convolute(1, k, ConvolutionMode.Valid);
+            float[,] result = l.Convolute(2, k, ConvolutionMode.Valid);
             float[,] expected = { { 2, 4, 6, 3 } };                                 // 2*2 result
             Assert.IsTrue(result.ContentEquals(expected));
         }

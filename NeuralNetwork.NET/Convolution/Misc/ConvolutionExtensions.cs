@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
@@ -225,7 +224,9 @@ namespace NeuralNetworkNET.Convolution.Misc
                                         {
                                             for (int l = j; l <= j + kAxis - 1; ++l)
                                             {
-                                                temp += src[k * imgAxis + l] * kernel[(i + kAxis - 1 - k) * kAxis + (j + kAxis - 1 - l)];
+                                                temp += 
+                                                    src[iSample * w + z * imgSize + k * imgAxis + l] * 
+                                                    kernel[iKernel * kw + z * kSize + (i + kAxis - 1 - k) * kAxis + (j + kAxis - 1 - l)];
                                             }
                                         }
                                     }
