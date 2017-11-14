@@ -236,46 +236,6 @@ namespace NeuralNetworkNET.Convolution.Misc
                         }
                     }
                 }
-
-                return result;
-
-                unsafe void ValidKernel(int index)
-                {
-                    // Calculate the current indexes
-                    int
-                        i = index / nKernels,   // Sample index
-                        k = index % nKernels;   // Kernel index
-
-                    fixed (float* psource = source, pk = kernels, presult = result)
-                    {
-                        for (int x = 0; x < hResult; x++)
-                        {
-                            int 
-                                lowK = 0.Max(x - kAxis + 1),
-                                highK = (imgAxis - 1).Min(x);
-                            for (int y = 0; y < hResult; y++)
-                            {
-                                int 
-                                    lowL = 0.Max(y - kAxis + 1),
-                                    highL = (imgAxis - 1).Min(y);
-                                float temp = 0f;
-                                for (int z = 0; z < depth; z++)
-                                {
-                                    for (k = lowK; k <= highK; ++k)
-                                    {
-                                        for (int l = lowL; l <= highL; ++l)
-                                        {
-                                            temp += psource[i * w + z * imgSize + k * imgAxis + l] * pk[k * kw + z * kSize + (x - k) * kAxis + (y - l)];
-                                        }
-                                    }
-                                }
-                                presult[i * finalWidth + k * convolutionOutputSize + x * hResult + y] = temp;
-                            }
-                        }
-                    }
-                }
-                Parallel.For(0, h * nKernels, ValidKernel).AssertCompleted();
-                return result;
             }
 
             // Full convolution
@@ -286,7 +246,45 @@ namespace NeuralNetworkNET.Convolution.Misc
                     convolutionOutputSize = hResult * hResult,          // Size of each processed image
                     finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
+                float[,] result = new float[h, finalWidth];
                 
+                int low_k, high_k, low_l, high_l;
+                int i_src, j_src;
+
+                fixed (float* src = source, kernel = kernels, dst = result)
+                {
+                    for (int iSample = 0; iSample < h; iSample++)
+                    {
+                        for (int iKernel = 0; iKernel < nKernels; iKernel++)
+                        {
+                            for (int i = 0; i < hResult; ++i)
+                            {
+                                low_k = 0.Max(i - kAxis + 1);
+                                high_k = (imgAxis - 1).Min(i);
+                                for (int j = 0; j < hResult; ++j)
+                                {
+                                    low_l = 0.Max(j - kAxis + 1);
+                                    high_l = (imgAxis - 1).Min(j);
+                                    float temp = 0.0f;
+                                    for (int z = 0; z < depth; z++)
+                                    {
+                                        for (int k = low_k; k <= high_k; ++k)
+                                        {
+                                            for (int l = low_l; l <= high_l; ++l)
+                                            {
+                                                temp +=
+                                                    src[iSample * w + z * imgSize + k * imgAxis + l] *
+                                                    kernel[iKernel * kw + z * kSize + (i - k) * kAxis + (j - l)];
+                                            }
+                                        }
+                                    }
+                                    dst[iSample * finalWidth + iKernel * convolutionOutputSize + i * hResult + j] = temp;
+                                }
+                            }
+                        }
+                    }
+                }
+                return result;
             }
             throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported convolution mode");
         }
@@ -324,6 +322,24 @@ namespace NeuralNetworkNET.Convolution.Misc
 
                 switch (mode)
                 {
+                    case ConvolutionMode.Valid:
+                        // Valid linear convolution, of size N - M
+                        for (i = 0; i < h_dst; ++i)
+                        {
+                            for (j = 0; j < w_dst; ++j)
+                            {
+                                temp = 0.0f;
+                                for (k = i; k <= i + h_kernel - 1; ++k)
+                                {
+                                    for (l = j; l <= j + w_kernel - 1; ++l)
+                                    {
+                                        temp += src[k * w_src + l] * kernel[(i + h_kernel - 1 - k) * w_kernel + (j + w_kernel - 1 - l)];
+                                    }
+                                }
+                                dst[i * w_dst + j] = temp;
+                            }
+                        }
+                        break;
                     case ConvolutionMode.Full:
                         // Full linear convolution of size N + M -1
                         for (i = 0; i < h_dst; ++i)
@@ -340,24 +356,6 @@ namespace NeuralNetworkNET.Convolution.Misc
                                     for (l = low_l; l <= high_l; ++l)
                                     {
                                         temp += src[k * w_src + l] * kernel[(i - k) * w_kernel + (j - l)];
-                                    }
-                                }
-                                dst[i * w_dst + j] = temp;
-                            }
-                        }
-                        break;
-                    case ConvolutionMode.Valid:
-                        // Valid linear convolution, of size N - M
-                        for (i = 0; i < h_dst; ++i)
-                        {
-                            for (j = 0; j < w_dst; ++j)
-                            {
-                                temp = 0.0f;
-                                for (k = i; k <= i + h_kernel - 1; ++k)
-                                {
-                                    for (l = j; l <= j + w_kernel - 1; ++l)
-                                    {
-                                        temp += src[k * w_src + l] * kernel[(i + h_kernel - 1 - k) * w_kernel + (j + w_kernel - 1 - l)];
                                     }
                                 }
                                 dst[i * w_dst + j] = temp;

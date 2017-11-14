@@ -175,6 +175,17 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
+        public void ConvolutionFull1()
+        {
+            float[,]
+                l = { { 0, 1, -1, 2 } },
+                k = { { 1, 1, 0, 1 } };
+            float[,] result = l.Convolute(1, k, ConvolutionMode.Full);
+            float[,] expected = { { 0, 1, 1, -1, 1, 3, 0, -1, 2 } };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
         public void ConvolutionBackupFull()
         {
             float[]
