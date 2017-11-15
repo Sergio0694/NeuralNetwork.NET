@@ -184,27 +184,5 @@ namespace NeuralNetworkNET.Unit
             float[,] expected = { { 0, 1, 1, -1, 1, 3, 0, -1, 2 } };
             Assert.IsTrue(result.ContentEquals(expected));
         }
-
-        [TestMethod]
-        public void ConvolutionBackupFull()
-        {
-            float[]
-                l = { 0, 1, -1, 2 },
-                k = { 1, 1, 0, 1 };
-            float[] result = ConvolutionExtensions.convolute(l, 2, 2, k, 2, 2, ConvolutionMode.Full);
-            float[] expected = { 0, 1, 1, -1, 1, 3, 0, -1, 2 };
-            Assert.IsTrue(result.ContentEquals(expected));
-        }
-
-        [TestMethod]
-        public void ConvolutionBackupValid()
-        {
-            float[]
-                l = { 0, 1, 0, 2, 0, 1, 1, 1, 0 },
-                k = { 1, 1, 0, 1 };
-            float[] result = ConvolutionExtensions.convolute(l, 3, 3, k, 2, 2, ConvolutionMode.Valid);
-            float[] expected = { 2, 2, 4, 1 };
-            Assert.IsTrue(result.ContentEquals(expected));
-        }
     }
 }

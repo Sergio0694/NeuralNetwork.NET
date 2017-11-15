@@ -175,7 +175,7 @@ namespace NeuralNetworkNET.Convolution.Misc
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe float[,] Convolute([NotNull] this float[,] source, int depth, [NotNull] float[,] kernels, ConvolutionMode mode)
+        public static float[,] Convolute([NotNull] this float[,] source, int depth, [NotNull] float[,] kernels, ConvolutionMode mode)
         {
             // Checks and local parameters
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
@@ -204,38 +204,54 @@ namespace NeuralNetworkNET.Convolution.Misc
                     convolutionOutputSize = hResult * hResult,          // Size of each processed image
                     finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
-                // Process the whole data in a single step
+                // Process the valid convolution
                 float[,] result = new float[h, finalWidth];
-
-                fixed (float* src = source, kernel = kernels, dst = result)
+                unsafe void ValidKernel(int index)
                 {
-                    for (int iSample = 0; iSample < h; iSample++)
+                    // Calculate the current indexes
+                    int
+                        iSample = index / nKernels,     // Sample index
+                        k = index % nKernels;           // Kernel index
+
+                    // Process the current convolution slice
+                    int
+                        targetBaseOffset = iSample * finalWidth + k * convolutionOutputSize,
+                        sourceBaseOffset = iSample * w,
+                        kernelBaseOffset = k * kw;
+                    fixed (float* psource = source, pkernels = kernels, presult = result)
                     {
-                        for (int iKernel = 0; iKernel < nKernels; iKernel++)
+                        for (int i = 0; i < hResult; i++)
                         {
-                            for (int i = 0; i < hResult; ++i)
+                            int
+                                targetRowOffset = targetBaseOffset + i * hResult,
+                                xEnd = i + kAxis - 1;
+                            for (int j = 0; j < hResult; j++)
                             {
-                                for (int j = 0; j < hResult; ++j)
+                                int highY = j + kAxis - 1;
+                                float temp = 0.0f;
+                                for (int z = 0; z < depth; z++)
                                 {
-                                    float temp = 0.0f;
-                                    for (int z = 0; z < depth; z++)
+                                    int
+                                        sourceDepthOffset = sourceBaseOffset + z * imgSize,
+                                        kernelDepthOffset = kernelBaseOffset + z * kSize;
+                                    for (int x = i; x <= xEnd; x++)
                                     {
-                                        for (int k = i; k <= i + kAxis - 1; ++k)
+                                        int
+                                            sourceRowOffset = sourceDepthOffset + x * imgAxis,
+                                            kernelRowOffset = kernelDepthOffset + (xEnd - x) * kAxis + highY;
+                                        for (int y = j; y <= highY; y++)
                                         {
-                                            for (int l = j; l <= j + kAxis - 1; ++l)
-                                            {
-                                                temp += 
-                                                    src[iSample * w + z * imgSize + k * imgAxis + l] * 
-                                                    kernel[iKernel * kw + z * kSize + (i + kAxis - 1 - k) * kAxis + (j + kAxis - 1 - l)];
-                                            }
+                                            temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
                                         }
                                     }
-                                    dst[iSample * finalWidth + iKernel * convolutionOutputSize + i * hResult + j] = temp;
                                 }
+                                presult[targetRowOffset + j] = temp;
                             }
                         }
                     }
                 }
+                Parallel.For(0, h * nKernels, ValidKernel).AssertCompleted();
+                return result;
             }
 
             // Full convolution
@@ -246,127 +262,59 @@ namespace NeuralNetworkNET.Convolution.Misc
                     convolutionOutputSize = hResult * hResult,          // Size of each processed image
                     finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
+                // Process the full convolution
                 float[,] result = new float[h, finalWidth];
-                
-                int low_k, high_k, low_l, high_l;
-                int i_src, j_src;
-
-                fixed (float* src = source, kernel = kernels, dst = result)
+                unsafe void FullKernel(int index)
                 {
-                    for (int iSample = 0; iSample < h; iSample++)
+                    // Calculate the current indexes
+                    int
+                        iSample = index / nKernels,     // Sample index
+                        iKernel = index % nKernels;     // Kernel index
+
+                    // Process the convolution slice
+                    int
+                        targetBaseOffset = iSample * finalWidth + iKernel * convolutionOutputSize,
+                        sourceBaseOffset = iSample * w,
+                        kernelBaseOffset = iKernel * kw;
+                    fixed (float* psource = source, pkernels = kernels, presult = result)
                     {
-                        for (int iKernel = 0; iKernel < nKernels; iKernel++)
+                        for (int i = 0; i < hResult; ++i)
                         {
-                            for (int i = 0; i < hResult; ++i)
+                            int
+                                lowX = 0.Max(i - kAxis + 1),
+                                highX = (imgAxis - 1).Min(i),
+                                targetRowOffset = targetBaseOffset + i * hResult;
+                            for (int j = 0; j < hResult; ++j)
                             {
-                                low_k = 0.Max(i - kAxis + 1);
-                                high_k = (imgAxis - 1).Min(i);
-                                for (int j = 0; j < hResult; ++j)
+                                int
+                                    lowY = 0.Max(j - kAxis + 1),
+                                    highY = (imgAxis - 1).Min(j);
+                                float temp = 0.0f;
+                                for (int z = 0; z < depth; z++)
                                 {
-                                    low_l = 0.Max(j - kAxis + 1);
-                                    high_l = (imgAxis - 1).Min(j);
-                                    float temp = 0.0f;
-                                    for (int z = 0; z < depth; z++)
+                                    int
+                                        sourceDepthOffset = sourceBaseOffset + z * imgSize,
+                                        kernelDepthOffset = kernelBaseOffset + z * kSize;
+                                    for (int x = lowX; x <= highX; ++x)
                                     {
-                                        for (int k = low_k; k <= high_k; ++k)
+                                        int
+                                            sourceRowOffset = sourceDepthOffset + x * imgAxis,
+                                            kernelRowOffset = kernelDepthOffset + (i - x) * kAxis + j;
+                                        for (int y = lowY; y <= highY; ++y)
                                         {
-                                            for (int l = low_l; l <= high_l; ++l)
-                                            {
-                                                temp +=
-                                                    src[iSample * w + z * imgSize + k * imgAxis + l] *
-                                                    kernel[iKernel * kw + z * kSize + (i - k) * kAxis + (j - l)];
-                                            }
+                                            temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
                                         }
                                     }
-                                    dst[iSample * finalWidth + iKernel * convolutionOutputSize + i * hResult + j] = temp;
                                 }
+                                presult[targetRowOffset + j] = temp;
                             }
                         }
                     }
                 }
+                Parallel.For(0, h * nKernels, FullKernel).AssertCompleted();
                 return result;
             }
             throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported convolution mode");
-        }
-
-        // Backup 2D method
-        public static unsafe float[] convolute(float[] mSource, int h_src, int w_src, float[] mKernel, int h_kernel, int w_kernel, ConvolutionMode mode)
-        {
-            int h_dst, w_dst;
-            switch (mode)
-            {
-                case ConvolutionMode.Full:
-                    h_dst = h_src + h_kernel - 1;
-                    w_dst = w_src + w_kernel - 1;
-                    break;
-                case ConvolutionMode.Valid:
-                    h_dst = h_src - h_kernel + 1;
-                    w_dst = w_src - w_kernel + 1;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(mode));
-            }
-
-            if (h_dst <= 0 || w_dst <= 0) throw new InvalidOperationException();
-
-            float[] dst = new float[h_dst * w_dst];
-
-
-
-            fixed (float* src = mSource, kernel = mKernel)
-            {
-                float temp;
-                int i, j, k, l;
-                int low_k, high_k, low_l, high_l;
-                int i_src, j_src;
-
-                switch (mode)
-                {
-                    case ConvolutionMode.Valid:
-                        // Valid linear convolution, of size N - M
-                        for (i = 0; i < h_dst; ++i)
-                        {
-                            for (j = 0; j < w_dst; ++j)
-                            {
-                                temp = 0.0f;
-                                for (k = i; k <= i + h_kernel - 1; ++k)
-                                {
-                                    for (l = j; l <= j + w_kernel - 1; ++l)
-                                    {
-                                        temp += src[k * w_src + l] * kernel[(i + h_kernel - 1 - k) * w_kernel + (j + w_kernel - 1 - l)];
-                                    }
-                                }
-                                dst[i * w_dst + j] = temp;
-                            }
-                        }
-                        break;
-                    case ConvolutionMode.Full:
-                        // Full linear convolution of size N + M -1
-                        for (i = 0; i < h_dst; ++i)
-                        {
-                            low_k = 0.Max(i - h_kernel + 1);
-                            high_k = (h_src - 1).Min(i);
-                            for (j = 0; j < w_dst; ++j)
-                            {
-                                low_l = 0.Max(j - w_kernel + 1);
-                                high_l = (w_src - 1).Min(j);
-                                temp = 0.0f;
-                                for (k = low_k; k <= high_k; ++k)
-                                {
-                                    for (l = low_l; l <= high_l; ++l)
-                                    {
-                                        temp += src[k * w_src + l] * kernel[(i - k) * w_kernel + (j - l)];
-                                    }
-                                }
-                                dst[i * w_dst + j] = temp;
-                            }
-                        }
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            return dst;
         }
     }
 }
