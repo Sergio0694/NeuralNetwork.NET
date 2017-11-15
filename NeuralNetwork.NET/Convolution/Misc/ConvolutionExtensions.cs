@@ -115,54 +115,6 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
-        /// Convolutes the input matrix with the given 3x3 kernel
-        /// </summary>
-        /// <param name="m">The input matrix</param>
-        /// <param name="kernel">The 3x3 convolution kernel to use</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Convolute3x3([NotNull] this float[,] m, [NotNull] float[,] kernel)
-        {
-            // Prepare the output matrix
-            if (kernel.GetLength(0) != 3 || kernel.GetLength(1) != 3) throw new ArgumentOutOfRangeException("The input kernel must be 3x3");
-            int h = m.GetLength(0), w = m.GetLength(1);
-            if (h < 3 || w < 3) throw new ArgumentOutOfRangeException("The input matrix must be at least 3x3");
-            float[,] result = new float[h - 2, w - 2];
-
-            // Calculate the normalization factor
-            float factor = 0;
-            for (int i = 0; i < 3; i++)
-                for (int j = 0; j < 3; j++)
-                    factor += kernel[i, j].Abs();
-
-            // Process the convolution
-            int x = 0;
-            for (int i = 1; i < h - 1; i++)
-            {
-                int y = 0;
-                for (int j = 1; j < w - 1; j++)
-                {
-                    float
-                        partial =
-                            m[i - 1, j - 1] * kernel[0, 0] +
-                            m[i - 1, j] * kernel[0, 1] +
-                            m[i - 1, j + 1] * kernel[0, 2] +
-                            m[i, j - 1] * kernel[1, 0] +
-                            m[i, j] * kernel[1, 1] +
-                            m[i, j + 1] * kernel[1, 2] +
-                            m[i + 1, j - 1] * kernel[2, 0] +
-                            m[i + 1, j] * kernel[2, 1] +
-                            m[i + 1, j + 1] * kernel[2, 2],
-                        normalized = partial / factor;
-                    result[x, y++] = normalized;
-                }
-                x++;
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Performs a convolution operation on the source matrix, using the given kernels
         /// </summary>
         /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
