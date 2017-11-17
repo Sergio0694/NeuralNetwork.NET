@@ -8,11 +8,16 @@
         /// <summary>
         /// Valid convolution, where the kernel only slides within the margins of the target matrix
         /// </summary>
-        Valid,
+        Forward,
 
         /// <summary>
         /// Full convolution, where the kernel slides from each edge of the target matrix, even if it partially exceeds the bounds of that matrix
         /// </summary>
-        Full
+        Backwards,
+
+        /// <summary>
+        /// Valid convolution with an output volume for each kernel slice
+        /// </summary>
+        Gradient
     }
 }
