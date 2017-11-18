@@ -47,12 +47,17 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// <summary>
         /// Forwards the input through the network
         /// </summary>
-        /// <param name="input">The input to process</param>
+        /// <param name="x">The input to process</param>
         /// <remarks>This methods processes a single input row and outputs a single result</remarks>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        float[] Forward([NotNull] float[] input);
+        float[] Forward([NotNull] float[] x);
 
+        /// <summary>
+        /// Forwards the inputs through the network
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        /// <remarks>This methods processes multiple inputs at the same time, one per input row</remarks>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         float[,] Forward([NotNull] float[,] x);
@@ -60,20 +65,20 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// <summary>
         /// Calculates the cost function for the current instance and the input values
         /// </summary>
-        /// <param name="input">The input values for the network</param>
+        /// <param name="x">The input values for the network</param>
         /// <param name="y">The expected result to use to calculate the error</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        float CalculateCost([NotNull] float[] input, [NotNull] float[] y);
+        float CalculateCost([NotNull] float[] x, [NotNull] float[] y);
 
         /// <summary>
         /// Calculates the cost function for the current instance and the input values
         /// </summary>
-        /// <param name="input">The input values for the network</param>
+        /// <param name="x">The input values for the network</param>
         /// <param name="y">The expected result to use to calculate the error</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        float CalculateCost([NotNull] float[,] input, [NotNull] float[,] y);
+        float CalculateCost([NotNull] float[,] x, [NotNull] float[,] y);
 
         /// <summary>
         /// Serializes the network as a JSON string

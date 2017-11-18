@@ -113,7 +113,6 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 if (i != layers.Length - 1 && layer is OutputLayer) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length && !(layer is OutputLayer)) throw new ArgumentException("The last layer must be an output layer");
-                if (i > 0) layer.ValidateInputSize(layers[i - 1].Outputs);
             }
 
             // Parameters setup
@@ -156,7 +155,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (!(layers[layers.Length - 1] is NetworkLayer.OutputLayer output))
                 throw new ArgumentException(nameof(layers), "The last layer isn't a valid output layer");
             CostFunctionType costFunction = output.Cost;
-            return new NeuralNetwork(weights, biases, activations, costFunction);
+            throw new NotImplementedException();
+           // return new NeuralNetwork(weights, biases, activations, costFunction);
         }
 
         #endregion
