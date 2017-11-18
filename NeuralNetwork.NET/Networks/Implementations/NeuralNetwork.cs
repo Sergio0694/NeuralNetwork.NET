@@ -62,8 +62,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (layers.Length < 1) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
             foreach ((NetworkLayerBase layer, int i) in layers.Select((l, i) => (l as NetworkLayerBase, i)))
             {
-                if (i != layers.Length - 1 && layer is OutputLayer) throw new ArgumentException("The output layer must be the last layer in the network");
-                if (i == layers.Length && !(layer is OutputLayer)) throw new ArgumentException("The last layer must be an output layer");
+                if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
+                if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
                 // TODO: add more checks here
             }
 
@@ -111,7 +111,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             float[,] yHat = Forward(input);
 
             // Calculate the cost
-            return Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().CalculateCost(yHat, y);
+            return Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
              * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
              *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-            deltas[deltas.Length - 1] = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
+            deltas[deltas.Length - 1] = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
             for (int l = Layers.Count - 2; l >= 0; l--)
             {
                 /* ======================
@@ -267,7 +267,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Check the correctly classified samples and calculate the cost
             Parallel.For(0, h, Kernel).AssertCompleted();
             float
-                cost = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().CalculateCost(yHat, evaluationSet.Y),
+                cost = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, evaluationSet.Y),
                 accuracy = (float)total / h * 100;
             return (cost, total, accuracy);
         }
