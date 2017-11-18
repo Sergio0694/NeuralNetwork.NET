@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Layers;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
@@ -40,9 +40,9 @@ namespace NeuralNetworkNET.SupervisedLearning
             ValidationParameters validationParameters = null,
             TestParameters testParameters = null,
             float eta = 0.1f, float lambda = 0f, CancellationToken token = default,
-            [NotNull, ItemNotNull] params NetworkLayer[] layers)
+            [NotNull, ItemNotNull] params INetworkLayer[] layers)
         {
-            NeuralNetwork network = NeuralNetwork.NewRandom(layers);
+            NeuralNetwork network = new NeuralNetwork(layers);
             TrainingStopReason result = await TrainNetworkAsync(
                 network, trainingSet, epochs, batchSize, validationParameters, testParameters, eta, lambda, token);
             return (network, result);

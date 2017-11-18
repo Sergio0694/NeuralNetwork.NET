@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 
@@ -127,100 +126,63 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
         }
 
+        // 1-depth, 3*3 with 2*2 = 2*2 result
         [TestMethod]
-        public void Convolution3x3_1()
+        public void Convolution2DValid1()
         {
-            // Test values
             float[,]
-                m =
-                {
-                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
-                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
-                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
-                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
-                    { -1, -1, -1, -1, 1, -1, -1, -1, -1 },
-                    { -1, -1, -1, 1, -1, 1, -1, -1, -1 },
-                    { -1, -1, 1, -1, -1, -1, 1, -1, -1 },
-                    { -1, 1, -1, -1, -1, -1, -1, 1, -1 },
-                    { -1, -1, -1, -1, -1, -1, -1, -1, -1 }
-                },
-                k =
-                {
-                    { 1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                r =
-                {
-                    { 0.77f, -0.11f, 0.11f, 0.33f, 0.55f, -0.11f, 0.33f },
-                    { -0.11f, 1, -0.11f, 0.33f, -0.11f, 0.11f, -0.11f },
-                    { 0.11f, -0.11f, 1, -0.33f, 0.11f, -0.11f, 0.55f },
-                    { 0.33f, 0.33f, -0.33f, 0.55f, -0.33f, 0.33f, 0.33f },
-                    { 0.55f, -0.11f, 0.11f, -0.33f, 1, -0.11f, 0.11f },
-                    { -0.11f, 0.11f, -0.11f, 0.33f, -0.11f, 1, -0.11f },
-                    { 0.33f, -0.11f, 0.55f, 0.33f, 0.11f, -0.11f, 0.77f }
-                },
-                t = m.Convolute3x3(k);
-            t.Tweak(d => (float)Math.Truncate(d * 100) / 100f);
-            Assert.IsTrue(t.ContentEquals(r));
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },  // 3*3
+                k = { { 1, 1, 0, 1 } };                 // 2*2
+            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
+            float[,] expected = { { 2, 2, 4, 1 } };     // 2*2 
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        // 1-depth, 2 sample 3*3 with 2*2 = 2 sample 2*2 result
+        [TestMethod]
+        public void Convolution2DValid2()
+        {
+            float[,]
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 }, { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },   // 2 sample, 3*3
+                k = { { 1, 1, 0, 1 } };                                                 // 2*2
+            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
+            float[,] expected = { { 2, 2, 4, 1 }, { 2, 2, 4, 1 } };                     // 2 sample, 2*2
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        // 1-depth, 3*3 with 2 kernels 2*2 = 2-depth 2*2 result
+        [TestMethod]
+        public void Convolution2DValid3()
+        {
+            float[,]
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },              // 3*3
+                k = { { 1, 1, 0, 1 }, { 0, 1, 2, 0 } };             // 2 kernels 2*2
+            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
+            float[,] expected = { { 2, 2, 4, 1, 4, 0, 1, 3 } };     // 2-depth, 2*2 result
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        // 2-depth, 3*3 with 2-depth kernel = 2*2 result
+        [TestMethod]
+        public void Convolution2DValid4()
+        {
+            float[,]
+                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 2, 1, 0, 1, 1 } },   // 2-depth 3*3
+                k = { { 1, 1, 0, 1, 0, 1, 1, 0 } };                                 // 2-depth 2*2 kernel
+            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Forward);
+            float[,] expected = { { 2, 4, 6, 3 } };                                 // 2*2 result
+            Assert.IsTrue(result.ContentEquals(expected));
         }
 
         [TestMethod]
-        public void Convolution3x3_2()
+        public void ConvolutionFull1()
         {
-            // Test values
             float[,]
-                m =
-                {
-                    { -1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                k =
-                {
-                    { 1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                r =
-                {
-                    { 0.77f }
-                },
-                t = m.Convolute3x3(k);
-            t.Tweak(d => (float)Math.Truncate(d * 100) / 100f);
-            Assert.IsTrue(t.ContentEquals(r));
-        }
-
-        [TestMethod]
-        public void Convolution3x3_3()
-        {
-            // Test values
-            float[,]
-                m =
-                {
-                    { -1, -1, -1, -1, -1, -1 },
-                    { -1, 1, -1, -1, -1, -1 },
-                    { -1, -1, 1, -1, -1, -1 },
-                    { -1, -1, -1, 1, -1, 1 },
-                    { -1, -1, -1, -1, 1, -1 },
-                    { -1, -1, -1, 1, -1, 1 }
-                },
-                k =
-                {
-                    { 1, -1, -1 },
-                    { -1, 1, -1 },
-                    { -1, -1, 1 }
-                },
-                r =
-                {
-                    { 0.77f, -0.11f, 0.11f, 0.33f },
-                    { -0.11f, 1, -0.11f, 0.33f },
-                    { 0.11f, -0.11f, 1, -0.33f },
-                    { 0.33f, 0.33f, -0.33f, 0.55f }
-                },
-                t = m.Convolute3x3(k);
-            t.Tweak(d => (float)Math.Truncate(d * 100) / 100f);
-            Assert.IsTrue(t.ContentEquals(r));
+                l = { { 0, 1, -1, 2 } },
+                k = { { 1, 1, 0, 1 } };
+            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Backwards);
+            float[,] expected = { { 0, 1, 1, -1, 1, 3, 0, -1, 2 } };
+            Assert.IsTrue(result.ContentEquals(expected));
         }
     }
 }

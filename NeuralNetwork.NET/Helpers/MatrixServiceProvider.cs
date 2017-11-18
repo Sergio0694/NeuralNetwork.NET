@@ -31,7 +31,7 @@ namespace NeuralNetworkNET.Helpers
             _MultiplyAndActivationOverride = multiplyActivation;
             _MultiplyWithSumAndActivationOverride = multiplyWithSumAndActivation;
             _ActivationOverride = activation;
-            _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride = multiplyAndInPlaceActivationPrimeHadamard;
+            _InPlaceMultiplyAndHadamardProductWithAcrivationPrime = multiplyAndInPlaceActivationPrimeHadamard;
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace NeuralNetworkNET.Helpers
             _MultiplyOverride = _TransposeAndMultiplyOverride = null;
             _MultiplyAndActivationOverride = null;
             _ActivationOverride = null;
-            _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride = null;
+            _InPlaceMultiplyAndHadamardProductWithAcrivationPrime = null;
         }
 
         #endregion
@@ -147,15 +147,15 @@ namespace NeuralNetworkNET.Helpers
         /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product with a matrix product
         /// </summary>
         [CanBeNull]
-        private static Action<float[,], float[,], float[,], ActivationFunction> _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride;
+        private static Action<float[,], float[,], float[,], ActivationFunction> _InPlaceMultiplyAndHadamardProductWithAcrivationPrime;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct"/> method
+        /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime"/> method
         /// </summary>
-        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
+        public static void InPlaceMultiplyAndHadamardProductWithAcrivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
         {
-            if (_MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride == null) m.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(di, wt, prime);
-            else _MultiplyAndInPlaceActivationPrimeAndHadamardProductOverride?.Invoke(m, di, wt, prime);
+            if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
+            else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime?.Invoke(m, di, wt, prime);
         }
 
         #endregion

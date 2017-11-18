@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -9,6 +10,34 @@ namespace NeuralNetworkNET.Helpers
     /// </summary>
     public static class Extensions
     {
+        /// <summary>
+        /// Casts the 
+        /// </summary>
+        /// <typeparam name="TIn"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOut To<TIn, TOut>([NotNull] this TIn item) where TOut : class, TIn => item as TOut 
+            ?? throw new InvalidOperationException($"The item of type {typeof(TIn)} is a {item.GetType()} instance and can't be cast to {typeof(TOut)}");
+
+        /// <summary>
+        /// Returns the maximum value between two numbers
+        /// </summary>
+        /// <param name="a">The first number</param>
+        /// <param name="b">The second number</param>
+        [Pure]
+        public static int Max(this int a, int b) => a >= b ? a : b;
+
+        /// <summary>
+        /// Returns the minimum value between two numbers
+        /// </summary>
+        /// <param name="a">The first number</param>
+        /// <param name="b">The second number</param>
+        [Pure]
+        public static int Min(this int a, int b) => a <= b ? a : b;
+
         /// <summary>
         /// Calculates the absolute value of the input number
         /// </summary>

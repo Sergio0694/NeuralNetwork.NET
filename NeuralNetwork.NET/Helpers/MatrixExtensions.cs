@@ -579,21 +579,21 @@ namespace NeuralNetworkNET.Helpers
         /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
         /// </summary>
         /// <param name="z">The activity on the previous layer</param>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="delta">The first matrix to multiply</param>
+        /// <param name="wt">The second matrix to multiply</param>
         /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static void MultiplyAndInPlaceActivationPrimeAndHadamardProduct(
-            [NotNull] this float[,] z, [NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction prime)
+        public static void InPlaceMultiplyAndHadamardProductWithAcrivationPrime(
+            [NotNull] this float[,] z, [NotNull] float[,] delta, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
-            int h = m1.GetLength(0);
-            int w = m2.GetLength(1);
-            int l = m1.GetLength(1);
+            int h = delta.GetLength(0);
+            int w = wt.GetLength(1);
+            int l = delta.GetLength(1);
 
             // Checks
-            if (l != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (l != wt.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
             if (h != z.GetLength(0) || w != z.GetLength(1)) throw new ArgumentException("The matrices must be of equal size");
 
             // Execute the multiplication in parallel
@@ -601,7 +601,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 unsafe
                 {
-                    fixed (float* pz = z, pm1 = m1, pm2 = m2)
+                    fixed (float* pz = z, pm1 = delta, pm2 = wt)
                     {
                         // Save the index and iterate for each column
                         int i1 = i * l;
