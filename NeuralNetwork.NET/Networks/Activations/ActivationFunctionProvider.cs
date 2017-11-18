@@ -25,6 +25,7 @@ namespace NeuralNetworkNET.Networks.Activations
                 case ActivationFunctionType.Softmax: return (ActivationFunctions.Softmax, null);
                 case ActivationFunctionType.Softplus: return (ActivationFunctions.Softplus, ActivationFunctions.Sigmoid);
                 case ActivationFunctionType.ELU: return (ActivationFunctions.ELU, ActivationFunctions.ELUPrime);
+                case ActivationFunctionType.Identity: return (ActivationFunctions.Identity, ActivationFunctions.Identityprime);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(ActivationFunctionType), "Unsupported activation function");
             }

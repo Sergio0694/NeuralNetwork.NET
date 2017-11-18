@@ -16,7 +16,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Sigmoid(this float x) => 1 / (1 + (float)Math.Exp(-x));
+        public static float Sigmoid(float x) => 1 / (1 + (float)Math.Exp(-x));
 
         /// <summary>
         /// Applies the sigmoid prime function, 1 / (1 + e^(-x))
@@ -25,7 +25,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float SigmoidPrime(this float x)
+        public static float SigmoidPrime(float x)
         {
             float
                 exp = (float)Math.Exp(x),
@@ -42,7 +42,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Tanh(this float x)
+        public static float Tanh(float x)
         {
             float e2x = (float)Math.Exp(2 * x);
             return (e2x - 1) / (e2x + 1);
@@ -55,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float TanhPrime(this float x)
+        public static float TanhPrime(float x)
         {
             float
                 eminus2x = (float)Math.Exp(-x),
@@ -73,7 +73,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ReLU(this float x) => x > 0 ? x : 0;
+        public static float ReLU(float x) => x > 0 ? x : 0;
 
         /// <summary>
         /// Applies the derivative of the <see cref="Tanh"/> function
@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ReLUPrime(this float x) => x <= 0 ? 0 : 1;
+        public static float ReLUPrime(float x) => x <= 0 ? 0 : 1;
 
         /// <summary>
         /// Applies the leaky ReLU function
@@ -92,7 +92,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float LeakyReLU(this float x) => x > 0 ? x : 0.01f * x;
+        public static float LeakyReLU(float x) => x > 0 ? x : 0.01f * x;
 
         /// <summary>
         /// Applies the derivative of the <see cref="LeakyReLU"/> function
@@ -102,7 +102,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float LeakyReLUPrime(this float x) => x > 0 ? 1 : 0.01f;
+        public static float LeakyReLUPrime(float x) => x > 0 ? 1 : 0.01f;
 
         /// <summary>
         /// Applies the the numerator part of the softmax activation function, e^x
@@ -112,7 +112,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Softmax(this float x) => (float)Math.Exp(x);
+        public static float Softmax(float x) => (float)Math.Exp(x);
 
         /// <summary>
         /// Applies the softplus function, ln(1 + e^x)
@@ -122,7 +122,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Softplus(this float x)
+        public static float Softplus(float x)
         {
             float
                 exp = (float)Math.Exp(x),
@@ -138,7 +138,7 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ELU(this float x) => x >= 0 ? x : (float)Math.Exp(x) - 1;
+        public static float ELU(float x) => x >= 0 ? x : (float)Math.Exp(x) - 1;
 
         /// <summary>
         /// Applies the derivative of the <see cref="ELU"/> function
@@ -147,6 +147,24 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ELUPrime(this float x) => x >= 0 ? 1 : (float)Math.Exp(x);
+        public static float ELUPrime(float x) => x >= 0 ? 1 : (float)Math.Exp(x);
+
+        /// <summary>
+        /// Applies the identity function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Identity(float x) => x;
+
+        /// <summary>
+        /// Applies the derivative of the <see cref="Identity"/> function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Identityprime(float x) => 1;
     }
 }

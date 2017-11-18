@@ -24,12 +24,6 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         int OutputLayerSize { get; }
 
         /// <summary>
-        /// Gets the description of the network hidden layers
-        /// </summary>
-        [NotNull]
-        IReadOnlyList<int> HiddenLayers { get; }
-
-        /// <summary>
         /// Gets the list of activation functions used in the network layers
         /// </summary>
         [NotNull]

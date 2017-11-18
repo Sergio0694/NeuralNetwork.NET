@@ -7,12 +7,11 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Cost.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
+using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
-using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
@@ -37,12 +36,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
         public int OutputLayerSize { get; }
 
-        private int[] _HiddenLayers;
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(HiddenLayers), Required = Required.Always)]
-        public IReadOnlyList<int> HiddenLayers => _HiddenLayers ?? (_HiddenLayers = Weights.Take(Weights.Count - 1).Select(w => w.GetLength(1)).ToArray());
-
         /// <inheritdoc/>
         [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
         public IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
@@ -53,113 +46,32 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        #region Local fields
-
         /// <summary>
-        /// The list of weight matrices for the network
+        /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Weights), Required = Required.Always)]
-        private readonly IReadOnlyList<float[,]> Weights;
+        private readonly IReadOnlyList<NetworkLayerBase> Layers;
 
         /// <summary>
-        /// The precalculated list of transposed weight matrices to use inthe gradient function
-        /// </summary>
-        /// <remarks>The first item is always null (to save space), as it isn't needed to calculate the gradient</remarks>
-        [NotNull, ItemCanBeNull]
-        private readonly float[][,] TransposedWeights;
-
-        /// <summary>
-        /// The list of bias vectors for the network
-        /// </summary>
-        [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Biases), Required = Required.Always)]
-        private readonly IReadOnlyList<float[]> Biases;
-
-        /// <summary>
-        /// Gets the <see cref="CostFunction"/> used to evaluate the neural network
-        /// </summary>
-        [NotNull]
-        private readonly CostFunction CostFunction;
-
-        /// <summary>
-        /// Gets the <see cref="CostFunctionPrime"/> used in the gradient descent algorithm
-        /// </summary>
-        [NotNull]
-        private readonly CostFunctionPrime CostFunctionPrime;
-
-        /// <summary>
-        /// Gets the list of activation and activation prime functions used in the network
-        /// </summary>
-        [NotNull]
-        private readonly IReadOnlyList<(ActivationFunction Activation, ActivationFunction ActivationPrime)> ActivationFunctions;
-
-        [NotNull, ItemNotNull]
-        private readonly IReadOnlyList<INetworkLayer> Layers;
-
-        #endregion
-
-        #region Initialization
-
-        /// <summary>
-        /// Initializes a new instance with the given parameters
+        /// Initializes a new network with the given parameters
         /// </summary>
         /// <param name="layers">The layers that make up the neural network</param>
-        public NeuralNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers)
+        internal NeuralNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers)
         {
             // Input check
-            if (layers.Length == 0) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
+            if (layers.Length < 1) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
             foreach ((NetworkLayerBase layer, int i) in layers.Select((l, i) => (l as NetworkLayerBase, i)))
             {
                 if (i != layers.Length - 1 && layer is OutputLayer) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length && !(layer is OutputLayer)) throw new ArgumentException("The last layer must be an output layer");
+                // TODO: add more checks here
             }
 
             // Parameters setup
             InputLayerSize = layers[0].Inputs;
             OutputLayerSize = layers[layers.Length - 1].Outputs;
-            Layers = layers;
+            Layers = layers.Cast<NetworkLayerBase>().ToArray();
         }
-
-        /// <summary>
-        /// Creates a new random instance with the given number of neurons in each layer
-        /// </summary>
-        /// <param name="layers">The type of layers that make up the network</param>
-        [NotNull]
-        public static NeuralNetwork NewRandom([NotNull, ItemNotNull] params NetworkLayer[] layers)
-        {
-            // Check
-            if (layers.Length < 2) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least two layers");
-            if (!(layers[0] is NetworkLayer.InputLayer)) throw new ArgumentException(nameof(layers), "The first layer isn't a valid input layer");
-
-            // Initialize the weights
-            Random random = new Random();
-            float[][,] weights = new float[layers.Length - 1][,];
-            float[][] biases = new float[layers.Length - 1][];
-            ActivationFunctionType[] activations = new ActivationFunctionType[weights.Length];
-            for (int i = 0; i < weights.Length; i++)
-            {
-                // Layer checks
-                if (!(layers[i + 1] is NetworkLayer.FullyConnectedLayer fullyConnected))
-                    throw new ArgumentException(nameof(layers), $"The layer #{i + 1} isn't a valid fully connected layer");
-                if (i < weights.Length - 1 && layers[i] is NetworkLayer.FullyConnectedLayer layer &&
-                    layer.Activation == ActivationFunctionType.Softmax)
-                    throw new ArgumentException(nameof(layers), "The softmax activation function can only be used in the output layer");
-
-                // Initialization
-                int fanIn = layers[i].Neurons, fanOut = layers[i + 1].Neurons;
-                activations[i] = fullyConnected.Activation;
-                weights[i] = random.NextXavierMatrix(fanIn, fanOut);
-                biases[i] = random.NextGaussianVector(fanOut);
-            }
-            if (!(layers[layers.Length - 1] is NetworkLayer.OutputLayer output))
-                throw new ArgumentException(nameof(layers), "The last layer isn't a valid output layer");
-            CostFunctionType costFunction = output.Cost;
-            throw new NotImplementedException();
-           // return new NeuralNetwork(weights, biases, activations, costFunction);
-        }
-
-        #endregion
 
         #region Single processing
 
@@ -186,17 +98,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public float[,] Forward(float[,] x)
         {
-            float[,] a0 = x;
-            for (int i = 0; i < Weights.Count; i++)
-            {
-                // A(l) = activation(W(l) * A(l - 1) + b(l))
-                a0 = MatrixServiceProvider.MultiplyWithSumAndActivation(a0, Weights[i], Biases[i], ActivationFunctions[i].Activation);
-            }
-
-            // Apply the softmax normalization to the output layer, if needed
-            if (CostFunctionType == CostFunctionType.LogLikelyhood)
-                a0.InPlaceSoftmaxNormalization();
-            return a0; // At least one weight matrix, so a0 != x
+            float[,] yHat = x;
+            foreach (NetworkLayerBase layer in Layers)
+                (_, yHat) = layer.Forward(yHat); // Forward the inputs through all the network layers
+            return yHat;
         }
 
         /// <inheritdoc/>
@@ -206,7 +111,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             float[,] yHat = Forward(input);
 
             // Calculate the cost
-            return CostFunction(yHat, y);
+            return Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().CalculateCost(yHat, y);
         }
 
         /// <summary>
@@ -220,64 +125,48 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y)
         {
             // Feedforward
-            int steps = Weights.Count;  // Number of forward hops through the network
             float[][,]
-                zList = new float[steps][,],
-                aList = new float[steps][,];
-            float[,] a0 = x;
-            for (int i = 0; i < Weights.Count; i++)
+                zList = new float[Layers.Count][,],
+                aList = new float[Layers.Count][,];
+            foreach ((NetworkLayerBase layer, int i) in Layers.Select((l, i) => (l, i)))
             {
                 // Save the intermediate steps to be able to reuse them later
-                zList[i] = MatrixServiceProvider.MultiplyWithSum(a0, Weights[i], Biases[i]);
-                aList[i] = a0 = MatrixServiceProvider.Activation(zList[i], ActivationFunctions[i].Activation);
+                (zList[i], aList[i]) = layer.Forward(i == 0 ? x : aList[i - 1]);
             }
 
-            // Apply the softmax normalization to the output layer, if needed
-            if (CostFunctionType == CostFunctionType.LogLikelyhood)
-                aList[aList.Length - 1].InPlaceSoftmaxNormalization();
+            // Backpropagation deltas
+            float[][,] deltas = new float[Layers.Count][,]; // One delta for each hop through the network
 
-            /* ============================
-             * Calculate delta(L) in place
-             * ============================
+            /* ======================
+             * Calculate delta(L)
+             * ======================
              * Perform the sigmoid prime of zL, the activity on the last layer
              * Calculate the gradient of C with respect to a
-             * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L */
-            float[,] dL = aList[aList.Length - 1];
-            CostFunctionPrime(dL, y, zList[zList.Length - 1], ActivationFunctions[ActivationFunctions.Count - 1].ActivationPrime);
-
-            // Backpropagation
-            float[][,] deltas = new float[steps][,];        // One additional delta for each hop, delta(L) has already been calculated
-            deltas[steps - 1] = dL;                         // Store the delta(L) in the last position
-            for (int l = Weights.Count - 2; l >= 0; l--)    // Loop for l = L - 1, L - 2, ..., 2
+             * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
+             * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
+             *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
+            deltas[deltas.Length - 1] = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
+            for (int l = Layers.Count - 2; l >= 0; l--)
             {
-                // Prepare d(l + 1) and W(l + 1)T
-                float[,]
-                    transposed = TransposedWeights[l + 1] ?? (TransposedWeights[l + 1] = Weights[l + 1].Transpose()), // Calculate W[l + 1]T if needed
-                    dl = zList[l]; // Local reference on the delta to calculate in place
-
-                /* ============================
-                 * Calculate delta(l) in place
-                 * ============================
+                /* ======================
+                 * Calculate delta(l)
+                 * ======================
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(dl, deltas[l + 1], transposed, ActivationFunctions[l].ActivationPrime);
-                deltas[l] = dl;
+                deltas[l] = Layers[l].Backpropagate(deltas[l + 1], zList[l], Layers[l].ActivationFunctions.ActivationPrime);
             }
 
-            // Compute the gradient
-            LayerGradient[] gradient = new LayerGradient[Weights.Count]; // One gradient item for layer
-            for (int i = 0; i < Weights.Count; i++)
+            /* =============================================
+             * Compute the gradients DJDw(l) and DJDb(l)
+             * =============================================
+             * Compute the gradients for each layer with weights and biases.
+             * NOTE: the gradient is only computed for layers with weights and biases, for all the other
+             *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
+            LayerGradient[] gradient = new LayerGradient[Layers.Count]; // One gradient item for layer
+            foreach ((WeightedLayerBase layer, int i) in Layers.Select((l, i) => (l as WeightedLayerBase, i)))
             {
-                // Store the target delta
-                float[,] di = deltas[i];
-
-                // Compute dJdw(l) and dJdb(l)
-                float[,] dJdw = i == 0
-                    ? MatrixServiceProvider.TransposeAndMultiply(x, di)             // dJdW1, transposed input * first delta
-                    : MatrixServiceProvider.TransposeAndMultiply(aList[i - 1], di); // dJdWi, previous activation transposed * current delta
-                float[] dJdb = di.CompressVertically();
-                gradient[i] = new LayerGradient(dJdw, dJdb);
+                gradient[i] = layer.ComputeGradient(i == 0 ? x : aList[i - 1], deltas[i]);
             }
             return gradient;
         }
@@ -341,48 +230,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="l2Factor">The L2 regularization factor</param>
         private void UpdateWeights([NotNull] IReadOnlyList<LayerGradient> dJ, int batchSize, float eta, float l2Factor)
         {
-            // Divide the workload
-            int blocks = Weights.Count * 2;
-            float scale = eta / batchSize;
-
-            // Function to update the weights from the calculated gradient
-            unsafe void Kernel(int i)
-            {
-                // Get the index of the current layer and branch over weights/biases
-                int l = i / 2;
-                if (i % 2 == 0)
-                {
-                    // Tweak the weights of the lth layer
-                    float[,] weight = Weights[l];
-                    fixed (float* pw = weight, pdj = dJ[l].DJdw)
-                    {
-                        int
-                            h = weight.GetLength(0),
-                            w = weight.GetLength(1);
-                        for (int x = 0; x < h; x++)
-                        {
-                            int offset = x * w;
-                            for (int y = 0; y < w; y++)
-                            {
-                                int target = offset + y;
-                                pw[target] -= l2Factor * pw[target] + scale * pdj[target];
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Tweak the biases of the lth layer
-                    float[] bias = Biases[l];
-                    fixed (float* pb = bias, pdj = dJ[l].Djdb)
-                    {
-                        int w = bias.Length;
-                        for (int x = 0; x < w; x++)
-                            pb[x] -= scale * pdj[x];
-                    }
-                }
-            }
-            Parallel.For(0, blocks, Kernel).AssertCompleted();
+            float alpha = eta / batchSize;
+            IEnumerable<(WeightedLayerBase Layer, LayerGradient Gradient)> targets =
+                from layer in Layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i))
+                where layer.Layer != null
+                select (layer.Layer, dJ[layer.Index]);
+            Parallel.ForEach(targets, target => target.Layer.Minimize(target.Gradient, alpha, l2Factor));
         }
 
         /// <summary>
@@ -414,7 +267,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Check the correctly classified samples and calculate the cost
             Parallel.For(0, h, Kernel).AssertCompleted();
             float
-                cost = CostFunction(yHat, evaluationSet.Y),
+                cost = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().CalculateCost(yHat, evaluationSet.Y),
                 accuracy = (float)total / h * 100;
             return (cost, total, accuracy);
         }
@@ -433,13 +286,10 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (other is NeuralNetwork network &&
                 other.InputLayerSize == InputLayerSize &&
                 other.OutputLayerSize == OutputLayerSize &&
-                other.HiddenLayers.SequenceEqual(HiddenLayers) &&
                 other.ActivationFunctionTypes.SequenceEqual(ActivationFunctionTypes))
             {
                 // Compare each weight and bias value
-                for (int i = 0; i < Weights.Count; i++)
-                    if (!network.Weights[i].ContentEquals(Weights[i]) ||
-                        !network.Biases[i].ContentEquals(Biases[i])) return false;
+                // TODO
                 return true;
             }
             return false;
