@@ -38,5 +38,27 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static INetworkLayer Softmax(int inputs, int outputs) => new SoftmaxLayer(inputs, outputs);
+
+        /// <summary>
+        /// Creates a fully connected softmax output layer (used for classification problems with mutually-exclusive classes)
+        /// </summary>
+        /// <param name="height">The height of each input image</param>
+        /// <param name="width">The width of each input image</param>
+        /// <param name="depth">The depth of the input volume</param>
+        /// <param name="kernels">The number of convolution kernels to apply to the input volume</param>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static INetworkLayer Convolutional(int height, int width, int depth, int kernels, ActivationFunctionType activation) => new ConvolutionalLayer(height, width, depth, kernels, activation);
+
+        /// <summary>
+        /// Creates a fully connected softmax output layer (used for classification problems with mutually-exclusive classes)
+        /// </summary>
+        /// <param name="height">The height of each input image</param>
+        /// <param name="width">The width of each input image</param>
+        /// <param name="depth">The depth of the input volume</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static INetworkLayer Pooling(int height, int width, int depth) => new PoolingLayer(height, width, depth);
     }
 }
