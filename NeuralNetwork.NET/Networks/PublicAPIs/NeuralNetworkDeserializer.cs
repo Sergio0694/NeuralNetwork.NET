@@ -28,7 +28,7 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                 int 
                     inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), 
                     outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
-                int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
+               // int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
                 float[][,] weights = jObject["Weights"].ToObject<float[][,]>();
                 float[][] biases = jObject["Biases"].ToObject<float[][]>();
                 ActivationFunctionType[] activations = jObject["ActivationFunctionTypes"].ToObject<ActivationFunctionType[]>();
@@ -39,9 +39,9 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                     outputs != weights[weights.Length - 1].GetLength(1)) return null;
                 if (biases.Length < 1 ||
                     outputs != biases[biases.Length - 1].Length) return null;
-                for (int i = 0; i < layersInfo.Length; i++)
-                    if (layersInfo[i] != weights[i].GetLength(1) ||
-                        layersInfo[i] != biases[i].Length) return null;
+              //  for (int i = 0; i < layersInfo.Length; i++)
+              //      if (layersInfo[i] != weights[i].GetLength(1) ||
+              //          layersInfo[i] != biases[i].Length) return null;
 
                 // Parse the network
                 //return new NeuralNetwork(weights, biases, activations);

@@ -165,7 +165,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 m2 = r.NextGaussianMatrix(10, 10),
                 backup = new float[10, 10];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(float) * m1.Length);
-            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt, ActivationFunctions.SigmoidPrime);
+            MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(backup, m2, wt, ActivationFunctions.SigmoidPrime);
             MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
             wt = r.NextGaussianMatrix(200, 200);
@@ -173,7 +173,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             m2 = r.NextGaussianMatrix(200, 200);
             backup = new float[200, 200];
             Buffer.BlockCopy(m1, 0, backup, 0, sizeof(float) * m1.Length);
-            MatrixExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(backup, m2, wt, ActivationFunctions.SigmoidPrime);
+            MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(backup, m2, wt, ActivationFunctions.SigmoidPrime);
             MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct(m1, m2, wt, ActivationFunctions.SigmoidPrime);
             Assert.IsTrue(m1.ContentEquals(backup));
         }

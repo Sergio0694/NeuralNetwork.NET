@@ -43,6 +43,11 @@
         /// <summary>
         /// The exponential linear unit function, [{ x, x positive}, { e^x - 1, otherwise}];
         /// </summary>
-        ELU
+        ELU,
+
+        /// <summary>
+        /// A linear activation function that just returns the input value
+        /// </summary>
+        Identity
     }
 }
