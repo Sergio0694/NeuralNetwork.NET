@@ -10,6 +10,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
+using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.Layers;
 using NeuralNetworkNET.Networks.PublicAPIs;
@@ -30,11 +31,11 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         /// <inheritdoc/>
         [JsonProperty(nameof(InputLayerSize), Required = Required.Always)]
-        public int InputLayerSize => Weights[0].GetLength(0);
+        public int InputLayerSize { get; }
 
         /// <inheritdoc/>
         [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
-        public int OutputLayerSize => Weights[Weights.Count - 1].GetLength(1);
+        public int OutputLayerSize { get; }
 
         private int[] _HiddenLayers;
 
@@ -93,6 +94,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         [NotNull]
         private readonly IReadOnlyList<(ActivationFunction Activation, ActivationFunction ActivationPrime)> ActivationFunctions;
 
+        [NotNull, ItemNotNull]
+        private readonly IReadOnlyList<INetworkLayer> Layers;
+
         #endregion
 
         #region Initialization
@@ -100,37 +104,22 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Initializes a new instance with the given parameters
         /// </summary>
-        /// <param name="weights">The weights in all the network layers</param>
-        /// <param name="biases">The bias vectors to use in the network</param>
-        /// <param name="activations">The activation functions to use in the new network</param>
-        /// <param name="costFunction">The desired cost function to use</param>
-        public NeuralNetwork(
-            [NotNull] IReadOnlyList<float[,]> weights, 
-            [NotNull] IReadOnlyList<float[]> biases, 
-            [NotNull] IReadOnlyList<ActivationFunctionType> activations, CostFunctionType costFunction)
+        /// <param name="layers">The layers that make up the neural network</param>
+        public NeuralNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers)
         {
             // Input check
-            if (weights.Count == 0) throw new ArgumentOutOfRangeException(nameof(weights), "The weights must have a length at least equal to 1");
-            if (activations.Count != weights.Count) throw new ArgumentOutOfRangeException(nameof(activations), "The number of activations must be the same as the weights");
-            if (biases.Count != weights.Count) throw new ArgumentException(nameof(biases), "The bias vector has an invalid size");
-            for (int i = 0; i < weights.Count; i++)
+            if (layers.Length == 0) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
+            foreach ((NetworkLayerBase layer, int i) in layers.Select((l, i) => (l as NetworkLayerBase, i)))
             {
-                if (i > 0 && weights[i - 1].GetLength(1) != weights[i].GetLength(0))
-                    throw new ArgumentOutOfRangeException(nameof(weights), "Some weight matrix doesn't have the right size");
-                if (activations[i] != ActivationFunctionType.Sigmoid && activations[i] != ActivationFunctionType.Tanh && i < weights.Count - 1)
-                    throw new ArgumentOutOfRangeException(nameof(activations), $"The {activations[i]} activation function can only be used in the output layer");
-                if (weights[i].GetLength(1) != biases[i].Length)
-                    throw new ArgumentException(nameof(biases), $"The bias vector #{i} doesn't have the right size");
+                if (i != layers.Length - 1 && layer is OutputLayer) throw new ArgumentException("The output layer must be the last layer in the network");
+                if (i == layers.Length && !(layer is OutputLayer)) throw new ArgumentException("The last layer must be an output layer");
+                if (i > 0) layer.ValidateInputSize(layers[i - 1].Outputs);
             }
 
             // Parameters setup
-            Weights = weights;
-            Biases = biases;
-            ActivationFunctionTypes = activations;
-            TransposedWeights = new float[weights.Count][,];
-            CostFunctionType = costFunction;
-            (CostFunction, CostFunctionPrime) = CostFunctionProvider.GetCostFunctions(costFunction);
-            ActivationFunctions = activations.Select(ActivationFunctionProvider.GetActivations).ToArray();
+            InputLayerSize = layers[0].Inputs;
+            OutputLayerSize = layers[layers.Length - 1].Outputs;
+            Layers = layers;
         }
 
         /// <summary>

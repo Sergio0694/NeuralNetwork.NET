@@ -16,16 +16,23 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         int Outputs { get; }
 
         (float[,] Z, float[,] A) Forward(float[,] x);
-
-        float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime);
     }
 
-    public abstract class WeightedLayer : INetworkLayer
+    public abstract class NetworkLayerBase : INetworkLayer
     {
         public abstract int Inputs { get; }
 
         public abstract int Outputs { get; }
 
+        public abstract (float[,] Z, float[,] A) Forward(float[,] x);
+
+        public abstract void ValidateInputSize(int size);
+
+        public abstract float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime);
+    }
+
+    public abstract class WeightedLayerBase : NetworkLayerBase
+    {
         public float[,] Weights { get; }
 
         public float[] Biases { get; }
@@ -34,13 +41,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// Gets the list of activation and activation prime functions used in the network
         /// </summary>
         public readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
-
-        public abstract (float[,] Z, float[,] A) Forward(float[,] x);
-
-        public abstract float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime);
     }
 
-    public class FullyConnectedLayer : WeightedLayer
+    public class FullyConnectedLayer : WeightedLayerBase
     {
         public override int Inputs { get; }
         public override int Outputs { get; }
@@ -51,6 +54,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                 z = MatrixServiceProvider.MultiplyWithSum(x, Weights, Biases),
                 a = MatrixServiceProvider.Activation(z, ActivationFunctions.Activation);
             return (z, a);
+        }
+
+        public override void ValidateInputSize(int size)
+        {
+            if (size != Inputs) throw new ArgumentOutOfRangeException(nameof(Inputs), "The number of inputs from the previous layer isn't valid");
         }
 
         public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
@@ -89,35 +97,5 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             a.InPlaceSoftmaxNormalization();
             return (z, a);
         }
-    }
-
-    internal class BackpropagationResult
-    {
-        public float[,] Delta { get; }
-    }
-
-    internal class BackpropagationResultWithGradient : BackpropagationResult
-    {
-        public LayerGradient DJl { get; }
-    }
-
-    public abstract class FC
-    {
-        public abstract float[,] Backpropagate(float[,] wt, float[,] delta_1, float[,] z);
-    }
-
-    public abstract class SM
-    {
-        public abstract float[,] Backpropagate(float[,] a, float[,] y, float[,] z);
-    }
-
-    public abstract class P
-    {
-        public abstract float[,] Backpropagate(float[,] delta_1);
-    }
-
-    public abstract class C
-    {
-        public abstract float[,] Backpropagate(float[,] k, float[,] delta_1, float[,] z);
     }
 }
