@@ -2,7 +2,6 @@
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
-using NeuralNetworkNET.Networks.Implementations.Misc;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -41,5 +40,22 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         [Pure]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
         public abstract float[,] Backpropagate([NotNull] float[,] delta_1, [NotNull] float[,] z, ActivationFunction activationPrime);
+
+        #region Equality check
+
+        /// <inheritdoc/>
+        public virtual bool Equals(INetworkLayer other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            if (other.GetType() != this.GetType()) return false;
+            return other is NetworkLayerBase layer &&
+                   Inputs == layer.Inputs &&
+                   Outputs == layer.Outputs &&
+                   ActivationFunctions.Activation == layer.ActivationFunctions.Activation &&
+                   ActivationFunctions.ActivationPrime == layer.ActivationFunctions.ActivationPrime;
+        }
+
+        #endregion
     }
 }

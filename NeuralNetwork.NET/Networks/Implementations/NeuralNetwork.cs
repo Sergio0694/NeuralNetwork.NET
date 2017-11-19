@@ -8,7 +8,6 @@ using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
@@ -36,14 +35,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
         public int OutputLayerSize { get; }
 
-        /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
-        public IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
-        public CostFunctionType CostFunctionType { get; }
-
         #endregion
 
         /// <summary>
@@ -64,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
-                // TODO: add more checks here
+                if (i > 0 && layers[i - 1].Outputs != layer.Inputs) throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
             }
 
             // Parameters setup
@@ -175,6 +166,17 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Training
 
+        /// <summary>
+        /// Trains the current network using the gradient descent algorithm
+        /// </summary>
+        /// <param name="trainingSet">The training set for the current session</param>
+        /// <param name="epochs">The desired number of training epochs to run</param>
+        /// <param name="batchSize">The size of each training batch</param>
+        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
+        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
+        /// <param name="eta">The learning rate</param>
+        /// <param name="lambda">The L2 regularization factor</param>
+        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         public TrainingStopReason StochasticGradientDescent(
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,
@@ -285,11 +287,11 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Compare general features
             if (other is NeuralNetwork network &&
                 other.InputLayerSize == InputLayerSize &&
-                other.OutputLayerSize == OutputLayerSize &&
-                other.ActivationFunctionTypes.SequenceEqual(ActivationFunctionTypes))
+                other.OutputLayerSize == OutputLayerSize)
             {
-                // Compare each weight and bias value
-                // TODO
+                // Compare the individual layers
+                for (int i = 0; i < Layers.Count; i++)
+                    if (!Layers[i].Equals(network.Layers[i])) return false;
                 return true;
             }
             return false;

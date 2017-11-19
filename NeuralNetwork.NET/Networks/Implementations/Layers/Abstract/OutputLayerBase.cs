@@ -1,8 +1,8 @@
-﻿using System;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -26,9 +26,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         protected OutputLayerBase(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
             : base(inputs, outputs, activation)
         {
-            if (activation == ActivationFunctionType.Softmax && cost != CostFunctionType.LogLikelyhood ||
-                cost == CostFunctionType.LogLikelyhood && activation != ActivationFunctionType.Softmax)
-                throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");
             (CostFunction, CostFunctionPrime) = CostFunctionProvider.GetCostFunctions(cost);
         }
 
@@ -54,5 +51,18 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         public float CalculateCost([NotNull] float[,] yHat, [NotNull] float[,] y) => CostFunction(yHat, y);
+
+        #region Equality check
+
+        /// <inheritdoc/>
+        public override bool Equals(INetworkLayer other)
+        {
+            if (!base.Equals(other)) return false;
+            return other is OutputLayerBase layer &&
+                   CostFunction == layer.CostFunction &&
+                   CostFunctionPrime == layer.CostFunctionPrime;
+        }
+
+        #endregion
     }
 }
