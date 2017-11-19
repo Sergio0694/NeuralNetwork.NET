@@ -36,47 +36,66 @@ namespace NeuralNetworkNET.Convolution.Misc
             // Pooling kernel
             unsafe void Kernel(int sample)
             {
+                int
+                    sourceBaseOffset = sample * w,
+                    resultBaseOffset = sample * poolFinalWidth;
                 fixed (float* psource = source, presult = result)
                 {
                     for (int z = 0; z < depth; z++)
                     {
-                        int x = 0;
+                        int
+                            sourceZOffset = sourceBaseOffset + z * imgSize,
+                            resultZOffset = resultBaseOffset + z * poolSize,
+                            x = 0;
                         for (int i = 0; i < imgAxis; i += 2)
                         {
-                            int y = 0;
+                            int
+                                sourceIOffset = sourceZOffset + i * imgAxis,
+                                resultXOffset = resultZOffset + x * poolAxis,
+                                y = 0;
                             if (i == edge)
                             {
                                 // Last row
                                 for (int j = 0; j < imgAxis; j += 2)
                                 {
                                     float max;
-                                    if (j == w - 1) max = psource[sample * w + z * imgSize + i * imgAxis + j]; // Last column
-                                    else max = psource[sample * w + z * imgSize + i * imgAxis + j] > psource[sample * w + z * imgSize + i * imgAxis + j + 1] 
-                                            ? psource[sample * w + z * imgSize + i * imgAxis + j] : psource[sample * w + z * imgSize + i * imgAxis + j + 1];
-                                    presult[sample * poolFinalWidth + z * poolSize + x * poolAxis + y++] = max;
+                                    if (j == w - 1) max = psource[sourceIOffset + j]; // Last column
+                                    else
+                                    {
+                                        float
+                                            left = psource[sourceIOffset + j],
+                                            right = psource[sourceIOffset + j + 1];
+                                        max = left > right ? left : right;
+                                    }
+                                    presult[resultXOffset + y++] = max;
                                 }
                             }
                             else
                             {
+                                int sourceI_1Offset = sourceZOffset + (i + 1) * imgAxis;
                                 for (int j = 0; j < imgAxis; j += 2)
                                 {
                                     float max;
-                                    if (j == w - 1)
+                                    if (j == edge)
                                     {
                                         // Last column
-                                        max = psource[sample * w + z * imgSize + i * imgAxis + j] > psource[sample * w + z * imgSize + (i + 1) * imgAxis + j] 
-                                            ? psource[sample * w + z * imgSize + i * imgAxis + j] : psource[sample * w + z * imgSize + (i + 1) * imgAxis + j];
+                                        float
+                                            up = psource[sourceIOffset + j],
+                                            down = psource[sourceI_1Offset + j];
+                                        max = up > down ? up : down;
                                     }
                                     else
                                     {
                                         float
-                                            maxUp = psource[sample * w + z * imgSize + i * imgAxis + j] > psource[sample * w + z * imgSize + i * imgAxis + j + 1] 
-                                            ? psource[sample * w + z * imgSize + i * imgAxis + j] : psource[sample * w + z * imgSize + i * imgAxis + j + 1],
-                                            maxDown = psource[sample * w + z * imgSize + (i + 1) * imgAxis + j] > psource[sample * w + z * imgSize + (i + 1) * imgAxis + j + 1] 
-                                            ? psource[sample * w + z * imgSize + (i + 1) * imgAxis + j] : psource[sample * w + z * imgSize + (i + 1) * imgAxis + j + 1];
+                                            upLeft = psource[sourceIOffset + j],
+                                            upRight = psource[sourceIOffset + j + 1],
+                                            downLeft = psource[sourceI_1Offset + j],
+                                            downRight = psource[sourceI_1Offset + j + 1],
+                                            maxUp = upLeft > upRight ? upLeft : upRight,
+                                            maxDown = downLeft > downRight ? downLeft : downRight;
                                         max = maxUp > maxDown ? maxUp : maxDown;
                                     }
-                                    presult[sample * poolFinalWidth + z * poolSize + x * poolAxis + y++] = max;
+                                    presult[resultXOffset + y++] = max;
                                 }
                             }
                             x++;
@@ -84,65 +103,8 @@ namespace NeuralNetworkNET.Convolution.Misc
                     }
                 }
             }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-            return result;
-        }
-
-        /// <summary>
-        /// Pools the input matrix with a window of 2 and a stride of 2
-        /// </summary>
-        /// <param name="m">The input matrix to pool</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Pool2x2([NotNull] this float[,] m)
-        {
-            // Prepare the result matrix
-            int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[h / 2 + (h % 2 == 0 ? 0 : 1), w / 2 + (w % 2 == 0 ? 0 : 1)];
-
-            // Pool the input matrix
-            int x = 0;
-            for (int i = 0; i < h; i += 2)
-            {
-                int y = 0;
-                if (i == h - 1)
-                {
-                    // Last row
-                    for (int j = 0; j < w; j += 2)
-                    {
-                        float max;
-                        if (j == w - 1)
-                        {
-                            // Last column
-                            max = m[i, j];
-                        }
-                        else max = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1];
-                        result[x, y++] = max;
-                    }
-                }
-                else
-                {
-                    for (int j = 0; j < w; j += 2)
-                    {
-                        float max;
-                        if (j == w - 1)
-                        {
-                            // Last column
-                            max = m[i, j] > m[i + 1, j] ? m[i, j] : m[i + 1, j];
-                        }
-                        else
-                        {
-                            float
-                                maxUp = m[i, j] > m[i, j + 1] ? m[i, j] : m[i, j + 1],
-                                maxDown = m[i + 1, j] > m[i + 1, j + 1] ? m[i + 1, j] : m[i + 1, j + 1];
-                            max = maxUp > maxDown ? maxUp : maxDown;
-                        }
-                        result[x, y++] = max;
-                    }
-                }
-                x++;
-            }
+            for (int jj = 0; jj < h; jj++) Kernel(jj);
+            //Parallel.For(0, h, Kernel).AssertCompleted();
             return result;
         }
 
