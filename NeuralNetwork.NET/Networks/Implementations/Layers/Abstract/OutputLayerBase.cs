@@ -18,7 +18,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <summary>
         /// Gets the cost function for the current layer
         /// </summary>
-        [JsonProperty(nameof(CostFunctionType), Required = Required.Always)]
+        [JsonProperty(nameof(CostFunctionType), Required = Required.Always, Order = 4)]
         private readonly CostFunctionType CostFunctionType;
 
         /// <summary>
@@ -31,6 +31,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         protected OutputLayerBase(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
             : base(inputs, outputs, activation)
         {
+            CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
         }
 

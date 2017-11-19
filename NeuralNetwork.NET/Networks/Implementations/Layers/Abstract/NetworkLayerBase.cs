@@ -15,15 +15,15 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         #region Parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Inputs), Required = Required.Always)]
+        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 1)]
         public abstract int Inputs { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Outputs), Required = Required.Always)]
+        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
         public abstract int Outputs { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctionType), Required = Required.Always)]
+        [JsonProperty(nameof(ActivationFunctionType), Required = Required.Always, Order = 3)]
         public ActivationFunctionType ActivationFunctionType { get; }
 
         /// <summary>

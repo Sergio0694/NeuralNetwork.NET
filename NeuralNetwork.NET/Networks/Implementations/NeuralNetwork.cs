@@ -27,11 +27,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputLayerSize), Required = Required.Always)]
+        [JsonProperty(nameof(InputLayerSize), Required = Required.Always, Order = 1)]
         public int InputLayerSize { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
+        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always, Order = 2)]
         public int OutputLayerSize { get; }
 
         #endregion
@@ -40,7 +40,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Required = Required.Always)]
+        [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
         private readonly IReadOnlyList<NetworkLayerBase> Layers;
 
         /// <summary>
