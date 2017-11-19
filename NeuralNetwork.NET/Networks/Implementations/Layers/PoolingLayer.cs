@@ -2,26 +2,35 @@
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
     /// <summary>
     /// A pooling layer, with a 2x2 window and a stride of 2
     /// </summary>
-    internal class PoolingLayer : NetworkLayerBase
+    internal class PoolingLayer : NetworkLayerBase, INetworkLayer3D
     {
-        /// <inheritdoc/>
-        public override int Inputs { get; }
+        #region Parameters
 
         /// <inheritdoc/>
-        public override int Outputs { get; }
+        public override int Inputs => InputVolume.Size;
 
-        public PoolingLayer(int height, int width, int depth) : base(ActivationFunctionType.Identity)
+        /// <inheritdoc/>
+        public override int Outputs => OutputVolume.Size;
+
+        /// <inheritdoc/>
+        public VolumeInformation InputVolume { get; }
+
+        /// <inheritdoc/>
+        public VolumeInformation OutputVolume { get; }
+
+        #endregion
+
+        public PoolingLayer(VolumeInformation input) : base(ActivationFunctionType.Identity)
         {
-            if (height <= 0 || width <= 0) throw new ArgumentOutOfRangeException("The height and width must be positive numbers");
-            if (depth <= 0) throw new ArgumentOutOfRangeException(nameof(depth), "The depth must be at least equal to 1");
-            Inputs = height * width * depth;
-            Outputs = (height / 2 + (height % 2 == 0 ? 0 : 1)) * (width / 2 + (width % 2 == 0 ? 0 : 1)) * depth;
+            int outAxis = input.Axis / 2 + (input.Axis % 2 == 0 ? 0 : 1);
+            OutputVolume = new VolumeInformation(outAxis, input.Depth);
         }
 
         /// <inheritdoc/>

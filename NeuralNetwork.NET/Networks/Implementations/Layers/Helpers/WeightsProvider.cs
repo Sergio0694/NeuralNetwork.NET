@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
 {
@@ -25,18 +26,14 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         /// <summary>
         /// Creates a weight matrix for a convolutional layer
         /// </summary>
-        /// <param name="x">The height of each kernel</param>
-        /// <param name="y">The width of each kernel</param>
-        /// <param name="depth">The depth of each kernel</param>
+        /// <param name="volume">The kernels volume info</param>
         /// <param name="kernels">The number of kernels in the layer</param>
         [Pure, NotNull]
-        public static float[,] ConvolutionalKernels(int x, int y, int depth, int kernels)
+        public static float[,] ConvolutionalKernels(VolumeInformation volume, int kernels)
         {
-            if (x <= 0 || y <= 0) throw new ArgumentException("The height and width of the kernels must be positive values");
-            if (depth <= 0) throw new ArgumentOutOfRangeException(nameof(depth), "The depth of each kernel must be positive");
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
             Random random = new Random();
-            return random.NextUniformMatrix(x * y * depth, kernels, x * y * depth);
+            return random.NextUniformMatrix(volume.Size, kernels, volume.Size);
         }
 
         /// <summary>
