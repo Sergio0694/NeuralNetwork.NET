@@ -13,8 +13,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public OutputLayer(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
             : base(inputs, outputs, activation, cost)
         {
-            if (activation == ActivationFunctionType.Softmax)
-                throw new ArgumentException("The softmax activation can only be used in a softmax layer");
+            if (activation == ActivationFunctionType.Softmax || cost == CostFunctionType.LogLikelyhood)
+                throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");
         }
     }
 }

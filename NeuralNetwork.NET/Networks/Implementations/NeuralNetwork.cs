@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
@@ -17,6 +14,7 @@ using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
@@ -29,20 +27,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputLayerSize), Required = Required.Always)]
+        [JsonProperty(nameof(InputLayerSize), Required = Required.Always, Order = 1)]
         public int InputLayerSize { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always)]
+        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always, Order = 2)]
         public int OutputLayerSize { get; }
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
-        public IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctionTypes), Required = Required.Always)]
-        public CostFunctionType CostFunctionType { get; }
 
         #endregion
 
@@ -50,6 +40,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
+        [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
         private readonly IReadOnlyList<NetworkLayerBase> Layers;
 
         /// <summary>
@@ -62,9 +53,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (layers.Length < 1) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
             foreach ((NetworkLayerBase layer, int i) in layers.Select((l, i) => (l as NetworkLayerBase, i)))
             {
-                if (i != layers.Length - 1 && layer is OutputLayer) throw new ArgumentException("The output layer must be the last layer in the network");
-                if (i == layers.Length && !(layer is OutputLayer)) throw new ArgumentException("The last layer must be an output layer");
-                // TODO: add more checks here
+                if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
+                if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
+                if (i > 0 && layers[i - 1].Outputs != layer.Inputs) throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
             }
 
             // Parameters setup
@@ -111,7 +102,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             float[,] yHat = Forward(input);
 
             // Calculate the cost
-            return Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().CalculateCost(yHat, y);
+            return Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
         }
 
         /// <summary>
@@ -145,7 +136,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
              * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
              *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-            deltas[deltas.Length - 1] = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
+            deltas[deltas.Length - 1] = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
             for (int l = Layers.Count - 2; l >= 0; l--)
             {
                 /* ======================
@@ -175,6 +166,17 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Training
 
+        /// <summary>
+        /// Trains the current network using the gradient descent algorithm
+        /// </summary>
+        /// <param name="trainingSet">The training set for the current session</param>
+        /// <param name="epochs">The desired number of training epochs to run</param>
+        /// <param name="batchSize">The size of each training batch</param>
+        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
+        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
+        /// <param name="eta">The learning rate</param>
+        /// <param name="lambda">The L2 regularization factor</param>
+        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         public TrainingStopReason StochasticGradientDescent(
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,
@@ -267,7 +269,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Check the correctly classified samples and calculate the cost
             Parallel.For(0, h, Kernel).AssertCompleted();
             float
-                cost = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayer>().CalculateCost(yHat, evaluationSet.Y),
+                cost = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, evaluationSet.Y),
                 accuracy = (float)total / h * 100;
             return (cost, total, accuracy);
         }
@@ -277,7 +279,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Tools
 
         /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented); // TODO: check and test
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)
@@ -285,11 +287,11 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Compare general features
             if (other is NeuralNetwork network &&
                 other.InputLayerSize == InputLayerSize &&
-                other.OutputLayerSize == OutputLayerSize &&
-                other.ActivationFunctionTypes.SequenceEqual(ActivationFunctionTypes))
+                other.OutputLayerSize == OutputLayerSize)
             {
-                // Compare each weight and bias value
-                // TODO
+                // Compare the individual layers
+                for (int i = 0; i < Layers.Count; i++)
+                    if (!Layers[i].Equals(network.Layers[i])) return false;
                 return true;
             }
             return false;

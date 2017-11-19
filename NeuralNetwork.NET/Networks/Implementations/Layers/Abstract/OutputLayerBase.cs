@@ -1,35 +1,38 @@
-﻿using System;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
     /// <summary>
     /// The base class for all the output network layers
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     internal abstract class OutputLayerBase : FullyConnectedLayer
     {
-        /// <summary>
-        /// Gets the <see cref="CostFunction"/> used to evaluate the neural network
-        /// </summary>
-        [NotNull]
-        private readonly CostFunction CostFunction;
+        #region Fields and parameters
 
         /// <summary>
-        /// Gets the <see cref="CostFunctionPrime"/> used in the gradient descent algorithm
+        /// Gets the cost function for the current layer
         /// </summary>
-        [NotNull]
-        private readonly CostFunctionPrime CostFunctionPrime;
+        [JsonProperty(nameof(CostFunctionType), Required = Required.Always, Order = 4)]
+        private readonly CostFunctionType CostFunctionType;
+
+        /// <summary>
+        /// Gets the cost function implementations used in the current layer
+        /// </summary>
+        public (CostFunction Cost, CostFunctionPrime CostPrime) CostFunctions { get; }
+
+        #endregion
 
         protected OutputLayerBase(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
             : base(inputs, outputs, activation)
         {
-            if (activation == ActivationFunctionType.Softmax && cost != CostFunctionType.LogLikelyhood ||
-                cost == CostFunctionType.LogLikelyhood && activation != ActivationFunctionType.Softmax)
-                throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");
-            (CostFunction, CostFunctionPrime) = CostFunctionProvider.GetCostFunctions(cost);
+            CostFunctionType = cost;
+            CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
         }
 
         /// <summary>
@@ -42,7 +45,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
         public float[,] Backpropagate([NotNull] float[,] yHat, [NotNull] float[,] y, [NotNull] float[,] z)
         {
-            CostFunctionPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
+            CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
             return yHat;
         }
 
@@ -53,6 +56,18 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="y">The Expected outputs for the inputs used</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public float CalculateCost([NotNull] float[,] yHat, [NotNull] float[,] y) => CostFunction(yHat, y);
+        public float CalculateCost([NotNull] float[,] yHat, [NotNull] float[,] y) => CostFunctions.Cost(yHat, y);
+
+        #region Equality check
+
+        /// <inheritdoc/>
+        public override bool Equals(INetworkLayer other)
+        {
+            if (!base.Equals(other)) return false;
+            return other is OutputLayerBase layer &&
+                   CostFunctionType == layer.CostFunctionType;
+        }
+
+        #endregion
     }
 }

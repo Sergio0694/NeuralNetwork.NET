@@ -122,7 +122,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Misc
             {
                 if (_PreviousValues.Count < ConvergenceWindow) return false;
                 float[] values = _PreviousValues.ToArray();
-                float min = float.MinValue, max = float.MaxValue;
+                float min = float.MaxValue, max = float.MinValue;
                 unsafe
                 {
                     fixed (float* p = values)

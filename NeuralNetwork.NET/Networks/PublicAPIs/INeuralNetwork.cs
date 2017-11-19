@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {
@@ -22,17 +19,6 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// Gets the size of the output layer
         /// </summary>
         int OutputLayerSize { get; }
-
-        /// <summary>
-        /// Gets the list of activation functions used in the network layers
-        /// </summary>
-        [NotNull]
-        IReadOnlyList<ActivationFunctionType> ActivationFunctionTypes { get; }
-
-        /// <summary>
-        /// Gets the cost function that the network uses to calculate its accuracy and to backpropagate its error
-        /// </summary>
-        CostFunctionType CostFunctionType { get; }
 
         #endregion
 
