@@ -1,4 +1,5 @@
 ﻿using System;
+using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
 {
@@ -16,5 +17,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         /// Gets the number of outputs in the current layer
         /// </summary>
         int Outputs { get; }
+
+        /// <summary>
+        /// Gets the activation type used in the current layer
+        /// </summary>
+        ActivationFunctionType ActivationFunctionType { get; }
     }
 }

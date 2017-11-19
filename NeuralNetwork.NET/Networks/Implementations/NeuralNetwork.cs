@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
@@ -16,6 +14,7 @@ using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
@@ -41,6 +40,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
+        [JsonProperty(nameof(Layers), Required = Required.Always)]
         private readonly IReadOnlyList<NetworkLayerBase> Layers;
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Tools
 
         /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented); // TODO: check and test
+        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)

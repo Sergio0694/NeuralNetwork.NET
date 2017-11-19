@@ -3,24 +3,28 @@ using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
     /// <summary>
     /// The base class for all the network layers that have weights and biases as parameters
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     internal abstract class WeightedLayerBase : NetworkLayerBase
     {
         /// <summary>
         /// Gets the weights for the current network layer
         /// </summary>
         [NotNull]
+        [JsonProperty(nameof(Weights), Required = Required.Always)]
         public float[,] Weights { get; }
 
         /// <summary>
         /// Gets the biases for the current network layer
         /// </summary>
         [NotNull]
+        [JsonProperty(nameof(Biases), Required = Required.Always)]
         public float[] Biases { get; }
 
         protected WeightedLayerBase([NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) : base(activation)
