@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         {
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
             Random random = new Random();
-            return random.NextUniformMatrix(volume.Size, kernels, volume.Size);
+            return random.NextUniformMatrix(kernels, volume.Size, volume.Size);
         }
 
         /// <summary>

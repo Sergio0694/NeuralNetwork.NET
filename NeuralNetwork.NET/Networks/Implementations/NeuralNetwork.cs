@@ -27,12 +27,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputLayerSize), Required = Required.Always, Order = 1)]
-        public int InputLayerSize { get; }
+        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 1)]
+        public int Inputs { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always, Order = 2)]
-        public int OutputLayerSize { get; }
+        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
+        public int Outputs { get; }
 
         #endregion
 
@@ -59,8 +59,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Parameters setup
-            InputLayerSize = layers[0].Inputs;
-            OutputLayerSize = layers[layers.Length - 1].Outputs;
+            Inputs = layers[0].Inputs;
+            Outputs = layers[layers.Length - 1].Outputs;
             Layers = layers.Cast<NetworkLayerBase>().ToArray();
         }
 
@@ -286,8 +286,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             // Compare general features
             if (other is NeuralNetwork network &&
-                other.InputLayerSize == InputLayerSize &&
-                other.OutputLayerSize == OutputLayerSize &&
+                other.Inputs == Inputs &&
+                other.Outputs == Outputs &&
                 Layers.Count == network.Layers.Count)
             {
                 // Compare the individual layers

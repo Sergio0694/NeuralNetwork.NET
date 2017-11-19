@@ -14,12 +14,12 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// <summary>
         /// Gets the size of the input layer
         /// </summary>
-        int InputLayerSize { get; }
+        int Inputs { get; }
 
         /// <summary>
         /// Gets the size of the output layer
         /// </summary>
-        int OutputLayerSize { get; }
+        int Outputs { get; }
 
         #endregion
 

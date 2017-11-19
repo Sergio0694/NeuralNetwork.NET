@@ -6,7 +6,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
     /// <summary>
     /// A struct that represents a data volume with square 2D slices
     /// </summary>
-    [JsonObject(MemberSerialization.Fields)]
+    [JsonObject(MemberSerialization.OptIn)]
     public struct VolumeInformation
     {
         /// <summary>
@@ -32,6 +32,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         /// <summary>
         /// Gets the total number of entries in the data volume
         /// </summary>
+        [JsonProperty(nameof(Size), Order = 3)]
         public int Size => Axis * Depth;
+        
+        /// <inheritdoc/>
+        public override String ToString() => $"Axis: {Axis}, Depth: {Depth}, Size: {Size}";
     }
 }

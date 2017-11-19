@@ -43,12 +43,12 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         /// Creates a convolutional layer with the desired number of kernels
         /// </summary>
         /// <param name="input">The input volume to process</param>
-        /// <param name="kernelInfo">The volume information for each kernel to use to process the input</param>
+        /// <param name="kernelAxis">The size of each 2D axis of the kernels used in the layer</param>
         /// <param name="kernels">The number of convolution kernels to apply to the input volume</param>
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Convolutional(VolumeInformation input, VolumeInformation kernelInfo, int kernels, ActivationFunctionType activation) => new ConvolutionalLayer(input, kernelInfo, kernels, activation);
+        public static INetworkLayer Convolutional(VolumeInformation input, int kernelAxis, int kernels, ActivationFunctionType activation) => new ConvolutionalLayer(input, kernelAxis, kernels, activation);
 
         /// <summary>
         /// Creates a pooling layer with a window of size 2 and a stride of 2

@@ -3,12 +3,14 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
     /// <summary>
     /// A pooling layer, with a 2x2 window and a stride of 2
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     internal sealed class PoolingLayer : NetworkLayerBase, INetworkLayer3D
     {
         #region Parameters
@@ -20,9 +22,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override int Outputs => OutputVolume.Size;
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(InputVolume), Order = 4)]
         public VolumeInformation InputVolume { get; }
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(OutputVolume), Order = 7)]
         public VolumeInformation OutputVolume { get; }
 
         #endregion

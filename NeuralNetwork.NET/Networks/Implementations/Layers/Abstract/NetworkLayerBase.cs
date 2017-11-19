@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
@@ -15,15 +16,28 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         #region Parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 1)]
+        [JsonProperty(nameof(LayerType), Required = Required.Always, Order = 1)]
+        public LayerType LayerType
+        {
+            get
+            {
+                Enum.TryParse(GetType().Name.Replace("Layer", String.Empty), out LayerType type);
+                return type;
+            }
+        }
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 2)]
         public abstract int Inputs { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
+        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 3)]
         public abstract int Outputs { get; }
 
-        /// <inheritdoc/>
-        [JsonProperty(nameof(ActivationFunctionType), Required = Required.Always, Order = 3)]
+        /// <summary>
+        /// Gets the activation type used in the current layer
+        /// </summary>
+        [JsonProperty(nameof(ActivationFunctionType), Required = Required.Always, Order = 8)]
         public ActivationFunctionType ActivationFunctionType { get; }
 
         /// <summary>

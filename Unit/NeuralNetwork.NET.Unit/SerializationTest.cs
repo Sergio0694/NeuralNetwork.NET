@@ -19,7 +19,10 @@ namespace NeuralNetworkNET.Unit
         public void JsonSerialize()
         {
             NeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.FullyConnected(5, 8, ActivationFunctionType.Sigmoid), 
+                NetworkLayers.Convolutional(new VolumeInformation(28, 1), 5, 20, ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional(new VolumeInformation(24, 20), 5, 10, ActivationFunctionType.ReLU),
+                NetworkLayers.Pooling(new VolumeInformation(20, 10)),
+                NetworkLayers.FullyConnected(100, 8, ActivationFunctionType.Sigmoid), 
                 NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String json = network.SerializeAsJSON();
             INeuralNetwork copy = NeuralNetworkDeserializer.TryDeserialize(json);

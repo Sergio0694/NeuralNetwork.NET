@@ -26,8 +26,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                 // Get the general parameters and the hidden layers info
                 JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
                 int 
-                    inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), 
-                    outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
+                    inputs = jObject[nameof(INeuralNetwork.Inputs)].ToObject<int>(), 
+                    outputs = jObject[nameof(INeuralNetwork.Outputs)].ToObject<int>();
                // int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
                 float[][,] weights = jObject["Weights"].ToObject<float[][,]>();
                 float[][] biases = jObject["Biases"].ToObject<float[][]>();

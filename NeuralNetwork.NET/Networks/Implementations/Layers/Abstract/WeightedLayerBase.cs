@@ -17,14 +17,14 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// Gets the weights for the current network layer
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Weights), Required = Required.Always, Order = 5)]
+        [JsonProperty(nameof(Weights), Required = Required.Always, Order = 10)]
         public float[,] Weights { get; }
 
         /// <summary>
         /// Gets the biases for the current network layer
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Biases), Required = Required.Always, Order = 6)]
+        [JsonProperty(nameof(Biases), Required = Required.Always, Order = 11)]
         public float[] Biases { get; }
 
         protected WeightedLayerBase([NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) : base(activation)

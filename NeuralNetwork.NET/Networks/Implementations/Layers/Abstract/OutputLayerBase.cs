@@ -18,7 +18,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <summary>
         /// Gets the cost function for the current layer
         /// </summary>
-        [JsonProperty(nameof(CostFunctionType), Required = Required.Always, Order = 4)]
+        [JsonProperty(nameof(CostFunctionType), Required = Required.Always, Order = 9)]
         public CostFunctionType CostFunctionType { get; }
 
         /// <summary>
