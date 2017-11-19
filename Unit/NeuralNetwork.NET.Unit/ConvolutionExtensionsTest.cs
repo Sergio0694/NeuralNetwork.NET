@@ -12,78 +12,24 @@ namespace NeuralNetworkNET.Unit
     public class ConvolutionExtensionsTest
     {
         [TestMethod]
-        public void ReLU1()
+        public void Pool1()
         {
             // Test values
             float[,]
                 m =
                 {
-                    { -1, -0.1f, 2 },
-                    { 1, 1, 2 },
-                    { 0, -0.3f, 99 }
+                    { -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, -0.5f, -1, 10, -2, -1 }
                 },
                 r =
                 {
-                    { 0, 0, 2 },
-                    { 1, 1, 2 },
-                    { 0, 0, 99 }
+                    { 1, 2, 10, -0.5f }
                 },
-                t = m.ReLU();
+                t = m.Pool2x2(1);
             Assert.IsTrue(t.ContentEquals(r));
         }
 
         [TestMethod]
-        public void ReLU2()
-        {
-            // Test values
-            float[,]
-                m =
-                {
-                    { 0.77f, -0.11f, 0.11f, 0.33f, 0.55f, -0.11f, 0.33f },
-                    { -0.11f, 1, -0.11f, 0.33f, -0.11f, 0.11f, -0.11f },
-                    { 0.11f, -0.11f, 1, -0.33f, 0.11f, -0.11f, 0.55f },
-                    { 0.33f, 0.33f, -0.33f, 0.55f, -0.33f, 0.33f, 0.33f },
-                    { 0.55f, -0.11f, 0.11f, -0.33f, 1, -0.11f, 0.11f },
-                    { -0.11f, 0.11f, -0.11f, 0.33f, -0.11f, 1, -0.11f },
-                    { 0.33f, -0.11f, 0.55f, 0.33f, 0.11f, -0.11f, 0.77f }
-                },
-                r =
-                {
-                    { 0.77f, 0, 0.11f, 0.33f, 0.55f, 0, 0.33f },
-                    { 0, 1, 0, 0.33f, 0, 0.11f, 0 },
-                    { 0.11f, 0, 1, 0, 0.11f, 0, 0.55f },
-                    { 0.33f, 0.33f, 0, 0.55f, 0, 0.33f, 0.33f },
-                    { 0.55f, 0, 0.11f, 0, 1, 0, 0.11f },
-                    { 0, 0.11f, 0, 0.33f, 0, 1, 0 },
-                    { 0.33f, 0, 0.55f, 0.33f, 0.11f, 0, 0.77f }
-                },
-                t = m.ReLU();
-            Assert.IsTrue(t.ContentEquals(r));
-        }
-
-        [TestMethod]
-        public void Pool2x2_1()
-        {
-            // Test values
-            float[,]
-                m =
-                {
-                    { -1, 0, 1, 2 },
-                    { 1, 1, 1, 1 },
-                    { 0, -0.3f, -5, -0.5f },
-                    { -1, 10, -2, -1 }
-                },
-                r =
-                {
-                    { 1, 2 },
-                    { 10, -0.5f }
-                },
-                t = m.Pool2x2();
-            Assert.IsTrue(t.ContentEquals(r));
-        }
-
-        [TestMethod]
-        public void Pool2x2_2()
+        public void Pool2()
         {
             // Test values
             float[,]
@@ -109,7 +55,7 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void Pool2x2_3()
+        public void Pool3()
         {
             // Test values
             float[,]
@@ -123,6 +69,44 @@ namespace NeuralNetworkNET.Unit
                     { 1 }
                 },
                 t = m.Pool2x2();
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool4()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    { -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, -0.5f, -1, 10, -2, -1 },
+                    { -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, 1.2f, -1, 10, -2, -1 }
+                },
+                r =
+                {
+                    { 1, 2, 10, -0.5f },
+                    { 1, 2, 10, 1.2f },
+                },
+                t = m.Pool2x2(1);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Pool5()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    { -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, -0.5f, -1, 10, -2, -1, -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, 1.2f, -1, 10, -2, -1 },
+                    { -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, 1.2f, -1, 10, -2, -1, -1, 0, 1, 2, 1, 1, 1, 1, 0, -0.3f, -5, 1.45f, -1, 10, -2, -1 }
+                },
+                r =
+                {
+                    { 1, 2, 10, -0.5f, 1, 2, 10, 1.2f },
+                    { 1, 2, 10, 1.2f, 1, 2, 10, 1.45f },
+                },
+                t = m.Pool2x2(2);
             Assert.IsTrue(t.ContentEquals(r));
         }
 

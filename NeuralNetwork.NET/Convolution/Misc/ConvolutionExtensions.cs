@@ -9,33 +9,82 @@ namespace NeuralNetworkNET.Convolution.Misc
     public static class ConvolutionExtensions
     {
         /// <summary>
-        /// Returns the normalized matrix with a max value of 1
+        /// Pools the input matrix with a window of 2 and a stride of 2
         /// </summary>
-        /// <param name="m">The input matrix to normalize</param>
+        /// <param name="source">The input matrix to pool</param>
+        /// <param name="depth">The number of images for each matrix row</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Normalize([NotNull] this float[,] m)
+        public static float[,] Pool2x2([NotNull] this float[,] source, int depth)
         {
             // Prepare the result matrix
-            int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[h, w];
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
+            int h = source.GetLength(0), w = source.GetLength(1);
+            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
+            int
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            int
+                poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
+                poolSize = poolAxis * poolAxis,
+                poolFinalWidth = depth * poolSize,
+                edge = imgAxis - 1;
+            float[,] result = new float[h, poolFinalWidth];
 
-            // Pool the input matrix
-            unsafe
+            // Pooling kernel
+            unsafe void Kernel(int sample)
             {
-                fixed (float* p = m, r = result)
+                fixed (float* psource = source, presult = result)
                 {
-                    // Get the max value
-                    float max = 0;
-                    for (int i = 0; i < m.Length; i++)
-                        if (p[i] > max) max = p[i];
-
-                    // Normalize the matrix content
-                    for (int i = 0; i < m.Length; i++)
-                        r[i] = p[i] / max;
+                    for (int z = 0; z < depth; z++)
+                    {
+                        int x = 0;
+                        for (int i = 0; i < imgAxis; i += 2)
+                        {
+                            int y = 0;
+                            if (i == edge)
+                            {
+                                // Last row
+                                for (int j = 0; j < imgAxis; j += 2)
+                                {
+                                    float max;
+                                    if (j == w - 1) max = psource[sample * w + z * imgSize + i * imgAxis + j]; // Last column
+                                    else max = psource[sample * w + z * imgSize + i * imgAxis + j] > psource[sample * w + z * imgSize + i * imgAxis + j + 1] 
+                                            ? psource[sample * w + z * imgSize + i * imgAxis + j] : psource[sample * w + z * imgSize + i * imgAxis + j + 1];
+                                    presult[sample * poolFinalWidth + z * poolSize + x * poolAxis + y++] = max;
+                                }
+                            }
+                            else
+                            {
+                                for (int j = 0; j < imgAxis; j += 2)
+                                {
+                                    float max;
+                                    if (j == w - 1)
+                                    {
+                                        // Last column
+                                        max = psource[sample * w + z * imgSize + i * imgAxis + j] > psource[sample * w + z * imgSize + (i + 1) * imgAxis + j] 
+                                            ? psource[sample * w + z * imgSize + i * imgAxis + j] : psource[sample * w + z * imgSize + (i + 1) * imgAxis + j];
+                                    }
+                                    else
+                                    {
+                                        float
+                                            maxUp = psource[sample * w + z * imgSize + i * imgAxis + j] > psource[sample * w + z * imgSize + i * imgAxis + j + 1] 
+                                            ? psource[sample * w + z * imgSize + i * imgAxis + j] : psource[sample * w + z * imgSize + i * imgAxis + j + 1],
+                                            maxDown = psource[sample * w + z * imgSize + (i + 1) * imgAxis + j] > psource[sample * w + z * imgSize + (i + 1) * imgAxis + j + 1] 
+                                            ? psource[sample * w + z * imgSize + (i + 1) * imgAxis + j] : psource[sample * w + z * imgSize + (i + 1) * imgAxis + j + 1];
+                                        max = maxUp > maxDown ? maxUp : maxDown;
+                                    }
+                                    presult[sample * poolFinalWidth + z * poolSize + x * poolAxis + y++] = max;
+                                }
+                            }
+                            x++;
+                        }
+                    }
                 }
             }
+            Parallel.For(0, h, Kernel).AssertCompleted();
             return result;
         }
 
@@ -94,23 +143,6 @@ namespace NeuralNetworkNET.Convolution.Misc
                 }
                 x++;
             }
-            return result;
-        }
-
-        /// <summary>
-        /// Performs the Rectified Linear Units operation on the input matrix (applies a minimum value of 0)
-        /// </summary>
-        /// <param name="m">The input matrix to read</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ReLU([NotNull] this float[,] m)
-        {
-            int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[h, w];
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                    result[i, j] = m[i, j] >= 0 ? m[i, j] : 0;
             return result;
         }
 
