@@ -40,25 +40,22 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         public static INetworkLayer Softmax(int inputs, int outputs) => new SoftmaxLayer(inputs, outputs);
 
         /// <summary>
-        /// Creates a fully connected softmax output layer (used for classification problems with mutually-exclusive classes)
+        /// Creates a convolutional layer with the desired number of kernels
         /// </summary>
-        /// <param name="height">The height of each input image</param>
-        /// <param name="width">The width of each input image</param>
-        /// <param name="depth">The depth of the input volume</param>
+        /// <param name="input">The input volume to process</param>
+        /// <param name="kernelInfo">The volume information for each kernel to use to process the input</param>
         /// <param name="kernels">The number of convolution kernels to apply to the input volume</param>
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Convolutional(int height, int width, int depth, int kernels, ActivationFunctionType activation) => new ConvolutionalLayer(height, width, depth, kernels, activation);
+        public static INetworkLayer Convolutional(VolumeInformation input, VolumeInformation kernelInfo, int kernels, ActivationFunctionType activation) => new ConvolutionalLayer(input, kernelInfo, kernels, activation);
 
         /// <summary>
-        /// Creates a fully connected softmax output layer (used for classification problems with mutually-exclusive classes)
+        /// Creates a pooling layer with a window of size 2 and a stride of 2
         /// </summary>
-        /// <param name="height">The height of each input image</param>
-        /// <param name="width">The width of each input image</param>
-        /// <param name="depth">The depth of the input volume</param>
+        /// <param name="input">The input volume to pool</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Pooling(int height, int width, int depth) => new PoolingLayer(height, width, depth);
+        public static INetworkLayer Pooling(VolumeInformation input) => new PoolingLayer(input);
     }
 }

@@ -1,12 +1,13 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
 {
     /// <summary>
     /// An interface to mask a neural network implementation
     /// </summary>
-    public interface INeuralNetwork : IEquatable<INeuralNetwork>
+    public interface INeuralNetwork : IEquatable<INeuralNetwork>, IClonable<INeuralNetwork>
     {
         #region Properties
 

@@ -72,5 +72,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        public abstract INetworkLayer Clone();
     }
 }

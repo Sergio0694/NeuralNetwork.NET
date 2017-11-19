@@ -9,7 +9,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// <summary>
     /// A pooling layer, with a 2x2 window and a stride of 2
     /// </summary>
-    internal class PoolingLayer : NetworkLayerBase, INetworkLayer3D
+    internal sealed class PoolingLayer : NetworkLayerBase, INetworkLayer3D
     {
         #region Parameters
 
@@ -29,6 +29,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         public PoolingLayer(VolumeInformation input) : base(ActivationFunctionType.Identity)
         {
+            InputVolume = input;
             int outAxis = input.Axis / 2 + (input.Axis % 2 == 0 ? 0 : 1);
             OutputVolume = new VolumeInformation(outAxis, input.Depth);
         }
@@ -39,9 +40,13 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
         {
             throw new NotImplementedException();
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new PoolingLayer(InputVolume);
     }
 }

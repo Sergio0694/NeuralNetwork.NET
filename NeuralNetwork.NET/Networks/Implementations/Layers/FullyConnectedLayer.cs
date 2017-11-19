@@ -1,7 +1,9 @@
-﻿using NeuralNetworkNET.Helpers;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 
@@ -22,6 +24,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             : base(WeightsProvider.FullyConnectedWeights(inputs, outputs),
                 WeightsProvider.Biases(outputs), activation)
         { }
+
+        protected FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            : base(weights, biases, activation) { }
 
         /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
@@ -48,5 +53,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             float[] dJdb = delta.CompressVertically();
             return new LayerGradient(dJdw, dJdb);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new FullyConnectedLayer(Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }

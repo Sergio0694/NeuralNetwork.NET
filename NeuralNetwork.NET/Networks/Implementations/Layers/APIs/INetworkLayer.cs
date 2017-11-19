@@ -6,7 +6,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
     /// <summary>
     /// An interface that represents a single layer in a multilayer neural network
     /// </summary>
-    public interface INetworkLayer : IEquatable<INetworkLayer>
+    public interface INetworkLayer : IEquatable<INetworkLayer>, IClonable<INetworkLayer>
     {
         /// <summary>
         /// Gets the number of inputs in the current layer

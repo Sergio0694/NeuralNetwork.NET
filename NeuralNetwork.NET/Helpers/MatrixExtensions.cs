@@ -923,6 +923,10 @@ namespace NeuralNetworkNET.Helpers
             if (!result) throw new Exception("Error while runnig the parallel loop");
         }
 
+        #endregion
+
+        #region Argmax
+
         /// <summary>
         /// Returns the index of the maximum value in the input vector
         /// </summary>
@@ -987,6 +991,37 @@ namespace NeuralNetworkNET.Helpers
                         }
             }
             return index;
+        }
+
+        #endregion
+
+        #region BlockCopy
+
+        /// <summary>
+        /// Returns a deep copy of the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to clone</param>
+        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.BlockCopy"/></remarks>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[,] BlockCopy([NotNull] this float[,] m)
+        {
+            float[,] result = new float[m.GetLength(0), m.GetLength(1)];
+            Buffer.BlockCopy(m, 0, result, 0, m.Length);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a deep copy of the input vector
+        /// </summary>
+        /// <param name="v">The vector to clone</param>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[] BlockCopy([NotNull] this float[] v)
+        {
+            float[] result = new float[v.Length];
+            Buffer.BlockCopy(v, 0, result, 0, v.Length);
+            return result;
         }
 
         #endregion

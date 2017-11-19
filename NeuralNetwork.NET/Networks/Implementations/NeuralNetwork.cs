@@ -287,15 +287,17 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Compare general features
             if (other is NeuralNetwork network &&
                 other.InputLayerSize == InputLayerSize &&
-                other.OutputLayerSize == OutputLayerSize)
+                other.OutputLayerSize == OutputLayerSize &&
+                Layers.Count == network.Layers.Count)
             {
                 // Compare the individual layers
-                for (int i = 0; i < Layers.Count; i++)
-                    if (!Layers[i].Equals(network.Layers[i])) return false;
-                return true;
+                return Layers.Zip(network.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
             }
             return false;
         }
+
+        /// <inheritdoc/>
+        public INeuralNetwork Clone() => new NeuralNetwork(Layers.Select(l => l.Clone()).ToArray());
 
         #endregion
     }

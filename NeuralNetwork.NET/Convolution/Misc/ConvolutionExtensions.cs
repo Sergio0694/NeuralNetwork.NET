@@ -103,8 +103,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                     }
                 }
             }
-            for (int jj = 0; jj < h; jj++) Kernel(jj);
-            //Parallel.For(0, h, Kernel).AssertCompleted();
+            Parallel.For(0, h, Kernel).AssertCompleted();
             return result;
         }
 

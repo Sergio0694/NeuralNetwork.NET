@@ -1,4 +1,6 @@
 ﻿using System;
+using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
@@ -11,7 +13,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// <summary>
     /// A convolutional layer, used in a CNN network
     /// </summary>
-    internal class ConvolutionalLayer : WeightedLayerBase, INetworkLayer3D
+    internal sealed class ConvolutionalLayer : WeightedLayerBase, INetworkLayer3D
     {
         #region Parameters
 
@@ -42,6 +44,15 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             OutputVolume = new VolumeInformation(input.Axis - kernelInfo.Axis + 1, kernels);
         }
 
+        private ConvolutionalLayer(VolumeInformation input, VolumeInformation kernels, VolumeInformation output,
+            [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            : base(weights, biases, activation)
+        {
+            InputVolume = input;
+            KernelVolume = kernels;
+            OutputVolume = output;
+        }
+
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
             throw new NotImplementedException();
@@ -56,5 +67,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             throw new NotImplementedException();
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new ConvolutionalLayer(InputVolume, KernelVolume, OutputVolume, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }
