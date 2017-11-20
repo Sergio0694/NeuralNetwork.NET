@@ -203,6 +203,13 @@ namespace NeuralNetworkNET.Networks.Implementations
                     int size = batch.X.GetLength(0);
                     UpdateWeights(dJ, size, eta, l2Factor);
                 }
+                
+                // Check for overflows
+                if (!Parallel.For(0, Layers.Count, (j, state) =>
+                {
+                    if (Layers[j] is WeightedLayerBase layer &&
+                        !layer.ValidateWeights()) state.Break();
+                }).IsCompleted) return TrainingStopReason.NumericOverflow;
 
                 // Check the validation dataset
                 if (convergence != null)

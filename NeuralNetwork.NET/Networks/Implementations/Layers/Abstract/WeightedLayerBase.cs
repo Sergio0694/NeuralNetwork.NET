@@ -76,6 +76,26 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
             }
         }
 
+        /// <summary>
+        /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used
+        /// </summary>
+        [Pure]
+        [AssertionMethod]
+        public unsafe bool ValidateWeights()
+        {
+            int l = Weights.Length;
+            fixed (float* pw = Weights)
+                for (int w = 0; w < l; w++)
+                    if (float.IsNaN(pw[w]))
+                        return false;
+            l = Biases.Length;
+            fixed (float* pb = Biases)
+                for (int w = 0; w < l; w++)
+                    if (float.IsNaN(pb[w]))
+                        return false;
+            return true;
+        }
+
         #region Equality check
 
         /// <inheritdoc/>
