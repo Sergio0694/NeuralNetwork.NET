@@ -393,12 +393,12 @@ namespace NeuralNetworkNET.Convolution.Misc
                 // Helper function that calculates the 2D valid convolution between two matrices
                 unsafe void Convolute2D(float* psource, float* pkernel, float* presult)
                 {
-                    for (int i = 0; i < imgAxis; i++)
+                    for (int i = 0; i < hResult; i++)
                     {
                         int
-                            targetRowOffset = i * imgAxis,
+                            targetRowOffset = i * hResult,
                             xEnd = i + kAxis - 1;
-                        for (int j = 0; j < imgAxis; j++)
+                        for (int j = 0; j < hResult; j++)
                         {
                             int highY = j + kAxis - 1;
                             float temp = 0.0f;
@@ -426,7 +426,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                         iSample = index / iterationsPerSample,      // Sample index
                         iMod = index % iterationsPerSample,
                         iSampleDepth = iMod / kernelsDepth,         // Depth of the current gradient
-                        iKernelDepth = iMod % sourceDepth;          // Output gradient index
+                        iKernelDepth = iMod % kernelsDepth;         // Output gradient index
 
                     fixed (float* psource = source, pkernels = kernels, presult = result)
                     {

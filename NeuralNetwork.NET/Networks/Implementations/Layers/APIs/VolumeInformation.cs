@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         /// Gets the total number of entries in the data volume
         /// </summary>
         [JsonProperty(nameof(Size), Order = 3)]
-        public int Size => Axis * Depth;
+        public int Size => Axis * Axis * Depth;
         
         /// <inheritdoc/>
         public override String ToString() => $"Axis: {Axis}, Depth: {Depth}, Size: {Size}";

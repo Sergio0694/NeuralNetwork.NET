@@ -376,5 +376,108 @@ namespace NeuralNetworkNET.Unit
             float[,] expected = { { 0, 1, 1, -1, 1, 3, 0, -1, 2 } };
             Assert.IsTrue(result.ContentEquals(expected));
         }
+        
+        [TestMethod]
+        public void Convolution2DGradient1()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
+            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Gradient);
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+        
+        [TestMethod]
+        public void Convolution2DGradient2()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1,
+
+                        1, 2,
+                        0, 1
+                    }
+                };
+            float[,] result = l.Convolute(1, k, 2, ConvolutionMode.Gradient);
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1,
+
+                    4, 2,
+                    5, 2
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void Convolution2DGradient3()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
+            float[,] result = l.Convolute(2, k, 1, ConvolutionMode.Gradient);
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1,
+
+                    2, 2,
+                    4, 1
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
     }
 }
