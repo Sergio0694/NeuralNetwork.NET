@@ -56,7 +56,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             OutputVolume = new VolumeInformation(input.Axis - kernelAxis + 1, kernels);
         }
 
-        private ConvolutionalLayer(VolumeInformation input, VolumeInformation kernels, VolumeInformation output,
+        public ConvolutionalLayer(VolumeInformation input, VolumeInformation kernels, VolumeInformation output,
             [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(weights, biases, activation)
         {

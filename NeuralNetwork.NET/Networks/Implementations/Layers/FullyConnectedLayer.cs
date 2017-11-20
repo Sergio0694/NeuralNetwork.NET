@@ -25,7 +25,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                 WeightsProvider.Biases(outputs), activation)
         { }
 
-        protected FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+        public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(weights, biases, activation) { }
 
         /// <inheritdoc/>

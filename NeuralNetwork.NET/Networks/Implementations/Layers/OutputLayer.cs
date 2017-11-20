@@ -20,7 +20,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                 throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");
         }
 
-        private OutputLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
+        public OutputLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
             : base(weights, biases, activation, cost) { }
 
         /// <inheritdoc/>

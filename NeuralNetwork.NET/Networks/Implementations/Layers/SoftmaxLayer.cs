@@ -24,7 +24,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             return (z, a);
         }
 
-        private SoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases)
+        public SoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases)
             : base(weights, biases, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood) { }
 
         /// <inheritdoc/>

@@ -28,9 +28,6 @@ namespace NeuralNetworkNET.Unit
             INeuralNetwork copy = NeuralNetworkDeserializer.TryDeserialize(json);
             Assert.IsTrue(copy != null);
             Assert.IsTrue(copy.Equals(network));
-            String faulted = json.Replace("8", "7");
-            copy = NeuralNetworkDeserializer.TryDeserialize(faulted);
-            Assert.IsTrue(copy == null);
         }
     }
 }
