@@ -102,6 +102,20 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Creates a dropout mask with the given size and probability
+        /// </summary>
+        /// <param name="random">The <see cref="Random"/> instance</param>
+        /// <param name="x">The height of the matrix</param>
+        /// <param name="y">The width of the matrix</param>
+        /// <param name="dropout">The dropout probability</param>
+        [Pure, NotNull]
+        public static float[,] NextDropoutMask([NotNull] this Random random, int x, int y, float dropout)
+        {
+            float active = 1 - dropout;
+            return random.NextMatrix(x, y, r => r.NextDouble() > dropout ? 1 / active : 0);
+        }
+
+        /// <summary>
         /// Returns a new matrix filled with values from the Xavier initialization (random~N(0,1) over the square of the number of input neurons)
         /// </summary>
         /// <param name="random">The <see cref="Random"/> instance</param>

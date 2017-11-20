@@ -72,16 +72,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public float CalculateCost(float[] x, float[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
 
-        /// <summary>
-        /// Calculates the gradient of the cost function with respect to the individual weights and biases
-        /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="y">The expected result</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[] x, [NotNull] float[] y) => Backpropagate(x.ToMatrix(), y.ToMatrix());
-
         #endregion
 
         #region Batch processing
@@ -110,19 +100,26 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="x">The input data</param>
         /// <param name="y">The expected results</param>
+        /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y)
+        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y, float dropout)
         {
             // Feedforward
             float[][,]
                 zList = new float[Layers.Count][,],
                 aList = new float[Layers.Count][,];
+            float[][,] dropoutMasks = new float[Layers.Count - 1][,];
             foreach ((NetworkLayerBase layer, int i) in Layers.Select((l, i) => (l, i)))
             {
                 // Save the intermediate steps to be able to reuse them later
                 (zList[i], aList[i]) = layer.Forward(i == 0 ? x : aList[i - 1]);
+                if (layer.LayerType == LayerType.FullyConnected && dropout > 0)
+                {
+                    dropoutMasks[i] = new Random().NextDropoutMask(aList[i].GetLength(0), aList[i].GetLength(1), dropout);
+                    aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                }
             }
 
             // Backpropagation deltas
@@ -146,6 +143,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
                 deltas[l] = Layers[l + 1].Backpropagate(deltas[l + 1], zList[l], Layers[l].ActivationFunctions.ActivationPrime);
+                if (dropoutMasks[l] != null) deltas[l].InPlaceHadamardProduct(dropoutMasks[l]);
             }
 
             /* =============================================
@@ -175,6 +173,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
         /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
         /// <param name="eta">The learning rate</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The L2 regularization factor</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         public TrainingStopReason StochasticGradientDescent(
@@ -182,7 +181,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             int epochs, int batchSize,
             ValidationParameters validationParameters = null,
             TestParameters testParameters = null,
-            float eta = 0.5f, float lambda = 0.1f,
+            float eta = 0.5f, float dropout = 0, float lambda = 0,
             CancellationToken token = default)
         {
             // Convergence manager for the validation dataset
@@ -200,7 +199,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 foreach (TrainingBatch batch in batches.NextEpoch())
                 {
                     if (token.IsCancellationRequested) return TrainingStopReason.TrainingCanceled;
-                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
+                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y, dropout);
                     int size = batch.X.GetLength(0);
                     UpdateWeights(dJ, size, eta, l2Factor);
                 }

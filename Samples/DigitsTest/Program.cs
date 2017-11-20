@@ -16,13 +16,14 @@ namespace DigitsTest
         static async Task Main()
         {
             (var training, var test) = DataParser.LoadDatasets();
-            (INeuralNetwork network, _) = await NetworkTrainer.TrainNetworkAsync((training.X, training.Y), 10, 10, null,
+            INeuralNetwork network = NetworkTrainer.NewNetwork(
+                NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
+                NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+            await NetworkTrainer.TrainNetworkAsync(network, (training.X, training.Y), 10, 10, null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
-                })), 0.5f, 0.1f, default,
-                NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+                })), 0.5f, 0.5f);
             Console.ReadKey();
         }
 
