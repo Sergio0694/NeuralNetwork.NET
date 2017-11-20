@@ -54,8 +54,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
         /// Creates a pooling layer with a window of size 2 and a stride of 2
         /// </summary>
         /// <param name="input">The input volume to pool</param>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Pooling(VolumeInformation input) => new PoolingLayer(input);
+        public static INetworkLayer Pooling(VolumeInformation input, ActivationFunctionType activation) => new PoolingLayer(input, activation);
     }
 }

@@ -49,7 +49,9 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                                 layer["Biases"].ToObject<float[]>(),
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Pooling:
-                            return new PoolingLayer(layer["InputVolume"].ToObject<VolumeInformation>());
+                            return new PoolingLayer(
+                                layer["InputVolume"].ToObject<VolumeInformation>(),
+                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Output:
                             return new OutputLayer(
                                 layer["Weights"].ToObject<float[,]>(),

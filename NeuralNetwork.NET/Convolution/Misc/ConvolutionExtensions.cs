@@ -108,6 +108,124 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
+        /// Pools the input matrix with a window of 2 and a stride of 2
+        /// </summary>
+        /// <param name="source">The activation matrix</param>
+        /// <param name="pooled">The matrix to upscale according to the source values</param>
+        /// <param name="depth">The number of images for each matrix row</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[,] UpscalePool2x2([NotNull] this float[,] source, [NotNull] float[,] pooled, int depth)
+        {
+            // Prepare the result matrix
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
+            int h = source.GetLength(0), w = source.GetLength(1);
+            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
+            int
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            int
+                poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
+                poolSize = poolAxis * poolAxis,
+                poolFinalWidth = depth * poolSize,
+                edge = imgAxis - 1;
+            int
+                ph = pooled.GetLength(0),
+                pw = pooled.GetLength(1);
+            if (ph != h || pw != poolFinalWidth) throw new ArgumentException("Invalid pooled matrix", nameof(pooled));
+            float[,] result = new float[h, w];
+
+            // Pooling kernel
+            unsafe void Kernel(int sample)
+            {
+                int
+                    sourceBaseOffset = sample * w,
+                    resultBaseOffset = sample * poolFinalWidth;
+                fixed (float* psource = source, ppooled = pooled, presult = result)
+                {
+                    for (int z = 0; z < depth; z++)
+                    {
+                        int
+                            sourceZOffset = sourceBaseOffset + z * imgSize,
+                            resultZOffset = resultBaseOffset + z * poolSize,
+                            x = 0;
+                        for (int i = 0; i < imgAxis; i += 2)
+                        {
+                            int
+                                sourceIOffset = sourceZOffset + i * imgAxis,
+                                resultXOffset = resultZOffset + x * poolAxis,
+                                y = 0;
+                            if (i == edge)
+                            {
+                                // Last row
+                                for (int j = 0; j < imgAxis; j += 2)
+                                {
+                                    if (j == w - 1)
+                                    {
+                                        presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                    }
+                                    else
+                                    {
+                                        float
+                                            left = psource[sourceIOffset + j],
+                                            right = psource[sourceIOffset + j + 1];
+                                        if (left > right) presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                        else presult[sourceIOffset + j + 1] = ppooled[resultXOffset + y++];
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                int sourceI_1Offset = sourceZOffset + (i + 1) * imgAxis;
+                                for (int j = 0; j < imgAxis; j += 2)
+                                {
+                                    if (j == edge)
+                                    {
+                                        // Last column
+                                        float
+                                            up = psource[sourceIOffset + j],
+                                            down = psource[sourceI_1Offset + j];
+                                        if (up > down) presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                        else presult[sourceI_1Offset + j] = ppooled[resultXOffset + y++];
+                                    }
+                                    else
+                                    {
+                                        int offset = sourceIOffset + j;
+                                        float
+                                            max = psource[offset],
+                                            next = psource[sourceIOffset + j + 1];
+                                        if (next > max)
+                                        {
+                                            max = next;
+                                            offset = sourceIOffset + j + 1;
+                                        }
+                                        next = psource[sourceI_1Offset + j];
+                                        if (next > max)
+                                        {
+                                            max = next;
+                                            offset = sourceI_1Offset + j;
+                                        }
+                                        next = psource[sourceI_1Offset + j + 1];
+                                        if (next > max)
+                                        {
+                                            offset = sourceI_1Offset + j + 1;
+                                        }
+                                        presult[offset] = ppooled[resultXOffset + y++];
+                                    }
+                                }
+                            }
+                            x++;
+                        }
+                    }
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+            return result;
+        }
+
+        /// <summary>
         /// Compresses a convolution matrix into a row vector by summing each 2D slice in each row
         /// </summary>
         /// <param name="source">The matrix to compress</param>
