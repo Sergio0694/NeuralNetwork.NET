@@ -16,37 +16,12 @@ namespace NeuralNetworkNET.SupervisedLearning
     public static class NetworkTrainer
     {
         /// <summary>
-        /// Generates and trains a neural network with the given parameters
+        /// Creates a new network with the specified parameters
         /// </summary>
-        /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> with the training samples and expected results</param>
-        /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
-        /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
-        /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        /// <param name="layers">The desired layers of the network to create and train</param>
-        /// <remarks>
-        /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
-        /// <para>The <paramref name="lambda"/> parameter (optional) depends on both <paramref name="eta"/> and the number of training samples and should be scaled accordingly</para>
-        /// </remarks>
+        /// <param name="layers">The network layers to use</param>
         [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static async Task<(INeuralNetwork Network, TrainingStopReason StopReason)> TrainNetworkAsync(
-            (float[,] X, float[,] Y) trainingSet,
-            int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float lambda = 0f, CancellationToken token = default,
-            [NotNull, ItemNotNull] params INetworkLayer[] layers)
-        {
-            NeuralNetwork network = new NeuralNetwork(layers);
-            TrainingStopReason result = await TrainNetworkAsync(
-                network, trainingSet, epochs, batchSize, validationParameters, testParameters, eta, lambda, token);
-            return (network, result);
-        }
+        [Pure, NotNull]
+        public static INeuralNetwork NewNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers) => new NeuralNetwork(layers);
 
         /// <summary>
         /// Generates and trains a neural network with the given parameters
@@ -58,6 +33,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="NeuralNetworkNET.Networks.Implementations.Layers.APIs.LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
@@ -72,7 +48,7 @@ namespace NeuralNetworkNET.SupervisedLearning
             int epochs, int batchSize,
             ValidationParameters validationParameters = null,
             TestParameters testParameters = null,
-            float eta = 0.1f, float lambda = 0f, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
         {
             // Preliminary checks
             if (!(network is NeuralNetwork localNet)) throw new ArgumentException(nameof(network), "Invalid network instance");
@@ -81,10 +57,11 @@ namespace NeuralNetworkNET.SupervisedLearning
             if (trainingSet.X.GetLength(0) != trainingSet.Y.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
             if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
             if (batchSize > trainingSet.X.GetLength(0)) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be less or equal than the number of training samples");
+            if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
 
             // Start the training
             return Task.Run(() => localNet.StochasticGradientDescent(
-                trainingSet, epochs, batchSize, validationParameters, testParameters, eta, lambda, token), token);
+                trainingSet, epochs, batchSize, validationParameters, testParameters, eta, dropout, lambda, token), token);
         }
     }
 }

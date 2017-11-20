@@ -225,6 +225,39 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Performs the in place Hadamard product between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void InPlaceHadamardProduct([NotNull] this float[,] m1, [NotNull] float[,] m2)
+        {
+            // Check
+            int
+                h = m1.GetLength(0),
+                w = m1.GetLength(1);
+            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+
+            // Loop in parallel
+            unsafe void Kernel(int i)
+            {
+                // Get the pointers and iterate fo each column
+                fixed (float* pm1 = m1, pm2 = m2)
+                {
+                    // Perform the product
+                    int offset = i * w;
+                    for (int j = 0; j < w; j++)
+                    {
+                        int position = offset + j;
+                        pm1[position] *= pm2[position];
+                    }
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
         /// Performs the Hadamard product between two matrices
         /// </summary>
         /// <param name="m1">The first matrix</param>

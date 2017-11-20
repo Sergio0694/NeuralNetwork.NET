@@ -17,28 +17,6 @@ namespace NeuralNetworkNET.Unit
     [TestCategory(nameof(NetworkTest))]
     public class NetworkTest
     {
-        [TestMethod]
-        public void TestNumpy1()
-        {
-            // Initialization
-            float[][,] weights = 
-            {
-                new[,] { { 1.34856747f, -1.16546082f } },
-                new[,] { { -0.73764399f }, { -0.69019199f } }
-            };
-            float[][] biases =
-            {
-                new[] { 0.45206544f, 0.66440039f },
-                new[] { -0.01439235f }
-            };
-            //NeuralNetwork dotNet = new NeuralNetwork(weights, biases, weights.Select(_ => ActivationFunctionType.Sigmoid).ToArray(), CostFunctionType.CrossEntropy);
-
-            // TODO
-            // Tests
-          //  float[,] dotResult = dotNet.Forward(new[,] { { 1.2f } });
-           // Assert.IsTrue((dotResult[0, 0] - 0.28743771f).Abs() < 0.1f);
-        }
-
         private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset()
         {
             const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
