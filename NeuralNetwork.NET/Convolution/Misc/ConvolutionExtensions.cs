@@ -108,6 +108,51 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
+        /// Compresses a convolution matrix into a row vector by summing each 2D slice in each row
+        /// </summary>
+        /// <param name="source">The matrix to compress</param>
+        /// <param name="depth">The number of images per row</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[] CompressVertically([NotNull] this float[,] source, int depth)
+        {
+            // Checks and local parameters
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            float[,] result = new float[h, depth];
+
+            // Kernel to sum each slice
+            unsafe void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    iSample = index / depth,    // Sample index
+                    z = index % depth;          // 2D slice index
+
+                // Reverse the input matrix sequentially
+                int baseOffset = iSample * w + z * imgSize;
+                fixed (float* presult = result, psource = source)
+                {
+                    float sum = 0;
+                    for (int i = 0; i < imgSize; i++)
+                    {
+                        sum += psource[baseOffset + i];
+                    }
+                    presult[iSample * depth + z] = sum;
+                }
+            }
+            Parallel.For(0, h * depth, Kernel).AssertCompleted();
+            return result.CompressVertically();
+        }
+
+        /// <summary>
         /// Rotates the input volume by 180 degrees
         /// </summary>
         /// <param name="source">The input matrix to rotate</param>
@@ -137,7 +182,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                 // Calculate the current indexes
                 int
                     iSample = index / depth,    // Sample index
-                    z = index % depth;          // Kernel index
+                    z = index % depth;          // 2D slice index
 
                 // Reverse the input matrix sequentially
                 int baseOffset = iSample * w + z * imgSize;

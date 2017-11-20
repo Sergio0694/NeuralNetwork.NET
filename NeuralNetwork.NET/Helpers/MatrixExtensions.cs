@@ -886,7 +886,7 @@ namespace NeuralNetworkNET.Helpers
             float[] vector = new float[w];
 
             // Compress the matrix
-            bool result = Parallel.For(0, w, j =>
+            Parallel.For(0, w, j =>
             {
                 unsafe
                 {
@@ -899,8 +899,7 @@ namespace NeuralNetworkNET.Helpers
                         pv[j] = sum;
                     }
                 }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
+            }).AssertCompleted();
             return vector;
         }
 

@@ -267,6 +267,57 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
         }
 
+        [TestMethod]
+        public void Compress1()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    {
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 8, 9
+                    }
+                };
+            float[]
+                r = { 45 }, 
+                t = m.CompressVertically(1);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Compress2()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    {
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 8, 9,
+
+                        1, 99, 3,
+                        4, 5, 6,
+                        7, 8, 9
+                    },
+                    {
+                        1, 2, 3,
+                        4, 5, 66,
+                        7, 8, 9,
+
+                        1, 2, 3,
+                        44, 5, 6,
+                        7, 8, 9
+                    }
+                };
+            float[]
+                r = { 150, 227 },
+                t = m.CompressVertically(2);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
         // 1-depth, 3*3 with 2*2 = 2*2 result
         [TestMethod]
         public void Convolution2DValid1()
