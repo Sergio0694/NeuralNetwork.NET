@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -48,7 +49,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #endregion
 
         public ConvolutionalLayer(VolumeInformation input, int kernelAxis, int kernels, ActivationFunctionType activation)
-            : base(WeightsProvider.ConvolutionalKernels(new VolumeInformation(kernelAxis, input.Depth), kernels), 
+            : base(WeightsProvider.ConvolutionalKernels(kernelAxis, input.Depth, kernels), 
                   WeightsProvider.Biases(kernels), activation)
         {
             InputVolume = input;
@@ -65,19 +66,29 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             OutputVolume = output;
         }
 
+        /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
-            throw new NotImplementedException();
+            float[,]
+                z = x.Convolute(InputVolume.Depth, Weights, InputVolume.Depth, ConvolutionMode.Forward),
+                a = z.Activation(ActivationFunctions.Activation);
+            return (z, a);
         }
 
+        /// <inheritdoc/>
         public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public override LayerGradient ComputeGradient(float[,] a, float[,] delta)
         {
-            throw new NotImplementedException();
+            float[,]
+                a180 = a.Rotate180(InputVolume.Depth),
+                dJdw = a180.Convolute(InputVolume.Depth, delta, OutputVolume.Depth, ConvolutionMode.Gradient);
+            float[] dJdb = delta.CompressVertically(OutputVolume.Depth);
+            return new LayerGradient(dJdw, dJdb);
         }
 
         /// <inheritdoc/>
