@@ -1,7 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
 {
@@ -35,7 +34,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
             Random random = new Random();
             int weights = axis * axis * depth;
-            return random.NextUniformMatrix(kernels, weights, weights);
+            return random.NextUniformMatrix(kernels, weights, 3f / weights);
         }
 
         /// <summary>

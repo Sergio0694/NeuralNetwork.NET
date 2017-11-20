@@ -148,9 +148,9 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="scale">The variance of the uniform values to generate</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static float[,] NextUniformMatrix([NotNull] this Random random, int x, int y, int scale)
+        public static float[,] NextUniformMatrix([NotNull] this Random random, int x, int y, float scale)
         {
-            return random.NextMatrix(x, y, r => (float)r.NextDouble() * scale * (r.NextBool() ? 1 : -1));
+            return random.NextMatrix(x, y, r => (float)r.NextDouble() * scale * (r.NextBool() ? 1f : -1f));
         }
     }
 }

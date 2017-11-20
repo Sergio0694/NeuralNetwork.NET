@@ -1,4 +1,6 @@
 ﻿using System;
+using NeuralNetworkNET.Convolution.Misc;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
@@ -41,7 +43,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
-            throw new NotImplementedException();
+            float[,]
+                z = x.Pool2x2(InputVolume.Depth),
+                a = z.BlockCopy();
+            return (z, a);
         }
 
         /// <inheritdoc/>

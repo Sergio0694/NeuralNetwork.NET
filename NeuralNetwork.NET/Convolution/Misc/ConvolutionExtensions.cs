@@ -208,6 +208,45 @@ namespace NeuralNetworkNET.Convolution.Misc
         }
 
         /// <summary>
+        /// Sums a vector to each 2D slice in the input data volume
+        /// </summary>
+        /// <param name="source">The input volume, where each row is a separate 3D volume of the given depth</param>
+        /// <param name="depth">The number of images in each row</param>
+        /// <param name="v">The vector to sum</param>
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void InPlaceSum([NotNull] this float[,] source, int depth, [NotNull] float[] v)
+        {
+            // Checks and local parameters
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
+            if (v.Length == 0) throw new ArgumentException(nameof(v), "The sum vector can't be empty");
+            if (v.Length != depth) throw new ArgumentException("The sum vector must be as long as the depth of the input volume");
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+
+            // Add the bias to each 2D slice
+            unsafe void Kernel(int i)
+            {
+                int baseOffset = i * w;
+                fixed (float* psource = source, pv = v)
+                {
+                    for (int z = 0; z < depth; z++)
+                    {
+                        int sliceOffset = baseOffset + z * imgSize;
+                        float sum = pv[z];
+                        for (int j = 0; j < imgSize; j++)
+                            psource[sliceOffset + j] += sum;
+                    }
+                }
+            }
+            Parallel.For(0, h, Kernel);
+        }
+
+        /// <summary>
         /// Performs a convolution operation on the source matrix, using the given kernels
         /// </summary>
         /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
@@ -388,34 +427,6 @@ namespace NeuralNetworkNET.Convolution.Misc
                     gradientSize = convolutionOutputSize * sourceDepth,         // Size of each calculated gradient (one for each original kernel, so for each input delta)
                     finalWidth = gradientSize * kernelsDepth,                   // Final size of each sample row
                     iterationsPerSample = sourceDepth * kernelsDepth;           // Each sample has its own list of 3D gradients, one for each kernel
-                    
-
-                // Helper function that calculates the 2D valid convolution between two matrices
-                unsafe void Convolute2D(float* psource, float* pkernel, float* presult)
-                {
-                    for (int i = 0; i < hResult; i++)
-                    {
-                        int
-                            targetRowOffset = i * hResult,
-                            xEnd = i + kAxis - 1;
-                        for (int j = 0; j < hResult; j++)
-                        {
-                            int highY = j + kAxis - 1;
-                            float temp = 0.0f;
-                            for (int x = i; x <= xEnd; x++)
-                            {
-                                int
-                                    sourceRowOffset = x * imgAxis,
-                                    kernelRowOffset = (xEnd - x) * kAxis + highY;
-                                for (int y = j; y <= highY; y++)
-                                {
-                                    temp += psource[sourceRowOffset + y] * pkernel[kernelRowOffset - y];
-                                }
-                            }
-                            presult[targetRowOffset + j] = temp;
-                        }
-                    }
-                }
 
                 // Process the valid convolution
                 float[,] result = new float[h, finalWidth];
@@ -428,14 +439,36 @@ namespace NeuralNetworkNET.Convolution.Misc
                         iSampleDepth = iMod / kernelsDepth,         // Depth of the current gradient
                         iKernelDepth = iMod % kernelsDepth;         // Output gradient index
 
+                    // Process the current convolution slice
+                    int
+                        sourceBaseOffset = iSample * w + iSampleDepth * imgSize,
+                        kernelBaseOffset = iKernelDepth * kSize,
+                        resultBaseOffset = iSample * finalWidth + iKernelDepth * gradientSize + iSampleDepth * convolutionOutputSize;
                     fixed (float* psource = source, pkernels = kernels, presult = result)
                     {
-                        // Adjust the output offsets
-                        float*
-                            psourceTarget = psource + iSample * w + iSampleDepth * imgSize,
-                            pkernelsTarget = pkernels + iKernelDepth * kSize,
-                            presultTarget = presult + iSample * finalWidth + iKernelDepth * gradientSize + iSampleDepth * convolutionOutputSize;
-                        Convolute2D(psourceTarget, pkernelsTarget, presultTarget);
+                        for (int i = 0; i < hResult; i++)
+                        {
+                            int
+                                targetRowOffset = resultBaseOffset + i * hResult,
+                                xEnd = i + kAxis - 1;
+                            for (int j = 0; j < hResult; j++)
+                            {
+                                int highY = j + kAxis - 1;
+                                float temp = 0.0f;
+                                for (int x = i; x <= xEnd; x++)
+                                {
+                                    int
+                                        sourceRowOffset = sourceBaseOffset + x * imgAxis,
+                                        kernelRowOffset = kernelBaseOffset + (xEnd - x) * kAxis + highY;
+                                    for (int y = j; y <= highY; y++)
+                                    {
+                                        temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
+                                    }
+                                }
+                                presult[targetRowOffset + j] = temp;
+                            }
+                        }
+
                     }
                 }
                 Parallel.For(0, h * iterationsPerSample, GradientKernel).AssertCompleted();

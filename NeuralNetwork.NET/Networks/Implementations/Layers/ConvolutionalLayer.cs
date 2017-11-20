@@ -69,9 +69,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
-            float[,]
-                z = x.Convolute(InputVolume.Depth, Weights, InputVolume.Depth, ConvolutionMode.Forward),
-                a = z.Activation(ActivationFunctions.Activation);
+            float[,] z = x.Convolute(InputVolume.Depth, Weights, InputVolume.Depth, ConvolutionMode.Forward);
+            z.InPlaceSum(OutputVolume.Depth, Biases);
+            float[,] a = z.Activation(ActivationFunctions.Activation);
             return (z, a);
         }
 

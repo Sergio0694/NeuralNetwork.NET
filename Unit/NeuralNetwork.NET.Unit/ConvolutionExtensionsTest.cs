@@ -323,10 +323,29 @@ namespace NeuralNetworkNET.Unit
         public void Convolution2DValid1()
         {
             float[,]
-                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },  // 3*3
-                k = { { 1, 1, 0, 1 } };                 // 2*2
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
             float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
-            float[,] expected = { { 2, 2, 4, 1 } };     // 2*2 
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1
+                }
+            };
             Assert.IsTrue(result.ContentEquals(expected));
         }
 
@@ -335,10 +354,38 @@ namespace NeuralNetworkNET.Unit
         public void Convolution2DValid2()
         {
             float[,]
-                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 }, { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },   // 2 sample, 3*3
-                k = { { 1, 1, 0, 1 } };                                                 // 2*2
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    },
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
             float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
-            float[,] expected = { { 2, 2, 4, 1 }, { 2, 2, 4, 1 } };                     // 2 sample, 2*2
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1
+                },
+                {
+                    2, 2,
+                    4, 1
+                }
+            };
             Assert.IsTrue(result.ContentEquals(expected));
         }
 
@@ -347,10 +394,36 @@ namespace NeuralNetworkNET.Unit
         public void Convolution2DValid3()
         {
             float[,]
-                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0 } },              // 3*3
-                k = { { 1, 1, 0, 1 }, { 0, 1, 2, 0 } };             // 2 kernels 2*2
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    },
+                    {
+                        0, 1,
+                        2, 0
+                    }
+                };
             float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
-            float[,] expected = { { 2, 2, 4, 1, 4, 0, 1, 3 } };     // 2-depth, 2*2 result
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1,
+
+                    4, 0,
+                    1, 3
+                }
+            };
             Assert.IsTrue(result.ContentEquals(expected));
         }
 
@@ -359,10 +432,83 @@ namespace NeuralNetworkNET.Unit
         public void Convolution2DValid4()
         {
             float[,]
-                l = { { 0, 1, 0, 2, 0, 1, 1, 1, 0, 1, 0, 0, 0, 2, 1, 0, 1, 1 } },   // 2-depth 3*3
-                k = { { 1, 1, 0, 1, 0, 1, 1, 0 } };                                 // 2-depth 2*2 kernel
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        1, 0, 0,
+                        0, 2, 1,
+                        0, 1, 1
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1,
+
+                        0, 1,
+                        1, 0
+                    }
+                };
             float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Forward);
-            float[,] expected = { { 2, 4, 6, 3 } };                                 // 2*2 result
+            float[,] expected =
+            {
+                {
+                    2, 4,
+                    6, 3
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void Convolution2DValid5()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        1, 0, 0,
+                        0, 2, 1,
+                        0, 1, 1
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1,
+
+                        0, 1,
+                        1, 0
+                    },
+                    {
+                        1, 1,
+                        0, 1,
+
+                        0, 1,
+                        1, 0
+                    }
+                };
+            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Forward);
+            float[,] expected =
+            {
+                {
+                    2, 4,
+                    6, 3,
+
+                    2, 4,
+                    6, 3
+                }
+            };
             Assert.IsTrue(result.ContentEquals(expected));
         }
 
@@ -370,10 +516,29 @@ namespace NeuralNetworkNET.Unit
         public void ConvolutionFull1()
         {
             float[,]
-                l = { { 0, 1, -1, 2 } },
-                k = { { 1, 1, 0, 1 } };
+                l =
+                {
+                    {
+                        0, 1,
+                        -1, 2
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
             float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Backwards);
-            float[,] expected = { { 0, 1, 1, -1, 1, 3, 0, -1, 2 } };
+            float[,] expected =
+            {
+                {
+                    0, 1, 1,
+                    -1, 1, 3,
+                    0, -1, 2
+                }
+            };
             Assert.IsTrue(result.ContentEquals(expected));
         }
         
@@ -478,6 +643,82 @@ namespace NeuralNetworkNET.Unit
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void Sum1()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                };
+            float[] v = { 1 };
+            l.InPlaceSum(1, v);
+            float[,] expected =
+            {
+                {
+                    1, 2, 1,
+                    3, 1, 2,
+                    2, 2, 1
+                }
+            };
+            Assert.IsTrue(l.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void Sum2()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        1, 2, 3,
+                        4, 5, 6,
+                        9, 8, 7
+                    },
+                    {
+                        0, 1, 66,
+                        2, 0, 199,
+                        1, 1, 0,
+
+                        1, 2, 3,
+                        4, 5, 6,
+                        9, 8, 7
+                    }
+                };
+            float[] v = { 1, 2 };
+            l.InPlaceSum(2, v);
+            float[,] expected =
+            {
+                {
+                    1, 2, 1,
+                    3, 1, 2,
+                    2, 2, 1,
+
+                    3, 4, 5,
+                    6, 7, 8,
+                    11, 10, 9
+                },
+                {
+                    1, 2, 67,
+                    3, 1, 200,
+                    2, 2, 1,
+
+                    3, 4, 5,
+                    6, 7, 8,
+                    11, 10, 9
+                }
+            };
+            Assert.IsTrue(l.ContentEquals(expected));
         }
     }
 }
