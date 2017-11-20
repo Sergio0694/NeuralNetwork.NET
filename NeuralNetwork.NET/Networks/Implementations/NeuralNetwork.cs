@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
@@ -56,6 +58,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
                 if (i > 0 && layers[i - 1].Outputs != layer.Inputs) throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
+                if (i > 0 && layer is PoolingLayer && 
+                    layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationFunctionType != ActivationFunctionType.Identity)
+                    throw new ArgumentException("A convolutional layer followed by a pooling layer must use the Identity activation function");
             }
 
             // Parameters setup
@@ -153,7 +158,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * NOTE: the gradient is only computed for layers with weights and biases, for all the other
              *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
             LayerGradient[] gradient = new LayerGradient[Layers.Count]; // One gradient item for layer
-            foreach ((WeightedLayerBase layer, int i) in Layers.Select((l, i) => (l as WeightedLayerBase, i)))
+            foreach ((WeightedLayerBase layer, int i) in Layers.Select((l, i) => (Layer: l as WeightedLayerBase, i)).Where(t => t.Layer != null))
             {
                 gradient[i] = layer.ComputeGradient(i == 0 ? x : aList[i - 1], deltas[i]);
             }

@@ -152,7 +152,7 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime"/> method
         /// </summary>
-        public static void InPlaceMultiplyAndHadamardProductWithAcrivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
+        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
         {
             if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
             else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime?.Invoke(m, di, wt, prime);

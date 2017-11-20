@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
         {
             float[,] wt = Weights.Transpose();
-            MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(z, delta_1, wt, activationPrime);
+            MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
             return z;
         }
 

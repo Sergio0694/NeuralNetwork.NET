@@ -1,5 +1,4 @@
-﻿using System;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
@@ -71,14 +70,20 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             float[,] z = x.Convolute(InputVolume.Depth, Weights, InputVolume.Depth, ConvolutionMode.Forward);
             z.InPlaceSum(OutputVolume.Depth, Biases);
-            float[,] a = z.Activation(ActivationFunctions.Activation);
+            float[,] a = ActivationFunctionType == ActivationFunctionType.Identity
+                ? z.BlockCopy()
+                : z.Activation(ActivationFunctions.Activation);
             return (z, a);
         }
 
         /// <inheritdoc/>
         public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
         {
-            throw new NotImplementedException();
+            float[,]
+                w180 = Weights.Rotate180(KernelVolume.Depth),
+                delta = delta_1.Convolute(OutputVolume.Depth, w180, KernelVolume.Depth, ConvolutionMode.Backwards);
+            delta.InPlaceHadamardProductWithActivation(z, activationPrime);
+            return delta;
         }
 
         /// <inheritdoc/>
