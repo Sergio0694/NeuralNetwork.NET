@@ -168,6 +168,105 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(t.ContentEquals(r));
         }
 
+        [TestMethod]
+        public void Rotate1()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    {
+                        1, 2,
+                        3, 4
+                    }
+                },
+                r =
+                {
+                    {
+                        4, 3,
+                        2, 1
+                    }
+                },
+                t = m.Rotate180(1);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Rotate2()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    {
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 8, 9
+                    }
+                },
+                r =
+                {
+                    {
+                        9, 8, 7,
+                        6, 5, 4,
+                        3, 2, 1
+                    }
+                },
+                t = m.Rotate180(1);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
+        public void Rotate3()
+        {
+            // Test values
+            float[,]
+                m =
+                {
+                    {
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 8, 9,
+
+                        1, 99, 3,
+                        4, 5, 6,
+                        7, 8, 9
+                    },
+                    {
+                        1, 2, 3,
+                        4, 5, 66,
+                        7, 8, 9,
+
+                        1, 2, 3,
+                        44, 5, 6,
+                        7, 8, 9
+                    }
+                },
+                r =
+                {
+                    {
+                        9, 8, 7,
+                        6, 5, 4,
+                        3, 2, 1,
+
+                        9, 8, 7,
+                        6, 5, 4,
+                        3, 99, 1
+                    },
+                    {
+                        9, 8, 7,
+                        66, 5, 4,
+                        3, 2, 1,
+
+                        9, 8, 7,
+                        6, 5, 44,
+                        3, 2, 1
+                    },
+                },
+                t = m.Rotate180(2);
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
         // 1-depth, 3*3 with 2*2 = 2*2 result
         [TestMethod]
         public void Convolution2DValid1()
