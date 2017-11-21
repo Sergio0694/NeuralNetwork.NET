@@ -20,8 +20,8 @@ namespace NeuralNetworkNET.Unit
                 {
                     {
                         -1, 0, 1, 2,
-                        1, 1, 1, 1, 0,
-                        -0.3f, -5, -0.5f,
+                        1, 1, 1, 1,
+                        0, -0.3f, -5, -0.5f,
                         -1, 10, -2, -1
                     }
                 },
@@ -34,6 +34,18 @@ namespace NeuralNetworkNET.Unit
                 },
                 t = m.Pool2x2(1);
             Assert.IsTrue(t.ContentEquals(r));
+            float[,]
+                upscale = m.UpscalePool2x2(r, 1),
+                expected =
+                {
+                    {
+                        0, 0, 0, 2,
+                        1, 0, 0, 0,
+                        0, 0, 0, -0.5f,
+                        0, 10, 0, 0
+                    }
+                };
+            Assert.IsTrue(expected.ContentEquals(upscale));
         }
 
         [TestMethod]

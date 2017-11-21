@@ -17,6 +17,18 @@ namespace NeuralNetworkNET.Cuda.Unit
     public class ConvolutionCudaExtensionsTest
     {
         [TestMethod]
+        public void ConvolutionForward1()
+        {
+            Random random = new Random();
+            float[,]
+                source = random.NextXavierMatrix(10, 784),
+                kernels = random.NextXavierMatrix(2, 25),
+                cpuResult = ConvolutionExtensions.Convolute(source, 1, kernels, 1, ConvolutionMode.Forward),
+                gpuResult = ConvolutionGpuExtensions.Convolute(source, 1, kernels, 1, ConvolutionMode.Forward);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult));
+        }
+
+        [TestMethod]
         public void Pool2x2_1()
         {
             Random r = new Random();
