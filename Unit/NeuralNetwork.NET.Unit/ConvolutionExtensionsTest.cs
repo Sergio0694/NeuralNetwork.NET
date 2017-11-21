@@ -816,6 +816,63 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
+        public void Convolution2DGradient4()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    },
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    },
+                    {
+                        1, 2,
+                        0, 1
+                    }
+                };
+            float[,] result = l.Convolute(2, k, 1, ConvolutionMode.Gradient);
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1,
+
+                    2, 2,
+                    4, 1
+                },
+                {
+                    4, 2,
+                    5, 2,
+
+                    4, 2,
+                    5, 2
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
         public void Sum1()
         {
             float[,]

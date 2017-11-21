@@ -560,7 +560,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                     // Process the current convolution slice
                     int
                         sourceBaseOffset = iSample * w + iSampleDepth * imgSize,
-                        kernelBaseOffset = iKernelDepth * kSize,
+                        kernelBaseOffset = iSample * kw + iKernelDepth * kSize,
                         resultBaseOffset = iSample * finalWidth + iKernelDepth * gradientSize + iSampleDepth * convolutionOutputSize;
                     fixed (float* psource = source, pkernels = kernels, presult = result)
                     {

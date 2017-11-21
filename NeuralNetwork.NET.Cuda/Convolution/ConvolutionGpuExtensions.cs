@@ -120,7 +120,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                             }
                         }
                     }
-                    Gpu.Default.For(0, h * nKernels, ForwardKernel);
+                    gpu.For(0, h * nKernels, ForwardKernel);
                     return Gpu.Copy2DToHost(result_gpu);
                 }
             }
@@ -198,7 +198,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                             }
                         }
                     }
-                    Gpu.Default.For(0, h * nKernels, BackwardsKernel);
+                    gpu.For(0, h * nKernels, BackwardsKernel);
                     return Gpu.Copy2DToHost(result_gpu);
                 }
             }
@@ -233,7 +233,47 @@ namespace NeuralNetworkNET.Cuda.Convolution
                         result_gpu_pitch = result_gpu.PitchInElements.ToInt32(),
                         source_gpu_pitch = source_gpu.PitchInElements.ToInt32(),
                         kernels_gpu_pitch = kernels_gpu.PitchInElements.ToInt32();
-                    throw new NotImplementedException();
+
+                    // Gradient kernel
+                    void GradientKernel(int index)
+                    {
+                        // Calculate the current indexes
+                        int
+                            iSample = index / iterationsPerSample,      // Sample index
+                            iMod = index % iterationsPerSample,
+                            iSampleDepth = iMod / kernelsDepth,         // Depth of the current gradient
+                            iKernelDepth = iMod % kernelsDepth;         // Output gradient index
+
+                        // Process the current convolution slice
+                        int
+                            sourceBaseOffset = iSample * source_gpu_pitch + iSampleDepth * imgSize,
+                            kernelBaseOffset = iSample * kernels_gpu_pitch + iKernelDepth * kSize,
+                            resultBaseOffset = iSample * result_gpu_pitch + iKernelDepth * gradientSize + iSampleDepth * convolutionOutputSize;
+                        for (int i = 0; i < hResult; i++)
+                        {
+                            int
+                                targetRowOffset = resultBaseOffset + i * hResult,
+                                xEnd = i + kAxis - 1;
+                            for (int j = 0; j < hResult; j++)
+                            {
+                                int highY = j + kAxis - 1;
+                                float temp = 0.0f;
+                                for (int x = i; x <= xEnd; x++)
+                                {
+                                    int
+                                        sourceRowOffset = sourceBaseOffset + x * imgAxis,
+                                        kernelRowOffset = kernelBaseOffset + (xEnd - x) * kAxis + highY;
+                                    for (int y = j; y <= highY; y++)
+                                    {
+                                        temp += psource_gpu[sourceRowOffset + y] * pkernels_gpu[kernelRowOffset - y];
+                                    }
+                                }
+                                presult_gpu[targetRowOffset + j] = temp;
+                            }
+                        }
+                    }
+                    gpu.For(0, h * iterationsPerSample, GradientKernel);
+                    return Gpu.Copy2DToHost(result_gpu);
                 }
             }
             throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported convolution mode");
