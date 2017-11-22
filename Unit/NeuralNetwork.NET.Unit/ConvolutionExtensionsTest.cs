@@ -438,6 +438,107 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
+        public void UpscalePool4()
+        {
+            float[,]
+                m =
+                {
+                    {
+                        -1, 0, 1, 2,
+                        1.2f, 1, 1, 1,
+                        0, -0.3f, -5, -0.5f,
+                        -1, 10, -2, -1,
+
+                        -1, 2, 1, 2,
+                        1.2f, 1, 1, 1,
+                        0, -0.3f, 0, -0.5f,
+                        11, 10, -2, -1,
+
+                        -1, 2, 1, 2,
+                        1.2f, 5, 1, 5,
+                        0, 22, 0, -0.5f,
+                        11, 10, -2, 7
+                    },
+                    {
+                        -1, 0, 1, 2,
+                        1.2f, 1, 1, 1,
+                        0, -0.3f, -5, -0.5f,
+                        -1, 10, -2, -1,
+
+                        -1, 2, 1, 2,
+                        1.2f, 1, 1, 1,
+                        0, -0.3f, 0, -0.5f,
+                        11, 10, -2, -1,
+
+                        99, 2, 1, 2,
+                        1.2f, 5, 1, 5,
+                        0, 22, 0, -0.5f,
+                        11, 10, -2, 7
+                    }
+                },
+                p =
+                {
+                    {
+                        66, 77,
+                        99, 11,
+
+                        66, 1,
+                        111, 11,
+
+                        11, 22,
+                        33, 44
+                    },
+                    {
+                        66, 77,
+                        222, 11,
+
+                        66, 1,
+                        111, 11,
+
+                        11, 22,
+                        33, 44
+                    }
+                },
+                t = m.UpscalePool2x2(p, 3),
+                r =
+                {
+                    {
+                        0, 0, 0, 77,
+                        66, 0, 0, 0,
+                        0, 0, 0, 11,
+                        0, 99, 0, 0,
+
+                        0, 66, 0, 1,
+                        0, 0, 0, 0,
+                        0, 0, 11, 0,
+                        111, 0, 0, 0,
+
+                        0, 0, 0, 0,
+                        0, 11, 0, 22,
+                        0, 33, 0, 0,
+                        0, 0, 0, 44
+                    },
+                    {
+                        0, 0, 0, 77,
+                        66, 0, 0, 0,
+                        0, 0, 0, 11,
+                        0, 222, 0, 0,
+
+                        0, 66, 0, 1,
+                        0, 0, 0, 0,
+                        0, 0, 11, 0,
+                        111, 0, 0, 0,
+
+                        11, 0, 0, 0,
+                        0, 0, 0, 22,
+                        0, 33, 0, 0,
+                        0, 0, 0, 44
+                    }
+                };
+            Assert.IsTrue(t.ContentEquals(r));
+        }
+
+        [TestMethod]
         public void Compress1()
         {
             // Test values
@@ -711,7 +812,50 @@ namespace NeuralNetworkNET.Unit
             };
             Assert.IsTrue(result.ContentEquals(expected));
         }
-        
+
+        [TestMethod]
+        public void ConvolutionFull2()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1,
+                        -1, 2
+                    },
+                    {
+                        0, -1,
+                        -1, 2
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    },
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
+            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Backwards);
+            float[,] expected =
+            {
+                {
+                    0, 1, 1,
+                    -1, 1, 3,
+                    0, -1, 2
+                },
+                {
+                    0, -1, -1,
+                    -1, 1, 1,
+                    0, -1, 2
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
         [TestMethod]
         public void Convolution2DGradient1()
         {
@@ -867,6 +1011,81 @@ namespace NeuralNetworkNET.Unit
 
                     4, 2,
                     5, 2
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void Convolution2DGradient5()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        1, 0, 1,
+                        0, 2, 1,
+                        0, 1, 1
+                    },
+                    {
+                        0, -1, 0,
+                        2, 0, 1,
+                        1, 1, 0,
+
+                        1, 0, 1,
+                        0, 2, 1,
+                        0, 1, 1
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1,
+
+                        0, 1,
+                        1, 0
+                    },
+                    {
+                        1, 1,
+                        0, 1,
+
+                        0, -1,
+                        1, 0
+                    }
+                };
+            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Gradient);
+            float[,] expected =
+            {
+                {
+                    2, 2,
+                    4, 1,
+
+                    3, 3,
+                    1, 4,
+
+                    3, 0,
+                    1, 2,
+
+                    0, 3,
+                    2, 2
+                },
+                {
+                    2, 0,
+                    4, 1,
+
+                    3, 3,
+                    1, 4,
+
+                    -3, 0,
+                    -1, 0,
+
+                    0, -1,
+                    2, 0
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));

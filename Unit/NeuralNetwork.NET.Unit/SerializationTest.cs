@@ -20,10 +20,10 @@ namespace NeuralNetworkNET.Unit
         {
             NeuralNetwork network = new NeuralNetwork(
                 NetworkLayers.Convolutional(new VolumeInformation(28, 1), 5, 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new VolumeInformation(20, 10), ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional(new VolumeInformation(24, 20), 5, 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new VolumeInformation(20, 10), ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(100, 8, ActivationFunctionType.Sigmoid), 
+                NetworkLayers.Pooling(new VolumeInformation(24, 20), ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional(new VolumeInformation(12, 20), 5, 10, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(new VolumeInformation(8, 10), ActivationFunctionType.ReLU),
+                NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid), 
                 NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String json = network.SerializeAsJSON();
             INeuralNetwork copy = NeuralNetworkDeserializer.TryDeserialize(json);

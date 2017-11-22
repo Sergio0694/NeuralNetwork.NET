@@ -111,8 +111,8 @@ namespace NeuralNetworkNET.Helpers
         [Pure, NotNull]
         public static float[,] NextDropoutMask([NotNull] this Random random, int x, int y, float dropout)
         {
-            float active = 1 - dropout;
-            return random.NextMatrix(x, y, r => r.NextDouble() > dropout ? 1 / active : 0);
+            float scale = 1 / dropout;
+            return random.NextMatrix(x, y, r => r.NextDouble() > dropout ? scale : 0);
         }
 
         /// <summary>

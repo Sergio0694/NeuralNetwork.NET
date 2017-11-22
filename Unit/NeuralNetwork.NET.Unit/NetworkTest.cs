@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.Unit
             NeuralNetwork network = new NeuralNetwork(
                 NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            network.StochasticGradientDescent(trainingSet, 5, 100, null, null, 0.5f, 5);
+            network.StochasticGradientDescent(trainingSet, 5, 100, null, null, 0.5f, 0, 5);
             (_, _, float accuracy) = network.Evaluate(testSet);
             Assert.IsTrue(accuracy > 80);
         }

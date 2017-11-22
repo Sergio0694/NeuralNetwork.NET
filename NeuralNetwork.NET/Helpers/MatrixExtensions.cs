@@ -1099,7 +1099,8 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
-        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o)
+        /// <param name="delta">The comparison threshold</param>
+        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o, float delta = 1e-6f)
         {
             if (m == null && o == null) return true;
             if (m == null || o == null) return false;
@@ -1107,7 +1108,7 @@ namespace NeuralNetworkNET.Helpers
                 m.GetLength(1) != o.GetLength(1)) return false;
             for (int i = 0; i < m.GetLength(0); i++)
                 for (int j = 0; j < m.GetLength(1); j++)
-                    if (!m[i, j].EqualsWithDelta(o[i, j])) return false;
+                    if (!m[i, j].EqualsWithDelta(o[i, j], delta)) return false;
             return true;
         }
 
@@ -1116,13 +1117,14 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The first vector to test</param>
         /// <param name="o">The second vector to test</param>
-        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o)
+        /// <param name="delta">The comparison threshold</param>
+        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o, float delta = 1e-6f)
         {
             if (v == null && o == null) return true;
             if (v == null || o == null) return false;
             if (v.Length != o.Length) return false;
             for (int i = 0; i < v.Length; i++)
-                if (!v[i].EqualsWithDelta(o[i])) return false;
+                if (!v[i].EqualsWithDelta(o[i], delta)) return false;
             return true;
         }
 
