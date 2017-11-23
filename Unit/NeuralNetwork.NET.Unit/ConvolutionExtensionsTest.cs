@@ -821,9 +821,8 @@ namespace NeuralNetworkNET.Unit
                 {
                     {
                         0, 1,
-                        -1, 2
-                    },
-                    {
+                        -1, 2,
+
                         0, -1,
                         -1, 2
                     }
@@ -839,18 +838,50 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Backwards);
+            float[,] result = l.Convolute(2, k, 1, ConvolutionMode.Backwards);
+            float[,] expected =
+            {
+                {
+                    0, 0, 0,
+                    -2, 2, 4,
+                    0, -2, 4
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
+        public void ConvolutionFull3()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1,
+                        -1, 2
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1,
+
+                        1, 0,
+                        1, 0
+                    }
+                };
+            float[,] result = l.Convolute(1, k, 2, ConvolutionMode.Backwards);
             float[,] expected =
             {
                 {
                     0, 1, 1,
                     -1, 1, 3,
-                    0, -1, 2
-                },
-                {
-                    0, -1, -1,
-                    -1, 1, 1,
-                    0, -1, 2
+                    0, -1, 2,
+
+                    0, 1, 0,
+                    -1, 3, 0,
+                    -1, 2, 0
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));

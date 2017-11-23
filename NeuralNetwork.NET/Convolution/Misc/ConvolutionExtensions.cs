@@ -473,9 +473,9 @@ namespace NeuralNetworkNET.Convolution.Misc
             if (mode == ConvolutionMode.Backwards)
             {
                 int
-                    hResult = imgAxis + kAxis - 1,                      // Size of each image edge after the convolution
-                    convolutionOutputSize = hResult * hResult,          // Size of each processed image
-                    finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
+                    hResult = imgAxis + kAxis - 1,                          // Size of each image edge after the convolution
+                    convolutionOutputSize = hResult * hResult,              // Size of each processed image
+                    finalWidth = convolutionOutputSize * kernelsDepth;      // Final size of each sample row
 
                 // Process the full convolution
                 float[,] result = new float[h, finalWidth];
@@ -483,14 +483,14 @@ namespace NeuralNetworkNET.Convolution.Misc
                 {
                     // Calculate the current indexes
                     int
-                        iSample = index / nKernels,     // Sample index
-                        iKernel = index % nKernels;     // Kernel index
+                        iSample = index / kernelsDepth,         // Sample index
+                        iKernelDepth = index % kernelsDepth;    // Kernel index
 
                     // Process the convolution slice
                     int
-                        targetBaseOffset = iSample * finalWidth + iKernel * convolutionOutputSize,
+                        targetBaseOffset = iSample * finalWidth + iKernelDepth * convolutionOutputSize,
                         sourceBaseOffset = iSample * w,
-                        kernelBaseOffset = iKernel * kw;
+                        kernelBaseOffset = iKernelDepth * kSize;
                     fixed (float* psource = source, pkernels = kernels, presult = result)
                     {
                         for (int i = 0; i < hResult; ++i)
@@ -505,11 +505,11 @@ namespace NeuralNetworkNET.Convolution.Misc
                                     lowY = 0.Max(j - kAxis + 1),
                                     highY = (imgAxis - 1).Min(j);
                                 float temp = 0.0f;
-                                for (int z = 0; z < kernelsDepth; z++)
+                                for (int z = 0; z < nKernels; z++)
                                 {
                                     int
                                         sourceDepthOffset = sourceBaseOffset + z * imgSize,
-                                        kernelDepthOffset = kernelBaseOffset + z * kSize;
+                                        kernelDepthOffset = kernelBaseOffset + z * kw;
                                     for (int x = lowX; x <= highX; ++x)
                                     {
                                         int
@@ -526,7 +526,7 @@ namespace NeuralNetworkNET.Convolution.Misc
                         }
                     }
                 }
-                Parallel.For(0, h * nKernels, BackwardsKernel).AssertCompleted();
+                Parallel.For(0, h * kernelsDepth, BackwardsKernel).AssertCompleted();
                 return result;
             }
 
