@@ -472,6 +472,7 @@ namespace NeuralNetworkNET.Convolution.Misc
              * Output:          kernelsDepth slices, each is the sum of the i-th slice of all the kernelsDepth kernels with convoluted with the i-th input slice */
             if (mode == ConvolutionMode.Backwards)
             {
+                if (sourceDepth != nKernels) throw new ArgumentException("The source depth must be equal to the number of kernels");
                 int
                     hResult = imgAxis + kAxis - 1,                          // Size of each image edge after the convolution
                     convolutionOutputSize = hResult * hResult,              // Size of each processed image

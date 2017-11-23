@@ -1161,6 +1161,36 @@ namespace NeuralNetworkNET.Helpers
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Returns a formatted representation of the input matrix
+        /// </summary>
+        /// <param name="p">A pointer to the target matrix</param>
+        /// <param name="height">The matrix height</param>
+        /// <param name="width">The matrix width</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static unsafe String ToFormattedString(float* p, int height, int width)
+        {
+            if (height * width == 0) return "{ { } }";
+            StringBuilder builder = new StringBuilder();
+            builder.Append("{ ");
+            for (int i = 0; i < height; i++)
+            {
+                if (width > 0)
+                {
+                    builder.Append("{ ");
+                    for (int j = 0; j < width; j++)
+                    {
+                        builder.Append($"{p[i * width + j]}");
+                        if (j < width - 1) builder.Append(", ");
+                    }
+                    builder.Append(" }");
+                }
+                builder.Append(i < height - 1 ? ",\n  " : " }");
+            }
+            return builder.ToString();
+        }
+
         #endregion
     }
 }

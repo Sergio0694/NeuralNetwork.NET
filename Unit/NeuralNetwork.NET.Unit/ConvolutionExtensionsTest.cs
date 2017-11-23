@@ -888,6 +888,69 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
+        public void ConvolutionFull4()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1,
+                        -1, 2,
+
+                        0, -1,
+                        -1, 2
+                    },
+                    {
+                        0, 1,
+                        2, 3,
+
+                        -1, -1,
+                        0, 4
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1,
+
+                        1, 0,
+                        1, 0
+                    },
+                    {
+                        1, 0,
+                        0, 1,
+
+                        -2, 0,
+                        3, 1
+                    }
+                };
+            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Backwards);
+            float[,] expected =
+            {
+                {
+                    0, 0, 1,
+                    -2, 3, 2,
+                    0, -2, 4,
+
+                    0, 3, 0,
+                    1, -4, -1,
+                    -4, 7, 2
+                },
+                {
+                    -1, 0, 1,
+                    2, 8, 3,
+                    0, 2, 7,
+
+                    2, 3, 0,
+                    -1, -8, -1,
+                    2, 15, 4
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
         public void Convolution2DGradient1()
         {
             float[,]

@@ -133,10 +133,11 @@ namespace NeuralNetworkNET.Cuda.Convolution
              * Output:          kernelsDepth slices, each is the sum of the i-th slice of all the kernelsDepth kernels with convoluted with the i-th input slice */
             if (mode == ConvolutionMode.Backwards)
             {
+                if (sourceDepth != nKernels) throw new ArgumentException("The source depth must be equal to the number of kernels");
                 int
                     hResult = imgAxis + kAxis - 1,                      // Size of each image edge after the convolution
                     convolutionOutputSize = hResult * hResult,          // Size of each processed image
-                    finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
+                    finalWidth = convolutionOutputSize * kernelsDepth;  // Final size of each sample row
 
                 // Process the full convolution
                 using (DeviceMemory2D<float>
@@ -158,14 +159,14 @@ namespace NeuralNetworkNET.Cuda.Convolution
                     {
                         // Calculate the current indexes
                         int
-                            iSample = index / nKernels,     // Sample index
-                            iKernel = index % nKernels;     // Kernel index
+                            iSample = index / kernelsDepth,         // Sample index
+                            iKernelDepth = index % kernelsDepth;    // Kernel index
 
                         // Process the convolution slice
                         int
-                            targetBaseOffset = iSample * result_gpu_pitch + iKernel * convolutionOutputSize,
+                            targetBaseOffset = iSample * result_gpu_pitch + iKernelDepth * convolutionOutputSize,
                             sourceBaseOffset = iSample * source_gpu_pitch,
-                            kernelBaseOffset = iKernel * kernels_gpu_pitch;
+                            kernelBaseOffset = iKernelDepth * kSize;
                         for (int i = 0; i < hResult; ++i)
                         {
                             int
@@ -178,11 +179,11 @@ namespace NeuralNetworkNET.Cuda.Convolution
                                     lowY = 0.Max(j - kAxis + 1),
                                     highY = (imgAxis - 1).Min(j);
                                 float temp = 0.0f;
-                                for (int z = 0; z < kernelsDepth; z++)
+                                for (int z = 0; z < nKernels; z++)
                                 {
                                     int
                                         sourceDepthOffset = sourceBaseOffset + z * imgSize,
-                                        kernelDepthOffset = kernelBaseOffset + z * kSize;
+                                        kernelDepthOffset = kernelBaseOffset + z * kernels_gpu_pitch;
                                     for (int x = lowX; x <= highX; ++x)
                                     {
                                         int
@@ -198,7 +199,7 @@ namespace NeuralNetworkNET.Cuda.Convolution
                             }
                         }
                     }
-                    gpu.For(0, h * nKernels, BackwardsKernel);
+                    gpu.For(0, h * kernelsDepth, BackwardsKernel);
                     return Gpu.Copy2DToHost(result_gpu);
                 }
             }
