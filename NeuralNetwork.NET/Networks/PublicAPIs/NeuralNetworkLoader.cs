@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
@@ -14,16 +16,21 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
     /// <summary>
     /// A static class that handles the JSON deserialization for the neural networks
     /// </summary>
-    public static class NeuralNetworkDeserializer
+    public static class NeuralNetworkLoader
     {
+        /// <summary>
+        /// Gets the file extension used when saving a network
+        /// </summary>
+        public const String NetworkFileExtension = ".nnet";
+
         /// <summary>
         /// Tries to deserialize a network from the input JSON text
         /// </summary>
         /// <param name="json">The source JSON data to parse</param>
         /// <returns>The deserialized network, or null if the operation fails</returns>
         [PublicAPI]
-        [CanBeNull]
-        public static INeuralNetwork TryDeserialize([NotNull] String json)
+        [Pure, CanBeNull]
+        public static INeuralNetwork TryLoadJson([NotNull] String json)
         {
             try
             {
@@ -74,6 +81,75 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                 // Invalid JSON
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Tries to deserialize a network from the input file
+        /// </summary>
+        /// <param name="path">The path to the file to load</param>
+        /// <returns>The deserialized network, or null if the operation fails</returns>
+        [PublicAPI]
+        [Pure, CanBeNull]
+        public static INeuralNetwork TryLoad(String path)
+        {
+            // Json
+            if (!Path.GetExtension(path).Equals(NetworkFileExtension))
+                return Path.GetExtension(path).Equals(".json")
+                    ? TryLoadJson(File.ReadAllText(path))
+                    : null;
+
+            // Binary
+            try
+            {
+                using (Stream stream = File.OpenRead(path))
+                    return TryLoad(stream);
+            }
+            catch
+            {
+                // Locked or invalid file
+                return null;
+            }
+        }
+
+        // Private binary loader
+        private static INeuralNetwork TryLoad(Stream stream)
+        {
+            INetworkLayer[] layers = new INetworkLayer[stream.ReadInt32()];
+            for (int i = 0; i < layers.Length; i++)
+            {
+                LayerType type = (LayerType)stream.ReadByte();
+                ActivationFunctionType activation = (ActivationFunctionType)stream.ReadByte();
+                int
+                    inputs = stream.ReadInt32(),
+                    outputs = stream.ReadInt32();
+                switch (type)
+                {
+                    case LayerType.FullyConnected:
+                        layers[i] = new FullyConnectedLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation);
+                        break;
+                    case LayerType.Convolutional:
+                        VolumeInformation
+                            inVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
+                            outVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
+                            kVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32());
+                        layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
+                            stream.ReadFloatArray(outVolume.Depth, kVolume.Size),
+                            stream.ReadFloatArray(outVolume.Depth), activation);
+                        break;
+                    case LayerType.Pooling:
+                        layers[i] = new PoolingLayer(new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()), activation);
+                        break;
+                    case LayerType.Output:
+                        layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());
+                        break;
+                    case LayerType.Softmax:
+                        layers[i] = new SoftmaxLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs));
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            return new NeuralNetwork(layers);
         }
     }
 }

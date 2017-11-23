@@ -8,7 +8,6 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
@@ -38,14 +37,17 @@ namespace NeuralNetworkNET.Networks.Implementations
         [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
         public int Outputs { get; }
 
+        /// <inheritdoc/>
+        public IReadOnlyList<INetworkLayer> Layers => _Layers;
+
         #endregion
 
         /// <summary>
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
-        private readonly IReadOnlyList<NetworkLayerBase> Layers;
+        [JsonProperty(nameof(_Layers), Required = Required.Always, Order = 3)]
+        private readonly IReadOnlyList<NetworkLayerBase> _Layers;
 
         /// <summary>
         /// Initializes a new network with the given parameters
@@ -68,7 +70,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Parameters setup
             Inputs = layers[0].Inputs;
             Outputs = layers[layers.Length - 1].Outputs;
-            Layers = layers.Cast<NetworkLayerBase>().ToArray();
+            _Layers = layers.Cast<NetworkLayerBase>().ToArray();
         }
 
         #region Single processing
@@ -87,7 +89,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public float[,] Forward(float[,] x)
         {
             float[,] yHat = x;
-            foreach (NetworkLayerBase layer in Layers)
+            foreach (NetworkLayerBase layer in _Layers)
                 (_, yHat) = layer.Forward(yHat); // Forward the inputs through all the network layers
             return yHat;
         }
@@ -99,7 +101,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             float[,] yHat = Forward(input);
 
             // Calculate the cost
-            return Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
+            return _Layers[_Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
         }
 
         /// <summary>
@@ -115,10 +117,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             // Feedforward
             float[][,]
-                zList = new float[Layers.Count][,],
-                aList = new float[Layers.Count][,];
-            float[][,] dropoutMasks = new float[Layers.Count - 1][,];
-            foreach ((NetworkLayerBase layer, int i) in Layers.Select((l, i) => (l, i)))
+                zList = new float[_Layers.Count][,],
+                aList = new float[_Layers.Count][,];
+            float[][,] dropoutMasks = new float[_Layers.Count - 1][,];
+            foreach ((NetworkLayerBase layer, int i) in _Layers.Select((l, i) => (l, i)))
             {
                 // Save the intermediate steps to be able to reuse them later
                 (zList[i], aList[i]) = layer.Forward(i == 0 ? x : aList[i - 1]);
@@ -130,7 +132,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Backpropagation deltas
-            float[][,] deltas = new float[Layers.Count][,]; // One delta for each hop through the network
+            float[][,] deltas = new float[_Layers.Count][,]; // One delta for each hop through the network
 
             /* ======================
              * Calculate delta(L)
@@ -140,8 +142,8 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
              * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
              *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-            deltas[deltas.Length - 1] = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
-            for (int l = Layers.Count - 2; l >= 0; l--)
+            deltas[deltas.Length - 1] = _Layers[_Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
+            for (int l = _Layers.Count - 2; l >= 0; l--)
             {
                 /* ======================
                  * Calculate delta(l)
@@ -149,7 +151,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Perform the sigmoid prime of z(l), the activity on the previous layer
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                deltas[l] = Layers[l + 1].Backpropagate(deltas[l + 1], zList[l], Layers[l].ActivationFunctions.ActivationPrime);
+                deltas[l] = _Layers[l + 1].Backpropagate(deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
                 if (dropoutMasks[l] != null) deltas[l].InPlaceHadamardProduct(dropoutMasks[l]);
             }
 
@@ -159,8 +161,8 @@ namespace NeuralNetworkNET.Networks.Implementations
              * Compute the gradients for each layer with weights and biases.
              * NOTE: the gradient is only computed for layers with weights and biases, for all the other
              *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-            LayerGradient[] gradient = new LayerGradient[Layers.Count]; // One gradient item for layer
-            foreach ((WeightedLayerBase layer, int i) in Layers.Select((l, i) => (Layer: l as WeightedLayerBase, i)).Where(t => t.Layer != null))
+            LayerGradient[] gradient = new LayerGradient[_Layers.Count]; // One gradient item for layer
+            foreach ((WeightedLayerBase layer, int i) in _Layers.Select((l, i) => (Layer: l as WeightedLayerBase, i)).Where(t => t.Layer != null))
             {
                 gradient[i] = layer.ComputeGradient(i == 0 ? x : aList[i - 1], deltas[i]);
             }
@@ -212,9 +214,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
                 
                 // Check for overflows
-                if (!Parallel.For(0, Layers.Count, (j, state) =>
+                if (!Parallel.For(0, _Layers.Count, (j, state) =>
                 {
-                    if (Layers[j] is WeightedLayerBase layer &&
+                    if (_Layers[j] is WeightedLayerBase layer &&
                         !layer.ValidateWeights()) state.Break();
                 }).IsCompleted) return TrainingStopReason.NumericOverflow;
 
@@ -247,7 +249,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             float alpha = eta / batchSize;
             IEnumerable<(WeightedLayerBase Layer, LayerGradient Gradient)> targets =
-                from layer in Layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i))
+                from layer in _Layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i))
                 where layer.Layer != null
                 select (layer.Layer, dJ[layer.Index]);
             Parallel.ForEach(targets, target => target.Layer.Minimize(target.Gradient, alpha, l2Factor));
@@ -282,7 +284,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Check the correctly classified samples and calculate the cost
             Parallel.For(0, h, Kernel).AssertCompleted();
             float
-                cost = Layers[Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, evaluationSet.Y),
+                cost = _Layers[_Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, evaluationSet.Y),
                 accuracy = (float)total / h * 100;
             return (cost, total, accuracy);
         }
@@ -301,20 +303,21 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (other is NeuralNetwork network &&
                 other.Inputs == Inputs &&
                 other.Outputs == Outputs &&
-                Layers.Count == network.Layers.Count)
+                _Layers.Count == network._Layers.Count)
             {
                 // Compare the individual layers
-                return Layers.Zip(network.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
+                return _Layers.Zip(network._Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
             }
             return false;
         }
 
-        public void Save(String path)
+        /// <inheritdoc/>
+        public void Save(DirectoryInfo directory, String name)
         {
-            using (FileStream stream = File.OpenWrite(path))
+            using (FileStream stream = File.OpenWrite($"{Path.Combine(directory.ToString(), name)}{NeuralNetworkLoader.NetworkFileExtension}"))
             {
-                stream.Write(Layers.Count);
-                foreach (NetworkLayerBase layer in Layers)
+                stream.Write(_Layers.Count);
+                foreach (NetworkLayerBase layer in _Layers)
                 {
                     stream.WriteByte((byte)layer.LayerType);
                     stream.WriteByte((byte)layer.ActivationFunctionType);
@@ -345,51 +348,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
         }
 
-        public static NeuralNetwork Load(String path)
-        {
-            using (FileStream stream = File.OpenRead(path))
-            {
-                INetworkLayer[] layers = new INetworkLayer[stream.ReadInt32()];
-                for (int i = 0; i < layers.Length; i++)
-                {
-                    LayerType type = (LayerType)stream.ReadByte();
-                    ActivationFunctionType activation = (ActivationFunctionType)stream.ReadByte();
-                    int
-                        inputs = stream.ReadInt32(),
-                        outputs = stream.ReadInt32();
-                    switch (type)
-                    {
-                        case LayerType.FullyConnected:
-                            layers[i] = new FullyConnectedLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation);
-                            break;
-                        case LayerType.Convolutional:
-                            VolumeInformation
-                                inVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
-                                outVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
-                                kVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32());
-                            layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
-                                stream.ReadFloatArray(outVolume.Depth, kVolume.Size),
-                                stream.ReadFloatArray(outVolume.Depth), activation);
-                            break;
-                        case LayerType.Pooling:
-                            layers[i] = new PoolingLayer(new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()), activation);
-                            break;
-                        case LayerType.Output:
-                            layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());
-                            break;
-                        case LayerType.Softmax:
-                            layers[i] = new SoftmaxLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs));
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-                }
-                return new NeuralNetwork(layers);
-            }
-        }
-
         /// <inheritdoc/>
-        public INeuralNetwork Clone() => new NeuralNetwork(Layers.Select(l => l.Clone()).ToArray());
+        public INeuralNetwork Clone() => new NeuralNetwork(_Layers.Select(l => l.Clone()).ToArray());
 
         #endregion
     }
