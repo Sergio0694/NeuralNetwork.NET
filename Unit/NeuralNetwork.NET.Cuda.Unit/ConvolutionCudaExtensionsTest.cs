@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Cuda.Convolution;
+using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Cuda.Unit
@@ -22,8 +21,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(100, 784),
                 kernels = random.NextXavierMatrix(10, 25),
-                cpuResult = ConvolutionExtensions.Convolute(source, 1, kernels, 1, ConvolutionMode.Forward),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 1, kernels, 1, ConvolutionMode.Forward);
+                cpuResult = ConvolutionExtensions.ConvoluteForward(source, 1, kernels, 1),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteForward(source, 1, kernels, 1);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -34,8 +33,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(100, 784 * 3),
                 kernels = random.NextXavierMatrix(10, 25 * 3),
-                cpuResult = ConvolutionExtensions.Convolute(source, 3, kernels, 3, ConvolutionMode.Forward),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 3, kernels, 3, ConvolutionMode.Forward);
+                cpuResult = ConvolutionExtensions.ConvoluteForward(source, 3, kernels, 3),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteForward(source, 3, kernels, 3);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -46,8 +45,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(100, 1024 * 6),
                 kernels = random.NextXavierMatrix(10, 9 * 6),
-                cpuResult = ConvolutionExtensions.Convolute(source, 6, kernels, 6, ConvolutionMode.Forward),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 6, kernels, 6, ConvolutionMode.Forward);
+                cpuResult = ConvolutionExtensions.ConvoluteForward(source, 6, kernels, 6),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteForward(source, 6, kernels, 6);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -58,8 +57,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(30, 28 * 28),
                 kernels = random.NextXavierMatrix(1, 24 * 24 * 6),
-                cpuResult = ConvolutionExtensions.Convolute(source, 1, kernels, 6, ConvolutionMode.Backwards),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 1, kernels, 6, ConvolutionMode.Backwards);
+                cpuResult = ConvolutionExtensions.ConvoluteBackwards(source, 1, kernels, 6),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteBackwards(source, 1, kernels, 6);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -70,8 +69,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(25, 28 * 28 * 10),
                 kernels = random.NextXavierMatrix(10, 24 * 24 * 3),
-                cpuResult = ConvolutionExtensions.Convolute(source, 10, kernels, 3, ConvolutionMode.Backwards),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 10, kernels, 3, ConvolutionMode.Backwards);
+                cpuResult = ConvolutionExtensions.ConvoluteBackwards(source, 10, kernels, 3),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteBackwards(source, 10, kernels, 3);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -82,8 +81,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(20, 28 * 28 * 4),
                 kernels = random.NextXavierMatrix(4, 24 * 24 * 8),
-                cpuResult = ConvolutionExtensions.Convolute(source, 4, kernels, 8, ConvolutionMode.Backwards),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 4, kernels, 8, ConvolutionMode.Backwards);
+                cpuResult = ConvolutionExtensions.ConvoluteBackwards(source, 4, kernels, 8),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteBackwards(source, 4, kernels, 8);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -94,8 +93,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(30, 28 * 28 * 4),
                 kernels = random.NextXavierMatrix(30, 24 * 24 * 7),
-                cpuResult = ConvolutionExtensions.Convolute(source, 4, kernels, 7, ConvolutionMode.Gradient),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 4, kernels, 7, ConvolutionMode.Gradient);
+                cpuResult = ConvolutionExtensions.ConvoluteGradient(source, 4, kernels, 7),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, 4, kernels, 7);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -106,8 +105,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(25, 28 * 28 * 10),
                 kernels = random.NextXavierMatrix(25, 24 * 24 * 5),
-                cpuResult = ConvolutionExtensions.Convolute(source, 10, kernels, 5, ConvolutionMode.Gradient),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 10, kernels, 5, ConvolutionMode.Gradient);
+                cpuResult = ConvolutionExtensions.ConvoluteGradient(source, 10, kernels, 5),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, 10, kernels, 5);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
@@ -118,8 +117,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,]
                 source = random.NextXavierMatrix(10, 32 * 32 * 20),
                 kernels = random.NextXavierMatrix(10, 24 * 24 * 10),
-                cpuResult = ConvolutionExtensions.Convolute(source, 20, kernels, 10, ConvolutionMode.Gradient),
-                gpuResult = ConvolutionGpuExtensions.Convolute(source, 20, kernels, 10, ConvolutionMode.Gradient);
+                cpuResult = ConvolutionExtensions.ConvoluteGradient(source, 20, kernels, 10),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, 20, kernels, 10);
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
     }

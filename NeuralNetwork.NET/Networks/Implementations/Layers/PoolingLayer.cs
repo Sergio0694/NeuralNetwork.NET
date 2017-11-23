@@ -1,5 +1,4 @@
-﻿using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Helpers;
+﻿using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;

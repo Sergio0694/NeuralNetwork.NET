@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Convolution.Misc;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Unit
@@ -609,7 +608,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
+            float[,] result = l.ConvoluteForward(1, k, 1);
             float[,] expected =
             {
                 {
@@ -645,7 +644,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
+            float[,] result = l.ConvoluteForward(1, k, 1);
             float[,] expected =
             {
                 {
@@ -684,7 +683,7 @@ namespace NeuralNetworkNET.Unit
                         2, 0
                     }
                 };
-            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Forward);
+            float[,] result = l.ConvoluteForward(1, k, 1);
             float[,] expected =
             {
                 {
@@ -725,7 +724,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Forward);
+            float[,] result = l.ConvoluteForward(2, k, 2);
             float[,] expected =
             {
                 {
@@ -769,7 +768,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Forward);
+            float[,] result = l.ConvoluteForward(2, k, 2);
             float[,] expected =
             {
                 {
@@ -801,7 +800,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Backwards);
+            float[,] result = l.ConvoluteBackwards(1, k, 1);
             float[,] expected =
             {
                 {
@@ -838,7 +837,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(2, k, 1, ConvolutionMode.Backwards);
+            float[,] result = l.ConvoluteBackwards(2, k, 1);
             float[,] expected =
             {
                 {
@@ -871,7 +870,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.Convolute(1, k, 2, ConvolutionMode.Backwards);
+            float[,] result = l.ConvoluteBackwards(1, k, 2);
             float[,] expected =
             {
                 {
@@ -925,7 +924,7 @@ namespace NeuralNetworkNET.Unit
                         3, 1
                     }
                 };
-            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Backwards);
+            float[,] result = l.ConvoluteBackwards(2, k, 2);
             float[,] expected =
             {
                 {
@@ -969,7 +968,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(1, k, 1, ConvolutionMode.Gradient);
+            float[,] result = l.ConvoluteGradient(1, k, 1);
             float[,] expected =
             {
                 {
@@ -1002,7 +1001,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(1, k, 2, ConvolutionMode.Gradient);
+            float[,] result = l.ConvoluteGradient(1, k, 2);
             float[,] expected =
             {
                 {
@@ -1039,7 +1038,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(2, k, 1, ConvolutionMode.Gradient);
+            float[,] result = l.ConvoluteGradient(2, k, 1);
             float[,] expected =
             {
                 {
@@ -1089,7 +1088,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.Convolute(2, k, 1, ConvolutionMode.Gradient);
+            float[,] result = l.ConvoluteGradient(2, k, 1);
             float[,] expected =
             {
                 {
@@ -1152,7 +1151,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.Convolute(2, k, 2, ConvolutionMode.Gradient);
+            float[,] result = l.ConvoluteGradient(2, k, 2);
             float[,] expected =
             {
                 {
