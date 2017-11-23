@@ -28,13 +28,13 @@ namespace NeuralNetworkNET.Cuda.APIs
                             break;
                         case ProcessingMode.Gpu:
                             MatrixServiceProvider.SetupInjections(
-                                MatrixGpuExtensions.Multiply,
                                 MatrixGpuExtensions.MultiplyWithSum,
                                 MatrixGpuExtensions.TransposeAndMultiply,
-                                MatrixGpuExtensions.MultiplyAndActivation,
-                                MatrixGpuExtensions.MultiplyWithSumAndActivation,
                                 MatrixGpuExtensions.Activation,
-                                MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct);
+                                MatrixGpuExtensions.MultiplyAndInPlaceActivationPrimeAndHadamardProduct,
+                                ConvolutionGpuExtensions.ConvoluteForward,
+                                ConvolutionGpuExtensions.ConvoluteBackwards,
+                                ConvolutionGpuExtensions.ConvoluteGradient);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value), value, null);
