@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
@@ -305,6 +307,85 @@ namespace NeuralNetworkNET.Networks.Implementations
                 return Layers.Zip(network.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
             }
             return false;
+        }
+
+        public void Save(String path)
+        {
+            using (FileStream stream = File.OpenWrite(path))
+            {
+                stream.Write(Layers.Count);
+                foreach (NetworkLayerBase layer in Layers)
+                {
+                    stream.WriteByte((byte)layer.LayerType);
+                    stream.WriteByte((byte)layer.ActivationFunctionType);
+                    stream.Write(layer.Inputs);
+                    stream.Write(layer.Outputs);
+                    if (layer is INetworkLayer3D layer3d)
+                    {
+                        stream.Write(layer3d.InputVolume.Axis);
+                        stream.Write(layer3d.InputVolume.Depth);
+                        stream.Write(layer3d.OutputVolume.Axis);
+                        stream.Write(layer3d.OutputVolume.Depth);
+                    }
+                    if (layer is ConvolutionalLayer convolutional)
+                    {
+                        stream.Write(convolutional.KernelVolume.Axis);
+                        stream.Write(convolutional.KernelVolume.Depth);
+                    }
+                    if (layer is WeightedLayerBase weighted)
+                    {
+                        stream.Write(weighted.Weights);
+                        stream.Write(weighted.Biases);
+                    }
+                    if (layer is OutputLayerBase output)
+                    {
+                        stream.WriteByte((byte)output.CostFunctionType);
+                    }
+                }
+            }
+        }
+
+        public static NeuralNetwork Load(String path)
+        {
+            using (FileStream stream = File.OpenRead(path))
+            {
+                INetworkLayer[] layers = new INetworkLayer[stream.ReadInt32()];
+                for (int i = 0; i < layers.Length; i++)
+                {
+                    LayerType type = (LayerType)stream.ReadByte();
+                    ActivationFunctionType activation = (ActivationFunctionType)stream.ReadByte();
+                    int
+                        inputs = stream.ReadInt32(),
+                        outputs = stream.ReadInt32();
+                    switch (type)
+                    {
+                        case LayerType.FullyConnected:
+                            layers[i] = new FullyConnectedLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation);
+                            break;
+                        case LayerType.Convolutional:
+                            VolumeInformation
+                                inVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
+                                outVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
+                                kVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32());
+                            layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
+                                stream.ReadFloatArray(outVolume.Depth, kVolume.Size),
+                                stream.ReadFloatArray(outVolume.Depth), activation);
+                            break;
+                        case LayerType.Pooling:
+                            layers[i] = new PoolingLayer(new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()), activation);
+                            break;
+                        case LayerType.Output:
+                            layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());
+                            break;
+                        case LayerType.Softmax:
+                            layers[i] = new SoftmaxLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs));
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+                return new NeuralNetwork(layers);
+            }
         }
 
         /// <inheritdoc/>

@@ -3,7 +3,7 @@
     /// <summary>
     /// Indicates an activation function to use in a neural network
     /// </summary>
-    public enum ActivationFunctionType
+    public enum ActivationFunctionType : byte
     {
         /// <summary>
         /// The sigmoid function, 1 / (1 + e^(-x))

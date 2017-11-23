@@ -67,6 +67,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         [Pure, NotNull]
         String SerializeAsJSON();
 
+        void Save([NotNull] String path);
+
         #endregion
     }
 }
