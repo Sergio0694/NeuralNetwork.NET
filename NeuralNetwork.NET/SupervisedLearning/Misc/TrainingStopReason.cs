@@ -18,6 +18,11 @@
         /// <summary>
         /// The training was explicitly stopped before its completion
         /// </summary>
-        TrainingCanceled
+        TrainingCanceled,
+
+        /// <summary>
+        /// The weights or biases in the network became invalid during the training
+        /// </summary>
+        NumericOverflow
     }
 }

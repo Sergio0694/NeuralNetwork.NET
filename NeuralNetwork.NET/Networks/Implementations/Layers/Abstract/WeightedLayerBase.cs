@@ -17,14 +17,14 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// Gets the weights for the current network layer
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Weights), Required = Required.Always, Order = 5)]
+        [JsonProperty(nameof(Weights), Required = Required.Always, Order = 10)]
         public float[,] Weights { get; }
 
         /// <summary>
         /// Gets the biases for the current network layer
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Biases), Required = Required.Always, Order = 6)]
+        [JsonProperty(nameof(Biases), Required = Required.Always, Order = 11)]
         public float[] Biases { get; }
 
         protected WeightedLayerBase([NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) : base(activation)
@@ -74,6 +74,26 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
                 for (int x = 0; x < w; x++)
                     pb[x] -= alpha * pdj[x];
             }
+        }
+
+        /// <summary>
+        /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used
+        /// </summary>
+        [Pure]
+        [AssertionMethod]
+        public unsafe bool ValidateWeights()
+        {
+            int l = Weights.Length;
+            fixed (float* pw = Weights)
+                for (int w = 0; w < l; w++)
+                    if (float.IsNaN(pw[w]))
+                        return false;
+            l = Biases.Length;
+            fixed (float* pb = Biases)
+                for (int w = 0; w < l; w++)
+                    if (float.IsNaN(pb[w]))
+                        return false;
+            return true;
         }
 
         #region Equality check

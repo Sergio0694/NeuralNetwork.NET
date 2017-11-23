@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Convolution.Misc;
-using NeuralNetworkNET.Cuda.Convolution;
+using NeuralNetworkNET.Cuda.Helpers;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.Cuda.Unit
@@ -17,202 +15,111 @@ namespace NeuralNetworkNET.Cuda.Unit
     public class ConvolutionCudaExtensionsTest
     {
         [TestMethod]
-        public void ReLU1()
+        public void ConvolutionForward1()
         {
-            // Test values
+            Random random = new Random();
             float[,]
-                m =
-                {
-                    { -1, -0.1f, 2 },
-                    { 1, 1, 2 },
-                    { 0, -0.3f, 99 }
-                },
-                r =
-                {
-                    { 0, 0, 2 },
-                    { 1, 1, 2 },
-                    { 0, 0, 99 }
-                };
-            ConvolutionGpuExtensions.ReLU(m);
-            Assert.IsTrue(m.ContentEquals(r));
+                source = random.NextXavierMatrix(100, 784),
+                kernels = random.NextXavierMatrix(10, 25),
+                cpuResult = ConvolutionExtensions.ConvoluteForward(source, 1, kernels, 1),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteForward(source, 1, kernels, 1);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void ReLU2()
+        public void ConvolutionForward2()
         {
-            // Test values
+            Random random = new Random();
             float[,]
-                m =
-                {
-                    { 0.77f, -0.11f, 0.11f, 0.33f, 0.55f, -0.11f, 0.33f },
-                    { -0.11f, 1, -0.11f, 0.33f, -0.11f, 0.11f, -0.11f },
-                    { 0.11f, -0.11f, 1, -0.33f, 0.11f, -0.11f, 0.55f },
-                    { 0.33f, 0.33f, -0.33f, 0.55f, -0.33f, 0.33f, 0.33f },
-                    { 0.55f, -0.11f, 0.11f, -0.33f, 1, -0.11f, 0.11f },
-                    { -0.11f, 0.11f, -0.11f, 0.33f, -0.11f, 1, -0.11f },
-                    { 0.33f, -0.11f, 0.55f, 0.33f, 0.11f, -0.11f, 0.77f }
-                },
-                check = ConvolutionExtensions.ReLU(m);
-            ConvolutionGpuExtensions.ReLU(m);
-            Assert.IsTrue(m.ContentEquals(check));
+                source = random.NextXavierMatrix(100, 784 * 3),
+                kernels = random.NextXavierMatrix(10, 25 * 3),
+                cpuResult = ConvolutionExtensions.ConvoluteForward(source, 3, kernels, 3),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteForward(source, 3, kernels, 3);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_1()
+        public void ConvolutionForward3()
         {
-            Random r = new Random();
-            foreach (int size in new[] { 2, 4, 12, 400, 1000 })
-            {
-                int
-                    square = size * size,
-                    half = size / 2,
-                    halfSquare = half * half;
-                float[,]
-                    source = new float[1, square],
-                    m = r.NextXavierMatrix(size, size),
-                    check = ConvolutionExtensions.Pool2x2(m);
-                Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * square);
-                float[,]
-                    m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                    unpacked = new float[half, half];
-                Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * halfSquare);
-                Assert.IsTrue(unpacked.ContentEquals(check));
-            }
+            Random random = new Random();
+            float[,]
+                source = random.NextXavierMatrix(100, 1024 * 6),
+                kernels = random.NextXavierMatrix(10, 9 * 6),
+                cpuResult = ConvolutionExtensions.ConvoluteForward(source, 6, kernels, 6),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteForward(source, 6, kernels, 6);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_2()
+        public void ConvolutionBackwards1()
         {
-            Random r = new Random();
+            Random random = new Random();
             float[,]
-                source = new float[1, 49],
-                m = r.NextXavierMatrix(7, 7),
-                check = ConvolutionExtensions.Pool2x2(m);
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * 49);
-            float[,]
-                m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                unpacked = new float[4, 4];
-            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * 16);
-            Assert.IsTrue(unpacked.ContentEquals(check));
+                source = random.NextXavierMatrix(30, 28 * 28),
+                kernels = random.NextXavierMatrix(1, 24 * 24 * 6),
+                cpuResult = ConvolutionExtensions.ConvoluteBackwards(source, 1, kernels, 6),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteBackwards(source, 1, kernels, 6);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_3()
+        public void ConvolutionBackwards2()
         {
-            Random r = new Random();
+            Random random = new Random();
             float[,]
-                source = new float[1, 9],
-                m = r.NextXavierMatrix(3, 3),
-                check = ConvolutionExtensions.Pool2x2(m);
-            Buffer.BlockCopy(m, 0, source, 0, sizeof(float) * 9);
-            float[,]
-                m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                unpacked = new float[2, 2];
-            Buffer.BlockCopy(m_gpu, 0, unpacked, 0, sizeof(float) * 4);
-            Assert.IsTrue(unpacked.ContentEquals(check));
+                source = random.NextXavierMatrix(25, 28 * 28 * 10),
+                kernels = random.NextXavierMatrix(10, 24 * 24 * 3),
+                cpuResult = ConvolutionExtensions.ConvoluteBackwards(source, 10, kernels, 3),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteBackwards(source, 10, kernels, 3);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_4()
+        public void ConvolutionBackwards3()
         {
-            Random r = new Random();
+            Random random = new Random();
             float[,]
-                source = new float[1, 18],
-                m1 = r.NextXavierMatrix(3, 3),
-                m2 = r.NextXavierMatrix(3, 3),
-                check1 = ConvolutionExtensions.Pool2x2(m1),
-                check2 = ConvolutionExtensions.Pool2x2(m2);
-            Buffer.BlockCopy(m1, 0, source, 0, sizeof(float) * 9);
-            Buffer.BlockCopy(m2, 0, source, sizeof(float) * 9, sizeof(float) * 9);
-            float[,]
-                m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 2),
-                unpacked1 = new float[2, 2],
-                unpacked2 = new float[2, 2];
-            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, sizeof(float) * 4);
-            Buffer.BlockCopy(m_gpu, sizeof(float) * 4, unpacked2, 0, sizeof(float) * 4);
-            Assert.IsTrue(unpacked1.ContentEquals(check1));
-            Assert.IsTrue(unpacked2.ContentEquals(check2));
+                source = random.NextXavierMatrix(20, 28 * 28 * 4),
+                kernels = random.NextXavierMatrix(4, 24 * 24 * 8),
+                cpuResult = ConvolutionExtensions.ConvoluteBackwards(source, 4, kernels, 8),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteBackwards(source, 4, kernels, 8);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_5()
+        public void ConvolutionGradient1()
         {
-            Random r = new Random();
+            Random random = new Random();
             float[,]
-                source = new float[2, 16],
-                m1 = r.NextXavierMatrix(4, 4),
-                m2 = r.NextXavierMatrix(4, 4),
-                check1 = ConvolutionExtensions.Pool2x2(m1),
-                check2 = ConvolutionExtensions.Pool2x2(m2);
-            Buffer.BlockCopy(m1, 0, source, 0, sizeof(float) * 16);
-            Buffer.BlockCopy(m2, 0, source, sizeof(float) * 16, sizeof(float) * 16);
-            float[,]
-                m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 1),
-                unpacked1 = new float[2, 2],
-                unpacked2 = new float[2, 2];
-            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, sizeof(float) * 4);
-            Buffer.BlockCopy(m_gpu, sizeof(float) * 4, unpacked2, 0, sizeof(float) * 4);
-            Assert.IsTrue(unpacked1.ContentEquals(check1));
-            Assert.IsTrue(unpacked2.ContentEquals(check2));
+                source = random.NextXavierMatrix(30, 28 * 28 * 4),
+                kernels = random.NextXavierMatrix(30, 24 * 24 * 7),
+                cpuResult = ConvolutionExtensions.ConvoluteGradient(source, 4, kernels, 7),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, 4, kernels, 7);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_6()
+        public void ConvolutionGradient2()
         {
-            Random r = new Random();
+            Random random = new Random();
             float[,]
-                source = new float[2, 32],
-                m1 = r.NextXavierMatrix(4, 4),
-                m2 = r.NextXavierMatrix(4, 4),
-                m3 = r.NextXavierMatrix(4, 4),
-                m4 = r.NextXavierMatrix(4, 4),
-                check1 = ConvolutionExtensions.Pool2x2(m1),
-                check2 = ConvolutionExtensions.Pool2x2(m2),
-                check3 = ConvolutionExtensions.Pool2x2(m3),
-                check4 = ConvolutionExtensions.Pool2x2(m4);
-            int size = 16, bytesize = sizeof(float) * size;
-            Buffer.BlockCopy(m1, 0, source, 0, bytesize);
-            Buffer.BlockCopy(m2, 0, source, bytesize, bytesize);
-            Buffer.BlockCopy(m3, 0, source, bytesize * 2, bytesize);
-            Buffer.BlockCopy(m4, 0, source, bytesize * 3, bytesize);
-            float[,]
-                m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 2),
-                unpacked1 = new float[2, 2],
-                unpacked2 = new float[2, 2],
-                unpacked3 = new float[2, 2],
-                unpacked4 = new float[2, 2];
-            int halfBytesize = sizeof(float) * 4;
-            Buffer.BlockCopy(m_gpu, 0, unpacked1, 0, halfBytesize);
-            Buffer.BlockCopy(m_gpu, halfBytesize, unpacked2, 0, halfBytesize);
-            Buffer.BlockCopy(m_gpu, halfBytesize * 2, unpacked3, 0, halfBytesize);
-            Buffer.BlockCopy(m_gpu, halfBytesize * 3, unpacked4, 0, halfBytesize);
-            Assert.IsTrue(unpacked1.ContentEquals(check1));
-            Assert.IsTrue(unpacked2.ContentEquals(check2));
-            Assert.IsTrue(unpacked3.ContentEquals(check3));
-            Assert.IsTrue(unpacked4.ContentEquals(check4));
+                source = random.NextXavierMatrix(25, 28 * 28 * 10),
+                kernels = random.NextXavierMatrix(25, 24 * 24 * 5),
+                cpuResult = ConvolutionExtensions.ConvoluteGradient(source, 10, kernels, 5),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, 10, kernels, 5);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
 
         [TestMethod]
-        public void Pool2x2_7()
+        public void ConvolutionGradient3()
         {
-            Random r = new Random();
-            const int size = 40;
-            int square = size * size;
-            var ms = Enumerable.Range(0, 12).Select(_ => r.NextXavierMatrix(size, size)).ToArray();
-            var checks = ms.Select(ConvolutionExtensions.Pool2x2).ToArray();
-            float[,] source = new float[4, square * 3];
-            for (int i = 0; i < 12; i++)
-            {
-                Buffer.BlockCopy(ms[i], 0, source, sizeof(float) * i * square, sizeof(float) * square);
-            }
-            float[,] m_gpu = ConvolutionGpuExtensions.Pool2x2(source, 3);
-            int half = size / 2, halfSquare = half * half;
-            var test = new float[4, halfSquare * 3];
-            for (int i = 0; i < 12; i++)
-            {
-                Buffer.BlockCopy(checks[i], 0, test, sizeof(float) * i * halfSquare, sizeof(float) * halfSquare);
-            }
-            Assert.IsTrue(test.ContentEquals(m_gpu));
+            Random random = new Random();
+            float[,]
+                source = random.NextXavierMatrix(10, 32 * 32 * 20),
+                kernels = random.NextXavierMatrix(10, 24 * 24 * 10),
+                cpuResult = ConvolutionExtensions.ConvoluteGradient(source, 20, kernels, 10),
+                gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, 20, kernels, 10);
+            Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
     }
 }

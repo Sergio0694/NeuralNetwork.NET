@@ -225,6 +225,73 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Performs the in place Hadamard product between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void InPlaceHadamardProduct([NotNull] this float[,] m1, [NotNull] float[,] m2)
+        {
+            // Check
+            int
+                h = m1.GetLength(0),
+                w = m1.GetLength(1);
+            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+
+            // Loop in parallel
+            unsafe void Kernel(int i)
+            {
+                // Get the pointers and iterate fo each column
+                fixed (float* pm1 = m1, pm2 = m2)
+                {
+                    // Perform the product
+                    int offset = i * w;
+                    for (int j = 0; j < w; j++)
+                    {
+                        int position = offset + j;
+                        pm1[position] *= pm2[position];
+                    }
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the in place Hadamard product between the first matrix and the activation of the second matrix
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        /// <param name="activation">The activation function to use</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static void InPlaceHadamardProductWithActivation([NotNull] this float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction activation)
+        {
+            // Check
+            int
+                h = m1.GetLength(0),
+                w = m1.GetLength(1);
+            if (h != m2.GetLength(0) || w != m2.GetLength(1)) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+
+            // Loop in parallel
+            unsafe void Kernel(int i)
+            {
+                // Get the pointers and iterate fo each column
+                fixed (float* pm1 = m1, pm2 = m2)
+                {
+                    // Perform the product
+                    int offset = i * w;
+                    for (int j = 0; j < w; j++)
+                    {
+                        int position = offset + j;
+                        pm1[position] *= activation(pm2[position]);
+                    }
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
         /// Performs the Hadamard product between two matrices
         /// </summary>
         /// <param name="m1">The first matrix</param>
@@ -853,7 +920,7 @@ namespace NeuralNetworkNET.Helpers
             float[] vector = new float[w];
 
             // Compress the matrix
-            bool result = Parallel.For(0, w, j =>
+            Parallel.For(0, w, j =>
             {
                 unsafe
                 {
@@ -866,8 +933,7 @@ namespace NeuralNetworkNET.Helpers
                         pv[j] = sum;
                     }
                 }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
+            }).AssertCompleted();
             return vector;
         }
 
@@ -922,6 +988,10 @@ namespace NeuralNetworkNET.Helpers
             }).IsCompleted;
             if (!result) throw new Exception("Error while runnig the parallel loop");
         }
+
+        #endregion
+
+        #region Argmax
 
         /// <summary>
         /// Returns the index of the maximum value in the input vector
@@ -991,6 +1061,37 @@ namespace NeuralNetworkNET.Helpers
 
         #endregion
 
+        #region BlockCopy
+
+        /// <summary>
+        /// Returns a deep copy of the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to clone</param>
+        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.BlockCopy"/></remarks>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[,] BlockCopy([NotNull] this float[,] m)
+        {
+            float[,] result = new float[m.GetLength(0), m.GetLength(1)];
+            Buffer.BlockCopy(m, 0, result, 0, m.Length);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a deep copy of the input vector
+        /// </summary>
+        /// <param name="v">The vector to clone</param>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[] BlockCopy([NotNull] this float[] v)
+        {
+            float[] result = new float[v.Length];
+            Buffer.BlockCopy(v, 0, result, 0, v.Length);
+            return result;
+        }
+
+        #endregion
+
         #region Content check
 
         /// <summary>
@@ -998,7 +1099,8 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
-        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o)
+        /// <param name="delta">The comparison threshold</param>
+        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o, float delta = 1e-6f)
         {
             if (m == null && o == null) return true;
             if (m == null || o == null) return false;
@@ -1006,7 +1108,7 @@ namespace NeuralNetworkNET.Helpers
                 m.GetLength(1) != o.GetLength(1)) return false;
             for (int i = 0; i < m.GetLength(0); i++)
                 for (int j = 0; j < m.GetLength(1); j++)
-                    if (!m[i, j].EqualsWithDelta(o[i, j])) return false;
+                    if (!m[i, j].EqualsWithDelta(o[i, j], delta)) return false;
             return true;
         }
 
@@ -1015,13 +1117,14 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The first vector to test</param>
         /// <param name="o">The second vector to test</param>
-        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o)
+        /// <param name="delta">The comparison threshold</param>
+        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o, float delta = 1e-6f)
         {
             if (v == null && o == null) return true;
             if (v == null || o == null) return false;
             if (v.Length != o.Length) return false;
             for (int i = 0; i < v.Length; i++)
-                if (!v[i].EqualsWithDelta(o[i])) return false;
+                if (!v[i].EqualsWithDelta(o[i], delta)) return false;
             return true;
         }
 
@@ -1054,6 +1157,36 @@ namespace NeuralNetworkNET.Helpers
                     builder.Append(" }");
                 }
                 builder.Append(i < h - 1 ? ",\n  " : " }");
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Returns a formatted representation of the input matrix
+        /// </summary>
+        /// <param name="p">A pointer to the target matrix</param>
+        /// <param name="height">The matrix height</param>
+        /// <param name="width">The matrix width</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static unsafe String ToFormattedString(float* p, int height, int width)
+        {
+            if (height * width == 0) return "{ { } }";
+            StringBuilder builder = new StringBuilder();
+            builder.Append("{ ");
+            for (int i = 0; i < height; i++)
+            {
+                if (width > 0)
+                {
+                    builder.Append("{ ");
+                    for (int j = 0; j < width; j++)
+                    {
+                        builder.Append($"{p[i * width + j]}");
+                        if (j < width - 1) builder.Append(", ");
+                    }
+                    builder.Append(" }");
+                }
+                builder.Append(i < height - 1 ? ",\n  " : " }");
             }
             return builder.ToString();
         }

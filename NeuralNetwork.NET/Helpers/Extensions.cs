@@ -28,6 +28,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="a">The first number</param>
         /// <param name="b">The second number</param>
         [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Max(this int a, int b) => a >= b ? a : b;
 
         /// <summary>
@@ -36,6 +37,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="a">The first number</param>
         /// <param name="b">The second number</param>
         [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Min(this int a, int b) => a <= b ? a : b;
 
         /// <summary>
@@ -43,6 +45,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="value">The input value</param>
         [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(this float value) => value >= 0 ? value : -value;
 
         /// <summary>
@@ -60,19 +63,6 @@ namespace NeuralNetworkNET.Helpers
             if (float.IsPositiveInfinity(value) && float.IsPositiveInfinity(other)) return true;
             if (float.IsNegativeInfinity(value) && float.IsNegativeInfinity(other)) return true;
             return (value - other).Abs() < delta;
-        }
-
-        /// <summary>
-        /// Gets the maximum value among three values
-        /// </summary>
-        /// <param name="a">The first value <c>a</c></param>
-        /// <param name="b">The second value <c>b</c></param>
-        /// <param name="c">The third value <c>c</c></param>
-        [Pure]
-        public static float Max(float a, float b, float c)
-        {
-            if (a > b) return c > a ? c : a;
-            return c > b ? c : b;
         }
 
         /// <summary>

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Misc;
@@ -27,12 +29,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputLayerSize), Required = Required.Always, Order = 1)]
-        public int InputLayerSize { get; }
+        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 1)]
+        public int Inputs { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputLayerSize), Required = Required.Always, Order = 2)]
-        public int OutputLayerSize { get; }
+        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
+        public int Outputs { get; }
 
         #endregion
 
@@ -56,11 +58,14 @@ namespace NeuralNetworkNET.Networks.Implementations
                 if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
                 if (i > 0 && layers[i - 1].Outputs != layer.Inputs) throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
+                if (i > 0 && layer is PoolingLayer && 
+                    layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationFunctionType != ActivationFunctionType.Identity)
+                    throw new ArgumentException("A convolutional layer followed by a pooling layer must use the Identity activation function");
             }
 
             // Parameters setup
-            InputLayerSize = layers[0].Inputs;
-            OutputLayerSize = layers[layers.Length - 1].Outputs;
+            Inputs = layers[0].Inputs;
+            Outputs = layers[layers.Length - 1].Outputs;
             Layers = layers.Cast<NetworkLayerBase>().ToArray();
         }
 
@@ -71,16 +76,6 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         /// <inheritdoc/>
         public float CalculateCost(float[] x, float[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
-
-        /// <summary>
-        /// Calculates the gradient of the cost function with respect to the individual weights and biases
-        /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="y">The expected result</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[] x, [NotNull] float[] y) => Backpropagate(x.ToMatrix(), y.ToMatrix());
 
         #endregion
 
@@ -110,19 +105,26 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="x">The input data</param>
         /// <param name="y">The expected results</param>
+        /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y)
+        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y, float dropout)
         {
             // Feedforward
             float[][,]
                 zList = new float[Layers.Count][,],
                 aList = new float[Layers.Count][,];
+            float[][,] dropoutMasks = new float[Layers.Count - 1][,];
             foreach ((NetworkLayerBase layer, int i) in Layers.Select((l, i) => (l, i)))
             {
                 // Save the intermediate steps to be able to reuse them later
                 (zList[i], aList[i]) = layer.Forward(i == 0 ? x : aList[i - 1]);
+                if (layer.LayerType == LayerType.FullyConnected && dropout > 0)
+                {
+                    dropoutMasks[i] = new Random().NextDropoutMask(aList[i].GetLength(0), aList[i].GetLength(1), dropout);
+                    aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                }
             }
 
             // Backpropagation deltas
@@ -146,6 +148,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Multiply the previous delta with the transposed weights of the following layer
                  * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
                 deltas[l] = Layers[l + 1].Backpropagate(deltas[l + 1], zList[l], Layers[l].ActivationFunctions.ActivationPrime);
+                if (dropoutMasks[l] != null) deltas[l].InPlaceHadamardProduct(dropoutMasks[l]);
             }
 
             /* =============================================
@@ -155,7 +158,7 @@ namespace NeuralNetworkNET.Networks.Implementations
              * NOTE: the gradient is only computed for layers with weights and biases, for all the other
              *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
             LayerGradient[] gradient = new LayerGradient[Layers.Count]; // One gradient item for layer
-            foreach ((WeightedLayerBase layer, int i) in Layers.Select((l, i) => (l as WeightedLayerBase, i)))
+            foreach ((WeightedLayerBase layer, int i) in Layers.Select((l, i) => (Layer: l as WeightedLayerBase, i)).Where(t => t.Layer != null))
             {
                 gradient[i] = layer.ComputeGradient(i == 0 ? x : aList[i - 1], deltas[i]);
             }
@@ -175,6 +178,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
         /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
         /// <param name="eta">The learning rate</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The L2 regularization factor</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         public TrainingStopReason StochasticGradientDescent(
@@ -182,7 +186,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             int epochs, int batchSize,
             ValidationParameters validationParameters = null,
             TestParameters testParameters = null,
-            float eta = 0.5f, float lambda = 0.1f,
+            float eta = 0.5f, float dropout = 0, float lambda = 0,
             CancellationToken token = default)
         {
             // Convergence manager for the validation dataset
@@ -200,10 +204,17 @@ namespace NeuralNetworkNET.Networks.Implementations
                 foreach (TrainingBatch batch in batches.NextEpoch())
                 {
                     if (token.IsCancellationRequested) return TrainingStopReason.TrainingCanceled;
-                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y);
+                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y, dropout);
                     int size = batch.X.GetLength(0);
                     UpdateWeights(dJ, size, eta, l2Factor);
                 }
+                
+                // Check for overflows
+                if (!Parallel.For(0, Layers.Count, (j, state) =>
+                {
+                    if (Layers[j] is WeightedLayerBase layer &&
+                        !layer.ValidateWeights()) state.Break();
+                }).IsCompleted) return TrainingStopReason.NumericOverflow;
 
                 // Check the validation dataset
                 if (convergence != null)
@@ -286,16 +297,18 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             // Compare general features
             if (other is NeuralNetwork network &&
-                other.InputLayerSize == InputLayerSize &&
-                other.OutputLayerSize == OutputLayerSize)
+                other.Inputs == Inputs &&
+                other.Outputs == Outputs &&
+                Layers.Count == network.Layers.Count)
             {
                 // Compare the individual layers
-                for (int i = 0; i < Layers.Count; i++)
-                    if (!Layers[i].Equals(network.Layers[i])) return false;
-                return true;
+                return Layers.Zip(network.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
             }
             return false;
         }
+
+        /// <inheritdoc/>
+        public INeuralNetwork Clone() => new NeuralNetwork(Layers.Select(l => l.Clone()).ToArray());
 
         #endregion
     }

@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.Implementations.Layers;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -25,27 +29,45 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
             {
                 // Get the general parameters and the hidden layers info
                 JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
-                int 
-                    inputs = jObject[nameof(INeuralNetwork.InputLayerSize)].ToObject<int>(), 
-                    outputs = jObject[nameof(INeuralNetwork.OutputLayerSize)].ToObject<int>();
-               // int[] layersInfo = jObject[nameof(INeuralNetwork.HiddenLayers)].ToObject<int[]>();
-                float[][,] weights = jObject["Weights"].ToObject<float[][,]>();
-                float[][] biases = jObject["Biases"].ToObject<float[][]>();
-                ActivationFunctionType[] activations = jObject["ActivationFunctionTypes"].ToObject<ActivationFunctionType[]>();
-
-                // Input checks
-                if (weights.Length < 1 || 
-                    inputs != weights[0].GetLength(0) ||
-                    outputs != weights[weights.Length - 1].GetLength(1)) return null;
-                if (biases.Length < 1 ||
-                    outputs != biases[biases.Length - 1].Length) return null;
-              //  for (int i = 0; i < layersInfo.Length; i++)
-              //      if (layersInfo[i] != weights[i].GetLength(1) ||
-              //          layersInfo[i] != biases[i].Length) return null;
-
-                // Parse the network
-                //return new NeuralNetwork(weights, biases, activations);
-                throw new NotImplementedException();
+                INetworkLayer[] layers = jObject["Layers"].Select<JToken, INetworkLayer>(layer =>
+                {
+                    if (!Enum.TryParse(layer["LayerType"].ToString(), out LayerType type))
+                        throw new InvalidOperationException("Unsupported JSON network");
+                    switch (type)
+                    {
+                        case LayerType.FullyConnected:
+                            return new FullyConnectedLayer(
+                                layer["Weights"].ToObject<float[,]>(),
+                                layer["Biases"].ToObject<float[]>(),
+                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
+                        case LayerType.Convolutional:
+                            return new ConvolutionalLayer(
+                                layer["InputVolume"].ToObject<VolumeInformation>(),
+                                layer["KernelVolume"].ToObject<VolumeInformation>(),
+                                layer["OutputVolume"].ToObject<VolumeInformation>(),
+                                layer["Weights"].ToObject<float[,]>(),
+                                layer["Biases"].ToObject<float[]>(),
+                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
+                        case LayerType.Pooling:
+                            return new PoolingLayer(
+                                layer["InputVolume"].ToObject<VolumeInformation>(),
+                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
+                        case LayerType.Output:
+                            return new OutputLayer(
+                                layer["Weights"].ToObject<float[,]>(),
+                                layer["Biases"].ToObject<float[]>(),
+                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>(),
+                                layer["CostFunctionType"].ToObject<CostFunctionType>());
+                        case LayerType.Softmax:
+                            return new SoftmaxLayer(
+                                layer["Weights"].ToObject<float[,]>(),
+                                layer["Biases"].ToObject<float[]>());
+                        default:
+                            throw new InvalidOperationException("Unsupported JSON network");
+                    }
+                }).ToArray();
+                INeuralNetwork network = new NeuralNetwork(layers);
+                return json.Equals(network.SerializeAsJSON()) ? network : null;
             }
             catch
             {

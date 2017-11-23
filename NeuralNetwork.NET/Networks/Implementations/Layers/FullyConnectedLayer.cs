@@ -1,7 +1,9 @@
-﻿using NeuralNetworkNET.Helpers;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using NeuralNetworkNET.Networks.Implementations.Misc;
 
@@ -23,6 +25,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                 WeightsProvider.Biases(outputs), activation)
         { }
 
+        public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            : base(weights, biases, activation) { }
+
         /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
@@ -36,7 +41,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
         {
             float[,] wt = Weights.Transpose();
-            MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(z, delta_1, wt, activationPrime);
+            MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
             return z;
         }
 
@@ -48,5 +53,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             float[] dJdb = delta.CompressVertically();
             return new LayerGradient(dJdw, dJdb);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new FullyConnectedLayer(Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }

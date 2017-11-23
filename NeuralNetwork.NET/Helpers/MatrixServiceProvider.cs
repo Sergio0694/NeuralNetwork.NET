@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 
@@ -17,21 +18,21 @@ namespace NeuralNetworkNET.Helpers
         /// Assigns the delegates that will overwrite the default behavior of the service provider
         /// </summary>
         public static void SetupInjections(
-            [NotNull] Func<float[,], float[,], float[,]> multiply,
             [NotNull] Func<float[,], float[,], float[], float[,]> multiplyWithSum,
             [NotNull] Func<float[,], float[,], float[,]> transposeMultiply,
-            [NotNull] Func<float[,], float[,], ActivationFunction, float[,]> multiplyActivation,
-            [NotNull] Func<float[,], float[,], float[], ActivationFunction, float[,]> multiplyWithSumAndActivation,
             [NotNull] Func<float[,], ActivationFunction, float[,]> activation,
-            [NotNull] Action<float[,], float[,], float[,], ActivationFunction> multiplyAndInPlaceActivationPrimeHadamard)
+            [NotNull] Action<float[,], float[,], float[,], ActivationFunction> multiplyAndInPlaceActivationPrimeHadamard,
+            [NotNull] Func<float[,], int, float[,], int, float[,]> convoluteForward,
+            [NotNull] Func<float[,], int, float[,], int, float[,]> convoluteBackwards,
+            [NotNull] Func<float[,], int, float[,], int, float[,]> convoluteGradient)
         {
-            _MultiplyOverride = multiply;
             _MultiplyWithSumOverride = multiplyWithSum;
             _TransposeAndMultiplyOverride = transposeMultiply;
-            _MultiplyAndActivationOverride = multiplyActivation;
-            _MultiplyWithSumAndActivationOverride = multiplyWithSumAndActivation;
             _ActivationOverride = activation;
             _InPlaceMultiplyAndHadamardProductWithAcrivationPrime = multiplyAndInPlaceActivationPrimeHadamard;
+            _ConvoluteForwardOverride = convoluteForward;
+            _ConvoluteBackwardsOverride = convoluteBackwards;
+            _ConvoluteGradientOverride = convoluteGradient;
         }
 
         /// <summary>
@@ -39,30 +40,15 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         public static void ResetInjections()
         {
-            _MultiplyOverride = _TransposeAndMultiplyOverride = null;
-            _MultiplyAndActivationOverride = null;
+            _TransposeAndMultiplyOverride = null;
             _ActivationOverride = null;
             _InPlaceMultiplyAndHadamardProductWithAcrivationPrime = null;
+            _ConvoluteForwardOverride = _ConvoluteBackwardsOverride = _ConvoluteGradientOverride = null;
         }
 
         #endregion
 
         #region Functional
-
-        /// <summary>
-        /// A <see cref="Func{T1, T2, TResult}"/> that multiplies two matrices
-        /// </summary>
-        [CanBeNull]
-        private static Func<float[,], float[,], float[,]> _MultiplyOverride;
-
-        /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.Multiply"/> method
-        /// </summary>
-        [Pure, NotNull]
-        public static float[,] Multiply([NotNull] float[,] m1, [NotNull] float[,] m2)
-        {
-            return _MultiplyOverride?.Invoke(m1, m2) ?? m1.Multiply(m2);
-        }
 
         /// <summary>
         /// A <see cref="Func{T1, T2, T3, TResult}"/> that multiplies two matrices and sums the input vector
@@ -74,6 +60,7 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="MatrixExtensions.MultiplyWithSum"/> method
         /// </summary>
         [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] MultiplyWithSum([NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v)
         {
             return _MultiplyWithSumOverride?.Invoke(m1, m2, v) ?? m1.MultiplyWithSum(m2, v);
@@ -89,6 +76,7 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="MatrixExtensions.Transpose"/> and <see cref="MatrixExtensions.Multiply"/> methods in sequence
         /// </summary>
         [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] TransposeAndMultiply([NotNull] float[,] m1, [NotNull] float[,] m2)
         {
             return _TransposeAndMultiplyOverride?.Invoke(m1, m2) ?? m1.Transpose().Multiply(m2);
@@ -104,39 +92,59 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="MatrixExtensions.Activation"/> method
         /// </summary>
         [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] Activation([NotNull] float[,] m, [NotNull] ActivationFunction activation)
         {
             return _ActivationOverride?.Invoke(m, activation) ?? m.Activation(activation);
         }
 
-        /// <summary>
-        /// A <see cref="Func{T1, T2, TResult}"/> that multiplies two matrices and then applies the activation function
-        /// </summary>
-        [CanBeNull]
-        private static Func<float[,], float[,], ActivationFunction, float[,]> _MultiplyAndActivationOverride;
+        #endregion
+
+        #region Convolution
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.MultiplyAndActivation"/> method
+        /// A <see cref="Func{T1, T2, T3, T4, TResult}"/> that performs the forward convolution
+        /// </summary>
+        [CanBeNull]
+        private static Func<float[,], int, float[,], int, float[,]> _ConvoluteForwardOverride;
+
+        /// <summary>
+        /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteForward"/> method
         /// </summary>
         [Pure, NotNull]
-        public static float[,] MultiplyAndActivation([NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] ActivationFunction activation)
+        public static float[,] ConvoluteForward([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
         {
-            return _MultiplyAndActivationOverride?.Invoke(m1, m2, activation) ?? m1.MultiplyAndActivation(m2, activation);
+            return _ConvoluteForwardOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteForward(m1depth, m2, m2depth);
         }
 
         /// <summary>
-        /// A <see cref="Func{T1, T2, T3, TResult}"/> that multiplies two matrices, sums the input vector and then applies the activation function
+        /// A <see cref="Func{T1, T2, T3, T4, TResult}"/> that performs the backwards convolution
         /// </summary>
         [CanBeNull]
-        private static Func<float[,], float[,], float[], ActivationFunction, float[,]> _MultiplyWithSumAndActivationOverride;
+        private static Func<float[,], int, float[,], int, float[,]> _ConvoluteBackwardsOverride;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.MultiplyWithSumAndActivation"/> method
+        /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteBackwards"/> method
         /// </summary>
         [Pure, NotNull]
-        public static float[,] MultiplyWithSumAndActivation([NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v, [NotNull] ActivationFunction activation)
+        public static float[,] ConvoluteBackwards([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
         {
-            return _MultiplyWithSumAndActivationOverride?.Invoke(m1, m2, v, activation) ?? m1.MultiplyWithSumAndActivation(m2, v, activation);
+            return _ConvoluteBackwardsOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteBackwards(m1depth, m2, m2depth);
+        }
+
+        /// <summary>
+        /// A <see cref="Func{T1, T2, T3, T4, TResult}"/> that performs the gradient convolution
+        /// </summary>
+        [CanBeNull]
+        private static Func<float[,], int, float[,], int, float[,]> _ConvoluteGradientOverride;
+
+        /// <summary>
+        /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteGradient"/> method
+        /// </summary>
+        [Pure, NotNull]
+        public static float[,] ConvoluteGradient([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
+        {
+            return _ConvoluteGradientOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteGradient(m1depth, m2, m2depth);
         }
 
         #endregion
@@ -152,7 +160,7 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime"/> method
         /// </summary>
-        public static void InPlaceMultiplyAndHadamardProductWithAcrivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
+        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
         {
             if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
             else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime?.Invoke(m, di, wt, prime);
