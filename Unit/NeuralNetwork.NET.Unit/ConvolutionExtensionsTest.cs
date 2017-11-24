@@ -783,6 +783,34 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
+        public void Convolution2DValidRectangle1()
+        {
+            float[,]
+                l =
+                {
+                    {
+                        0, 1, 0,
+                        2, 0, 1
+                    }
+                },
+                k =
+                {
+                    {
+                        1, 1,
+                        0, 1
+                    }
+                };
+            float[,] result = l.ConvoluteForward((2, 3, 1), k, (2, 2, 1));
+            float[,] expected =
+            {
+                {
+                    2, 2
+                }
+            };
+            Assert.IsTrue(result.ContentEquals(expected));
+        }
+
+        [TestMethod]
         public void ConvolutionFull1()
         {
             float[,]
@@ -800,7 +828,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteBackwards(1, k, 1);
+            float[,] result = l.ConvoluteBackwards((2, 2, 1), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -837,7 +865,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteBackwards(2, k, 1);
+            float[,] result = l.ConvoluteBackwards((2, 2, 2), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -870,7 +898,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteBackwards(1, k, 2);
+            float[,] result = l.ConvoluteBackwards((2, 2, 1), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -924,7 +952,7 @@ namespace NeuralNetworkNET.Unit
                         3, 1
                     }
                 };
-            float[,] result = l.ConvoluteBackwards(2, k, 2);
+            float[,] result = l.ConvoluteBackwards((2, 2, 2), k, (2, 2, 2));
             float[,] expected =
             {
                 {

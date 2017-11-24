@@ -409,7 +409,7 @@ namespace NeuralNetworkNET.Helpers
             int
                 hResult = imgHeight - kHeight + 1,                  // Size of each image edge after the convolution
                 wResult = imgWidth - kWidth + 1,
-                convolutionOutputSize = hResult * hResult,          // Size of each processed image
+                convolutionOutputSize = hResult * wResult,          // Size of each processed image
                 finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
             // Process the valid convolution
@@ -475,28 +475,28 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteBackwards([NotNull] this float[,] source, int sourceDepth, [NotNull] float[,] kernels, int kernelsDepth)
+        public static float[,] ConvoluteBackwards([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
         {
             // Checks and local parameters
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (sourceDepth < 1) throw new ArgumentOutOfRangeException(nameof(sourceDepth), "The number of images per row can't be lower than 1");
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
-            if (kernelsDepth < 1) throw new ArgumentException(nameof(kernelsDepth), "The number of kernels per row must be positive");
             int
                 nKernels = kernels.GetLength(0),
                 kw = kernels.GetLength(1),
-                kSize = kw / kernelsDepth,
-                kAxis = kSize.IntegerSquare();
-            if (kAxis * kAxis != kSize) throw new ArgumentException(nameof(kernels), "The size of the input kernels isn't valid");
-            if (kSize < 4) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
+                kSize = kw / kernelsInfo.Depth,
+                kHeight = kernelsInfo.Height,
+                kWidth = kernelsInfo.Width,
+                kDepth = kernelsInfo.Depth;
+            if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
                 h = source.GetLength(0),
                 w = source.GetLength(1),
-                imgSize = w % sourceDepth == 0 ? w / sourceDepth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+                imgSize = sourceInfo.SliceSize,
+                imgHeight = sourceInfo.Height,
+                imgWidth = sourceInfo.Width;
+            if (imgSize * sourceInfo.Depth != w) throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix");
             if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
-            if (sourceDepth != nKernels) throw new ArgumentException("The source depth must be equal to the number of kernels");
+            if (sourceInfo.Depth != nKernels) throw new ArgumentException("The source depth must be equal to the number of kernels");
 
             /* ============================
              * Full convolution (backwards)
@@ -505,9 +505,10 @@ namespace NeuralNetworkNET.Helpers
              * Kernels:         HK*WK*kernelsDepth*sourceDepth (a kernel for each input slice)
              * Output:          kernelsDepth slices, each is the sum of the i-th slice of all the kernelsDepth kernels with convoluted with the i-th input slice */
             int
-                hResult = imgAxis + kAxis - 1,                          // Size of each image edge after the convolution
-                convolutionOutputSize = hResult * hResult,              // Size of each processed image
-                finalWidth = convolutionOutputSize * kernelsDepth;      // Final size of each sample row
+                hResult = imgHeight + kHeight - 1,                  // Size of each image edge after the convolution
+                wResult = imgWidth + kWidth - 1,
+                convolutionOutputSize = hResult * wResult,          // Size of each processed image
+                finalWidth = convolutionOutputSize * kDepth;        // Final size of each sample row
 
             // Process the full convolution
             float[,] result = new float[h, finalWidth];
@@ -515,8 +516,8 @@ namespace NeuralNetworkNET.Helpers
             {
                 // Calculate the current indexes
                 int
-                    iSample = index / kernelsDepth,         // Sample index
-                    iKernelDepth = index % kernelsDepth;    // Kernel index
+                    iSample = index / kDepth,         // Sample index
+                    iKernelDepth = index % kDepth;    // Kernel index
 
                 // Process the convolution slice
                 int
@@ -528,14 +529,14 @@ namespace NeuralNetworkNET.Helpers
                     for (int i = 0; i < hResult; ++i)
                     {
                         int
-                            lowX = 0.Max(i - kAxis + 1),
-                            highX = (imgAxis - 1).Min(i),
+                            lowX = 0.Max(i - kHeight + 1),
+                            highX = (imgHeight - 1).Min(i),
                             targetRowOffset = targetBaseOffset + i * hResult;
                         for (int j = 0; j < hResult; ++j)
                         {
                             int
-                                lowY = 0.Max(j - kAxis + 1),
-                                highY = (imgAxis - 1).Min(j);
+                                lowY = 0.Max(j - kWidth + 1),
+                                highY = (imgWidth - 1).Min(j);
                             float temp = 0.0f;
                             for (int z = 0; z < nKernels; z++)
                             {
@@ -545,8 +546,8 @@ namespace NeuralNetworkNET.Helpers
                                 for (int x = lowX; x <= highX; ++x)
                                 {
                                     int
-                                        sourceRowOffset = sourceDepthOffset + x * imgAxis,
-                                        kernelRowOffset = kernelDepthOffset + (i - x) * kAxis + j;
+                                        sourceRowOffset = sourceDepthOffset + x * imgWidth,
+                                        kernelRowOffset = kernelDepthOffset + (i - x) * kWidth + j;
                                     for (int y = lowY; y <= highY; ++y)
                                     {
                                         temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
@@ -558,7 +559,7 @@ namespace NeuralNetworkNET.Helpers
                     }
                 }
             }
-            Parallel.For(0, h * kernelsDepth, BackwardsKernel).AssertCompleted();
+            Parallel.For(0, h * kDepth, BackwardsKernel).AssertCompleted();
             return result;
         }
 

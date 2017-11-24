@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             float[,]
                 w180 = Weights.Rotate180(KernelVolume.Depth),
-                delta = MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume.Depth, w180, KernelVolume.Depth);
+                delta = MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume);
             delta.InPlaceHadamardProductWithActivation(z, activationPrime);
             return delta;
         }
