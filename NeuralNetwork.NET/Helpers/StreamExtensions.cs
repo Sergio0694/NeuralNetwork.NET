@@ -63,8 +63,8 @@ namespace NeuralNetworkNET.Helpers
             while (remaining > 0)
             {
                 int chunkSize = blockSize >= remaining ? remaining : blockSize;
-                stream.Read(temp, 0, chunkSize);
-                Buffer.BlockCopy(temp, 0, result, total - remaining, chunkSize);
+                stream.Read(temp, 0, sizeof(float) * chunkSize);
+                Buffer.BlockCopy(temp, 0, result, sizeof(float) * (total - remaining), sizeof(float) * chunkSize);
                 remaining -= chunkSize;
             }
             return result;
@@ -105,8 +105,8 @@ namespace NeuralNetworkNET.Helpers
             while (remaining > 0)
             {
                 int chunkSize = blockSize >= remaining ? remaining : blockSize;
-                stream.Read(temp, 0, chunkSize);
-                Buffer.BlockCopy(temp, 0, result, length - remaining, chunkSize);
+                stream.Read(temp, 0, sizeof(float) * chunkSize);
+                Buffer.BlockCopy(temp, 0, result, sizeof(float) * (length - remaining), sizeof(float) * chunkSize);
                 remaining -= chunkSize;
             }
             return result;

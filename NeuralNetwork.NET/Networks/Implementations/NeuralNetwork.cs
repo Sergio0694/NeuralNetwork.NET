@@ -323,15 +323,17 @@ namespace NeuralNetworkNET.Networks.Implementations
                     stream.WriteByte((byte)layer.ActivationFunctionType);
                     stream.Write(layer.Inputs);
                     stream.Write(layer.Outputs);
-                    if (layer is INetworkLayer3D layer3d)
+                    if (layer is PoolingLayer pooling)
                     {
-                        stream.Write(layer3d.InputVolume.Axis);
-                        stream.Write(layer3d.InputVolume.Depth);
-                        stream.Write(layer3d.OutputVolume.Axis);
-                        stream.Write(layer3d.OutputVolume.Depth);
+                        stream.Write(pooling.InputVolume.Axis);
+                        stream.Write(pooling.InputVolume.Depth);
                     }
                     if (layer is ConvolutionalLayer convolutional)
                     {
+                        stream.Write(convolutional.InputVolume.Axis);
+                        stream.Write(convolutional.InputVolume.Depth);
+                        stream.Write(convolutional.OutputVolume.Axis);
+                        stream.Write(convolutional.OutputVolume.Depth);
                         stream.Write(convolutional.KernelVolume.Axis);
                         stream.Write(convolutional.KernelVolume.Depth);
                     }
