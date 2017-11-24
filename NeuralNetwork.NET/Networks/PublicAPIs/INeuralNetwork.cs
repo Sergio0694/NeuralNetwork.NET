@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
@@ -20,6 +22,12 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// Gets the size of the output layer
         /// </summary>
         int Outputs { get; }
+
+        /// <summary>
+        /// Gets the list of layers in the network
+        /// </summary>
+        [NotNull, ItemNotNull]
+        IReadOnlyList<INetworkLayer> Layers { get; }
 
         #endregion
 
@@ -66,6 +74,13 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         [Pure, NotNull]
         String SerializeAsJSON();
+
+        /// <summary>
+        /// Saves the network in the target directory
+        /// </summary>
+        /// <param name="directory">The directory to use to save the network</param>
+        /// <param name="name">The name for the network file to create</param>
+        void Save([NotNull] DirectoryInfo directory, [NotNull] String name);
 
         #endregion
     }

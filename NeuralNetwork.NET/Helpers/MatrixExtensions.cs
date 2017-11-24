@@ -1061,7 +1061,7 @@ namespace NeuralNetworkNET.Helpers
 
         #endregion
 
-        #region BlockCopy
+        #region Memory management
 
         /// <summary>
         /// Returns a deep copy of the input matrix
