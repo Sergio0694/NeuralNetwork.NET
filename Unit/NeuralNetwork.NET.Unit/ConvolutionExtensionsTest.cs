@@ -608,12 +608,13 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1));
+            float[] b = { 0.6f };
+            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1), b);
             float[,] expected =
             {
                 {
-                    2, 2,
-                    4, 1
+                    2.6f, 2.6f,
+                    4.6f, 1.6f
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
@@ -644,7 +645,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1));
+            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new float[1]);
             float[,] expected =
             {
                 {
@@ -683,15 +684,15 @@ namespace NeuralNetworkNET.Unit
                         2, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1));
+            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new[] { 1, 0.5f });
             float[,] expected =
             {
                 {
-                    2, 2,
-                    4, 1,
+                    3, 3,
+                    5, 2,
 
-                    4, 0,
-                    1, 3
+                    4.5f, 0.5f,
+                    1.5f, 3.5f
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
@@ -724,12 +725,12 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2));
+            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0.1f });
             float[,] expected =
             {
                 {
-                    2, 4,
-                    6, 3
+                    2.1f, 4.1f,
+                    6.1f, 3.1f
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
@@ -768,15 +769,15 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2));
+            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0, 0.2f });
             float[,] expected =
             {
                 {
                     2, 4,
                     6, 3,
 
-                    2, 4,
-                    6, 3
+                    2.2f, 4.2f,
+                    6.2f, 3.2f
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
@@ -800,11 +801,11 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward((2, 3, 1), k, (2, 2, 1));
+            float[,] result = l.ConvoluteForward((2, 3, 1), k, (2, 2, 1), new[] { 0.9f });
             float[,] expected =
             {
                 {
-                    2, 2
+                    2.9f, 2.9f
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
@@ -1210,82 +1211,6 @@ namespace NeuralNetworkNET.Unit
                 }
             };
             Assert.IsTrue(result.ContentEquals(expected));
-        }
-
-        [TestMethod]
-        public void Sum1()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0
-                    }
-                };
-            float[] v = { 1 };
-            l.InPlaceSum(1, v);
-            float[,] expected =
-            {
-                {
-                    1, 2, 1,
-                    3, 1, 2,
-                    2, 2, 1
-                }
-            };
-            Assert.IsTrue(l.ContentEquals(expected));
-        }
-
-        [TestMethod]
-        public void Sum2()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0,
-
-                        1, 2, 3,
-                        4, 5, 6,
-                        9, 8, 7
-                    },
-                    {
-                        0, 1, 66,
-                        2, 0, 199,
-                        1, 1, 0,
-
-                        1, 2, 3,
-                        4, 5, 6,
-                        9, 8, 7
-                    }
-                };
-            float[] v = { 1, 2 };
-            l.InPlaceSum(2, v);
-            float[,] expected =
-            {
-                {
-                    1, 2, 1,
-                    3, 1, 2,
-                    2, 2, 1,
-
-                    3, 4, 5,
-                    6, 7, 8,
-                    11, 10, 9
-                },
-                {
-                    1, 2, 67,
-                    3, 1, 200,
-                    2, 2, 1,
-
-                    3, 4, 5,
-                    6, 7, 8,
-                    11, 10, 9
-                }
-            };
-            Assert.IsTrue(l.ContentEquals(expected));
         }
     }
 }

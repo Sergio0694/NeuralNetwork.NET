@@ -114,9 +114,9 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] ConvoluteForward([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
+        public static float[,] ConvoluteForward([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info, [NotNull] float[] biases)
         {
-            return m1.ConvoluteForward(m1Info, m2, m2Info);
+            return m1.ConvoluteForward(m1Info, m2, m2Info, biases);
             //return _ConvoluteForwardOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteForward(m1depth, m2, m2depth);
         }
 

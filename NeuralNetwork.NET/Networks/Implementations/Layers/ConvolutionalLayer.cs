@@ -67,11 +67,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
-            float[,] z = MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume);
-            z.InPlaceSum(OutputVolume.Depth, Biases);
-            float[,] a = ActivationFunctionType == ActivationFunctionType.Identity
-                ? z.BlockCopy()
-                : z.Activation(ActivationFunctions.Activation);
+            float[,]
+                z = MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume, Biases),
+                a = ActivationFunctionType == ActivationFunctionType.Identity
+                    ? z.BlockCopy()
+                    : z.Activation(ActivationFunctions.Activation);
             return (z, a);
         }
 
