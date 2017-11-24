@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
-using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -368,37 +368,37 @@ namespace NeuralNetworkNET.Helpers
         /// Performs a forward convolution operation on the source matrix, using the given kernels
         /// </summary>
         /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
-        /// <param name="sourceDepth">The number of images in the data volume associated to each sample</param>
+        /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
-        /// <param name="kernelsDepth">The depth of each input kernel volume</param>
+        /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteForward([NotNull] this float[,] source, int sourceDepth, [NotNull] float[,] kernels, int kernelsDepth)
+        public static float[,] ConvoluteForward([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
         {
             // Checks and local parameters
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (sourceDepth < 1) throw new ArgumentOutOfRangeException(nameof(sourceDepth), "The number of images per row can't be lower than 1");
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
-            if (kernelsDepth < 1) throw new ArgumentException(nameof(kernelsDepth), "The number of kernels per row must be positive");
             int
                 nKernels = kernels.GetLength(0),
                 kw = kernels.GetLength(1),
-                kSize = kw / kernelsDepth,
-                kAxis = kSize.IntegerSquare();
-            if (kAxis * kAxis != kSize) throw new ArgumentException(nameof(kernels), "The size of the input kernels isn't valid");
-            if (kSize < 4) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
+                kSize = kw / kernelsInfo.Depth,
+                kHeight = kernelsInfo.Height,
+                kWidth = kernelsInfo.Width;
+            if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
                 h = source.GetLength(0),
                 w = source.GetLength(1),
-                imgSize = w % sourceDepth == 0 ? w / sourceDepth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+                sourceDepth = sourceInfo.Depth,
+                imgSize = sourceInfo.SliceSize,
+                imgHeight = sourceInfo.Height,
+                imgWidth = sourceInfo.Width;  // Size of an edge of one of the inner images per sample
+            if (imgSize * sourceInfo.Depth != w) throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix");
             if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
-            if (sourceDepth != kernelsDepth) throw new InvalidOperationException("The depth of each kernel must be equal to the depth of each input volume");
+            if (sourceInfo.Depth != kernelsInfo.Depth) throw new InvalidOperationException("The depth of each kernel must be equal to the depth of each input volume");
 
             /* ============================
              * Valid convolution (forward)
@@ -407,7 +407,8 @@ namespace NeuralNetworkNET.Helpers
              * Kernels:         HK*WK*sourceDepth*kernelsDepth (same depth as the input, each kernel is a 3D volume)
              * Output:          kernelsDepth slices, one for each 3D kernel used */
             int
-                hResult = imgAxis - kAxis + 1,                      // Size of each image edge after the convolution
+                hResult = imgHeight - kHeight + 1,                  // Size of each image edge after the convolution
+                wResult = imgWidth - kWidth + 1,
                 convolutionOutputSize = hResult * hResult,          // Size of each processed image
                 finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
@@ -431,10 +432,10 @@ namespace NeuralNetworkNET.Helpers
                     {
                         int
                             targetRowOffset = targetBaseOffset + i * hResult,
-                            xEnd = i + kAxis - 1;
-                        for (int j = 0; j < hResult; j++)
+                            xEnd = i + kHeight - 1;
+                        for (int j = 0; j < wResult; j++)
                         {
-                            int highY = j + kAxis - 1;
+                            int highY = j + kWidth - 1;
                             float temp = 0.0f;
                             for (int z = 0; z < sourceDepth; z++)
                             {
@@ -444,8 +445,8 @@ namespace NeuralNetworkNET.Helpers
                                 for (int x = i; x <= xEnd; x++)
                                 {
                                     int
-                                        sourceRowOffset = sourceDepthOffset + x * imgAxis,
-                                        kernelRowOffset = kernelDepthOffset + (xEnd - x) * kAxis + highY;
+                                        sourceRowOffset = sourceDepthOffset + x * imgWidth,
+                                        kernelRowOffset = kernelDepthOffset + (xEnd - x) * kWidth + highY;
                                     for (int y = j; y <= highY; y++)
                                     {
                                         temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
@@ -465,9 +466,9 @@ namespace NeuralNetworkNET.Helpers
         /// Performs the full backwards convolution operation on the source matrix, using the given kernels
         /// </summary>
         /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
-        /// <param name="sourceDepth">The number of images in the data volume associated to each sample</param>
+        /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
-        /// <param name="kernelsDepth">The depth of each input kernel volume</param>
+        /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
@@ -565,9 +566,9 @@ namespace NeuralNetworkNET.Helpers
         /// Performs a the gradient convolution operation on the source matrix, using the given kernels
         /// </summary>
         /// <param name="source">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
-        /// <param name="sourceDepth">The number of images in the data volume associated to each sample</param>
+        /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
-        /// <param name="kernelsDepth">The depth of each input kernel volume</param>
+        /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>

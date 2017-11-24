@@ -129,15 +129,15 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
                         break;
                     case LayerType.Convolutional:
                         VolumeInformation
-                            inVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
-                            outVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()),
-                            kVolume = new VolumeInformation(stream.ReadInt32(), stream.ReadInt32());
+                            inVolume = (stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
+                            outVolume = (stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
+                            kVolume = (stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
                         layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
-                            stream.ReadFloatArray(outVolume.Depth, kVolume.Size),
+                            stream.ReadFloatArray(outVolume.Depth, kVolume.Volume),
                             stream.ReadFloatArray(outVolume.Depth), activation);
                         break;
                     case LayerType.Pooling:
-                        layers[i] = new PoolingLayer(new VolumeInformation(stream.ReadInt32(), stream.ReadInt32()), activation);
+                        layers[i] = new PoolingLayer((stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
                         break;
                     case LayerType.Output:
                         layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());

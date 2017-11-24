@@ -25,16 +25,14 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         /// <summary>
         /// Creates a weight matrix for a convolutional layer
         /// </summary>
-        /// <param name="axis">The 2D axis of each kernel</param>
-        /// <param name="depth">The depth of each kernel volume</param>
+        /// <param name="size">The volume of each kernel</param>
         /// <param name="kernels">The number of kernels in the layer</param>
         [Pure, NotNull]
-        public static float[,] ConvolutionalKernels(int axis, int depth, int kernels)
+        public static float[,] ConvolutionalKernels(int size, int kernels)
         {
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
             Random random = new Random();
-            int weights = axis * axis * depth;
-            return random.NextUniformMatrix(kernels, weights, 3f / weights);
+            return random.NextUniformMatrix(kernels, size, 3f / size);
         }
 
         /// <summary>

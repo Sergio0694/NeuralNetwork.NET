@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 #pragma warning disable 1574
 
@@ -112,9 +113,11 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteForward"/> method
         /// </summary>
         [Pure, NotNull]
-        public static float[,] ConvoluteForward([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float[,] ConvoluteForward([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
         {
-            return _ConvoluteForwardOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteForward(m1depth, m2, m2depth);
+            return m1.ConvoluteForward(m1Info, m2, m2Info);
+            //return _ConvoluteForwardOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteForward(m1depth, m2, m2depth);
         }
 
         /// <summary>
@@ -127,6 +130,7 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteBackwards"/> method
         /// </summary>
         [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] ConvoluteBackwards([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
         {
             return _ConvoluteBackwardsOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteBackwards(m1depth, m2, m2depth);
@@ -142,6 +146,7 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteGradient"/> method
         /// </summary>
         [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] ConvoluteGradient([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
         {
             return _ConvoluteGradientOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteGradient(m1depth, m2, m2depth);
@@ -160,6 +165,7 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime"/> method
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InPlaceMultiplyAndHadamardProductWithActivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
         {
             if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);

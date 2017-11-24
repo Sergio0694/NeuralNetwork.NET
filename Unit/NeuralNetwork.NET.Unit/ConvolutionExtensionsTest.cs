@@ -608,7 +608,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward(1, k, 1);
+            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -644,7 +644,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward(1, k, 1);
+            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -683,7 +683,7 @@ namespace NeuralNetworkNET.Unit
                         2, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward(1, k, 1);
+            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -724,7 +724,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward(2, k, 2);
+            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -768,7 +768,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward(2, k, 2);
+            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2));
             float[,] expected =
             {
                 {
