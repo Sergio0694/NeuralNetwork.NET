@@ -576,26 +576,26 @@ namespace NeuralNetworkNET.Helpers
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteGradient([NotNull] this float[,] source, int sourceDepth, [NotNull] float[,] kernels, int kernelsDepth)
+        public static float[,] ConvoluteGradient([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
         {
             // Checks and local parameters
             if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (sourceDepth < 1) throw new ArgumentOutOfRangeException(nameof(sourceDepth), "The number of images per row can't be lower than 1");
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
-            if (kernelsDepth < 1) throw new ArgumentException(nameof(kernelsDepth), "The number of kernels per row must be positive");
             int
                 nKernels = kernels.GetLength(0),
                 kw = kernels.GetLength(1),
-                kSize = kw / kernelsDepth,
-                kAxis = kSize.IntegerSquare();
-            if (kAxis * kAxis != kSize) throw new ArgumentException(nameof(kernels), "The size of the input kernels isn't valid");
-            if (kSize < 4) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
+                kDepth = kernelsInfo.Depth,
+                kSize = kw / kernelsInfo.Depth,
+                kHeight = kernelsInfo.Height,
+                kWidth = kernelsInfo.Width;
+            if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
                 h = source.GetLength(0),
                 w = source.GetLength(1),
-                imgSize = w % sourceDepth == 0 ? w / sourceDepth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+                imgSize = sourceInfo.SliceSize,
+                imgHeight = sourceInfo.Height,
+                imgWidth = sourceInfo.Width;
+            if (imgSize * sourceInfo.Depth != w) throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix");
             if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
             if (nKernels != h) throw new ArgumentException(nameof(kernels), "There must be a delta volume for each activation sample");
 
@@ -606,11 +606,12 @@ namespace NeuralNetworkNET.Helpers
              * Kernels:         HK*WK*sourceDepth*kernelsDepth (delta(l + 1) used to calculate the 3D gradient for each kernel)
              * Output:          sourceDepth*kernelsDepth slices, where each stack of sourceDepth slices is the gradient for the i-th kernel */
             int
-                hResult = imgAxis - kAxis + 1,                              // Size of each image edge after the convolution
-                convolutionOutputSize = hResult * hResult,                  // Size of each processed image
-                gradientSize = convolutionOutputSize * sourceDepth,         // Size of each calculated gradient (one for each original kernel, so for each input delta)
-                finalWidth = gradientSize * kernelsDepth,                   // Final size of each sample row
-                iterationsPerSample = sourceDepth * kernelsDepth;           // Each sample has its own list of 3D gradients, one for each kernel
+                hResult = imgHeight - kHeight + 1,                          // Size of each image edge after the convolution
+                wResult = imgWidth - kWidth + 1,
+                convolutionOutputSize = hResult * wResult,                  // Size of each processed image
+                gradientSize = convolutionOutputSize * sourceInfo.Depth,    // Size of each calculated gradient (one for each original kernel, so for each input delta)
+                finalWidth = gradientSize * kernelsInfo.Depth,              // Final size of each sample row
+                iterationsPerSample = sourceInfo.Depth * kDepth;            // Each sample has its own list of 3D gradients, one for each kernel
 
             // Process the valid convolution
             float[,] result = new float[h, finalWidth];
@@ -620,8 +621,8 @@ namespace NeuralNetworkNET.Helpers
                 int
                     iSample = index / iterationsPerSample,      // Sample index
                     iMod = index % iterationsPerSample,
-                    iSampleDepth = iMod / kernelsDepth,         // Depth of the current gradient
-                    iKernelDepth = iMod % kernelsDepth;         // Output gradient index
+                    iSampleDepth = iMod / kDepth,               // Depth of the current gradient
+                    iKernelDepth = iMod % kDepth;               // Output gradient index
 
                 // Process the current convolution slice
                 int
@@ -634,16 +635,16 @@ namespace NeuralNetworkNET.Helpers
                     {
                         int
                             targetRowOffset = resultBaseOffset + i * hResult,
-                            xEnd = i + kAxis - 1;
+                            xEnd = i + kHeight - 1;
                         for (int j = 0; j < hResult; j++)
                         {
-                            int highY = j + kAxis - 1;
+                            int highY = j + kWidth - 1;
                             float temp = 0.0f;
                             for (int x = i; x <= xEnd; x++)
                             {
                                 int
-                                    sourceRowOffset = sourceBaseOffset + x * imgAxis,
-                                    kernelRowOffset = kernelBaseOffset + (xEnd - x) * kAxis + highY;
+                                    sourceRowOffset = sourceBaseOffset + x * imgWidth,
+                                    kernelRowOffset = kernelBaseOffset + (xEnd - x) * kWidth + highY;
                                 for (int y = j; y <= highY; y++)
                                 {
                                     temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];

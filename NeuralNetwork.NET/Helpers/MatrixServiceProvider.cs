@@ -148,9 +148,10 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] ConvoluteGradient([NotNull] float[,] m1, int m1depth, [NotNull] float[,] m2, int m2depth)
+        public static float[,] ConvoluteGradient([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
         {
-            return _ConvoluteGradientOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteGradient(m1depth, m2, m2depth);
+            return m1.ConvoluteGradient(m1Info, m2, m2Info);
+            //return _ConvoluteGradientOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteGradient(m1depth, m2, m2depth);
         }
 
         #endregion

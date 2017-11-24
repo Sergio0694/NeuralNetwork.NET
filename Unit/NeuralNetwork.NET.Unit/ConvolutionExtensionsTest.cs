@@ -996,7 +996,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient(1, k, 1);
+            float[,] result = l.ConvoluteGradient((3,3,1), k, (2,2,1));
             float[,] expected =
             {
                 {
@@ -1006,7 +1006,7 @@ namespace NeuralNetworkNET.Unit
             };
             Assert.IsTrue(result.ContentEquals(expected));
         }
-        
+
         [TestMethod]
         public void Convolution2DGradient2()
         {
@@ -1029,7 +1029,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient(1, k, 2);
+            float[,] result = l.ConvoluteGradient((3, 3, 1), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -1066,7 +1066,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient(2, k, 1);
+            float[,] result = l.ConvoluteGradient((3, 3, 2), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -1116,7 +1116,7 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient(2, k, 1);
+            float[,] result = l.ConvoluteGradient((3, 3, 2), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -1179,7 +1179,7 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteGradient(2, k, 2);
+            float[,] result = l.ConvoluteGradient((3, 3, 2), k, (2, 2, 2));
             float[,] expected =
             {
                 {
