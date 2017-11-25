@@ -47,7 +47,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #endregion
 
         public ConvolutionalLayer(VolumeInformation input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
-            : base(WeightsProvider.ConvolutionalKernels(kernelSize.X * kernelSize.Y * input.Depth, kernels), 
+            : base(WeightsProvider.ConvolutionalKernels(input.Depth, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.Biases(kernels), activation)
         {
             InputVolume = input;
