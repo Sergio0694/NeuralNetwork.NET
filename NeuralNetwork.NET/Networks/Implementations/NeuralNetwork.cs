@@ -185,7 +185,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The L2 regularization factor</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        public TrainingStopReason StochasticGradientDescent(
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public TrainingSessionResult StochasticGradientDescent(
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,
             ValidationParameters validationParameters = null,
@@ -193,6 +195,16 @@ namespace NeuralNetworkNET.Networks.Implementations
             float eta = 0.5f, float dropout = 0, float lambda = 0,
             CancellationToken token = default)
         {
+            // Setup
+            DateTime startTime = DateTime.Now;
+            List<DatasetEvaluationResult>
+                validationReports = new List<DatasetEvaluationResult>(),
+                testReports = new List<DatasetEvaluationResult>();
+            TrainingSessionResult PrepareResult(TrainingStopReason reason, int loops)
+            {
+                return new TrainingSessionResult(reason, loops, DateTime.Now.Subtract(startTime).RoundToSeconds(), validationReports, testReports);
+            }
+
             // Convergence manager for the validation dataset
             RelativeConvergence convergence = validationParameters == null
                 ? null
@@ -207,7 +219,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Gradient descent over the current batches
                 foreach (TrainingBatch batch in batches.NextEpoch())
                 {
-                    if (token.IsCancellationRequested) return TrainingStopReason.TrainingCanceled;
+                    if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
                     IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y, dropout);
                     int size = batch.X.GetLength(0);
                     UpdateWeights(dJ, size, eta, l2Factor);
@@ -218,24 +230,26 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     if (_Layers[j] is WeightedLayerBase layer &&
                         !layer.ValidateWeights()) state.Break();
-                }).IsCompleted) return TrainingStopReason.NumericOverflow;
+                }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 
                 // Check the validation dataset
                 if (convergence != null)
                 {
-                    (_, _, float accuracy) = Evaluate(validationParameters.Dataset);
+                    (float cost, _, float accuracy) = Evaluate(validationParameters.Dataset);
+                    validationReports.Add(new DatasetEvaluationResult(cost, accuracy));
                     convergence.Value = accuracy;
-                    if (convergence.HasConverged) return TrainingStopReason.EarlyStopping;
+                    if (convergence.HasConverged) return PrepareResult(TrainingStopReason.EarlyStopping, i);
                 }
 
                 // Report progress if necessary
                 if (testParameters != null)
                 {
                     (float cost, _, float accuracy) = Evaluate(testParameters.Dataset);
+                    testReports.Add(new DatasetEvaluationResult(cost, accuracy));
                     testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
                 }
             }
-            return TrainingStopReason.EpochsCompleted;
+            return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
         }
 
         /// <summary>

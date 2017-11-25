@@ -5,7 +5,6 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.PublicAPIs;
-using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 
 namespace NeuralNetworkNET.SupervisedLearning
@@ -41,8 +40,9 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <para>The <paramref name="lambda"/> parameter (optional) depends on both <paramref name="eta"/> and the number of training samples and should be scaled accordingly</para>
         /// </remarks>
         [PublicAPI]
+        [NotNull, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static Task<TrainingStopReason> TrainNetworkAsync(
+        public static Task<TrainingSessionResult> TrainNetworkAsync(
             [NotNull] INeuralNetwork network,
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,

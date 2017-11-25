@@ -101,5 +101,12 @@ namespace NeuralNetworkNET.Helpers
                 list[n] = value;
             }
         }
+
+        /// <summary>
+        /// Rounds the given <see cref="TimeSpan"/> to an interval with an integer number of total seconds
+        /// </summary>
+        /// <param name="timeSpan">The instance to round</param>
+        [Pure]
+        public static TimeSpan RoundToSeconds(this TimeSpan timeSpan) => TimeSpan.FromSeconds((int)Math.Floor(timeSpan.TotalSeconds));
     }
 }
