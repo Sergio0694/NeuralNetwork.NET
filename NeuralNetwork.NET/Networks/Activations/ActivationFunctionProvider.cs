@@ -20,6 +20,7 @@ namespace NeuralNetworkNET.Networks.Activations
             {
                 case ActivationFunctionType.Sigmoid: return (ActivationFunctions.Sigmoid, ActivationFunctions.SigmoidPrime);
                 case ActivationFunctionType.Tanh: return (ActivationFunctions.Tanh, ActivationFunctions.TanhPrime);
+                case ActivationFunctionType.LeCunTanh: return (ActivationFunctions.LeCunTanh, ActivationFunctions.LeCunTanhPrime);
                 case ActivationFunctionType.ReLU: return (ActivationFunctions.ReLU, ActivationFunctions.ReLUPrime);
                 case ActivationFunctionType.LeakyReLU: return (ActivationFunctions.LeakyReLU, ActivationFunctions.LeakyReLUPrime);
                 case ActivationFunctionType.Softmax: return (ActivationFunctions.Softmax, null);
