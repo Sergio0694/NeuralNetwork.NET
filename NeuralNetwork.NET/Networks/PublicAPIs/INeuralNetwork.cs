@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
@@ -92,7 +93,8 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// Exports the weights in the current network with a visual representation
         /// </summary>
         /// <param name="directory">The target directory</param>
-        void ExportWeightsAsImages([NotNull] DirectoryInfo directory);
+        /// <param name="scaling">The desired image scaling to use</param>
+        void ExportWeightsAsImages([NotNull] DirectoryInfo directory, ImageScaling scaling = ImageScaling.Native);
 
         #endregion
     }

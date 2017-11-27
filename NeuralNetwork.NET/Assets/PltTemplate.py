@@ -5,5 +5,5 @@ x = [
 plt.grid(linestyle="dashed")
 plt.ylabel("$YLABEL$")
 plt.xlabel("Epoch")
-plt.scatter(y,x)
+plt.plot(x)
 plt.show()

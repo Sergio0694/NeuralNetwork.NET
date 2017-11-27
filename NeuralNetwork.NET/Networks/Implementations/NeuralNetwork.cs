@@ -371,25 +371,25 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public void ExportWeightsAsImages(DirectoryInfo directory)
+        public void ExportWeightsAsImages(DirectoryInfo directory, ImageScaling scaling)
         {
             foreach ((INetworkLayer layer, int i) in Layers.Select((l, i) => (l, i)))
             {
                 switch (layer)
                 {
                     case ConvolutionalLayer convolutional when i == 0:
-                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelVolume);
+                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelVolume, scaling);
                         break;
                     case ConvolutionalLayer _:
                         throw new NotImplementedException();
                     case OutputLayer output:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Output"), output.Weights, output.Biases);
+                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Output"), output.Weights, output.Biases, scaling);
                         break;
                     case SoftmaxLayer softmax:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Softmax"), softmax.Weights, softmax.Biases);
+                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Softmax"), softmax.Weights, softmax.Biases, scaling);
                         break;
                     case FullyConnectedLayer fullyConnected:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Fully connected"), fullyConnected.Weights, fullyConnected.Biases);
+                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Fully connected"), fullyConnected.Weights, fullyConnected.Biases, scaling);
                         break;
                 }
             }
