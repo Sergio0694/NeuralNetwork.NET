@@ -326,9 +326,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public void Save(DirectoryInfo directory, String name)
+        public String Save(DirectoryInfo directory, String name)
         {
-            using (FileStream stream = File.OpenWrite($"{Path.Combine(directory.ToString(), name)}{NeuralNetworkLoader.NetworkFileExtension}"))
+            String path = $"{Path.Combine(directory.ToString(), name)}{NeuralNetworkLoader.NetworkFileExtension}";
+            using (FileStream stream = File.OpenWrite(path))
             {
                 stream.Write(_Layers.Count);
                 foreach (NetworkLayerBase layer in _Layers)
@@ -360,6 +361,32 @@ namespace NeuralNetworkNET.Networks.Implementations
                     {
                         stream.WriteByte((byte)output.CostFunctionType);
                     }
+                }
+            }
+            return path;
+        }
+
+        /// <inheritdoc/>
+        public void ExportWeightsAsImages(DirectoryInfo directory)
+        {
+            foreach ((INetworkLayer layer, int i) in Layers.Select((l, i) => (l, i)))
+            {
+                switch (layer)
+                {
+                    case ConvolutionalLayer convolutional when i == 0:
+                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelVolume);
+                        break;
+                    case ConvolutionalLayer _:
+                        throw new NotImplementedException();
+                    case OutputLayer output:
+                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Output"), output.Weights, output.Biases);
+                        break;
+                    case SoftmaxLayer softmax:
+                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Softmax"), softmax.Weights, softmax.Biases);
+                        break;
+                    case FullyConnectedLayer fullyConnected:
+                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Fully connected"), fullyConnected.Weights, fullyConnected.Biases);
+                        break;
                 }
             }
         }

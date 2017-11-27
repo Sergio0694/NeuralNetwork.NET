@@ -69,6 +69,10 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         [CollectionAccess(CollectionAccessType.Read)]
         float CalculateCost([NotNull] float[,] x, [NotNull] float[,] y);
 
+        #endregion
+
+        #region Tools
+
         /// <summary>
         /// Serializes the network as a JSON string
         /// </summary>
@@ -80,7 +84,15 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// </summary>
         /// <param name="directory">The directory to use to save the network</param>
         /// <param name="name">The name for the network file to create</param>
-        void Save([NotNull] DirectoryInfo directory, [NotNull] String name);
+        /// <returns>The path to the file that was created with the saved network</returns>
+        [NotNull]
+        String Save([NotNull] DirectoryInfo directory, [NotNull] String name);
+
+        /// <summary>
+        /// Exports the weights in the current network with a visual representation
+        /// </summary>
+        /// <param name="directory">The target directory</param>
+        void ExportWeightsAsImages([NotNull] DirectoryInfo directory);
 
         #endregion
     }
