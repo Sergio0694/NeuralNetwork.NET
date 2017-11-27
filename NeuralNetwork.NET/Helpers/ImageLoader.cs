@@ -1,7 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
+using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Helpers;
@@ -76,13 +79,13 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="weights">The input weights</param>
         /// <param name="biases">The input biases</param>
         [PublicAPI]
-        public static unsafe void SaveFullyConnectedWeights([NotNull] String path, [NotNull] float[,] weights, [NotNull] float[] biases)
+        public static unsafe void ExportFullyConnectedWeights([NotNull] String path, [NotNull] float[,] weights, [NotNull] float[] biases)
         {
             int
                 h = weights.GetLength(0),
                 w = weights.GetLength(1);
             if (biases.Length == w) throw new ArgumentException("The biases length must match the width of the weights matrix");
-            using (Image<Rgb24> image = new Image<Rgb24>(w, h))
+            using (Image<Rgb24> image = new Image<Rgb24>(w, h + 1))
             {
                 ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
                 Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
@@ -96,9 +99,63 @@ namespace NeuralNetworkNET.Helpers
                             p0[j * h + i] = new Rgb24(hex, hex, hex);
                         }
                     }
+                fixed (float* pb = biases)
+                    for (int i = 0; i < w; i++)
+                    {
+                        byte hex = (byte)pb[i];
+                        p0[h - 1 + i * h] = new Rgb24(hex, hex, hex);
+                    }
                 using (FileStream stream = File.OpenWrite(path.EndsWith(".png") ? path : $"{path}.png"))
                     image.Save(stream, ImageFormats.Png);
             }
+        }
+
+        /// <summary>
+        /// Saves aan image for each kernel to the target directory
+        /// </summary>
+        /// <param name="directory">The directory to use to store the images</param>
+        /// <param name="kernels">The input kernels</param>
+        /// <param name="kernelsInfo">The size info for the input kernels</param>
+        [PublicAPI]
+        public static unsafe void ExportGrayscaleKernels([NotNull] String directory, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
+        {
+            // Setup
+            Directory.CreateDirectory(directory);
+            int
+                h = kernels.GetLength(0),
+                w = kernels.GetLength(1);
+
+            // Export a single kernel matrix (one per weights row)
+            void Kernel(int k)
+            {
+                using (Image<Rgb24> image = new Image<Rgb24>(kernelsInfo.Axis, kernelsInfo.Axis))
+                {
+                    ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
+                    Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
+                    fixed (float* pw = kernels)
+                    {
+                        float* pwoffset = pw + k * w;
+                        (float min, float max) = MatrixExtensions.MinMax(pwoffset, kernelsInfo.Size);
+                        for (int i = 0; i < kernelsInfo.Axis; i++)
+                        {
+                            int offset = i * kernelsInfo.Axis;
+                            for (int j = 0; j < kernelsInfo.Axis; j++)
+                            {
+                                float
+                                    value = pwoffset[offset + j],
+                                    normalized = ((value - min) * 255) / (max - min);
+                                byte hex = (byte)normalized;
+                                p0[j * kernelsInfo.Axis + i] = new Rgb24(hex, hex, hex);
+                            }
+                        }
+                    }
+                    using (FileStream stream = File.OpenWrite(Path.Combine(directory, $"{k}.png")))
+                        image.Save(stream, ImageFormats.Png);
+                }
+            }
+
+            // Save all the kernels in parallel
+            Parallel.For(0, h, Kernel).AssertCompleted();
         }
     }
 }
