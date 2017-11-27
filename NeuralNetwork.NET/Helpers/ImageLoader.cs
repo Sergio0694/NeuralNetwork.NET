@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using SixLabors.ImageSharp;
@@ -65,6 +66,38 @@ namespace NeuralNetworkNET.Helpers
                     for (int i = 0; i < resolution; i++)
                         psample[i] = p0[i].R;
                 return sample;
+            }
+        }
+
+        /// <summary>
+        /// Saves an image in the target path representing the input weights and biases
+        /// </summary>
+        /// <param name="path">The target path for the image</param>
+        /// <param name="weights">The input weights</param>
+        /// <param name="biases">The input biases</param>
+        [PublicAPI]
+        public static unsafe void SaveFullyConnectedWeights([NotNull] String path, [NotNull] float[,] weights, [NotNull] float[] biases)
+        {
+            int
+                h = weights.GetLength(0),
+                w = weights.GetLength(1);
+            if (biases.Length == w) throw new ArgumentException("The biases length must match the width of the weights matrix");
+            using (Image<Rgb24> image = new Image<Rgb24>(w, h))
+            {
+                ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
+                Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
+                fixed (float* pw = weights)
+                    for (int i = 0; i < h; i++)
+                    {
+                        int offset = i * w;
+                        for (int j = 0; j < w; j++)
+                        {
+                            byte hex = (byte)pw[offset + j];
+                            p0[j * h + i] = new Rgb24(hex, hex, hex);
+                        }
+                    }
+                using (FileStream stream = File.OpenWrite(path.EndsWith(".png") ? path : $"{path}.png"))
+                    image.Save(stream, ImageFormats.Png);
             }
         }
     }
