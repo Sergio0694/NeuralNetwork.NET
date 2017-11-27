@@ -18,7 +18,7 @@ namespace NeuralNetworkNET.Helpers
         [Pure]
         public static float NextGaussian([NotNull] this Random random)
         {
-            double u1 = random.NextDouble(), u2 = random.NextDouble();
+            double u1 = 1.0 - random.NextDouble(), u2 = 1.0 - random.NextDouble();
             return (float)Math.Sqrt(-2.0 * Math.Log(u1)) * (float)Math.Sin(2.0 * Math.PI * u2);
         }
 
@@ -116,17 +116,33 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Returns a new matrix filled with values from the Xavier initialization (random~N(0,1) over the square of the number of input neurons)
+        /// Returns a new matrix filled with values from the Xavier initialization (with 2 / (in + out) as the variance)
+        /// </summary>
+        /// <param name="random">The <see cref="Random"/> instance</param>
+        /// <param name="x">The height of the matrix</param>
+        /// <param name="y">The width of the matrix</param>
+        /// <remarks>According to the implementation by Glorot & Bengio (http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization)</remarks>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static float[,] NextXavierMatrix([NotNull] this Random random, int x, int y)
+        {
+            float scale = 2f / (x + y);
+            return random.NextMatrix(x, y, r => r.NextGaussian() * scale);
+        }
+
+        /// <summary>
+        /// Returns a new matrix filled with values from the sigmoid Xavier initialization (with sqrt(6 / (in + out) as the variance)
         /// </summary>
         /// <param name="random">The <see cref="Random"/> instance</param>
         /// <param name="x">The height of the matrix</param>
         /// <param name="y">The width of the matrix</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static float[,] NextXavierMatrix([NotNull] this Random random, int x, int y)
+        public static float[,] NextSigmoidXavierMatrix([NotNull] this Random random, int x, int y)
         {
-            float sqrt = (float)Math.Sqrt(x);
-            return random.NextMatrix(x, y, r => r.NextGaussian() / sqrt);
+            float sqrt = (float)Math.Sqrt(6f / (x + y));
+            return random.NextUniformMatrix(x, y, sqrt);
+
         }
 
         /// <summary>

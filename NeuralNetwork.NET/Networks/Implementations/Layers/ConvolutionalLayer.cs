@@ -19,10 +19,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #region Parameters
 
         /// <inheritdoc/>
-        public override int Inputs => InputVolume.Size;
+        public override int Inputs => InputVolume.Volume;
 
         /// <inheritdoc/>
-        public override int Outputs => OutputVolume.Size;
+        public override int Outputs => OutputVolume.Volume;
 
         /// <inheritdoc/>
         [JsonProperty(nameof(InputVolume), Order = 4)]
@@ -46,13 +46,13 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         #endregion
 
-        public ConvolutionalLayer(VolumeInformation input, int kernelAxis, int kernels, ActivationFunctionType activation)
-            : base(WeightsProvider.ConvolutionalKernels(kernelAxis, input.Depth, kernels), 
+        public ConvolutionalLayer(VolumeInformation input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
+            : base(WeightsProvider.ConvolutionalKernels(input.Depth, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.Biases(kernels), activation)
         {
             InputVolume = input;
-            KernelVolume = new VolumeInformation(kernelAxis, input.Depth);
-            OutputVolume = new VolumeInformation(input.Axis - kernelAxis + 1, kernels);
+            KernelVolume = (kernelSize.X, kernelSize.Y, input.Depth);
+            OutputVolume = (input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels);
         }
 
         public ConvolutionalLayer(VolumeInformation input, VolumeInformation kernels, VolumeInformation output,
@@ -67,11 +67,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override (float[,] Z, float[,] A) Forward(float[,] x)
         {
-            float[,] z = MatrixServiceProvider.ConvoluteForward(x, InputVolume.Depth, Weights, InputVolume.Depth);
-            z.InPlaceSum(OutputVolume.Depth, Biases);
-            float[,] a = ActivationFunctionType == ActivationFunctionType.Identity
-                ? z.BlockCopy()
-                : z.Activation(ActivationFunctions.Activation);
+            float[,]
+                z = MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume, Biases),
+                a = ActivationFunctionType == ActivationFunctionType.Identity
+                    ? z.BlockCopy()
+                    : z.Activation(ActivationFunctions.Activation);
             return (z, a);
         }
 
@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             float[,]
                 w180 = Weights.Rotate180(KernelVolume.Depth),
-                delta = MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume.Depth, w180, KernelVolume.Depth);
+                delta = MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume);
             delta.InPlaceHadamardProductWithActivation(z, activationPrime);
             return delta;
         }
@@ -90,7 +90,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             float[,]
                 a180 = a.Rotate180(InputVolume.Depth),
-                dJdw = MatrixServiceProvider.ConvoluteGradient(a180, InputVolume.Depth, delta, OutputVolume.Depth);
+                dJdw = MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume);
             float[] dJdb = delta.CompressVertically(OutputVolume.Depth);
             return new LayerGradient(dJdw, dJdb);
         }

@@ -67,6 +67,40 @@ namespace NeuralNetworkNET.Networks.Activations
         }
 
         /// <summary>
+        /// Applies the LeCun tanh function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float LeCunTanh(float x)
+        {
+            const float divX = 2f / 3;
+            const float scale = 1.7159f;
+            float e2x = (float)Math.Exp(2 * divX * x);
+            return scale * (e2x - 1) / (e2x + 1);
+        }
+
+        /// <summary>
+        /// Applies the derivative of the <see cref="LeCunTanh"/> function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float LeCunTanhPrime(float x)
+        {
+            const float numerator = 4.57573f;
+            float
+                exp = 2 * x / 3,
+                ePlus = (float)Math.Exp(exp),
+                eMinus = (float)Math.Exp(-exp),
+                sum = ePlus + eMinus,
+                square = sum * sum;
+            return numerator / square;
+        }
+
+        /// <summary>
         /// Applies the rectifier function
         /// </summary>
         /// <param name="x">The input to process</param>

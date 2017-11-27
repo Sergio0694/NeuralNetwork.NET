@@ -18,6 +18,11 @@
         Tanh,
 
         /// <summary>
+        /// A customized tanh function proposed by LeCun (http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf)
+        /// </summary>
+        LeCunTanh,
+
+        /// <summary>
         /// The linear rectified function, max(0, x)
         /// </summary>
         /// <remarks>It doesn't saturate like the sigmoid or tanh function and it converges faster</remarks>

@@ -16,10 +16,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #region Parameters
 
         /// <inheritdoc/>
-        public override int Inputs => InputVolume.Size;
+        public override int Inputs => InputVolume.Volume;
 
         /// <inheritdoc/>
-        public override int Outputs => OutputVolume.Size;
+        public override int Outputs => OutputVolume.Volume;
 
         /// <inheritdoc/>
         [JsonProperty(nameof(InputVolume), Order = 4)]
@@ -34,8 +34,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public PoolingLayer(VolumeInformation input, ActivationFunctionType activation) : base(activation)
         {
             InputVolume = input;
-            int outAxis = input.Axis / 2 + (input.Axis % 2 == 0 ? 0 : 1);
-            OutputVolume = new VolumeInformation(outAxis, input.Depth);
+            int
+                outHeight = input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
+                outWidth = input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1);
+            OutputVolume = (outHeight, outWidth, input.Depth);
         }
 
         /// <inheritdoc/>
