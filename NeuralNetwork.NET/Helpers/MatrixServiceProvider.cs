@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers.Delegates;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
@@ -23,9 +24,9 @@ namespace NeuralNetworkNET.Helpers
             [NotNull] Func<float[,], float[,], float[,]> transposeMultiply,
             [NotNull] Func<float[,], ActivationFunction, float[,]> activation,
             [NotNull] Action<float[,], float[,], float[,], ActivationFunction> multiplyAndInPlaceActivationPrimeHadamard,
-            [NotNull] Func<float[,], int, float[,], int, float[,]> convoluteForward,
-            [NotNull] Func<float[,], int, float[,], int, float[,]> convoluteBackwards,
-            [NotNull] Func<float[,], int, float[,], int, float[,]> convoluteGradient)
+            [NotNull] ForwardConvolution convoluteForward,
+            [NotNull] BackwardsConvolution convoluteBackwards,
+            [NotNull] GradientConvolution convoluteGradient)
         {
             _MultiplyWithSumOverride = multiplyWithSum;
             _TransposeAndMultiplyOverride = transposeMultiply;
@@ -44,7 +45,9 @@ namespace NeuralNetworkNET.Helpers
             _TransposeAndMultiplyOverride = null;
             _ActivationOverride = null;
             _InPlaceMultiplyAndHadamardProductWithAcrivationPrime = null;
-            _ConvoluteForwardOverride = _ConvoluteBackwardsOverride = _ConvoluteGradientOverride = null;
+            _ConvoluteForwardOverride = null;
+            _ConvoluteBackwardsOverride = null;
+            _ConvoluteGradientOverride = null;
         }
 
         #endregion
@@ -104,10 +107,10 @@ namespace NeuralNetworkNET.Helpers
         #region Convolution
 
         /// <summary>
-        /// A <see cref="Func{T1, T2, T3, T4, TResult}"/> that performs the forward convolution
+        /// A <see cref="ForwardConvolution"/> delegate that performs the forward convolution
         /// </summary>
         [CanBeNull]
-        private static Func<float[,], int, float[,], int, float[,]> _ConvoluteForwardOverride;
+        private static ForwardConvolution _ConvoluteForwardOverride;
 
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteForward"/> method
@@ -116,15 +119,15 @@ namespace NeuralNetworkNET.Helpers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] ConvoluteForward([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info, [NotNull] float[] biases)
         {
-            return m1.ConvoluteForward(m1Info, m2, m2Info, biases);
-            //return _ConvoluteForwardOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteForward(m1depth, m2, m2depth);
+            return _ConvoluteForwardOverride?.Invoke(m1, m1Info, m2, m2Info, biases)
+                   ?? m1.ConvoluteForward(m1Info, m2, m2Info, biases);
         }
 
         /// <summary>
-        /// A <see cref="Func{T1, T2, T3, T4, TResult}"/> that performs the backwards convolution
+        /// A <see cref="BackwardsConvolution"/> dekegate that performs the backwards convolution
         /// </summary>
         [CanBeNull]
-        private static Func<float[,], int, float[,], int, float[,]> _ConvoluteBackwardsOverride;
+        private static BackwardsConvolution _ConvoluteBackwardsOverride;
 
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteBackwards"/> method
@@ -133,15 +136,15 @@ namespace NeuralNetworkNET.Helpers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] ConvoluteBackwards([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
         {
-            return m1.ConvoluteBackwards(m1Info, m2, m2Info);
-            //return _ConvoluteBackwardsOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteBackwards(m1depth, m2, m2depth);
+            return _ConvoluteBackwardsOverride?.Invoke(m1, m1Info, m2, m2Info)
+                   ?? m1.ConvoluteBackwards(m1Info, m2, m2Info);
         }
 
         /// <summary>
-        /// A <see cref="Func{T1, T2, T3, T4, TResult}"/> that performs the gradient convolution
+        /// A <see cref="GradientConvolution"/> function that performs the gradient convolution
         /// </summary>
         [CanBeNull]
-        private static Func<float[,], int, float[,], int, float[,]> _ConvoluteGradientOverride;
+        private static GradientConvolution _ConvoluteGradientOverride;
 
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteGradient"/> method
@@ -150,8 +153,8 @@ namespace NeuralNetworkNET.Helpers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] ConvoluteGradient([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
         {
-            return m1.ConvoluteGradient(m1Info, m2, m2Info);
-            //return _ConvoluteGradientOverride?.Invoke(m1, m1depth, m2, m2depth) ?? m1.ConvoluteGradient(m1depth, m2, m2depth);
+            return _ConvoluteGradientOverride?.Invoke(m1, m1Info, m2, m2Info)
+                   ?? m1.ConvoluteGradient(m1Info, m2, m2Info);
         }
 
         #endregion

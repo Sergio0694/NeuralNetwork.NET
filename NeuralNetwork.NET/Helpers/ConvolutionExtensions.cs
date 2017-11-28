@@ -620,7 +620,6 @@ namespace NeuralNetworkNET.Helpers
                             presult[targetRowOffset + j] = temp;
                         }
                     }
-
                 }
             }
             Parallel.For(0, h * iterationsPerSample, GradientKernel).AssertCompleted();
