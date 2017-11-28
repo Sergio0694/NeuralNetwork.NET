@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid), 
                 NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String json = network.SerializeAsJSON();
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(json);
+            INeuralNetwork copy = NeuralNetworkLoader.TryLoadJson(json);
             Assert.IsTrue(copy != null);
             Assert.IsTrue(copy.Equals(network));
         }

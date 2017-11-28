@@ -46,7 +46,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(_Layers), Required = Required.Always, Order = 3)]
+        [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
         private readonly IReadOnlyList<NetworkLayerBase> _Layers;
 
         /// <summary>
