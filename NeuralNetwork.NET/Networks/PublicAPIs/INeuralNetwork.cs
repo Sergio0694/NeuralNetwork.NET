@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
 namespace NeuralNetworkNET.Networks.PublicAPIs
@@ -20,6 +23,12 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         /// Gets the size of the output layer
         /// </summary>
         int Outputs { get; }
+
+        /// <summary>
+        /// Gets the list of layers in the network
+        /// </summary>
+        [NotNull, ItemNotNull]
+        IReadOnlyList<INetworkLayer> Layers { get; }
 
         #endregion
 
@@ -61,11 +70,31 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         [CollectionAccess(CollectionAccessType.Read)]
         float CalculateCost([NotNull] float[,] x, [NotNull] float[,] y);
 
+        #endregion
+
+        #region Tools
+
         /// <summary>
         /// Serializes the network as a JSON string
         /// </summary>
         [Pure, NotNull]
         String SerializeAsJSON();
+
+        /// <summary>
+        /// Saves the network in the target directory
+        /// </summary>
+        /// <param name="directory">The directory to use to save the network</param>
+        /// <param name="name">The name for the network file to create</param>
+        /// <returns>The path to the file that was created with the saved network</returns>
+        [NotNull]
+        String Save([NotNull] DirectoryInfo directory, [NotNull] String name);
+
+        /// <summary>
+        /// Exports the weights in the current network with a visual representation
+        /// </summary>
+        /// <param name="directory">The target directory</param>
+        /// <param name="scaling">The desired image scaling to use</param>
+        void ExportWeightsAsImages([NotNull] DirectoryInfo directory, ImageScaling scaling = ImageScaling.Native);
 
         #endregion
     }

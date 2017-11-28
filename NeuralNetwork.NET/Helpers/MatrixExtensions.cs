@@ -753,6 +753,24 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Finds the minimum and maximum value in the input memory area
+        /// </summary>
+        /// <param name="p">A pointer to the memory area to scan</param>
+        /// <param name="length">The number of items to scan</param>
+        public static unsafe (float Min, float Max) MinMax(float* p, int length)
+        {
+            if (length == 0) return (0, 0);
+            float min = float.MaxValue, max = float.MinValue;
+            for (int i = 0; i < length; i++)
+            {
+                float value = p[i];
+                if (value < min) min = value;
+                if (value > max) max = value;
+            }
+            return (min, max);
+        }
+
+        /// <summary>
         /// Normalizes the values in a matrix in the [0..1] range
         /// </summary>
         /// <param name="m">The input matrix to normalize</param>
@@ -1061,7 +1079,7 @@ namespace NeuralNetworkNET.Helpers
 
         #endregion
 
-        #region BlockCopy
+        #region Memory management
 
         /// <summary>
         /// Returns a deep copy of the input matrix

@@ -11,12 +11,11 @@ namespace NeuralNetworkNET.Helpers
     public static class Extensions
     {
         /// <summary>
-        /// Casts the 
+        /// Casts the input item to a class or interface that inherits from the initial type
         /// </summary>
-        /// <typeparam name="TIn"></typeparam>
-        /// <typeparam name="TOut"></typeparam>
-        /// <param name="item"></param>
-        /// <returns></returns>
+        /// <typeparam name="TIn">The input type</typeparam>
+        /// <typeparam name="TOut">The output type</typeparam>
+        /// <param name="item">The item to cast</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOut To<TIn, TOut>([NotNull] this TIn item) where TOut : class, TIn => item as TOut 
@@ -101,5 +100,12 @@ namespace NeuralNetworkNET.Helpers
                 list[n] = value;
             }
         }
+
+        /// <summary>
+        /// Rounds the given <see cref="TimeSpan"/> to an interval with an integer number of total seconds
+        /// </summary>
+        /// <param name="timeSpan">The instance to round</param>
+        [Pure]
+        public static TimeSpan RoundToSeconds(this TimeSpan timeSpan) => TimeSpan.FromSeconds((int)Math.Floor(timeSpan.TotalSeconds));
     }
 }

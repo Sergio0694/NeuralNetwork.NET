@@ -3,7 +3,7 @@
     /// <summary>
     /// Indicates an activation function to use in a neural network
     /// </summary>
-    public enum ActivationFunctionType
+    public enum ActivationFunctionType : byte
     {
         /// <summary>
         /// The sigmoid function, 1 / (1 + e^(-x))
@@ -16,6 +16,11 @@
         /// <remarks>It has the advantage of being centered vertically at the origin, instead
         /// of being shifted upwards like the classic sigmoid function</remarks>
         Tanh,
+
+        /// <summary>
+        /// A customized tanh function proposed by LeCun (http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf)
+        /// </summary>
+        LeCunTanh,
 
         /// <summary>
         /// The linear rectified function, max(0, x)

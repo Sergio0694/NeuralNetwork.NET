@@ -3,7 +3,7 @@
     /// <summary>
     /// Indicates the cost function to use to evaluate and train a neural network
     /// </summary>
-    public enum CostFunctionType
+    public enum CostFunctionType : byte
     {
         /// <summary>
         /// The classic quadratic cost function, 1/n(yHat - y)^2
