@@ -36,9 +36,9 @@ namespace NeuralNetworkNET.Helpers
                     for (int i = 0; i < resolution; i++)
                     {
                         Rgb24* pxy = p0 + i;
-                        psample[i] = pxy->R;
-                        psample[i + resolution] = pxy->G;
-                        psample[i + 2 * resolution] = pxy->B;
+                        psample[i] = pxy->R / 255f;
+                        psample[i + resolution] = pxy->G / 255f;
+                        psample[i + 2 * resolution] = pxy->B / 255f;
                     }
                 return sample;
             }
@@ -62,7 +62,7 @@ namespace NeuralNetworkNET.Helpers
                 fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
                 fixed (float* psample = sample)
                     for (int i = 0; i < resolution; i++)
-                        psample[i] = p0[i].R;
+                        psample[i] = p0[i].R / 255f;
                 return sample;
             }
         }

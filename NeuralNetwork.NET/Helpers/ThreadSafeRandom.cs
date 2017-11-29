@@ -222,12 +222,12 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="x">The height of the matrix</param>
         /// <param name="y">The width of the matrix</param>
-        /// <param name="dropout">The dropout probability</param>
+        /// <param name="dropout">The dropout probability (indicates the probability of keeping a neuron active)</param>
         [Pure, NotNull]
         public static float[,] NextDropoutMask(int x, int y, float dropout)
         {
             float scale = 1 / dropout;
-            return NextMatrix(x, y, () => NextFloat() > dropout ? scale : 0);
+            return NextMatrix(x, y, () => NextFloat() > dropout ? 0 : scale);
         }
 
         /// <summary>
