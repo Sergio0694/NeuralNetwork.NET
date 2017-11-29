@@ -1,13 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
-using SixLabors.ImageSharp.Helpers;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.Primitives;
@@ -31,11 +29,9 @@ namespace NeuralNetworkNET.Helpers
             using (Image<Rgb24> image = Image.Load<Rgb24>(path))
             {
                 if (modify != null) image.Mutate(modify);
-                Size size = image.Size();
-                ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
-                Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
-                int resolution = size.Height * size.Width;
+                int resolution = image.Height * image.Width;
                 float[] sample = new float[resolution * 3];
+                fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
                 fixed (float* psample = sample)
                     for (int i = 0; i < resolution; i++)
                     {
@@ -61,11 +57,9 @@ namespace NeuralNetworkNET.Helpers
             {
                 image.Mutate(x => x.Grayscale());
                 if (modify != null) image.Mutate(modify);
-                Size size = image.Size();
-                ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
-                Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
-                int resolution = size.Height * size.Width;
+                int resolution = image.Height * image.Width;
                 float[] sample = new float[resolution];
+                fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
                 fixed (float* psample = sample)
                     for (int i = 0; i < resolution; i++)
                         psample[i] = p0[i].R;
@@ -89,34 +83,38 @@ namespace NeuralNetworkNET.Helpers
             if (biases.Length != w) throw new ArgumentException("The biases length must match the width of the weights matrix");
             using (Image<Rgb24> image = new Image<Rgb24>(w, h + 1))
             {
-                ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
-                Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
-                fixed (float* pw = weights)
+                fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
                 {
-                    (float min, float max) = MatrixExtensions.MinMax(pw, h * w);
-                    for (int i = 0; i < h; i++)
+                    // Weights
+                    fixed (float* pw = weights)
                     {
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
+                        (float min, float max) = MatrixExtensions.MinMax(pw, h * w);
+                        for (int i = 0; i < h; i++)
                         {
-                            float
-                                value = pw[offset + j],
-                                normalized = (value - min) * 255 / (max - min);
-                            byte hex = (byte)normalized;
-                            p0[j * h + i] = new Rgb24(hex, hex, hex);
+                            int offset = i * w;
+                            for (int j = 0; j < w; j++)
+                            {
+                                float
+                                    value = pw[offset + j],
+                                    normalized = (value - min) * 255 / (max - min);
+                                byte hex = (byte)normalized;
+                                p0[j * h + i] = new Rgb24(hex, hex, hex);
+                            }
                         }
                     }
-                }
-                fixed (float* pb = biases)
-                {
-                    (float min, float max) = MatrixExtensions.MinMax(pb, w);
-                    for (int i = 0; i < w; i++)
+
+                    // Biases
+                    fixed (float* pb = biases)
                     {
-                        float
-                            value = pb[i],
-                            normalized = (value - min) * 255 / (max - min);
-                        byte hex = (byte)normalized;
-                        p0[h * w + i] = new Rgb24(hex, hex, hex);
+                        (float min, float max) = MatrixExtensions.MinMax(pb, w);
+                        for (int i = 0; i < w; i++)
+                        {
+                            float
+                                value = pb[i],
+                                normalized = (value - min) * 255 / (max - min);
+                            byte hex = (byte)normalized;
+                            p0[h * w + i] = new Rgb24(hex, hex, hex);
+                        }
                     }
                 }
                 image.UpdateScaling(scaling);
@@ -147,8 +145,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 using (Image<Rgb24> image = new Image<Rgb24>(kernelsInfo.Width, kernelsInfo.Height))
                 {
-                    ref Rgb24 pixel0 = ref image.DangerousGetPinnableReferenceToPixelBuffer();
-                    Rgb24* p0 = (Rgb24*)Unsafe.AsPointer(ref pixel0);
+                    fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
                     fixed (float* pw = kernels)
                     {
                         float* pwoffset = pw + k * w;
