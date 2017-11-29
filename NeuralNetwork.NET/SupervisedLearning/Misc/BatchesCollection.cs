@@ -26,16 +26,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// </summary>
         public int Samples { get; }
 
-        // Private random instance to shuffle the batches
-        private Random RandomProvider { get; }
-
         // Private constructor from a given collection
         private BatchesCollection([NotNull] TrainingBatch[] batches)
         {
             Batches = batches;
             Count = batches.Length;
             Samples = batches.Sum(b => b.X.GetLength(0));
-            RandomProvider = new Random(batches.Aggregate(batches.GetHashCode(), (s, h) => s ^ h.GetHashCode()));
         }
 
         /// <summary>
@@ -149,7 +145,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         {
             // Select the couples to cross-shuffle
             int[] indexes = Enumerable.Range(0, Batches.Length).ToArray();
-            indexes.Shuffle(RandomProvider);
+            indexes.Shuffle();
             List<(int, int)> couples = new List<(int, int)>();
             for (int i = 0; i < indexes.Length - 1; i += 2)
             {
@@ -161,7 +157,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
             {
                 (int a, int b) = couples[i];
                 TrainingBatch setA = Batches[a], setB = Batches[b];
-                Random r = new Random(a ^ b ^ setA.GetHashCode() ^ setB.GetHashCode());
                 int
                     hA = setA.X.GetLength(0),
                     wx = setA.X.GetLength(1),
@@ -173,11 +168,11 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                     tempY = new float[wy];
                 while (bound > 1)
                 {
-                    int k = r.Next(0, bound) % bound;
+                    int k = ThreadSafeRandom.NextInt(max: bound);
                     bound--;
                     TrainingBatch
-                        targetA = r.NextBool() ? setA : setB,
-                        targetB = r.NextBool() ? setA : setB;
+                        targetA = ThreadSafeRandom.NextBool() ? setA : setB,
+                        targetB = ThreadSafeRandom.NextBool() ? setA : setB;
 
                     // Rows from A[k] to temp
                     Buffer.BlockCopy(targetA.X, sizeof(float) * wx * k, tempX, 0, sizeof(float) * wx);
@@ -195,7 +190,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
             if (!result) throw new InvalidOperationException("Failed to perform the parallel loop");
 
             // Shuffle the main list
-            Batches.Shuffle(RandomProvider);
+            Batches.Shuffle();
         }
 
         /// <summary>

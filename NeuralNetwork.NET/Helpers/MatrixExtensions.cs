@@ -892,6 +892,31 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Merges the input samples into a matrix dataset
+        /// </summary>
+        /// <param name="samples">The vectors to merge</param>
+        [PublicAPI]
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static (float[,], float[,]) MergeRows([NotNull] this (float[] X, float[] Y)[] samples)
+        {
+            // Preliminary checks and declarations
+            if (samples.Length == 0) throw new ArgumentOutOfRangeException("The samples list can't be empty");
+            int
+                xLength = samples[0].X.Length,
+                yLength = samples[0].Y.Length;
+            float[,] 
+                x = new float[samples.Length, xLength],
+                y = new float[samples.Length, yLength];
+            for (int i = 0; i < samples.Length; i++)
+            {
+                Buffer.BlockCopy(samples[i].X, 0, x, sizeof(float) * xLength * i, sizeof(float) * xLength);
+                Buffer.BlockCopy(samples[i].Y, 0, y, sizeof(float) * yLength * i, sizeof(float) * yLength);
+            }
+            return (x, y);
+        }
+
+        /// <summary>
         /// Merges the rows of the input matrices into a single matrix
         /// </summary>
         /// <param name="blocks">The matrices to merge</param>

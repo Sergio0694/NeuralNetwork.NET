@@ -126,7 +126,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 (zList[i], aList[i]) = layer.Forward(i == 0 ? x : aList[i - 1]);
                 if (layer.LayerType == LayerType.FullyConnected && dropout > 0)
                 {
-                    dropoutMasks[i] = new Random().NextDropoutMask(aList[i].GetLength(0), aList[i].GetLength(1), dropout);
+                    dropoutMasks[i] = ThreadSafeRandom.NextDropoutMask(aList[i].GetLength(0), aList[i].GetLength(1), dropout);
                     aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
                 }
             }
@@ -176,9 +176,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Trains the current network using the gradient descent algorithm
         /// </summary>
-        /// <param name="trainingSet">The training set for the current session</param>
+        /// <param name="miniBatches">The training baatches for the current session</param>
         /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="batchSize">The size of each training batch</param>
         /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
         /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
         /// <param name="eta">The learning rate</param>
@@ -187,9 +186,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public TrainingSessionResult StochasticGradientDescent(
-            (float[,] X, float[,] Y) trainingSet,
-            int epochs, int batchSize,
+        internal TrainingSessionResult StochasticGradientDescent(
+            BatchesCollection miniBatches,
+            int epochs,
             ValidationParameters validationParameters = null,
             TestParameters testParameters = null,
             float eta = 0.5f, float dropout = 0, float lambda = 0,
@@ -211,20 +210,18 @@ namespace NeuralNetworkNET.Networks.Implementations
                 : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
 
             // Create the training batches
-            int trainingSamples = trainingSet.X.GetLength(0);
-            float l2Factor = eta * lambda / trainingSamples;
-            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
+            float l2Factor = eta * lambda / miniBatches.Samples;
             for (int i = 0; i < epochs; i++)
             {
                 // Gradient descent over the current batches
-                foreach (TrainingBatch batch in batches.NextEpoch())
+                foreach (TrainingBatch batch in miniBatches.NextEpoch())
                 {
                     if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
                     IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y, dropout);
                     int size = batch.X.GetLength(0);
                     UpdateWeights(dJ, size, eta, l2Factor);
                 }
-                
+
                 // Check for overflows
                 if (!Parallel.For(0, _Layers.Count, (j, state) =>
                 {
