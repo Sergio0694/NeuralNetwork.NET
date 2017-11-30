@@ -1116,7 +1116,7 @@ namespace NeuralNetworkNET.Helpers
         public static float[,] BlockCopy([NotNull] this float[,] m)
         {
             float[,] result = new float[m.GetLength(0), m.GetLength(1)];
-            Buffer.BlockCopy(m, 0, result, 0, m.Length);
+            Buffer.BlockCopy(m, 0, result, 0, sizeof(float) * m.Length);
             return result;
         }
 
@@ -1129,7 +1129,7 @@ namespace NeuralNetworkNET.Helpers
         public static float[] BlockCopy([NotNull] this float[] v)
         {
             float[] result = new float[v.Length];
-            Buffer.BlockCopy(v, 0, result, 0, v.Length);
+            Buffer.BlockCopy(v, 0, result, 0, sizeof(float) * v.Length);
             return result;
         }
 
