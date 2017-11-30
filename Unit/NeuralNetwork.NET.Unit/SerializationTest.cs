@@ -40,8 +40,7 @@ namespace NeuralNetworkNET.Unit
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                Random random = new Random();
-                float[,] m = random.NextXavierMatrix(784, 30);
+                float[,] m = ThreadSafeRandom.NextGlorotNormalMatrix(784, 30);
                 stream.Write(m);
                 byte[] test = new byte[10];
                 stream.Seek(-10, SeekOrigin.Current);
@@ -54,8 +53,7 @@ namespace NeuralNetworkNET.Unit
             }
             using (MemoryStream stream = new MemoryStream())
             {
-                Random random = new Random();
-                float[] v = random.NextGaussianVector(723);
+                float[] v = ThreadSafeRandom.NextGaussianVector(723);
                 stream.Write(v);
                 byte[] test = new byte[10];
                 stream.Seek(-10, SeekOrigin.Current);

@@ -18,7 +18,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         public static float[,] FullyConnectedWeights(int inputs, int outputs)
         {
             if (inputs <= 0 || outputs <= 0) throw new ArgumentOutOfRangeException("The inputs and outputs must be positive numbers");
-            return new Random().NextSigmoidXavierMatrix(inputs, outputs);
+            return ThreadSafeRandom.NextGlorotUniformMatrix(inputs, outputs);
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         {
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
             float scale = (float)Math.Sqrt(6f / ((inputDepth + kernels) * kernelsHeight * kernelsWidth));
-            return new Random().NextUniformMatrix(kernels, kernelsHeight * kernelsWidth * inputDepth, scale);
+            return ThreadSafeRandom.NextUniformMatrix(kernels, kernelsHeight * kernelsWidth * inputDepth, scale);
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         public static float[] Biases(int length)
         {
             if (length <= 0) throw new ArgumentException(nameof(length), "The biases vector must have a positive number of items");
-            return new Random().NextGaussianVector(length);
+            return ThreadSafeRandom.NextGaussianVector(length);
         }
     }
 }

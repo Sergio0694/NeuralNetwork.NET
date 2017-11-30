@@ -8,7 +8,7 @@ using NeuralNetworkNET.SupervisedLearning.Misc;
 namespace NeuralNetworkNET.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="NeuralNetworkNET.SupervisedLearning.NetworkTrainer"/> class and dependencies
+    /// Test class for the <see cref="SupervisedLearning.NetworkTrainer"/> class and dependencies
     /// </summary>
     [TestClass]
     [TestCategory(nameof(TrainingTest))]
@@ -17,10 +17,9 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void BatchDivisionTest1()
         {
-            Random r = new Random();
             float[,]
-                x = r.NextXavierMatrix(60000, 784),
-                y = r.NextXavierMatrix(60000, 10);
+                x = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 784),
+                y = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
             IEnumerable<TrainingBatch> testList = batches.NextEpoch();
             // TODO: check the shuffle is coherent
@@ -29,10 +28,9 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void BatchDivisionTest2()
         {
-            Random r = new Random();
             float[,]
-                x = r.NextXavierMatrix(20000, 784),
-                y = r.NextXavierMatrix(20000, 10);
+                x = ThreadSafeRandom.NextGlorotNormalMatrix(20000, 784),
+                y = ThreadSafeRandom.NextGlorotNormalMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 333);
             IEnumerable<TrainingBatch> testList = batches.NextEpoch();
             // TODO: check the shuffle is coherent
@@ -41,10 +39,9 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void BatchInitializationTest()
         {
-            Random r = new Random();
             float[,]
-                x = r.NextGaussianMatrix(250, 600),
-                y = r.NextGaussianMatrix(250, 10);
+                x = ThreadSafeRandom.NextUniformMatrix(250, 600, 1000),
+                y = ThreadSafeRandom.NextUniformMatrix(250, 10, 500);
             (float[], float[])[] samples = Enumerable.Range(0, 250).Select(i =>
             {
                 float[]
