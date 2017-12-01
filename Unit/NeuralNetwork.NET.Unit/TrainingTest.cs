@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
@@ -15,25 +15,34 @@ namespace NeuralNetworkNET.Unit
     public class TrainingTest
     {
         [TestMethod]
+        [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void BatchDivisionTest1()
         {
             float[,]
                 x = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 784),
                 y = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
-            IEnumerable<TrainingBatch> testList = batches.NextEpoch();
-            // TODO: check the shuffle is coherent
-        }
-
-        [TestMethod]
-        public void BatchDivisionTest2()
-        {
-            float[,]
-                x = ThreadSafeRandom.NextGlorotNormalMatrix(20000, 784),
-                y = ThreadSafeRandom.NextGlorotNormalMatrix(20000, 10);
-            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 333);
-            IEnumerable<TrainingBatch> testList = batches.NextEpoch();
-            // TODO: check the shuffle is coherent
+            batches.NextEpoch();
+            int xor = 0;
+            for (int i = 0; i < 60000; i++)
+            {
+                float sum = 0;
+                for (int j = 0; j < 784; j++) sum += x[i, j];
+                for (int j = 0; j < 10; j++) sum += y[i, j];
+                xor ^= (int)sum;
+            }
+            int xorBatch = 0;
+            for (int i = 0; i < batches.Count; i++)
+            {
+                for (int z = 0; z < batches.Batches[i].X.GetLength(0); z++)
+                {
+                    float sum = 0;
+                    for (int j = 0; j < 784; j++) sum += batches.Batches[i].X[z, j];
+                    for (int j = 0; j < 10; j++) sum += batches.Batches[i].Y[z, j];
+                    xorBatch ^= (int)sum;
+                }
+            }
+            Assert.IsTrue(xor == xorBatch);
         }
 
         [TestMethod]
