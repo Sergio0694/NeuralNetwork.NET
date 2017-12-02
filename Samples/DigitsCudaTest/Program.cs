@@ -16,16 +16,17 @@ namespace DigitsCudaTest
     {
         static async Task Main()
         {
-            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Cpu;
+            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkTrainer.NewNetwork(
                 NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            await NetworkTrainer.TrainNetworkAsync(network, (training.X, training.Y), 60, 100, null,
+            TrainingSessionResult result = await NetworkTrainer.TrainNetworkAsync(network, (training.X, training.Y), 60, 10, null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
                 })), 0.5f, 0.5f);
+            Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
             Console.ReadKey();
         }
 
