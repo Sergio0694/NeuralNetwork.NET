@@ -90,6 +90,36 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
+        public static BatchesCollection FromDataset([NotNull] IEnumerable<(float[] X, float[] Y)> dataset, int size)
+        {
+            // Local parameters
+            if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
+            TrainingBatch[] batches = dataset.AsParallel().Partition(size).Select(partition =>
+            {
+                int
+                    wx = partition[0].X.Length,
+                    wy = partition[0].Y.Length;
+                float[,]
+                    xBatch = new float[partition.Count, wx],
+                    yBatch = new float[partition.Count, wy];
+                for (int i = 0; i < partition.Count; i++)
+                {
+                    Buffer.BlockCopy(partition[i].X, 0, xBatch, sizeof(float) * i * wx, sizeof(float) * wx);
+                    Buffer.BlockCopy(partition[i].Y, 0, yBatch, sizeof(float) * i * wy, sizeof(float) * wy);
+                }
+                return new TrainingBatch(xBatch, yBatch);
+            }).ToArray();
+            return new BatchesCollection(batches);
+        }
+
+        /// <summary>
+        /// Creates a series of batches from the input dataset and expected results
+        /// </summary>
+        /// <param name="dataset">The source dataset to create the batches</param>
+        /// <param name="size">The desired batch size</param>
+        /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
+        [NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
         public static BatchesCollection FromDataset([NotNull] IReadOnlyList<(float[] X, float[] Y)> dataset, int size)
         {
             // Local parameters

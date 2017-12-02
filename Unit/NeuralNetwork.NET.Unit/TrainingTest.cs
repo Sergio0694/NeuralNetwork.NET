@@ -18,6 +18,7 @@ namespace NeuralNetworkNET.Unit
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void BatchDivisionTest1()
         {
+            // Sequential
             float[,]
                 x = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 784),
                 y = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 10);
@@ -39,6 +40,35 @@ namespace NeuralNetworkNET.Unit
                     float sum = 0;
                     for (int j = 0; j < 784; j++) sum += batches.Batches[i].X[z, j];
                     for (int j = 0; j < 10; j++) sum += batches.Batches[i].Y[z, j];
+                    xorBatch ^= (int)sum;
+                }
+            }
+            Assert.IsTrue(xor == xorBatch);
+        }
+
+        [TestMethod]
+        public void BatchDivisionTest2()
+        {
+            float[][]
+                x = Enumerable.Range(0, 60000).Select(_ => ThreadSafeRandom.NextGaussianVector(784)).ToArray(),
+                y = Enumerable.Range(0, 60000).Select(_ => ThreadSafeRandom.NextGaussianVector(10)).ToArray();
+            BatchesCollection dataset = BatchesCollection.FromDataset(Enumerable.Range(0, 60000).Select(i => (x[i], y[i])), 1000);
+            int xor = 0;
+            for (int i = 0; i < 60000; i++)
+            {
+                float sum = 0;
+                for (int j = 0; j < 784; j++) sum += x[i][j];
+                for (int j = 0; j < 10; j++) sum += y[i][j];
+                xor ^= (int)sum;
+            }
+            int xorBatch = 0;
+            for (int i = 0; i < dataset.Count; i++)
+            {
+                for (int z = 0; z < dataset.Batches[i].X.GetLength(0); z++)
+                {
+                    float sum = 0;
+                    for (int j = 0; j < 784; j++) sum += dataset.Batches[i].X[z, j];
+                    for (int j = 0; j < 10; j++) sum += dataset.Batches[i].Y[z, j];
                     xorBatch ^= (int)sum;
                 }
             }

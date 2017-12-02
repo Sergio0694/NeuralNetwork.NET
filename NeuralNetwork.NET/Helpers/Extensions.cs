@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
@@ -106,5 +107,29 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="timeSpan">The instance to round</param>
         [Pure]
         public static TimeSpan RoundToSeconds(this TimeSpan timeSpan) => TimeSpan.FromSeconds((int)Math.Floor(timeSpan.TotalSeconds));
+
+        /// <summary>
+        /// Partitions the input sequence into a series of batches of the given size
+        /// </summary>
+        /// <typeparam name="T">The type of the sequence items</typeparam>
+        /// <param name="values">The sequence of items to batch</param>
+        /// <param name="size">The desired batch size</param>
+        [PublicAPI]
+        [Pure, NotNull, ItemNotNull]
+        public static IEnumerable<IReadOnlyList<T>> Partition<T>([NotNull] this IEnumerable<T> values, int size)
+        {
+            // Private batch enumerator
+            IEnumerable<T> GetChunk(IEnumerator<T> enumerator)
+            {
+                int n = size;
+                do yield return enumerator.Current;
+                while (--n > 0 && enumerator.MoveNext());
+            }
+
+            // Enumerate the sequence and partition the batches
+            using (IEnumerator<T> enumerator = values.GetEnumerator())
+                while (enumerator.MoveNext())
+                    yield return GetChunk(enumerator).ToArray();
+        }
     }
 }
