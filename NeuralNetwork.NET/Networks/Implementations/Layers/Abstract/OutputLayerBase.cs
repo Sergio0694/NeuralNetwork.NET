@@ -3,6 +3,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
@@ -50,7 +51,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="z">The activity on the output layer</param>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public float[,] Backpropagate([NotNull] float[,] yHat, [NotNull] float[,] y, [NotNull] float[,] z)
+        public float[,] Backpropagate(in FloatSpan2D yHat, in FloatSpan2D y, in FloatSpan2D z)
         {
             CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
             return yHat;

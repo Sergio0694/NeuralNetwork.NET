@@ -81,6 +81,17 @@ namespace NeuralNetworkNET.Structs
         }
 
         /// <summary>
+        /// Creates a new instance by copying the contents of the input matrix
+        /// </summary>
+        /// <param name="m">The input matrix to copy</param>
+        /// <param name="span">The resulting instance</param>
+        public static unsafe void From([NotNull] float[,] m, out FloatSpan2D span)
+        {
+            fixed (float* pm = m)
+                From(pm, m.GetLength(0), m.GetLength(1), out span);
+        }
+
+        /// <summary>
         /// Creates a new instance by copying the contents of the input vector and reshaping it to the desired size
         /// </summary>
         /// <param name="v">The input vector to copy</param>
@@ -94,18 +105,18 @@ namespace NeuralNetworkNET.Structs
                 From(pv, height, width, out span);
         }
 
-        /// <summary>
-        /// Creates a new instance by copying the contents of the input matrix
-        /// </summary>
-        /// <param name="m">The input matrix to copy</param>
-        /// <param name="span">The resulting instance</param>
-        public static unsafe void From([NotNull] float[,] m, out FloatSpan2D span)
-        {
-            fixed (float* pm = m)
-                From(pm, m.GetLength(0), m.GetLength(1), out span);
-        }
-
         #endregion
+
+        /// <summary>
+        /// Overwrites the contents of the current matrix with the input matrix
+        /// </summary>
+        /// <param name="source">The input matrix to copy</param>
+        public unsafe void Overwrite(in FloatSpan2D source)
+        {
+            if (source.Height != Height || source.Width != Width) throw new ArgumentException("The input matrix doesn't have the same size as the target");
+            int bytes = sizeof(float) * Size;
+            Buffer.MemoryCopy(source, this, bytes, bytes);
+        }
 
         /// <summary>
         /// Copies the contents of the unmanaged array to a managed <see cref="Array"/>

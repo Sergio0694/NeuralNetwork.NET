@@ -5,7 +5,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
-using NeuralNetworkNET.Networks.Implementations.Misc;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -29,29 +29,24 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             : base(weights, biases, activation) { }
 
         /// <inheritdoc/>
-        public override (float[,] Z, float[,] A) Forward(float[,] x)
+        public override void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
         {
-            float[,]
-                z = MatrixServiceProvider.MultiplyWithSum(x, Weights, Biases),
-                a = MatrixServiceProvider.Activation(z, ActivationFunctions.Activation);
-            return (z, a);
+            MatrixServiceProvider.MultiplyWithSum(x, Weights, Biases, out z);
+            MatrixServiceProvider.Activation(z, ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
-        public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
+        public override void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
         {
-            float[,] wt = Weights.Transpose();
+            Weights.Transpose(out FloatSpan2D wt);
             MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
-            return z;
         }
 
         /// <inheritdoc/>
-        public override LayerGradient ComputeGradient(float[,] a, float[,] delta)
+        public override void ComputeGradient(in FloatSpan2D a, in FloatSpan2D delta, out FloatSpan2D dJdw, out FloatSpan dJdb)
         {
-            // Compute dJdw(l) and dJdb(l)
-            float[,] dJdw = MatrixServiceProvider.TransposeAndMultiply(a, delta); // dJdWi, previous activation transposed * current delta
-            float[] dJdb = delta.CompressVertically();
-            return new LayerGradient(dJdw, dJdb);
+            MatrixServiceProvider.TransposeAndMultiply(a, delta, out dJdw);
+            dJdw.CompressVertically(out dJdb);
         }
 
         /// <inheritdoc/>

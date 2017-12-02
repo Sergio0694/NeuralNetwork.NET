@@ -11,7 +11,6 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
-using NeuralNetworkNET.Networks.Implementations.Misc;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;

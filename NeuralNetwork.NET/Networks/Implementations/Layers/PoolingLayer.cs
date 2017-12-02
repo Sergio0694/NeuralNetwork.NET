@@ -3,6 +3,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
@@ -41,20 +42,18 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override (float[,] Z, float[,] A) Forward(float[,] x)
+        public override void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
         {
-            float[,]
-                z = x.Pool2x2(InputVolume.Depth),
-                a = ActivationFunctionType == ActivationFunctionType.Identity
-                    ? z.BlockCopy()
-                    : z.Activation(ActivationFunctions.Activation);
-            return (z, a);
+            x.Pool2x2(InputVolume.Depth, out z);
+            z.Activation(ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
-        public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction _)
+        public override void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
         {
-            return z.UpscalePool2x2(delta_1, InputVolume.Depth);
+            z.UpscalePool2x2(delta_1, InputVolume.Depth, out FloatSpan2D upscaled);
+            z.Overwrite(upscaled);
+            upscaled.Free();
         }
 
         /// <inheritdoc/>
