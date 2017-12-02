@@ -3,328 +3,15 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Helpers
 {
-    public static class ConvolutionExtensions
+    /// <summary>
+    /// A static class with a collection of convolution extension methods
+    /// </summary>
+    internal static class ConvolutionExtensions
     {
-        /// <summary>
-        /// Pools the input matrix with a window of 2 and a stride of 2
-        /// </summary>
-        /// <param name="source">The input matrix to pool</param>
-        /// <param name="depth">The number of images for each matrix row</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Pool2x2([NotNull] this float[,] source, int depth)
-        {
-            // Prepare the result matrix
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
-            int h = source.GetLength(0), w = source.GetLength(1);
-            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
-            int
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
-            int
-                poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
-                poolSize = poolAxis * poolAxis,
-                poolFinalWidth = depth * poolSize,
-                edge = imgAxis - 1;
-            float[,] result = new float[h, poolFinalWidth];
-
-            // Pooling kernel
-            unsafe void Kernel(int sample)
-            {
-                int
-                    sourceBaseOffset = sample * w,
-                    resultBaseOffset = sample * poolFinalWidth;
-                fixed (float* psource = source, presult = result)
-                {
-                    for (int z = 0; z < depth; z++)
-                    {
-                        int
-                            sourceZOffset = sourceBaseOffset + z * imgSize,
-                            resultZOffset = resultBaseOffset + z * poolSize,
-                            x = 0;
-                        for (int i = 0; i < imgAxis; i += 2)
-                        {
-                            int
-                                sourceIOffset = sourceZOffset + i * imgAxis,
-                                resultXOffset = resultZOffset + x * poolAxis,
-                                y = 0;
-                            if (i == edge)
-                            {
-                                // Last row
-                                for (int j = 0; j < imgAxis; j += 2)
-                                {
-                                    float max;
-                                    if (j == w - 1) max = psource[sourceIOffset + j]; // Last column
-                                    else
-                                    {
-                                        float
-                                            left = psource[sourceIOffset + j],
-                                            right = psource[sourceIOffset + j + 1];
-                                        max = left > right ? left : right;
-                                    }
-                                    presult[resultXOffset + y++] = max;
-                                }
-                            }
-                            else
-                            {
-                                int sourceI_1Offset = sourceZOffset + (i + 1) * imgAxis;
-                                for (int j = 0; j < imgAxis; j += 2)
-                                {
-                                    float max;
-                                    if (j == edge)
-                                    {
-                                        // Last column
-                                        float
-                                            up = psource[sourceIOffset + j],
-                                            down = psource[sourceI_1Offset + j];
-                                        max = up > down ? up : down;
-                                    }
-                                    else
-                                    {
-                                        float
-                                            upLeft = psource[sourceIOffset + j],
-                                            upRight = psource[sourceIOffset + j + 1],
-                                            downLeft = psource[sourceI_1Offset + j],
-                                            downRight = psource[sourceI_1Offset + j + 1],
-                                            maxUp = upLeft > upRight ? upLeft : upRight,
-                                            maxDown = downLeft > downRight ? downLeft : downRight;
-                                        max = maxUp > maxDown ? maxUp : maxDown;
-                                    }
-                                    presult[resultXOffset + y++] = max;
-                                }
-                            }
-                            x++;
-                        }
-                    }
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-            return result;
-        }
-
-        /// <summary>
-        /// Pools the input matrix with a window of 2 and a stride of 2
-        /// </summary>
-        /// <param name="source">The activation matrix</param>
-        /// <param name="pooled">The matrix to upscale according to the source values</param>
-        /// <param name="depth">The number of images for each matrix row</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] UpscalePool2x2([NotNull] this float[,] source, [NotNull] float[,] pooled, int depth)
-        {
-            // Prepare the result matrix
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
-            int h = source.GetLength(0), w = source.GetLength(1);
-            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
-            int
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
-            int
-                poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
-                poolSize = poolAxis * poolAxis,
-                poolFinalWidth = depth * poolSize,
-                edge = imgAxis - 1;
-            int
-                ph = pooled.GetLength(0),
-                pw = pooled.GetLength(1);
-            if (ph != h || pw != poolFinalWidth) throw new ArgumentException("Invalid pooled matrix", nameof(pooled));
-            float[,] result = new float[h, w];
-
-            // Pooling kernel
-            unsafe void Kernel(int sample)
-            {
-                int
-                    sourceBaseOffset = sample * w,
-                    resultBaseOffset = sample * poolFinalWidth;
-                fixed (float* psource = source, ppooled = pooled, presult = result)
-                {
-                    for (int z = 0; z < depth; z++)
-                    {
-                        int
-                            sourceZOffset = sourceBaseOffset + z * imgSize,
-                            resultZOffset = resultBaseOffset + z * poolSize,
-                            x = 0;
-                        for (int i = 0; i < imgAxis; i += 2)
-                        {
-                            int
-                                sourceIOffset = sourceZOffset + i * imgAxis,
-                                resultXOffset = resultZOffset + x * poolAxis,
-                                y = 0;
-                            if (i == edge)
-                            {
-                                // Last row
-                                for (int j = 0; j < imgAxis; j += 2)
-                                {
-                                    if (j == w - 1)
-                                    {
-                                        presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                    }
-                                    else
-                                    {
-                                        float
-                                            left = psource[sourceIOffset + j],
-                                            right = psource[sourceIOffset + j + 1];
-                                        if (left > right) presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                        else presult[sourceIOffset + j + 1] = ppooled[resultXOffset + y++];
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                int sourceI_1Offset = sourceZOffset + (i + 1) * imgAxis;
-                                for (int j = 0; j < imgAxis; j += 2)
-                                {
-                                    if (j == edge)
-                                    {
-                                        // Last column
-                                        float
-                                            up = psource[sourceIOffset + j],
-                                            down = psource[sourceI_1Offset + j];
-                                        if (up > down) presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                        else presult[sourceI_1Offset + j] = ppooled[resultXOffset + y++];
-                                    }
-                                    else
-                                    {
-                                        int offset = sourceIOffset + j;
-                                        float
-                                            max = psource[offset],
-                                            next = psource[sourceIOffset + j + 1];
-                                        if (next > max)
-                                        {
-                                            max = next;
-                                            offset = sourceIOffset + j + 1;
-                                        }
-                                        next = psource[sourceI_1Offset + j];
-                                        if (next > max)
-                                        {
-                                            max = next;
-                                            offset = sourceI_1Offset + j;
-                                        }
-                                        next = psource[sourceI_1Offset + j + 1];
-                                        if (next > max)
-                                        {
-                                            offset = sourceI_1Offset + j + 1;
-                                        }
-                                        presult[offset] = ppooled[resultXOffset + y++];
-                                    }
-                                }
-                            }
-                            x++;
-                        }
-                    }
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-            return result;
-        }
-
-        /// <summary>
-        /// Compresses a convolution matrix into a row vector by summing each 2D slice in each row
-        /// </summary>
-        /// <param name="source">The matrix to compress</param>
-        /// <param name="depth">The number of images per row</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[] CompressVertically([NotNull] this float[,] source, int depth)
-        {
-            // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
-            int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
-            float[,] result = new float[h, depth];
-
-            // Kernel to sum each slice
-            unsafe void Kernel(int index)
-            {
-                // Calculate the current indexes
-                int
-                    iSample = index / depth,    // Sample index
-                    z = index % depth;          // 2D slice index
-
-                // Reverse the input matrix sequentially
-                int baseOffset = iSample * w + z * imgSize;
-                fixed (float* presult = result, psource = source)
-                {
-                    float sum = 0;
-                    for (int i = 0; i < imgSize; i++)
-                    {
-                        sum += psource[baseOffset + i];
-                    }
-                    presult[iSample * depth + z] = sum;
-                }
-            }
-            Parallel.For(0, h * depth, Kernel).AssertCompleted();
-            return result.CompressVertically();
-        }
-
-        /// <summary>
-        /// Rotates the input volume by 180 degrees
-        /// </summary>
-        /// <param name="source">The input matrix to rotate</param>
-        /// <param name="depth">The number of images per row</param>
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Rotate180([NotNull] this float[,] source, int depth)
-        {
-            // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
-            int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
-            int
-                threshold = imgSize / 2,
-                edge = imgSize - 1;
-            bool odd = imgSize % 2 == 1;
-            float[,] result = new float[h, w];
-
-            // Inversion kernel
-            unsafe void Kernel(int index)
-            {
-                // Calculate the current indexes
-                int
-                    iSample = index / depth,    // Sample index
-                    z = index % depth;          // 2D slice index
-
-                // Reverse the input matrix sequentially
-                int baseOffset = iSample * w + z * imgSize;
-                fixed (float* presult = result, psource = source)
-                {
-                    for (int i = 0; i < threshold; i++)
-                    {
-                        int
-                            left = baseOffset + i,
-                            right = baseOffset + edge - i;
-                        presult[left] = psource[right];
-                        presult[right] = psource[left];
-                    }
-                    if (odd)
-                    {
-                        int center = baseOffset + threshold;
-                        presult[center] = psource[center];
-                    }
-                }
-            }
-            Parallel.For(0, h * depth, Kernel).AssertCompleted();
-            return result;
-        }
-
         /// <summary>
         /// Performs a forward convolution operation on the source matrix, using the given kernels
         /// </summary>
@@ -333,19 +20,16 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
         /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <param name="biases">The bias vector to sum to the resulting images</param>
-        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <param name="result">The resulting convolution volume</param>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteForward(
-            [NotNull] this float[,] source, VolumeInformation sourceInfo,
-            [NotNull] float[,] kernels, VolumeInformation kernelsInfo,
-            [NotNull] float[] biases)
+        public static unsafe void ConvoluteForward(
+            in this FloatSpan2D source, in VolumeInformation sourceInfo,
+            [NotNull] float[,] kernels, in VolumeInformation kernelsInfo,
+            [NotNull] float[] biases,
+            out FloatSpan2D result)
         {
             // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
                 nKernels = kernels.GetLength(0),
@@ -355,8 +39,8 @@ namespace NeuralNetworkNET.Helpers
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
+                h = source.Height,
+                w = source.Width,
                 sourceDepth = sourceInfo.Depth,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
@@ -380,8 +64,9 @@ namespace NeuralNetworkNET.Helpers
                 finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
             // Process the valid convolution
-            float[,] result = new float[h, finalWidth];
-            unsafe void ForwardKernel(int index)
+            FloatSpan2D.New(h, finalWidth, out result);
+            float* psource = source, presult = result;
+            void ForwardKernel(int index)
             {
                 // Calculate the current indexes
                 int
@@ -393,7 +78,7 @@ namespace NeuralNetworkNET.Helpers
                     targetBaseOffset = iSample * finalWidth + k * convolutionOutputSize,
                     sourceBaseOffset = iSample * w,
                     kernelBaseOffset = k * kw;
-                fixed (float* psource = source, pkernels = kernels, pbiases = biases, presult = result)
+                fixed (float* pkernels = kernels, pbiases = biases)
                 {
                     for (int i = 0; i < hResult; i++)
                     {
@@ -426,7 +111,6 @@ namespace NeuralNetworkNET.Helpers
                 }
             }
             Parallel.For(0, h * nKernels, ForwardKernel).AssertCompleted();
-            return result;
         }
 
         /// <summary>
@@ -436,28 +120,26 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
         /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
-        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <param name="result">The resulting convolution volume</param>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteBackwards([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
+        public static unsafe void ConvoluteBackwards(
+            in this FloatSpan2D source, in VolumeInformation sourceInfo,
+            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
+            out FloatSpan2D result)
         {
             // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
-                nKernels = kernels.GetLength(0),
-                kw = kernels.GetLength(1),
+                nKernels = kernels.Height,
+                kw = kernels.Width,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width,
                 kDepth = kernelsInfo.Depth;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
+                h = source.Height,
+                w = source.Width,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -478,8 +160,9 @@ namespace NeuralNetworkNET.Helpers
                 finalWidth = convolutionOutputSize * kDepth;        // Final size of each sample row
 
             // Process the full convolution
-            float[,] result = new float[h, finalWidth];
-            unsafe void BackwardsKernel(int index)
+            FloatSpan2D.New(h, finalWidth, out result);
+            float* psource = source, pkernels = kernels, presult = result;
+            void BackwardsKernel(int index)
             {
                 // Calculate the current indexes
                 int
@@ -491,43 +174,39 @@ namespace NeuralNetworkNET.Helpers
                     targetBaseOffset = iSample * finalWidth + iKernelDepth * convolutionOutputSize,
                     sourceBaseOffset = iSample * w,
                     kernelBaseOffset = iKernelDepth * kSize;
-                fixed (float* psource = source, pkernels = kernels, presult = result)
+                for (int i = 0; i < hResult; ++i)
                 {
-                    for (int i = 0; i < hResult; ++i)
+                    int
+                        lowX = 0.Max(i - kHeight + 1),
+                        highX = (imgHeight - 1).Min(i),
+                        targetRowOffset = targetBaseOffset + i * hResult;
+                    for (int j = 0; j < hResult; ++j)
                     {
                         int
-                            lowX = 0.Max(i - kHeight + 1),
-                            highX = (imgHeight - 1).Min(i),
-                            targetRowOffset = targetBaseOffset + i * hResult;
-                        for (int j = 0; j < hResult; ++j)
+                            lowY = 0.Max(j - kWidth + 1),
+                            highY = (imgWidth - 1).Min(j);
+                        float temp = 0.0f;
+                        for (int z = 0; z < nKernels; z++)
                         {
                             int
-                                lowY = 0.Max(j - kWidth + 1),
-                                highY = (imgWidth - 1).Min(j);
-                            float temp = 0.0f;
-                            for (int z = 0; z < nKernels; z++)
+                                sourceDepthOffset = sourceBaseOffset + z * imgSize,
+                                kernelDepthOffset = kernelBaseOffset + z * kw;
+                            for (int x = lowX; x <= highX; ++x)
                             {
                                 int
-                                    sourceDepthOffset = sourceBaseOffset + z * imgSize,
-                                    kernelDepthOffset = kernelBaseOffset + z * kw;
-                                for (int x = lowX; x <= highX; ++x)
+                                    sourceRowOffset = sourceDepthOffset + x * imgWidth,
+                                    kernelRowOffset = kernelDepthOffset + (i - x) * kWidth + j;
+                                for (int y = lowY; y <= highY; ++y)
                                 {
-                                    int
-                                        sourceRowOffset = sourceDepthOffset + x * imgWidth,
-                                        kernelRowOffset = kernelDepthOffset + (i - x) * kWidth + j;
-                                    for (int y = lowY; y <= highY; ++y)
-                                    {
-                                        temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
-                                    }
+                                    temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
                                 }
                             }
-                            presult[targetRowOffset + j] = temp;
                         }
+                        presult[targetRowOffset + j] = temp;
                     }
                 }
             }
             Parallel.For(0, h * kDepth, BackwardsKernel).AssertCompleted();
-            return result;
         }
 
         /// <summary>
@@ -537,28 +216,26 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
         /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
-        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <param name="result">The resulting convolution volume</param>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteGradient([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
+        public static unsafe void ConvoluteGradient(
+            in this FloatSpan2D source, in VolumeInformation sourceInfo,
+            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
+            out FloatSpan2D result)
         {
             // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
-                nKernels = kernels.GetLength(0),
-                kw = kernels.GetLength(1),
+                nKernels = kernels.Height,
+                kw = kernels.Width,
                 kDepth = kernelsInfo.Depth,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
+                h = source.Height,
+                w = source.Width,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -581,7 +258,8 @@ namespace NeuralNetworkNET.Helpers
                 iterationsPerSample = sourceInfo.Depth * kDepth;            // Each sample has its own list of 3D gradients, one for each kernel
 
             // Process the valid convolution
-            float[,] result = new float[h, finalWidth];
+            FloatSpan2D.New(h, finalWidth, out result);
+            float* psource = source, pkernels = kernels, presult = result;
             unsafe void GradientKernel(int index)
             {
                 // Calculate the current indexes
@@ -596,34 +274,180 @@ namespace NeuralNetworkNET.Helpers
                     sourceBaseOffset = iSample * w + iSampleDepth * imgSize,
                     kernelBaseOffset = iSample * kw + iKernelDepth * kSize,
                     resultBaseOffset = iSample * finalWidth + iKernelDepth * gradientSize + iSampleDepth * convolutionOutputSize;
-                fixed (float* psource = source, pkernels = kernels, presult = result)
+                for (int i = 0; i < hResult; i++)
                 {
-                    for (int i = 0; i < hResult; i++)
+                    int
+                        targetRowOffset = resultBaseOffset + i * hResult,
+                        xEnd = i + kHeight - 1;
+                    for (int j = 0; j < hResult; j++)
                     {
-                        int
-                            targetRowOffset = resultBaseOffset + i * hResult,
-                            xEnd = i + kHeight - 1;
-                        for (int j = 0; j < hResult; j++)
+                        int highY = j + kWidth - 1;
+                        float temp = 0.0f;
+                        for (int x = i; x <= xEnd; x++)
                         {
-                            int highY = j + kWidth - 1;
-                            float temp = 0.0f;
-                            for (int x = i; x <= xEnd; x++)
+                            int
+                                sourceRowOffset = sourceBaseOffset + x * imgWidth,
+                                kernelRowOffset = kernelBaseOffset + (xEnd - x) * kWidth + highY;
+                            for (int y = j; y <= highY; y++)
                             {
-                                int
-                                    sourceRowOffset = sourceBaseOffset + x * imgWidth,
-                                    kernelRowOffset = kernelBaseOffset + (xEnd - x) * kWidth + highY;
-                                for (int y = j; y <= highY; y++)
-                                {
-                                    temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
-                                }
+                                temp += psource[sourceRowOffset + y] * pkernels[kernelRowOffset - y];
                             }
-                            presult[targetRowOffset + j] = temp;
                         }
+                        presult[targetRowOffset + j] = temp;
                     }
                 }
             }
             Parallel.For(0, h * iterationsPerSample, GradientKernel).AssertCompleted();
-            return result;
         }
+
+        #region Tools
+
+        /// <summary>
+        /// Compresses a convolution matrix into a row vector by summing each 2D slice in each row
+        /// </summary>
+        /// <param name="source">The matrix to compress</param>
+        /// <param name="depth">The number of images per row</param>
+        /// <param name="result">The resulting vector</param>
+        [PublicAPI]
+        public static unsafe void CompressVertically(in this FloatSpan2D source, int depth, out FloatSpan result)
+        {
+            // Checks and local parameters
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
+            int
+                h = source.Height,
+                w = source.Width,
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            FloatSpan2D.New(h, depth, out FloatSpan2D temp);
+
+            // Kernel to sum each slice
+            float* ptemp = temp, psource = source;
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    iSample = index / depth,    // Sample index
+                    z = index % depth;          // 2D slice index
+
+                // Reverse the input matrix sequentially
+                int baseOffset = iSample * w + z * imgSize;
+                float sum = 0;
+                for (int i = 0; i < imgSize; i++)
+                {
+                    sum += psource[baseOffset + i];
+                }
+                ptemp[iSample * depth + z] = sum;
+            }
+            Parallel.For(0, h * depth, Kernel).AssertCompleted();
+            temp.CompressVertically(out result);
+            temp.Free();
+        }
+
+        /// <summary>
+        /// Rotates the input volume by 180 degrees
+        /// </summary>
+        /// <param name="source">The input matrix to rotate</param>
+        /// <param name="depth">The number of images per row</param>
+        /// <param name="result">The rotated input matrix</param>
+        public static unsafe void Rotate180(in this FloatSpan2D source, int depth, out FloatSpan2D result)
+        {
+            // Checks and local parameters
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
+            int
+                h = source.Height,
+                w = source.Width,
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            int
+                threshold = imgSize / 2,
+                edge = imgSize - 1;
+            bool odd = imgSize % 2 == 1;
+            FloatSpan2D.New(h, w, out result);
+
+            // Inversion kernel
+            float* presult = result, psource = source;
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    iSample = index / depth,    // Sample index
+                    z = index % depth;          // 2D slice index
+
+                // Reverse the input matrix sequentially
+                int baseOffset = iSample * w + z * imgSize;
+                for (int i = 0; i < threshold; i++)
+                {
+                    int
+                        left = baseOffset + i,
+                        right = baseOffset + edge - i;
+                    presult[left] = psource[right];
+                    presult[right] = psource[left];
+                }
+                if (odd)
+                {
+                    int center = baseOffset + threshold;
+                    presult[center] = psource[center];
+                }
+            }
+            Parallel.For(0, h * depth, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Rotates the input volume by 180 degrees
+        /// </summary>
+        /// <param name="source">The input matrix to rotate</param>
+        /// <param name="depth">The number of images per row</param>
+        /// <param name="result">The rotated input matrix</param>
+        public static unsafe void Rotate180([NotNull] this float[,] source, int depth, out FloatSpan2D result)
+        {
+            // Checks and local parameters
+            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
+            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
+            int
+                h = source.GetLength(0),
+                w = source.GetLength(1),
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            int
+                threshold = imgSize / 2,
+                edge = imgSize - 1;
+            bool odd = imgSize % 2 == 1;
+            FloatSpan2D.New(h, w, out result);
+
+            // Inversion kernel
+            float* presult = result;
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    iSample = index / depth,    // Sample index
+                    z = index % depth;          // 2D slice index
+
+                // Reverse the input matrix sequentially
+                int baseOffset = iSample * w + z * imgSize;
+                fixed (float* psource = source)
+                {
+                    for (int i = 0; i < threshold; i++)
+                    {
+                        int
+                            left = baseOffset + i,
+                            right = baseOffset + edge - i;
+                        presult[left] = psource[right];
+                        presult[right] = psource[left];
+                    }
+                    if (odd)
+                    {
+                        int center = baseOffset + threshold;
+                        presult[center] = psource[center];
+                    }
+                }
+            }
+            Parallel.For(0, h * depth, Kernel).AssertCompleted();
+        }
+
+        #endregion
     }
 }

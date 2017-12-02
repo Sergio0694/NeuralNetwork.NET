@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers.Misc;
 using NeuralNetworkNET.Networks.Activations.Delegates;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -18,6 +19,34 @@ namespace NeuralNetworkNET.Helpers
         #region Sum
 
         /// <summary>
+        /// Subtracts two matrices, element wise
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void Subtract(in this FloatSpan2D m1, in FloatSpan2D m2)
+        {
+            int
+                h = m1.Height,
+                w = m1.Width;
+            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+
+            // Subtract in parallel
+            float* pm1 = m1, pm2 = m2;
+            void Kernel(int i)
+            {
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                {
+                    int position = offset + j;
+                    pm1[position] -= pm2[position];
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
         /// Sums a row vector to all the rows in the input matrix
         /// </summary>
         /// <param name="m">The input matrix</param>
@@ -27,7 +56,6 @@ namespace NeuralNetworkNET.Helpers
         [CollectionAccess(CollectionAccessType.Read)]
         public static float[,] Sum([NotNull] this float[,] m, [NotNull] float[] v)
         {
-            // Execute the transposition in parallel
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
@@ -129,7 +157,6 @@ namespace NeuralNetworkNET.Helpers
         [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
         public static void InPlaceSum([NotNull] this float[,] m, [NotNull] float[] v)
         {
-            // Execute the transposition in parallel
             int
                 h = m.GetLength(0),
                 w = m.GetLength(1);
@@ -157,7 +184,6 @@ namespace NeuralNetworkNET.Helpers
         [CollectionAccess(CollectionAccessType.Read)]
         public static void Subtract([NotNull] this float[,] m1, [NotNull] float[,] m2)
         {
-            // Execute the transposition in parallel
             int
                 h = m1.GetLength(0),
                 w = m1.GetLength(1);
@@ -183,6 +209,163 @@ namespace NeuralNetworkNET.Helpers
         #endregion
 
         #region Multiplication
+
+        /// <summary>
+        /// Performs the Hadamard product between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        /// <param name="result">The resulting matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void HadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
+        {
+            int
+                h = m1.Height,
+                w = m1.Width;
+            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+            FloatSpan2D.New(h, w, out result);
+            float* pm = result, pm1 = m1, pm2 = m2;
+
+            // Loop in parallel
+            void Kernel(int i)
+            {
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                {
+                    int position = offset + j;
+                    pm[position] = pm1[position] * pm2[position];
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the in place Hadamard product between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static unsafe void InPlaceHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2)
+        {
+            // Check
+            int
+                h = m1.Height,
+                w = m1.Width;
+            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+            float* pm1 = m1, pm2 = m2;
+
+            // Loop in parallel
+            void Kernel(int i)
+            {
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                {
+                    int position = offset + j;
+                    pm1[position] *= pm2[position];
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the in place Hadamard product between the activation of the first matrix and the second matrix
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        /// <param name="activation">The activation function to use</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static unsafe void InPlaceActivationAndHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction activation)
+        {
+            // Check
+            int
+                h = m1.Height,
+                w = m1.Width;
+            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+            float* pm1 = m1, pm2 = m2;
+
+            // Loop in parallel
+            void Kernel(int i)
+            {
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                {
+                    int position = offset + j;
+                    pm1[position] = activation(pm1[position]) * pm2[position];
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the in place Hadamard product between the first matrix and the activation of the second matrix
+        /// </summary>
+        /// <param name="m1">The first matrix</param>
+        /// <param name="m2">The second matrix</param>
+        /// <param name="activation">The activation function to use</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
+        public static unsafe void InPlaceHadamardProductWithActivation(in this FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction activation)
+        {
+            // Check
+            int
+                h = m1.Height,
+                w = m1.Width;
+            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+            float* pm1 = m1, pm2 = m2;
+
+            // Loop in parallel
+            void Kernel(int i)
+            {
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                {
+                    int position = offset + j;
+                    pm1[position] *= activation(pm2[position]);
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the multiplication between two matrices
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="result">The resulting matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void Multiply(in this FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
+        {
+            // Initialize the parameters and the result matrix
+            if (m1.Width != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            int
+                h = m1.Height,
+                w = m2.Width,
+                l = m1.Width;
+            FloatSpan2D.New(h, w, out result);
+            float* pm = result, pm1 = m1, pm2 = m2;
+
+            // Execute the multiplication in parallel
+            void Kernel(int i)
+            {
+                int i1 = i * l;
+                for (int j = 0; j < w; j++)
+                {
+                    // Perform the multiplication
+                    int i2 = j;
+                    float res = 0;
+                    for (int k = 0; k < l; k++, i2 += w)
+                    {
+                        res += pm1[i1 + k] * pm2[i2];
+                    }
+                    pm[i * w + j] = res;
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
 
         /// <summary>
         /// Performs the multiplication between a vector and a matrix
@@ -384,6 +567,64 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Returns the result of the input after the activation function has been applied
         /// </summary>
+        /// <param name="m">The input to process</param>
+        /// <param name="activation">The activation function to use</param>
+        /// <param name="result">The resulting matrix</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void Activation(in this FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        {
+            // Setup
+            int h = m.Height, w = m.Width;
+            FloatSpan2D.New(h, w, out result);
+            float* pr = result, pm = m;
+
+            // Execute the activation in parallel
+            void Kernel(int i)
+            {
+                for (int j = 0; j < w; j++)
+                    pr[i * w + j] = activation(pm[i * w + j]);
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
+        /// </summary>
+        /// <param name="m">The matrix to normalize</param>
+        public static unsafe void InPlaceSoftmaxNormalization(in this FloatSpan2D m)
+        {
+            // Setup
+            int h = m.Height, w = m.Width;
+            FloatSpan2D.New(1, h, out FloatSpan2D partials);
+            float* pp = partials, pm = m;
+
+            // Partial sum
+            unsafe void PartialSum(int i)
+            {
+                int offset = i * w;
+                float sum = 0;
+                for (int j = 0; j < w; j++)
+                    sum += pm[offset + j];
+                pp[i] = sum;
+            }
+            Parallel.For(0, h, PartialSum).AssertCompleted();
+
+            // Normalization of the matrix values
+            unsafe void NormalizationKernel(int i)
+            {
+                int offset = i * w;
+                for (int j = 0; j < w; j++)
+                    pm[offset + j] /= pp[i];
+            }
+            Parallel.For(0, h, NormalizationKernel).AssertCompleted();
+            partials.Free();
+        }
+
+        /// <summary>
+        /// Returns the result of the input after the activation function has been applied
+        /// </summary>
         /// <param name="v">The input to process</param>
         /// <param name="activation">The activation function to use</param>
         [PublicAPI]
@@ -495,6 +736,173 @@ namespace NeuralNetworkNET.Helpers
         #endregion
 
         #region Combined
+
+        /// <summary>
+        /// Performs the multiplication between two matrices and then applies the activation function
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="activation">The activation function to use</param>
+        /// <param name="result">The resulting matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void MultiplyAndActivation(in this FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        {
+            // Initialize the parameters and the result matrix
+            if (m1.Width != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            int
+                h = m1.Height,
+                w = m2.Width,
+                l = m1.Width;
+            FloatSpan2D.New(h, w, out result);
+            float* pm = result, pm1 = m1, pm2 = m2;
+
+            // Execute the multiplication in parallel
+            void Kernel(int i)
+            {
+                int i1 = i * l;
+                for (int j = 0; j < w; j++)
+                {
+                    // Perform the multiplication
+                    int i2 = j;
+                    float res = 0;
+                    for (int k = 0; k < l; k++, i2 += w)
+                    {
+                        res += pm1[i1 + k] * pm2[i2];
+                    }
+                    pm[i * w + j] = activation(res); // Store the result and apply the activation
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the multiplication between two matrices and sums another vector to the result
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="v">The array to add to the resulting matrix</param>
+        /// <param name="result">The resulting matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void MultiplyWithSum(in this FloatSpan2D m1, [NotNull] float[,] m2, [NotNull] float[] v, out FloatSpan2D result)
+        {
+            // Initialize the parameters and the result matrix
+            if (m1.Width != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            int
+                h = m1.Height,
+                w = m2.GetLength(1),
+                l = m1.Width;
+            FloatSpan2D.New(h, w, out result);
+            float* pm = result, pm1 = m1;
+
+            // Execute the multiplication in parallel
+            void Kernel(int i)
+            {
+                fixed (float* pm2 = m2, pv = v)
+                {
+                    int i1 = i * l;
+                    for (int j = 0; j < w; j++)
+                    {
+                        // Perform the multiplication
+                        int i2 = j;
+                        float res = 0;
+                        for (int k = 0; k < l; k++, i2 += w)
+                        {
+                            res += pm1[i1 + k] * pm2[i2];
+                        }
+                        pm[i * w + j] = res + pv[j]; // Sum the input vector to each component
+                    }
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the multiplication between two matrices and then applies the activation function
+        /// </summary>
+        /// <param name="m1">The first matrix to multiply</param>
+        /// <param name="m2">The second matrix to multiply</param>
+        /// <param name="v">The array to add to the resulting matrix before applying the activation function</param>
+        /// <param name="activation">The activation function to use</param>
+        /// <param name="result">The resulting matrix</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void MultiplyWithSumAndActivation(
+            in this FloatSpan2D m1, in FloatSpan2D m2, in FloatSpan v, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        {
+            // Initialize the parameters and the result matrix
+            if (m1.Width != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            int
+                h = m1.Height,
+                w = m2.Width,
+                l = m1.Width;
+            FloatSpan2D.New(h, w, out result);
+            float* pm = result, pm1 = m1, pm2 = m2, pv = v;
+
+            // Execute the multiplication in parallel
+            void Kernel(int i)
+            {
+                int i1 = i * l;
+                for (int j = 0; j < w; j++)
+                {
+                    // Perform the multiplication
+                    int i2 = j;
+                    float res = 0;
+                    for (int k = 0; k < l; k++, i2 += w)
+                    {
+                        res += pm1[i1 + k] * pm2[i2];
+                    }
+                    res += pv[j]; // Sum the input vector to each component
+                    pm[i * w + j] = activation(res); // Store the result and apply the activation
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
+        /// </summary>
+        /// <param name="z">The activity on the previous layer</param>
+        /// <param name="delta">The first matrix to multiply</param>
+        /// <param name="wt">The second matrix to multiply</param>
+        /// <param name="prime">The activation prime function to use</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void InPlaceMultiplyAndHadamardProductWithAcrivationPrime(
+            in this FloatSpan2D z, in FloatSpan2D delta, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
+        {
+            // Initialize the parameters and the result matrix
+            int h = delta.Height;
+            int w = wt.Width;
+            int l = delta.Width;
+
+            // Checks
+            if (l != wt.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (h != z.Height || w != z.Width) throw new ArgumentException("The matrices must be of equal size");
+            float* pz = z, pm1 = delta, pm2 = wt;
+
+            // Execute the multiplication in parallel
+            void Kernel(int i)
+            {
+                int i1 = i * l;
+                for (int j = 0; j < w; j++)
+                {
+                    // Perform the multiplication
+                    int i2 = j;
+                    float res = 0;
+                    for (int k = 0; k < l; k++, i2 += w)
+                    {
+                        res += pm1[i1 + k] * pm2[i2];
+                    }
+
+                    // res has now the matrix multiplication result for position [i, j]
+                    int zIndex = i * w + j;
+                    pz[zIndex] = prime(pz[zIndex]) * res;
+                }
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
 
         /// <summary>
         /// Performs the multiplication between two matrices and then applies the activation function
@@ -700,29 +1108,73 @@ namespace NeuralNetworkNET.Helpers
         /// Transposes the input matrix
         /// </summary>
         /// <param name="m">The matrix to transpose</param>
+        /// <param name="result">The resulting matrix</param>
+        public static unsafe void Transpose(in this FloatSpan2D m, out FloatSpan2D result)
+        {
+            // Setup
+            int h = m.Height, w = m.Width;
+            FloatSpan2D.New(w, h, out result);
+            float* pr = result;
+
+            // Execute the transposition in parallel
+            float* pm = m;
+            void Kernel(int i)
+            {
+                for (int j = 0; j < w; j++)
+                    pr[j * h + i] = pm[i * w + j];
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Compresses a matrix into a row vector by summing the components column by column
+        /// </summary>
+        /// <param name="m">The matrix to compress</param>
+        /// <param name="result">The resulting vector</param>
         [PublicAPI]
-        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] Transpose([NotNull] this float[,] m)
+        public static unsafe void CompressVertically(in this FloatSpan2D m, out FloatSpan result)
+        {
+            // Preliminary checks and declarations
+            if (m.Height == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
+            int
+                h = m.Height,
+                w = m.Width;
+            FloatSpan.New(w, out result);
+            float* pm = m, pv = result;
+
+            // Compress the matrix
+            void Kernel(int j)
+            {
+                float sum = 0;
+                for (int i = 0; i < h; i++)
+                    sum += pm[i * w + j];
+                pv[j] = sum;
+            }
+            Parallel.For(0, w, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Transposes the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to transpose</param>
+        /// <param name="result">The resulting matrix</param>
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe void Transpose([NotNull] this float[,] m, out FloatSpan2D result)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[w, h];
+            FloatSpan2D.New(w, h, out result);
 
             // Execute the transposition in parallel
-            bool loopResult = Parallel.For(0, h, i =>
+            float* pr = result;
+            void Kernel(int i)
             {
-                unsafe
-                {
-                    fixed (float* pr = result, pm = m)
-                    {
-                        for (int j = 0; j < w; j++)
-                            pr[j * h + i] = pm[i * w + j];
-                    }
-                }
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
+                fixed (float* pm = m)
+                    for (int j = 0; j < w; j++)
+                        pr[j * h + i] = pm[i * w + j];
+            }
+            Parallel.For(0, h, Kernel).AssertCompleted();
         }
 
         /// <summary>
@@ -883,9 +1335,9 @@ namespace NeuralNetworkNET.Helpers
                 h = m.GetLength(0),
                 w = m.GetLength(1);
             if (rows >= h) throw new ArgumentOutOfRangeException(nameof(rows), "The number of rows must be smaller than the original height");
-                float[,]
-                m1 = new float[rows, w],
-                m2 = new float[h - rows, w];
+            float[,]
+            m1 = new float[rows, w],
+            m2 = new float[h - rows, w];
             Buffer.BlockCopy(m, 0, m1, 0, sizeof(float) * m1.Length);
             Buffer.BlockCopy(m, sizeof(float) * w * rows, m2, 0, sizeof(float) * m2.Length);
             return (m1, m2);
@@ -905,7 +1357,7 @@ namespace NeuralNetworkNET.Helpers
             int
                 xLength = samples[0].X.Length,
                 yLength = samples[0].Y.Length;
-            float[,] 
+            float[,]
                 x = new float[samples.Length, xLength],
                 y = new float[samples.Length, yLength];
             for (int i = 0; i < samples.Length; i++)
@@ -1175,44 +1627,10 @@ namespace NeuralNetworkNET.Helpers
 
         #region Debug
 
-        /// <summary>
-        /// Returns a formatted representation of the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to convert to <see cref="String"/></param>
+        // Local helper
         [PublicAPI]
         [Pure, NotNull]
-        public static String ToFormattedString([NotNull] this float[,] m)
-        {
-            if (m.Length == 0) return "{ { } }";
-            int h = m.GetLength(0), w = m.GetLength(1);
-            StringBuilder builder = new StringBuilder();
-            builder.Append("{ ");
-            for (int i = 0; i < h; i++)
-            {
-                if (w > 0)
-                {
-                    builder.Append("{ ");
-                    for (int j = 0; j < w; j++)
-                    {
-                        builder.Append($"{m[i, j]}");
-                        if (j < w - 1) builder.Append(", ");
-                    }
-                    builder.Append(" }");
-                }
-                builder.Append(i < h - 1 ? ",\n  " : " }");
-            }
-            return builder.ToString();
-        }
-
-        /// <summary>
-        /// Returns a formatted representation of the input matrix
-        /// </summary>
-        /// <param name="p">A pointer to the target matrix</param>
-        /// <param name="height">The matrix height</param>
-        /// <param name="width">The matrix width</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        public static unsafe String ToFormattedString(float* p, int height, int width)
+        private static unsafe String ToFormattedString(float* p, int height, int width)
         {
             if (height * width == 0) return "{ { } }";
             StringBuilder builder = new StringBuilder();
@@ -1233,6 +1651,26 @@ namespace NeuralNetworkNET.Helpers
             }
             return builder.ToString();
         }
+
+        /// <summary>
+        /// Returns a formatted representation of the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to convert to <see cref="String"/></param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static unsafe String ToFormattedString([NotNull] this float[,] m)
+        {
+            fixed (float* p = m)
+                return ToFormattedString(p, m.GetLength(0), m.GetLength(1));
+        }
+
+        /// <summary>
+        /// Returns a formatted representation of the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to convert to <see cref="String"/></param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static unsafe String ToFormattedString(in this FloatSpan2D m) => ToFormattedString(m, m.Height, m.Width);
 
         #endregion
     }

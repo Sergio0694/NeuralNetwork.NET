@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers.Delegates;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 
 #pragma warning disable 1574
 
@@ -65,9 +66,10 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] MultiplyWithSum([NotNull] float[,] m1, [NotNull] float[,] m2, [NotNull] float[] v)
+        public static void MultiplyWithSum(in FloatSpan2D m1, float[,] m2, float[] v, out FloatSpan2D result)
         {
-            return _MultiplyWithSumOverride?.Invoke(m1, m2, v) ?? m1.MultiplyWithSum(m2, v);
+            m1.MultiplyWithSum(m2, v, out result);
+            //return _MultiplyWithSumOverride?.Invoke(m1, m2, v) ?? m1.MultiplyWithSum(m2, v);
         }
 
         /// <summary>
@@ -81,9 +83,12 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] TransposeAndMultiply([NotNull] float[,] m1, [NotNull] float[,] m2)
+        public static void TransposeAndMultiply(in FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
         {
-            return _TransposeAndMultiplyOverride?.Invoke(m1, m2) ?? m1.Transpose().Multiply(m2);
+            m1.Transpose(out FloatSpan2D m1t);
+            m1t.Multiply(m2, out result);
+            m1t.Free();
+            //return _TransposeAndMultiplyOverride?.Invoke(m1, m2) ?? m1.Transpose().Multiply(m2);
         }
 
         /// <summary>
@@ -97,9 +102,10 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] Activation([NotNull] float[,] m, [NotNull] ActivationFunction activation)
+        public static void Activation(in FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
         {
-            return _ActivationOverride?.Invoke(m, activation) ?? m.Activation(activation);
+            m.Activation(activation, out result);
+            //return _ActivationOverride?.Invoke(m, activation) ?? m.Activation(activation);
         }
 
         #endregion
@@ -115,12 +121,11 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteForward"/> method
         /// </summary>
-        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] ConvoluteForward([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info, [NotNull] float[] biases)
+        public static void ConvoluteForward(in FloatSpan2D m1, in VolumeInformation m1Info, [NotNull] float[,] m2, in VolumeInformation m2Info, [NotNull] float[] biases, out FloatSpan2D result)
         {
-            return _ConvoluteForwardOverride?.Invoke(m1, m1Info, m2, m2Info, biases)
-                   ?? m1.ConvoluteForward(m1Info, m2, m2Info, biases);
+            if (_ConvoluteForwardOverride == null) m1.ConvoluteForward(m1Info, m2, m2Info, biases, out result);
+            else _ConvoluteForwardOverride(m1, m1Info, m2, m2Info, biases, out result);
         }
 
         /// <summary>
@@ -132,12 +137,11 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteBackwards"/> method
         /// </summary>
-        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] ConvoluteBackwards([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
+        public static void ConvoluteBackwards(in FloatSpan2D m1, in VolumeInformation m1Info, in FloatSpan2D m2, in VolumeInformation m2Info, out FloatSpan2D result)
         {
-            return _ConvoluteBackwardsOverride?.Invoke(m1, m1Info, m2, m2Info)
-                   ?? m1.ConvoluteBackwards(m1Info, m2, m2Info);
+            if (_ConvoluteBackwardsOverride == null) m1.ConvoluteBackwards(m1Info, m2, m2Info, out result);
+            else _ConvoluteBackwardsOverride(m1, m1Info, m2, m2Info, out result);
         }
 
         /// <summary>
@@ -149,12 +153,11 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteGradient"/> method
         /// </summary>
-        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float[,] ConvoluteGradient([NotNull] float[,] m1, VolumeInformation m1Info, [NotNull] float[,] m2, VolumeInformation m2Info)
+        public static void ConvoluteGradient(in FloatSpan2D m1, in VolumeInformation m1Info, in FloatSpan2D m2, in VolumeInformation m2Info, out FloatSpan2D result)
         {
-            return _ConvoluteGradientOverride?.Invoke(m1, m1Info, m2, m2Info)
-                   ?? m1.ConvoluteGradient(m1Info, m2, m2Info);
+            if (_ConvoluteGradientOverride == null) m1.ConvoluteGradient(m1Info, m2, m2Info, out result);
+            else _ConvoluteGradientOverride(m1, m1Info, m2, m2Info, out result);
         }
 
         #endregion
@@ -171,10 +174,11 @@ namespace NeuralNetworkNET.Helpers
         /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime"/> method
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime([NotNull] float[,] m, [NotNull] float[,] di, [NotNull] float[,] wt, [NotNull] ActivationFunction prime)
+        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime(in FloatSpan2D m, in FloatSpan2D di, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
         {
-            if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
-            else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime?.Invoke(m, di, wt, prime);
+            m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
+           // if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
+           // else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime?.Invoke(m, di, wt, prime);
         }
 
         #endregion

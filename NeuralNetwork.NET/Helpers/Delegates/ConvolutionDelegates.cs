@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Helpers.Delegates
 {
@@ -11,14 +12,15 @@ namespace NeuralNetworkNET.Helpers.Delegates
     /// <param name="kernels">The list of convolution kernels to apply to each image</param>
     /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
     /// <param name="biases">The bias vector to sum to the resulting images</param>
-    /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+    /// <param name="result">The resulting convolution volume</param>
     /// <exception cref="System.ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
     /// <exception cref="System.ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
     [NotNull]
-    public delegate float[,] ForwardConvolution(
-        [NotNull] float[,] source, VolumeInformation sourceInfo,
-        [NotNull] float[,] kernels, VolumeInformation kernelsInfo,
-        [NotNull] float[] biases);
+    public delegate void ForwardConvolution(
+        in FloatSpan2D source, in VolumeInformation sourceInfo,
+        [NotNull] float[,] kernels, in VolumeInformation kernelsInfo,
+        [NotNull] float[] biases,
+        out FloatSpan2D result);
 
     /// <summary>
     /// A delegates that wraps a method that performs a full backwards convolution operation on the source matrix, using the given kernels
@@ -27,13 +29,14 @@ namespace NeuralNetworkNET.Helpers.Delegates
     /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
     /// <param name="kernels">The list of convolution kernels to apply to each image</param>
     /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
-    /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+    /// <param name="result">The resulting convolution volume</param>
     /// <exception cref="System.ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
     /// <exception cref="System.ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
     [NotNull]
-    public delegate float[,] BackwardsConvolution(
-        [NotNull] float[,] source, VolumeInformation sourceInfo, 
-        [NotNull] float[,] kernels, VolumeInformation kernelsInfo);
+    public delegate void BackwardsConvolution(
+        in FloatSpan2D source, in VolumeInformation sourceInfo,
+        in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
+        out FloatSpan2D result);
 
     /// <summary>
     /// A delegates that wraps a method that performs a the gradient convolution operation on the source matrix, using the given kernels
@@ -42,10 +45,12 @@ namespace NeuralNetworkNET.Helpers.Delegates
     /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
     /// <param name="kernels">The list of convolution kernels to apply to each image</param>
     /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
-    /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+    /// <param name="result">The resulting convolution volume</param>
     /// <exception cref="System.ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
     /// <exception cref="System.ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
     public delegate float[,] GradientConvolution(
-        [NotNull] float[,] source, VolumeInformation sourceInfo, 
-        [NotNull] float[,] kernels, VolumeInformation kernelsInfo);
+        in FloatSpan2D source, in VolumeInformation sourceInfo,
+        in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
+        out FloatSpan2D result);
+
 }
