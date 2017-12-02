@@ -181,8 +181,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
 
         #endregion
 
-        // Cross-shuffles the current dataset
-        private unsafe void CrossShuffle()
+        /// <summary>
+        /// Cross-shuffles the current dataset (shuffles samples in each batch, then shuffles the batches list)
+        /// </summary>
+        public unsafe void CrossShuffle()
         {
             // Select the couples to cross-shuffle
             int* indexes = stackalloc int[Count];

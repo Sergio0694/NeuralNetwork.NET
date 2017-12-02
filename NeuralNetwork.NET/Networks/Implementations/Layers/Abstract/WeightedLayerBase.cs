@@ -50,7 +50,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="dJdb">The gradient with respect to the biases</param>
         /// <param name="alpha">The learning rate to use when updating the weights</param>
         /// <param name="l2Factor">The L2 regularization factor to resize the weights</param>
-        public unsafe void Minimize(in FloatSpan2D dJdw, in FloatSpan2D dJdb, float alpha, float l2Factor)
+        public unsafe void Minimize(in FloatSpan2D dJdw, in FloatSpan dJdb, float alpha, float l2Factor)
         {
             // Tweak the weights
             fixed (float* pw = Weights)

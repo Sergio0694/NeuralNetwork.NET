@@ -9,7 +9,7 @@ namespace NeuralNetworkNET.Structs
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
     [DebuggerDisplay("Length: {Length}, Ptr: {Ptr}")]
-    public readonly ref struct FloatSpan
+    public readonly struct FloatSpan
     {
         /// <summary>
         /// Gets the <see cref="IntPtr"/> value to the allocated memory

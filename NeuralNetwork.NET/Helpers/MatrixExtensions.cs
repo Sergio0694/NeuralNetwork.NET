@@ -1515,20 +1515,9 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="v">The input vector to read from</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static int Argmax([NotNull] this float[] v)
+        public static unsafe int Argmax([NotNull] this float[] v)
         {
-            if (v.Length < 2) return 0;
-            int index = 0;
-            float max = float.MinValue;
-            for (int j = 0; j < v.Length; j++)
-            {
-                if (v[j] > max)
-                {
-                    max = v[j];
-                    index = j;
-                }
-            }
-            return index;
+            fixed (float* p = v) return Argmax(p, v.Length);
         }
 
         /// <summary>
@@ -1536,22 +1525,9 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="m">The input matrix to read from</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static int Argmax([NotNull] this float[,] m)
+        public static unsafe int Argmax([NotNull] this float[,] m)
         {
-            if (m.Length < 2) return 0;
-            int index = 0;
-            float max = float.MinValue;
-            unsafe
-            {
-                fixed (float* p = m)
-                    for (int i = 0; i < m.Length; i++)
-                        if (p[i] > max)
-                        {
-                            max = p[i];
-                            index = i;
-                        }
-            }
-            return index;
+            fixed (float* p = m) return Argmax(p, m.Length);
         }
 
         #endregion

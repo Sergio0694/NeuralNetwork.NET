@@ -49,13 +49,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="yHat">The estimated outputs for the network</param>
         /// <param name="y">The expected outputs for the used inputs</param>
         /// <param name="z">The activity on the output layer</param>
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public float[,] Backpropagate(in FloatSpan2D yHat, in FloatSpan2D y, in FloatSpan2D z)
-        {
-            CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
-            return yHat;
-        }
+        public void Backpropagate(in FloatSpan2D yHat, in FloatSpan2D y, in FloatSpan2D z) => CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
 
         /// <summary>
         /// Calculates the output cost with respect to the cost function currently in use
@@ -64,7 +58,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="y">The Expected outputs for the inputs used</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public float CalculateCost([NotNull] float[,] yHat, [NotNull] float[,] y) => CostFunctions.Cost(yHat, y);
+        public float CalculateCost(in FloatSpan2D yHat, in FloatSpan2D y) => CostFunctions.Cost(yHat, y);
 
         #region Equality check
 
