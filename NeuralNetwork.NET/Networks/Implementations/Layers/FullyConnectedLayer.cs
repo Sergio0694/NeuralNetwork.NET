@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.DependencyInjection;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;

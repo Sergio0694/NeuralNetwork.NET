@@ -869,7 +869,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="prime">The activation prime function to use</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe void InPlaceMultiplyAndHadamardProductWithAcrivationPrime(
+        public static unsafe void InPlaceMultiplyAndHadamardProductWithActivationPrime(
             in this FloatSpan2D z, in FloatSpan2D delta, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix

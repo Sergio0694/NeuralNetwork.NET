@@ -43,6 +43,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         public abstract void ComputeGradient(in FloatSpan2D a, in FloatSpan2D delta, out FloatSpan2D dJdw, out FloatSpan dJdb);
 
 
+        #region Implementation
+
         /// <summary>
         /// Tweaks the layer weights and biases according to the input gradient and parameters
         /// </summary>
@@ -99,6 +101,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
                         return false;
             return true;
         }
+
+        #endregion
 
         #region Equality check
 

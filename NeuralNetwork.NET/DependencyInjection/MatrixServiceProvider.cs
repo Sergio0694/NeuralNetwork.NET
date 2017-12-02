@@ -1,14 +1,12 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Helpers.Delegates;
+using NeuralNetworkNET.DependencyInjection.Delegates;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 
-#pragma warning disable 1574
-
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.DependencyInjection
 {
     /// <summary>
     /// A static class that forwards requests to execute matrix operations to the correct implementations
@@ -21,13 +19,13 @@ namespace NeuralNetworkNET.Helpers
         /// Assigns the delegates that will overwrite the default behavior of the service provider
         /// </summary>
         public static void SetupInjections(
-            [NotNull] Func<float[,], float[,], float[], float[,]> multiplyWithSum,
-            [NotNull] Func<float[,], float[,], float[,]> transposeMultiply,
-            [NotNull] Func<float[,], ActivationFunction, float[,]> activation,
-            [NotNull] Action<float[,], float[,], float[,], ActivationFunction> multiplyAndInPlaceActivationPrimeHadamard,
-            [NotNull] ForwardConvolution convoluteForward,
-            [NotNull] BackwardsConvolution convoluteBackwards,
-            [NotNull] GradientConvolution convoluteGradient)
+            [NotNull] MultiplicationWithSum multiplyWithSum,
+            [NotNull] Multiplication transposeMultiply,
+            [NotNull] Activation activation,
+            [NotNull] MultiplicationAndHadamardProductWithActivation multiplyAndInPlaceActivationPrimeHadamard,
+            [NotNull] ConvolutionWithBias convoluteForward,
+            [NotNull] Convolution convoluteBackwards,
+            [NotNull] Convolution convoluteGradient)
         {
             _MultiplyWithSumOverride = multiplyWithSum;
             _TransposeAndMultiplyOverride = transposeMultiply;
@@ -47,65 +45,58 @@ namespace NeuralNetworkNET.Helpers
             _ActivationOverride = null;
             _InPlaceMultiplyAndHadamardProductWithAcrivationPrime = null;
             _ConvoluteForwardOverride = null;
-            _ConvoluteBackwardsOverride = null;
-            _ConvoluteGradientOverride = null;
+            _ConvoluteBackwardsOverride = _ConvoluteGradientOverride = null;
         }
 
         #endregion
 
         #region Functional
-
-        /// <summary>
-        /// A <see cref="Func{T1, T2, T3, TResult}"/> that multiplies two matrices and sums the input vector
-        /// </summary>
+        
         [CanBeNull]
-        private static Func<float[,], float[,], float[], float[,]> _MultiplyWithSumOverride;
+        private static MultiplicationWithSum _MultiplyWithSumOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.MultiplyWithSum"/> method
         /// </summary>
-        [Pure, NotNull]
+        [MustUseReturnValue]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void MultiplyWithSum(in FloatSpan2D m1, float[,] m2, float[] v, out FloatSpan2D result)
         {
-            m1.MultiplyWithSum(m2, v, out result);
-            //return _MultiplyWithSumOverride?.Invoke(m1, m2, v) ?? m1.MultiplyWithSum(m2, v);
+            if (_MultiplyWithSumOverride == null) m1.MultiplyWithSum(m2, v, out result);
+            else _MultiplyWithSumOverride(m1, m2, v, out result);
         }
 
-        /// <summary>
-        /// A <see cref="Func{T1, T2, TResult}"/> that transposes the first matrix and then multiplies it with the second one
-        /// </summary>
         [CanBeNull]
-        private static Func<float[,], float[,], float[,]> _TransposeAndMultiplyOverride;
+        private static Multiplication _TransposeAndMultiplyOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.Transpose"/> and <see cref="MatrixExtensions.Multiply"/> methods in sequence
         /// </summary>
-        [Pure, NotNull]
+        [MustUseReturnValue]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TransposeAndMultiply(in FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
         {
-            m1.Transpose(out FloatSpan2D m1t);
-            m1t.Multiply(m2, out result);
-            m1t.Free();
-            //return _TransposeAndMultiplyOverride?.Invoke(m1, m2) ?? m1.Transpose().Multiply(m2);
+            if (_TransposeAndMultiplyOverride == null)
+            {
+                m1.Transpose(out FloatSpan2D m1t);
+                m1t.Multiply(m2, out result);
+                m1t.Free();
+            }
+            else _TransposeAndMultiplyOverride(m1, m2, out result);
         }
-
-        /// <summary>
-        /// A <see cref="Func{T, TResult}"/> that applies the activation function
-        /// </summary>
+        
         [CanBeNull]
-        private static Func<float[,], ActivationFunction, float[,]> _ActivationOverride;
+        private static Activation _ActivationOverride;
 
         /// <summary>
         /// Forwards the base <see cref="MatrixExtensions.Activation"/> method
         /// </summary>
-        [Pure, NotNull]
+        [MustUseReturnValue]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Activation(in FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
         {
-            m.Activation(activation, out result);
-            //return _ActivationOverride?.Invoke(m, activation) ?? m.Activation(activation);
+            if (_ActivationOverride == null) m.Activation(activation, out result);
+            else _ActivationOverride(m, activation, out result);
         }
 
         #endregion
@@ -116,7 +107,7 @@ namespace NeuralNetworkNET.Helpers
         /// A <see cref="ForwardConvolution"/> delegate that performs the forward convolution
         /// </summary>
         [CanBeNull]
-        private static ForwardConvolution _ConvoluteForwardOverride;
+        private static ConvolutionWithBias _ConvoluteForwardOverride;
 
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteForward"/> method
@@ -129,10 +120,10 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// A <see cref="BackwardsConvolution"/> dekegate that performs the backwards convolution
+        /// A <see cref="Convolution"/> dekegate that performs the backwards convolution
         /// </summary>
         [CanBeNull]
-        private static BackwardsConvolution _ConvoluteBackwardsOverride;
+        private static Convolution _ConvoluteBackwardsOverride;
 
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteBackwards"/> method
@@ -145,10 +136,10 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// A <see cref="GradientConvolution"/> function that performs the gradient convolution
+        /// A <see cref="Convolution"/> function that performs the gradient convolution
         /// </summary>
         [CanBeNull]
-        private static GradientConvolution _ConvoluteGradientOverride;
+        private static Convolution _ConvoluteGradientOverride;
 
         /// <summary>
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteGradient"/> method
@@ -163,22 +154,18 @@ namespace NeuralNetworkNET.Helpers
         #endregion
 
         #region Side effect
-
-        /// <summary>
-        /// An <see cref="Action{T1, T2, T3}"/> that performs the activation prime function and then the Hadamard product with a matrix product
-        /// </summary>
+        
         [CanBeNull]
-        private static Action<float[,], float[,], float[,], ActivationFunction> _InPlaceMultiplyAndHadamardProductWithAcrivationPrime;
+        private static MultiplicationAndHadamardProductWithActivation _InPlaceMultiplyAndHadamardProductWithAcrivationPrime;
 
         /// <summary>
-        /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithAcrivationPrime"/> method
+        /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithActivationPrime"/> method
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InPlaceMultiplyAndHadamardProductWithActivationPrime(in FloatSpan2D m, in FloatSpan2D di, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
         {
-            m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
-           // if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithAcrivationPrime(di, wt, prime);
-           // else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime?.Invoke(m, di, wt, prime);
+            if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithActivationPrime(di, wt, prime);
+            else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime(m, di, wt, prime);
         }
 
         #endregion
