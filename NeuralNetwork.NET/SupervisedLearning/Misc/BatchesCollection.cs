@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.SupervisedLearning.Misc
@@ -12,25 +14,32 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
     /// </summary>
     internal sealed class BatchesCollection
     {
-        // The source list of batches to use
+        /// <summary>
+        /// Gets the collection of training batches to use
+        /// </summary>
         [NotNull]
-        internal readonly TrainingBatch[] Batches;
+        public TrainingBatch[] Batches { get; }
 
         /// <summary>
         /// Gets the number of training batches in the current collection
         /// </summary>
-        public int Count { get; }
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Batches.Length;
+        }
 
         /// <summary>
         /// Gets the total number of training samples in the current collection
         /// </summary>
         public int Samples { get; }
 
+        #region Initialization
+
         // Private constructor from a given collection
         private BatchesCollection([NotNull] TrainingBatch[] batches)
         {
             Batches = batches;
-            Count = batches.Length;
             Samples = batches.Sum(b => b.X.GetLength(0));
         }
 
@@ -170,22 +179,28 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
             return new BatchesCollection(batches);
         }
 
+        #endregion
+
         // Cross-shuffles the current dataset
-        private void CrossShuffle()
+        private unsafe void CrossShuffle()
         {
             // Select the couples to cross-shuffle
-            int[] indexes = Enumerable.Range(0, Batches.Length).ToArray();
-            indexes.Shuffle();
-            List<(int, int)> couples = new List<(int, int)>();
-            for (int i = 0; i < indexes.Length - 1; i += 2)
+            int* indexes = stackalloc int[Count];
+            for (int i = 0; i < Count; i++) indexes[i] = i;
+            int n = Count;
+            while (n > 1)
             {
-                couples.Add((indexes[i], indexes[i + 1]));
+                int k = ThreadSafeRandom.NextInt(max: n);
+                n--;
+                int value = indexes[k];
+                indexes[k] = indexes[n];
+                indexes[n] = value;
             }
 
             // Cross-shuffle the pairs of lists in parallel
-            bool result = Parallel.For(0, couples.Count, i =>
+            void Kernel(int i)
             {
-                (int a, int b) = couples[i];
+                int a = indexes[i], b = indexes[i + 1];
                 TrainingBatch setA = Batches[a], setB = Batches[b];
                 int
                     hA = setA.X.GetLength(0),
@@ -216,22 +231,19 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                     Buffer.BlockCopy(tempX, 0, targetB.X, sizeof(float) * wx * bound, sizeof(float) * wx);
                     Buffer.BlockCopy(tempY, 0, targetB.Y, sizeof(float) * wy * bound, sizeof(float) * wy);
                 }
-            }).IsCompleted;
-            if (!result) throw new InvalidOperationException("Failed to perform the parallel loop");
+            }
+            Parallel.For(0, (Count - 1) / 2, Kernel).AssertCompleted();
 
             // Shuffle the main list
-            Batches.Shuffle();
-        }
-
-        /// <summary>
-        /// Shuffles the current dataset and returns a new sequence of batches
-        /// </summary>
-        /// <returns></returns>
-        [Pure, NotNull]
-        public IEnumerable<TrainingBatch> NextEpoch()
-        {
-            CrossShuffle();
-            return Batches;
+            n = Count;
+            while (n > 1)
+            {
+                int k = ThreadSafeRandom.NextInt(max: n);
+                n--;
+                TrainingBatch value = Batches[k];
+                Batches[k] = Batches[n];
+                Batches[n] = value;
+            }
         }
     }
 }

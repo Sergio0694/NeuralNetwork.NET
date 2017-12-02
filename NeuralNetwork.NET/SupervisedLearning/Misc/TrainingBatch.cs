@@ -6,19 +6,19 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
     /// <summary>
     /// A simple struct that keeps a reference of a training set and its expected results
     /// </summary>
-    public struct TrainingBatch
+    public readonly struct TrainingBatch
     {
         /// <summary>
         /// Gets the current dataset
         /// </summary>
         [NotNull]
-        public float[,] X { get; }
+        public readonly float[,] X;
 
         /// <summary>
         /// Gets the expected results for the current dataset
         /// </summary>
         [NotNull]
-        public float[,] Y { get; }
+        public readonly float[,] Y;
 
         /// <summary>
         /// Creates a new dataset wrapper batch with the given data
