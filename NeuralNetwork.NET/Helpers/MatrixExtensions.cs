@@ -787,6 +787,23 @@ namespace NeuralNetworkNET.Helpers
             return true;
         }
 
+        /// <summary>
+        /// Calculates a unique hash code for the input matrix
+        /// </summary>
+        /// <param name="m">The matrix to analyze</param>
+        [Pure]
+        public static unsafe int GetUid([NotNull] this float[,] m)
+        {
+            int hash = 17;
+            unchecked
+            {
+                fixed (float* pm = m)
+                    for (int i = 0; i < m.Length; i++)
+                        hash = hash * 23 + pm[i].GetHashCode();
+                return hash;
+            }
+        }
+
         #endregion
 
         #region String display
