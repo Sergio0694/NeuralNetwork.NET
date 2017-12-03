@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Unit
                 x = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 784),
                 y = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
-            batches.NextEpoch();
+            batches.CrossShuffle();
             int xor = 0;
             for (int i = 0; i < 60000; i++)
             {
@@ -62,6 +62,19 @@ namespace NeuralNetworkNET.Unit
                 xor ^= (int)sum;
             }
             int xorBatch = 0;
+            for (int i = 0; i < dataset.Count; i++)
+            {
+                for (int z = 0; z < dataset.Batches[i].X.GetLength(0); z++)
+                {
+                    float sum = 0;
+                    for (int j = 0; j < 784; j++) sum += dataset.Batches[i].X[z, j];
+                    for (int j = 0; j < 10; j++) sum += dataset.Batches[i].Y[z, j];
+                    xorBatch ^= (int)sum;
+                }
+            }
+            Assert.IsTrue(xor == xorBatch);
+            dataset.CrossShuffle();
+            xorBatch = 0;
             for (int i = 0; i < dataset.Count; i++)
             {
                 for (int z = 0; z < dataset.Batches[i].X.GetLength(0); z++)

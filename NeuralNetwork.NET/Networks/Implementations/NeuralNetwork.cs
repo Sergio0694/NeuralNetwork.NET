@@ -235,6 +235,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     int i = WeightedLayersIndexes[j];
                     _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().Minimize(dJdw[j], dJdb[j], alpha, l2Factor);
+                    dJdw[j].Free();
+                    dJdb[j].Free();
                 }
                 Parallel.For(0, WeightedLayersIndexes.Length, Kernel).AssertCompleted();
 
@@ -243,11 +245,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     zList[i].Free();
                     aList[i].Free();
-                }
-                for (int i = 0; i < WeightedLayersIndexes.Length; i++)
-                {
-                    dJdw[i].Free();
-                    dJdb[i].Free();
                 }
             }
         }
