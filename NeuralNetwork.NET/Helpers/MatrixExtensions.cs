@@ -788,6 +788,25 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Calculates a unique hash code for the target row of the input matrix
+        /// </summary>
+        [Pure]
+        public static unsafe int GetUid([NotNull] this float[,] m, int row)
+        {
+            int hash = 17, w = m.GetLength(1);
+            fixed (float* pm = m)
+            {
+                unchecked
+                {
+                    int offset = row * w;
+                    for (int i = 0; i < w; i++)
+                        hash = hash * 23 + pm[offset + i].GetHashCode();
+                    return hash;
+                }
+            }
+        }
+
+        /// <summary>
         /// Calculates a unique hash code for the input matrix
         /// </summary>
         /// <param name="m">The matrix to analyze</param>

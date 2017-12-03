@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="NeuralNetworkNET.Networks.Implementations.Layers.APIs.LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.SupervisedLearning
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="NeuralNetworkNET.Networks.Implementations.Layers.APIs.LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>

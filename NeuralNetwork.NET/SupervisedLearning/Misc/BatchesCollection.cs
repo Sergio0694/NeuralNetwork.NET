@@ -202,7 +202,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
             // Cross-shuffle the pairs of lists in parallel
             void Kernel(int i)
             {
-                int a = indexes[i], b = indexes[i + 1];
+                int a = indexes[i * 2], b = indexes[i * 2 + 1];
                 TrainingBatch setA = Batches[a], setB = Batches[b];
                 int
                     hA = setA.X.GetLength(0),
@@ -234,7 +234,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                     Buffer.BlockCopy(tempY, 0, targetB.Y, sizeof(float) * wy * bound, sizeof(float) * wy);
                 }
             }
-            Parallel.For(0, (Count - 1) / 2, Kernel).AssertCompleted();
+            Parallel.For(0, Count / 2, Kernel).AssertCompleted();
 
             // Shuffle the main list
             n = Count;
