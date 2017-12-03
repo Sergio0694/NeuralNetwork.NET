@@ -34,9 +34,9 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <summary>
     /// A delegate that wraps a method that multiplies two matrices, activates the third and performs the product of the two results
     /// </summary>
-    /// <param name="m">The first matrix to multiply, the one that will hold the final result</param>
-    /// <param name="di">The second matrix to multiply</param>
-    /// <param name="wt">The matrix to activate</param>
+    /// <param name="m">The matrix to activate</param>
+    /// <param name="di">The first matrix to multiply</param>
+    /// <param name="wt">The second matrix to multiply</param>
     /// <param name="prime">The activation function to use</param>
     public delegate void MultiplicationAndHadamardProductWithActivation(
         in FloatSpan2D m, in FloatSpan2D di, in FloatSpan2D wt, [NotNull] ActivationFunction prime);
