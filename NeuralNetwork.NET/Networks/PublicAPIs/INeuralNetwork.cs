@@ -53,6 +53,22 @@ namespace NeuralNetworkNET.Networks.PublicAPIs
         float[,] Forward([NotNull] float[,] x);
 
         /// <summary>
+        /// Forwards the input through the network and returns a list of all the activity and activations computed by each layer
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures([NotNull] float[] x);
+
+        /// <summary>
+        /// Forwards the inputs through the network and returns a list of all the activity and activations computed by each layer
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures([NotNull] float[,] x);
+
+        /// <summary>
         /// Calculates the cost function for the current instance and the input values
         /// </summary>
         /// <param name="x">The input values for the network</param>

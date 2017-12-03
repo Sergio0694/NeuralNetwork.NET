@@ -1,14 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 
@@ -82,7 +80,7 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void ForwardTest()
+        public void ForwardTest1()
         {
             String path = GetAssetsPath("Networks");
             INeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet"));
@@ -93,12 +91,26 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void GradientDescentTest()
+        public void ForwardTest2()
+        {
+            String path = GetAssetsPath("Networks");
+            INeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet"));
+            Assert.IsTrue(network != null);
+            (_, var testSet) = ParseMnistDataset();
+            IReadOnlyList<(float[,] Z, float[,] A)> features = network.ExtractDeepFeatures(testSet.X);
+            Assert.IsTrue(features[0].Z.GetUid() == -1663064875);
+            Assert.IsTrue(features[0].A.GetUid() == 1115917777);
+            Assert.IsTrue(features[1].Z.GetUid() == 1393557830);
+            Assert.IsTrue(features[1].A.GetUid() == -112610238);
+        }
+
+        [TestMethod]
+        public void GradientDescentTest1()
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
-            NeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+            String path = GetAssetsPath("Networks");
+            NeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet")) as NeuralNetwork;
+            Assert.IsTrue(network != null);
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, 10);
             TrainingSessionResult result = network.StochasticGradientDescent(batches, 4, null, null, 0.5f, 0, 0);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);

@@ -104,6 +104,30 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
+        public unsafe IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures(float[] x)
+        {
+            fixed (float* px = x)
+            {
+                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
+                FloatSpan2D*
+                    zList = stackalloc FloatSpan2D[_Layers.Length],
+                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                }
+                (float[], float[])[] features = new(float[], float[])[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    features[i] = (zList[i].ToArray(), aList[i].ToArray());
+                    zList[i].Free();
+                    aList[i].Free();
+                }
+                return features;
+            }
+        }
+
+        /// <inheritdoc/>
         public unsafe float[,] Forward(float[,] x)
         {
             fixed (float* px = x)
@@ -124,6 +148,30 @@ namespace NeuralNetworkNET.Networks.Implementations
                 FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
                 FloatSpan2D.Fix(py, y.GetLength(0), y.GetLength(1), out FloatSpan2D ySpan);
                 return CalculateCost(xSpan, ySpan);
+            }
+        }
+
+        /// <inheritdoc/>
+        public unsafe IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
+        {
+            fixed (float* px = x)
+            {
+                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
+                FloatSpan2D*
+                    zList = stackalloc FloatSpan2D[_Layers.Length],
+                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                }
+                (float[,], float[,])[] features = new(float[,], float[,])[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    features[i] = (zList[i].ToArray2D(), aList[i].ToArray2D());
+                    zList[i].Free();
+                    aList[i].Free();
+                }
+                return features;
             }
         }
 

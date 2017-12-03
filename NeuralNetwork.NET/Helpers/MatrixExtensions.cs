@@ -804,6 +804,23 @@ namespace NeuralNetworkNET.Helpers
             }
         }
 
+        /// <summary>
+        /// Calculates a unique hash code for the input vector
+        /// </summary>
+        /// <param name="v">The vector to analyze</param>
+        [Pure]
+        public static unsafe int GetUid([NotNull] this float[] v)
+        {
+            int hash = 17;
+            unchecked
+            {
+                fixed (float* pv = v)
+                    for (int i = 0; i < v.Length; i++)
+                        hash = hash * 23 + pv[i].GetHashCode();
+                return hash;
+            }
+        }
+
         #endregion
 
         #region String display

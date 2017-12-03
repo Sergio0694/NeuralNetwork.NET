@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             a.Rotate180(InputVolume.Depth, out FloatSpan2D a180);
             MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume, out dJdw);
             a180.Free();
-            dJdw.CompressVertically(out dJdb);
+            delta.CompressVertically(out dJdb);
         }
 
         /// <inheritdoc/>
