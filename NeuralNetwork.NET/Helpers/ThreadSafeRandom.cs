@@ -155,7 +155,7 @@ namespace NeuralNetworkNET.Helpers
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             if (fanIn == 0) fanIn = x;
             if (fanOut < 0) throw new ArgumentOutOfRangeException(nameof(fanOut), "The fan out must be a positive number");
-            if (fanOut == 0) fanOut = x;
+            if (fanOut == 0) fanOut = y;
             float scale = (float)Math.Sqrt(2f / (fanIn + fanOut));
             return NextGaussianMatrix(x, y, scale);
         }
@@ -175,7 +175,7 @@ namespace NeuralNetworkNET.Helpers
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             if (fanIn == 0) fanIn = x;
             if (fanOut < 0) throw new ArgumentOutOfRangeException(nameof(fanOut), "The fan out must be a positive number");
-            if (fanOut == 0) fanOut = x;
+            if (fanOut == 0) fanOut = y;
             float scale = (float)Math.Sqrt(6f / (fanIn + fanOut));
             return NextUniformMatrix(x, y, scale);
         }

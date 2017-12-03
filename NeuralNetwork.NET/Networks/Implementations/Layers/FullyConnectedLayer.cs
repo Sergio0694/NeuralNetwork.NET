@@ -41,6 +41,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             Weights.Transpose(out FloatSpan2D wt);
             MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
+            wt.Free();
         }
 
         /// <inheritdoc/>

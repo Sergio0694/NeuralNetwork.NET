@@ -251,11 +251,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * Multiply the previous delta with the transposed weights of the following layer
                      * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
                     _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
-                    if (dropoutMasks[l].Ptr != IntPtr.Zero)
-                    {
-                        zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
-                        dropoutMasks[l].Free();
-                    }
+                    if (dropoutMasks[l].Ptr != IntPtr.Zero) zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
                     deltas[l] = zList + l;
                 }
 
@@ -289,11 +285,14 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Parallel.For(0, WeightedLayersIndexes.Length, Kernel).AssertCompleted();
 
                 // Cleanup
-                for (int i = 0; i < _Layers.Length; i++)
+                for (int i = 0; i < _Layers.Length - 1; i++)
                 {
                     zList[i].Free();
                     aList[i].Free();
+                    if (dropoutMasks[i].Ptr != IntPtr.Zero) dropoutMasks[i].Free();
                 }
+                zList[_Layers.Length - 1].Free();
+                aList[_Layers.Length - 1].Free();
             }
         }
 
