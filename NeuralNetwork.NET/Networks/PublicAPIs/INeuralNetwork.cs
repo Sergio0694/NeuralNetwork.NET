@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Helpers.Imaging;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 

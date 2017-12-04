@@ -15,7 +15,7 @@ using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.Structs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
