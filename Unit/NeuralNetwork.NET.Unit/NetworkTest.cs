@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace NeuralNetworkNET.Unit
@@ -18,17 +19,25 @@ namespace NeuralNetworkNET.Unit
     [TestCategory(nameof(NetworkTest))]
     public class NetworkTest
     {
+        // Gets the target assets subfolder
+        [Pure, NotNull]
+        private static String GetAssetsPath([NotNull] String folder)
+        {
+            String
+                code = Assembly.GetExecutingAssembly().Location,
+                dll = Path.GetFullPath(code),
+                root = Path.GetDirectoryName(dll),
+                path = Path.Combine(root, "Assets", folder);
+            return path;
+        }
+
         private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset()
         {
             const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
             String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
             const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
             const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
-            String
-                code = Assembly.GetExecutingAssembly().Location,
-                dll = Path.GetFullPath(code),
-                root = Path.GetDirectoryName(dll),
-                path = Path.Combine(root, "Assets");
+            String path = GetAssetsPath("MNIST");
             (float[,], float[,]) ParseSamples(String valuePath, String labelsPath, int count)
             {
                 float[,] 
@@ -71,14 +80,40 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void GradientDescentTest()
+        public void ForwardTest1()
+        {
+            String path = GetAssetsPath("Networks");
+            INeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet"));
+            Assert.IsTrue(network != null);
+            (_, var testSet) = ParseMnistDataset();
+            float[,] yHat = network.Forward(testSet.X);
+            Assert.IsTrue(yHat.GetUid() == -112610238);
+        }
+
+        [TestMethod]
+        public void ForwardTest2()
+        {
+            String path = GetAssetsPath("Networks");
+            INeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet"));
+            Assert.IsTrue(network != null);
+            (_, var testSet) = ParseMnistDataset();
+            IReadOnlyList<(float[,] Z, float[,] A)> features = network.ExtractDeepFeatures(testSet.X);
+            Assert.IsTrue(features[0].Z.GetUid() == -1663064875);
+            Assert.IsTrue(features[0].A.GetUid() == 1115917777);
+            Assert.IsTrue(features[1].Z.GetUid() == 1393557830);
+            Assert.IsTrue(features[1].A.GetUid() == -112610238);
+        }
+
+        [TestMethod]
+        public void GradientDescentTest1()
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
-            NeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, 100);
-            network.StochasticGradientDescent(batches, 4, null, null, 0.5f, 0, 5);
+            String path = GetAssetsPath("Networks");
+            NeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet")) as NeuralNetwork;
+            Assert.IsTrue(network != null);
+            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, 10);
+            TrainingSessionResult result = network.StochasticGradientDescent(batches, 4, null, null, 0.5f, 0, 0);
+            Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
             (_, _, float accuracy) = network.Evaluate(testSet);
             Assert.IsTrue(accuracy > 80);
         }

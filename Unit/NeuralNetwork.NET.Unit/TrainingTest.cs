@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Helpers;
@@ -15,64 +15,81 @@ namespace NeuralNetworkNET.Unit
     public class TrainingTest
     {
         [TestMethod]
-        [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void BatchDivisionTest1()
         {
             // Sequential
             float[,]
-                x = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 784),
-                y = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 10);
+                x = ThreadSafeRandom.NextUniformMatrix(20000, 784, 100),
+                y = ThreadSafeRandom.NextUniformMatrix(20000, 10, 100);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
-            batches.NextEpoch();
-            int xor = 0;
-            for (int i = 0; i < 60000; i++)
+            HashSet<int>
+                set1 = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
             {
-                float sum = 0;
-                for (int j = 0; j < 784; j++) sum += x[i, j];
-                for (int j = 0; j < 10; j++) sum += y[i, j];
-                xor ^= (int)sum;
+                set1.Add(x.GetUid(i) ^ y.GetUid(i));
             }
-            int xorBatch = 0;
+            HashSet<int>
+                set2 = new HashSet<int>();
             for (int i = 0; i < batches.Count; i++)
             {
-                for (int z = 0; z < batches.Batches[i].X.GetLength(0); z++)
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
                 {
-                    float sum = 0;
-                    for (int j = 0; j < 784; j++) sum += batches.Batches[i].X[z, j];
-                    for (int j = 0; j < 10; j++) sum += batches.Batches[i].Y[z, j];
-                    xorBatch ^= (int)sum;
+                    set2.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
                 }
             }
-            Assert.IsTrue(xor == xorBatch);
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
+            batches.CrossShuffle();
+            HashSet<int>
+                set3 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
+            {
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set3.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                }
+            }
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set3.OrderBy(h => h)));
         }
 
         [TestMethod]
         public void BatchDivisionTest2()
         {
-            float[][]
-                x = Enumerable.Range(0, 60000).Select(_ => ThreadSafeRandom.NextGaussianVector(784)).ToArray(),
-                y = Enumerable.Range(0, 60000).Select(_ => ThreadSafeRandom.NextGaussianVector(10)).ToArray();
-            BatchesCollection dataset = BatchesCollection.FromDataset(Enumerable.Range(0, 60000).Select(i => (x[i], y[i])), 1000);
-            int xor = 0;
-            for (int i = 0; i < 60000; i++)
+            // Sequential
+            float[,]
+                x = ThreadSafeRandom.NextUniformMatrix(20000, 784, 100),
+                y = ThreadSafeRandom.NextUniformMatrix(20000, 10, 100);
+            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1547);
+            HashSet<int>
+                set1 = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
             {
-                float sum = 0;
-                for (int j = 0; j < 784; j++) sum += x[i][j];
-                for (int j = 0; j < 10; j++) sum += y[i][j];
-                xor ^= (int)sum;
+                set1.Add(x.GetUid(i) ^ y.GetUid(i));
             }
-            int xorBatch = 0;
-            for (int i = 0; i < dataset.Count; i++)
+            HashSet<int>
+                set2 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
             {
-                for (int z = 0; z < dataset.Batches[i].X.GetLength(0); z++)
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
                 {
-                    float sum = 0;
-                    for (int j = 0; j < 784; j++) sum += dataset.Batches[i].X[z, j];
-                    for (int j = 0; j < 10; j++) sum += dataset.Batches[i].Y[z, j];
-                    xorBatch ^= (int)sum;
+                    set2.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
                 }
             }
-            Assert.IsTrue(xor == xorBatch);
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
+            batches.CrossShuffle();
+            HashSet<int>
+                set3 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
+            {
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set3.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                }
+            }
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set3.OrderBy(h => h)));
         }
 
         [TestMethod]

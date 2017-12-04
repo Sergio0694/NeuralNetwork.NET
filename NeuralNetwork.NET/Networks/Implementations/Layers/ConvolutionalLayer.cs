@@ -1,11 +1,12 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.DependencyInjection;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
-using NeuralNetworkNET.Networks.Implementations.Misc;
+using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
@@ -65,34 +66,34 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override (float[,] Z, float[,] A) Forward(float[,] x)
+        public override unsafe void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
         {
-            float[,]
-                z = MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume, Biases),
-                a = ActivationFunctionType == ActivationFunctionType.Identity
-                    ? z.BlockCopy()
-                    : z.Activation(ActivationFunctions.Activation);
-            return (z, a);
+            MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume, Biases, out z);
+            if (ActivationFunctionType == ActivationFunctionType.Identity) FloatSpan2D.From(z, z.Height, z.Width, out a);
+            else MatrixServiceProvider.Activation(z, ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
-        public override float[,] Backpropagate(float[,] delta_1, float[,] z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
         {
-            float[,]
-                w180 = Weights.Rotate180(KernelVolume.Depth),
-                delta = MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume);
-            delta.InPlaceHadamardProductWithActivation(z, activationPrime);
-            return delta;
+            fixed (float* pw = Weights)
+            {
+                FloatSpan2D.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out FloatSpan2D weights);
+                weights.Rotate180(KernelVolume.Depth, out FloatSpan2D w180);
+                MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume, out FloatSpan2D delta);
+                w180.Free();
+                z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
+                delta.Free();
+            }
         }
 
         /// <inheritdoc/>
-        public override LayerGradient ComputeGradient(float[,] a, float[,] delta)
+        public override void ComputeGradient(in FloatSpan2D a, in FloatSpan2D delta, out FloatSpan2D dJdw, out FloatSpan dJdb)
         {
-            float[,]
-                a180 = a.Rotate180(InputVolume.Depth),
-                dJdw = MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume);
-            float[] dJdb = delta.CompressVertically(OutputVolume.Depth);
-            return new LayerGradient(dJdw, dJdb);
+            a.Rotate180(InputVolume.Depth, out FloatSpan2D a180);
+            MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume, out dJdw);
+            a180.Free();
+            delta.CompressVertically(out dJdb);
         }
 
         /// <inheritdoc/>

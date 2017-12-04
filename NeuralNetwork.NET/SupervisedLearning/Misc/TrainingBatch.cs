@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.SupervisedLearning.Misc
@@ -6,19 +7,20 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
     /// <summary>
     /// A simple struct that keeps a reference of a training set and its expected results
     /// </summary>
-    public struct TrainingBatch
+    [DebuggerDisplay("Samples: {X.GetLength(0)}, inputs: {X.GetLength(1)}, outputs: {Y.GetLength(1)}")]
+    public readonly struct TrainingBatch
     {
         /// <summary>
         /// Gets the current dataset
         /// </summary>
         [NotNull]
-        public float[,] X { get; }
+        public readonly float[,] X;
 
         /// <summary>
         /// Gets the expected results for the current dataset
         /// </summary>
         [NotNull]
-        public float[,] Y { get; }
+        public readonly float[,] Y;
 
         /// <summary>
         /// Creates a new dataset wrapper batch with the given data

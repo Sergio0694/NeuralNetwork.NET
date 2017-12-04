@@ -4,6 +4,7 @@ using Alea.Parallel;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Cuda.Helpers
 {
@@ -20,19 +21,16 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
         /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <param name="biases">The bias vector to sum to the resulting images</param>
-        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <param name="result">The resulting convolution matrix</param>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteForward(
-            [NotNull] this float[,] source, VolumeInformation sourceInfo,
-            [NotNull] float[,] kernels, VolumeInformation kernelsInfo,
-            [NotNull] float[] biases)
+        public static void ConvoluteForward(
+            in FloatSpan2D source, in VolumeInformation sourceInfo,
+            [NotNull] float[,] kernels, in VolumeInformation kernelsInfo,
+            [NotNull] float[] biases,
+            out FloatSpan2D result)
         {
             // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
                 nKernels = kernels.GetLength(0),
@@ -42,8 +40,8 @@ namespace NeuralNetworkNET.Cuda.Helpers
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
+                h = source.Height,
+                w = source.Width,
                 sourceDepth = sourceInfo.Depth,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
@@ -127,7 +125,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     }
                 }
                 gpu.For(0, h * nKernels, ForwardKernel);
-                return Gpu.Copy2DToHost(result_gpu);
+                result_gpu.CopyToHost(out result);
             }
         }
 
@@ -138,28 +136,26 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
         /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
-        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <param name="result">The resulting matrix where each row contains the result of the convolutions for each original image for each sample</param>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteBackwards([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
+        public static void ConvoluteBackwards(
+            in FloatSpan2D source, in VolumeInformation sourceInfo,
+            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
+            out FloatSpan2D result)
         {
             // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
-                nKernels = kernels.GetLength(0),
-                kw = kernels.GetLength(1),
+                nKernels = kernels.Height,
+                kw = kernels.Width,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width,
                 kDepth = kernelsInfo.Depth;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
+                h = source.Height,
+                w = source.Width,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -241,7 +237,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     }
                 }
                 gpu.For(0, h * kDepth, BackwardsKernel);
-                return Gpu.Copy2DToHost(result_gpu);
+                result_gpu.CopyToHost(out result);
             }
         }
 
@@ -252,28 +248,26 @@ namespace NeuralNetworkNET.Cuda.Helpers
         /// <param name="sourceInfo">The source volume info (depth and 2D slices size)</param>
         /// <param name="kernels">The list of convolution kernels to apply to each image</param>
         /// <param name="kernelsInfo">The kernels volume info (depth and 2D slices size)</param>
-        /// <returns>A new matrix where each row contains the result of the convolutions for each original image for each sample</returns>
+        /// <param name="result">The resulting matrix where each row contains the result of the convolutions for each original image for each sample</param>
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ConvoluteGradient([NotNull] this float[,] source, VolumeInformation sourceInfo, [NotNull] float[,] kernels, VolumeInformation kernelsInfo)
+        public static void ConvoluteGradient(
+            in FloatSpan2D source, in VolumeInformation sourceInfo,
+            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
+            out FloatSpan2D result)
         {
             // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
-                nKernels = kernels.GetLength(0),
-                kw = kernels.GetLength(1),
+                nKernels = kernels.Height,
+                kw = kernels.Width,
                 kDepth = kernelsInfo.Depth,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
+                h = source.Height,
+                w = source.Width,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -350,7 +344,7 @@ namespace NeuralNetworkNET.Cuda.Helpers
                     }
                 }
                 gpu.For(0, h * iterationsPerSample, GradientKernel);
-                return Gpu.Copy2DToHost(result_gpu);
+                result_gpu.CopyToHost(out result);
             }
         }
 

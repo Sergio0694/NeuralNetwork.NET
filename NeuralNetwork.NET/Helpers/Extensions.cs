@@ -85,23 +85,6 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Shuffles the input
-        /// </summary>
-        /// <param name="list">The list to shuffle</param>
-        public static void Shuffle<T>(this IList<T> list)
-        {
-            int n = list.Count;
-            while (n > 1)
-            {
-                int k = ThreadSafeRandom.NextInt(max: n);
-                n--;
-                T value = list[k];
-                list[k] = list[n];
-                list[n] = value;
-            }
-        }
-
-        /// <summary>
         /// Rounds the given <see cref="TimeSpan"/> to an interval with an integer number of total seconds
         /// </summary>
         /// <param name="timeSpan">The instance to round</param>

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Exceptions;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -154,7 +155,7 @@ namespace NeuralNetworkNET.Helpers
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             if (fanIn == 0) fanIn = x;
             if (fanOut < 0) throw new ArgumentOutOfRangeException(nameof(fanOut), "The fan out must be a positive number");
-            if (fanOut == 0) fanOut = x;
+            if (fanOut == 0) fanOut = y;
             float scale = (float)Math.Sqrt(2f / (fanIn + fanOut));
             return NextGaussianMatrix(x, y, scale);
         }
@@ -174,7 +175,7 @@ namespace NeuralNetworkNET.Helpers
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             if (fanIn == 0) fanIn = x;
             if (fanOut < 0) throw new ArgumentOutOfRangeException(nameof(fanOut), "The fan out must be a positive number");
-            if (fanOut == 0) fanOut = x;
+            if (fanOut == 0) fanOut = y;
             float scale = (float)Math.Sqrt(6f / (fanIn + fanOut));
             return NextUniformMatrix(x, y, scale);
         }
@@ -223,11 +224,19 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="x">The height of the matrix</param>
         /// <param name="y">The width of the matrix</param>
         /// <param name="dropout">The dropout probability (indicates the probability of keeping a neuron active)</param>
-        [Pure, NotNull]
-        public static float[,] NextDropoutMask(int x, int y, float dropout)
+        /// <param name="mask">The resulting mask</param>
+        public static unsafe void NextDropoutMask(int x, int y, float dropout, out FloatSpan2D mask)
         {
+            if (x <= 0 || y <= 0) throw new ArgumentOutOfRangeException("The size of the matrix isn't valid");
             float scale = 1 / dropout;
-            return NextMatrix(x, y, () => NextFloat() > dropout ? 0 : scale);
+            FloatSpan2D.New(x, y, out mask);
+            float* r = mask;
+            Parallel.For(0, x, i =>
+            {
+                int offset = i * y;
+                for (int j = 0; j < y; j++)
+                    r[offset + j] = NextFloat() > dropout ? 0 : scale;
+            }).AssertCompleted();
         }
 
         /// <summary>

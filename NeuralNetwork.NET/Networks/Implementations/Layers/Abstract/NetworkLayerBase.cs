@@ -1,8 +1,8 @@
 ﻿using System;
-using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
@@ -57,19 +57,17 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// Forwards the inputs through the network layer and returns the resulting activity (Z) and activation (A)
         /// </summary>
         /// <param name="x">The input to process</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public abstract (float[,] Z, float[,] A) Forward([NotNull] float[,] x);
+        /// <param name="z">The output activity on the current layer</param>
+        /// <param name="a">The output activation on the current layer</param>
+        public abstract void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a);
 
         /// <summary>
         /// Backpropagates the error to compute the delta for the inputs of the layer
         /// </summary>
         /// <param name="delta_1">The output error delta</param>
-        /// <param name="z">The activity on the inputs of the layer</param>
+        /// <param name="z">The activity on the inputs of the layer. It will be modified to become the computed delta</param>
         /// <param name="activationPrime">The activation prime function performed by the previous layer</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public abstract float[,] Backpropagate([NotNull] float[,] delta_1, [NotNull] float[,] z, ActivationFunction activationPrime);
+        public abstract void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime);
 
         #region Equality check
 

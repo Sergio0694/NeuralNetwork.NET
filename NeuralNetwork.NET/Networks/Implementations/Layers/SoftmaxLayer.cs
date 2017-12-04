@@ -4,6 +4,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -17,11 +18,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         { }
 
         /// <inheritdoc/>
-        public override (float[,] Z, float[,] A) Forward(float[,] x)
+        public override void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
         {
-            (float[,] z, float[,] a) = base.Forward(x);
+            base.Forward(x, out z, out a);
             a.InPlaceSoftmaxNormalization();
-            return (z, a);
         }
 
         public SoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases)
