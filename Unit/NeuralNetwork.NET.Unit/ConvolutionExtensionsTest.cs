@@ -10,7 +10,7 @@ namespace NeuralNetworkNET.Unit
     [TestClass]
     [TestCategory(nameof(ConvolutionExtensions))]
     public class ConvolutionExtensionsTest
-    {/*
+    {
         [TestMethod]
         public unsafe void Pool1()
         {
@@ -34,12 +34,12 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                FloatSpan2D.Fix(pm, 4, 4, out FloatSpan2D mSpan);
+                FloatSpan2D.Fix(pm, 1, 16, out FloatSpan2D mSpan);
                 mSpan.Pool2x2(1, out FloatSpan2D result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
 
                 // Upscale
-                mSpan.UpscalePool2x2(result, 1, out FloatSpan2D upscaledSpan);
+                mSpan.UpscalePool2x2(result, 1);
                 float[,] expected =
                 {
                     {
@@ -49,14 +49,13 @@ namespace NeuralNetworkNET.Unit
                         0, 10, 0, 0
                     }
                 };
-                Assert.IsTrue(upscaledSpan.ToArray2D().ContentEquals(expected));
+                Assert.IsTrue(mSpan.ToArray2D().ContentEquals(expected));
                 result.Free();
-                upscaledSpan.Free();
             }
         }
-        
+
         [TestMethod]
-        public void Pool2()
+        public unsafe void Pool2()
         {
             // Test values
             float[,]
@@ -80,13 +79,18 @@ namespace NeuralNetworkNET.Unit
                         0.55f, 0.33f, 1, 0.11f,
                         0.33f, 0.55f, 0.11f, 0.77f
                     }
-                },
-                t = m.Pool2x2(1);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 1, 49, out FloatSpan2D mSpan);
+                mSpan.Pool2x2(1, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Pool3()
+        public unsafe void Pool3()
         {
             // Test values
             float[,]
@@ -100,13 +104,18 @@ namespace NeuralNetworkNET.Unit
                 r =
                 {
                     { 1 }
-                },
-                t = m.Pool2x2(1);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 1, 4, out FloatSpan2D mSpan);
+                mSpan.Pool2x2(1, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Pool4()
+        public unsafe void Pool4()
         {
             // Test values
             float[,]
@@ -135,13 +144,18 @@ namespace NeuralNetworkNET.Unit
                         1, 2,
                         10, 1.2f
                     },
-                },
-                t = m.Pool2x2(1);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 2, 16, out FloatSpan2D mSpan);
+                mSpan.Pool2x2(1, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Pool5()
+        public unsafe void Pool5()
         {
             // Test values
             float[,]
@@ -186,13 +200,18 @@ namespace NeuralNetworkNET.Unit
                         1, 2,
                         10, 1.45f
                     },
-                },
-                t = m.Pool2x2(2);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 2, 32, out FloatSpan2D mSpan);
+                mSpan.Pool2x2(2, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Rotate1()
+        public unsafe void Rotate1()
         {
             // Test values
             float[,]
@@ -209,13 +228,18 @@ namespace NeuralNetworkNET.Unit
                         4, 3,
                         2, 1
                     }
-                },
-                t = m.Rotate180(1);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 1, 4, out FloatSpan2D span);
+                span.Rotate180(1, out FloatSpan2D tSpan);
+                Assert.IsTrue(tSpan.ToArray2D().ContentEquals(r));
+                tSpan.Free();
+            }
         }
-
+        
         [TestMethod]
-        public void Rotate2()
+        public unsafe void Rotate2()
         {
             // Test values
             float[,]
@@ -234,13 +258,18 @@ namespace NeuralNetworkNET.Unit
                         6, 5, 4,
                         3, 2, 1
                     }
-                },
-                t = m.Rotate180(1);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 1, 9, out FloatSpan2D span);
+                span.Rotate180(1, out FloatSpan2D tSpan);
+                Assert.IsTrue(tSpan.ToArray2D().ContentEquals(r));
+                tSpan.Free();
+            }
         }
 
         [TestMethod]
-        public void Rotate3()
+        public unsafe void Rotate3()
         {
             // Test values
             float[,]
@@ -285,13 +314,18 @@ namespace NeuralNetworkNET.Unit
                         6, 5, 44,
                         3, 2, 1
                     },
-                },
-                t = m.Rotate180(2);
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 2, 18, out FloatSpan2D span);
+                span.Rotate180(2, out FloatSpan2D tSpan);
+                Assert.IsTrue(tSpan.ToArray2D().ContentEquals(r));
+                tSpan.Free();
+            }
         }
 
         [TestMethod]
-        public void UpscalePool1()
+        public unsafe void UpscalePool1()
         {
             float[,]
                 m =
@@ -310,7 +344,6 @@ namespace NeuralNetworkNET.Unit
                         99, 11
                     }
                 },
-                t = m.UpscalePool2x2(p, 1),
                 r =
                 {
                     {
@@ -320,11 +353,17 @@ namespace NeuralNetworkNET.Unit
                         0, 99, 0, 0
                     }
                 };
-            Assert.IsTrue(t.ContentEquals(r));
+            fixed (float* pm = m, pp = p)
+            {
+                FloatSpan2D.Fix(pm, 1, 16, out FloatSpan2D mSpan);
+                FloatSpan2D.Fix(pp, 1, 4, out FloatSpan2D pSpan);
+                mSpan.UpscalePool2x2(pSpan, 1);
+                Assert.IsTrue(mSpan.ToArray2D().ContentEquals(r));
+            }
         }
 
         [TestMethod]
-        public void UpscalePool2()
+        public unsafe void UpscalePool2()
         {
             float[,]
                 m =
@@ -351,7 +390,6 @@ namespace NeuralNetworkNET.Unit
                         111, 11
                     }
                 },
-                t = m.UpscalePool2x2(p, 2),
                 r =
                 {
                     {
@@ -366,11 +404,17 @@ namespace NeuralNetworkNET.Unit
                         111, 0, 0, 0
                     }
                 };
-            Assert.IsTrue(t.ContentEquals(r));
+            fixed (float* pm = m, pp = p)
+            {
+                FloatSpan2D.Fix(pm, 1, 32, out FloatSpan2D mSpan);
+                FloatSpan2D.Fix(pp, 1, 8, out FloatSpan2D pSpan);
+                mSpan.UpscalePool2x2(pSpan, 2);
+                Assert.IsTrue(mSpan.ToArray2D().ContentEquals(r));
+            }
         }
 
         [TestMethod]
-        public void UpscalePool3()
+        public unsafe void UpscalePool3()
         {
             float[,]
                 m =
@@ -415,7 +459,6 @@ namespace NeuralNetworkNET.Unit
                         111, 11
                     }
                 },
-                t = m.UpscalePool2x2(p, 2),
                 r =
                 {
                     {
@@ -441,11 +484,17 @@ namespace NeuralNetworkNET.Unit
                         0, 0, 0, 0
                     }
                 };
-            Assert.IsTrue(t.ContentEquals(r));
+            fixed (float* pm = m, pp = p)
+            {
+                FloatSpan2D.Fix(pm, 2, 32, out FloatSpan2D mSpan);
+                FloatSpan2D.Fix(pp, 2, 8, out FloatSpan2D pSpan);
+                mSpan.UpscalePool2x2(pSpan, 2);
+                Assert.IsTrue(mSpan.ToArray2D().ContentEquals(r));
+            }
         }
 
         [TestMethod]
-        public void UpscalePool4()
+        public unsafe void UpscalePool4()
         {
             float[,]
                 m =
@@ -506,7 +555,6 @@ namespace NeuralNetworkNET.Unit
                         33, 44
                     }
                 },
-                t = m.UpscalePool2x2(p, 3),
                 r =
                 {
                     {
@@ -542,11 +590,17 @@ namespace NeuralNetworkNET.Unit
                         0, 0, 0, 44
                     }
                 };
-            Assert.IsTrue(t.ContentEquals(r));
+            fixed (float* pm = m, pp = p)
+            {
+                FloatSpan2D.Fix(pm, 2, 48, out FloatSpan2D mSpan);
+                FloatSpan2D.Fix(pp, 2, 12, out FloatSpan2D pSpan);
+                mSpan.UpscalePool2x2(pSpan, 3);
+                Assert.IsTrue(mSpan.ToArray2D().ContentEquals(r));
+            }
         }
 
         [TestMethod]
-        public void Compress1()
+        public unsafe void Compress1()
         {
             // Test values
             float[,]
@@ -558,14 +612,18 @@ namespace NeuralNetworkNET.Unit
                         7, 8, 9
                     }
                 };
-            float[]
-                r = { 45 }, 
-                t = m.CompressVertically(1);
-            Assert.IsTrue(t.ContentEquals(r));
+            float[] r = { 45 };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 1, 9, out FloatSpan2D mSpan);
+                mSpan.CompressVertically(1, out FloatSpan v);
+                Assert.IsTrue(v.ToArray().ContentEquals(r));
+                v.Free();
+            }
         }
 
         [TestMethod]
-        public void Compress2()
+        public unsafe void Compress2()
         {
             // Test values
             float[,]
@@ -590,15 +648,19 @@ namespace NeuralNetworkNET.Unit
                         7, 8, 9
                     }
                 };
-            float[]
-                r = { 150, 227 },
-                t = m.CompressVertically(2);
-            Assert.IsTrue(t.ContentEquals(r));
+            float[] r = { 150, 227 };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 2, 18, out FloatSpan2D mSpan);
+                mSpan.CompressVertically(2, out FloatSpan v);
+                Assert.IsTrue(v.ToArray().ContentEquals(r));
+                v.Free();
+            }
         }
 
         // 1-depth, 3*3 with 2*2 = 2*2 result
         [TestMethod]
-        public void Convolution2DValid1()
+        public unsafe void Convolution2DValid1()
         {
             float[,]
                 l =
@@ -617,7 +679,6 @@ namespace NeuralNetworkNET.Unit
                     }
                 };
             float[] b = { 0.6f };
-            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1), b);
             float[,] expected =
             {
                 {
@@ -625,12 +686,18 @@ namespace NeuralNetworkNET.Unit
                     4.6f, 1.6f
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l)
+            {
+                FloatSpan2D.Fix(pl, 1, 9, out FloatSpan2D lSpan);
+                lSpan.ConvoluteForward((3, 3, 1), k, (2, 2, 1), b, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         // 1-depth, 2 sample 3*3 with 2*2 = 2 sample 2*2 result
         [TestMethod]
-        public void Convolution2DValid2()
+        public unsafe void Convolution2DValid2()
         {
             float[,]
                 l =
@@ -653,7 +720,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new float[1]);
             float[,] expected =
             {
                 {
@@ -665,12 +731,18 @@ namespace NeuralNetworkNET.Unit
                     4, 1
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l)
+            {
+                FloatSpan2D.Fix(pl, 2, 9, out FloatSpan2D lSpan);
+                lSpan.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new float[1], out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         // 1-depth, 3*3 with 2 kernels 2*2 = 2-depth 2*2 result
         [TestMethod]
-        public void Convolution2DValid3()
+        public unsafe void Convolution2DValid3()
         {
             float[,]
                 l =
@@ -692,7 +764,6 @@ namespace NeuralNetworkNET.Unit
                         2, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new[] { 1, 0.5f });
             float[,] expected =
             {
                 {
@@ -703,12 +774,18 @@ namespace NeuralNetworkNET.Unit
                     1.5f, 3.5f
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l)
+            {
+                FloatSpan2D.Fix(pl, 1, 9, out FloatSpan2D lSpan);
+                lSpan.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new[] { 1, 0.5f }, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         // 2-depth, 3*3 with 2-depth kernel = 2*2 result
         [TestMethod]
-        public void Convolution2DValid4()
+        public unsafe void Convolution2DValid4()
         {
             float[,]
                 l =
@@ -733,7 +810,6 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0.1f });
             float[,] expected =
             {
                 {
@@ -741,11 +817,17 @@ namespace NeuralNetworkNET.Unit
                     6.1f, 3.1f
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l)
+            {
+                FloatSpan2D.Fix(pl, 1, 18, out FloatSpan2D lSpan);
+                lSpan.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0.1f }, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DValid5()
+        public unsafe void Convolution2DValid5()
         {
             float[,]
                 l =
@@ -777,7 +859,6 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0, 0.2f });
             float[,] expected =
             {
                 {
@@ -788,11 +869,17 @@ namespace NeuralNetworkNET.Unit
                     6.2f, 3.2f
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l)
+            {
+                FloatSpan2D.Fix(pl, 1, 18, out FloatSpan2D lSpan);
+                lSpan.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0, 0.2f }, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DValidRectangle1()
+        public unsafe void Convolution2DValidRectangle1()
         {
             float[,]
                 l =
@@ -809,18 +896,23 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteForward((2, 3, 1), k, (2, 2, 1), new[] { 0.9f });
             float[,] expected =
             {
                 {
                     2.9f, 2.9f
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l)
+            {
+                FloatSpan2D.Fix(pl, 1, 6, out FloatSpan2D lSpan);
+                lSpan.ConvoluteForward((2, 3, 1), k, (2, 2, 1), new[] { 0.9f }, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void ConvolutionFull1()
+        public unsafe void ConvolutionFull1()
         {
             float[,]
                 l =
@@ -837,7 +929,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteBackwards((2, 2, 1), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -846,11 +937,18 @@ namespace NeuralNetworkNET.Unit
                     0, -1, 2
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 1, 4, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 1, 4, out FloatSpan2D kSpan);
+                lSpan.ConvoluteBackwards((2, 2, 1), kSpan, (2, 2, 1), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void ConvolutionFull2()
+        public unsafe void ConvolutionFull2()
         {
             float[,]
                 l =
@@ -874,7 +972,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteBackwards((2, 2, 2), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -883,11 +980,18 @@ namespace NeuralNetworkNET.Unit
                     0, -2, 4
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 1, 8, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 2, 4, out FloatSpan2D kSpan);
+                lSpan.ConvoluteBackwards((2, 2, 2), kSpan, (2, 2, 1), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void ConvolutionFull3()
+        public unsafe void ConvolutionFull3()
         {
             float[,]
                 l =
@@ -907,7 +1011,6 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteBackwards((2, 2, 1), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -920,11 +1023,18 @@ namespace NeuralNetworkNET.Unit
                     -1, 2, 0
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 1, 4, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 1, 8, out FloatSpan2D kSpan);
+                lSpan.ConvoluteBackwards((2, 2, 1), kSpan, (2, 2, 2), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void ConvolutionFull4()
+        public unsafe void ConvolutionFull4()
         {
             float[,]
                 l =
@@ -961,7 +1071,6 @@ namespace NeuralNetworkNET.Unit
                         3, 1
                     }
                 };
-            float[,] result = l.ConvoluteBackwards((2, 2, 2), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -983,11 +1092,18 @@ namespace NeuralNetworkNET.Unit
                     2, 15, 4
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 2, 8, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 2, 8, out FloatSpan2D kSpan);
+                lSpan.ConvoluteBackwards((2, 2, 2), kSpan, (2, 2, 2), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DGradient1()
+        public unsafe void Convolution2DGradient1()
         {
             float[,]
                 l =
@@ -1005,7 +1121,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient((3,3,1), k, (2,2,1));
             float[,] expected =
             {
                 {
@@ -1013,11 +1128,18 @@ namespace NeuralNetworkNET.Unit
                     4, 1
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 1, 9, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 1, 4, out FloatSpan2D kSpan);
+                lSpan.ConvoluteGradient((3, 3, 1), kSpan, (2, 2, 1), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DGradient2()
+        public unsafe void Convolution2DGradient2()
         {
             float[,]
                 l =
@@ -1038,7 +1160,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient((3, 3, 1), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -1049,11 +1170,18 @@ namespace NeuralNetworkNET.Unit
                     5, 2
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 1, 9, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 1, 8, out FloatSpan2D kSpan);
+                lSpan.ConvoluteGradient((3, 3, 1), kSpan, (2, 2, 2), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DGradient3()
+        public unsafe void Convolution2DGradient3()
         {
             float[,]
                 l =
@@ -1075,7 +1203,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient((3, 3, 2), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -1086,11 +1213,18 @@ namespace NeuralNetworkNET.Unit
                     4, 1
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 1, 18, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 1, 4, out FloatSpan2D kSpan);
+                lSpan.ConvoluteGradient((3, 3, 2), kSpan, (2, 2, 1), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DGradient4()
+        public unsafe void Convolution2DGradient4()
         {
             float[,]
                 l =
@@ -1125,7 +1259,6 @@ namespace NeuralNetworkNET.Unit
                         0, 1
                     }
                 };
-            float[,] result = l.ConvoluteGradient((3, 3, 2), k, (2, 2, 1));
             float[,] expected =
             {
                 {
@@ -1143,11 +1276,18 @@ namespace NeuralNetworkNET.Unit
                     5, 2
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 2, 18, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 2, 4, out FloatSpan2D kSpan);
+                lSpan.ConvoluteGradient((3, 3, 2), kSpan, (2, 2, 1), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
         }
 
         [TestMethod]
-        public void Convolution2DGradient5()
+        public unsafe void Convolution2DGradient5()
         {
             float[,]
                 l =
@@ -1188,7 +1328,6 @@ namespace NeuralNetworkNET.Unit
                         1, 0
                     }
                 };
-            float[,] result = l.ConvoluteGradient((3, 3, 2), k, (2, 2, 2));
             float[,] expected =
             {
                 {
@@ -1218,7 +1357,14 @@ namespace NeuralNetworkNET.Unit
                     2, 0
                 }
             };
-            Assert.IsTrue(result.ContentEquals(expected));
-        } */
+            fixed (float* pl = l, pk = k)
+            {
+                FloatSpan2D.Fix(pl, 2, 18, out FloatSpan2D lSpan);
+                FloatSpan2D.Fix(pk, 2, 8, out FloatSpan2D kSpan);
+                lSpan.ConvoluteGradient((3, 3, 2), kSpan, (2, 2, 2), out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
+                result.Free();
+            }
+        }
     }
 }

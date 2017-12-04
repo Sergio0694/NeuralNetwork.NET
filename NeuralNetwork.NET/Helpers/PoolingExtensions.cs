@@ -107,11 +107,10 @@ namespace NeuralNetworkNET.Helpers
         /// <summary>
         /// Pools the input matrix with a window of 2 and a stride of 2
         /// </summary>
-        /// <param name="source">The activation matrix</param>
+        /// <param name="source">The activation matrix that will also hold the final result</param>
         /// <param name="pooled">The matrix to upscale according to the source values</param>
         /// <param name="depth">The number of images for each matrix row</param>
-        /// <param name="result">The resulting upscaled matrix</param>
-        public static unsafe void UpscalePool2x2(in this FloatSpan2D source, in FloatSpan2D pooled, int depth, out FloatSpan2D result)
+        public static unsafe void UpscalePool2x2(in this FloatSpan2D source, in FloatSpan2D pooled, int depth)
         {
             // Prepare the result matrix
             if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
@@ -130,10 +129,9 @@ namespace NeuralNetworkNET.Helpers
                 ph = pooled.Height,
                 pw = pooled.Width;
             if (ph != h || pw != poolFinalWidth) throw new ArgumentException("Invalid pooled matrix", nameof(pooled));
-            FloatSpan2D.New(h, w, out result);
 
             // Pooling kernel
-            float* psource = source, ppooled = pooled, presult = result;
+            float* psource = source, ppooled = pooled;
             void Kernel(int sample)
             {
                 int
@@ -158,15 +156,23 @@ namespace NeuralNetworkNET.Helpers
                             {
                                 if (j == w - 1)
                                 {
-                                    presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                    psource[sourceIOffset + j] = ppooled[resultXOffset + y++];
                                 }
                                 else
                                 {
                                     float
                                         left = psource[sourceIOffset + j],
                                         right = psource[sourceIOffset + j + 1];
-                                    if (left > right) presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                    else presult[sourceIOffset + j + 1] = ppooled[resultXOffset + y++];
+                                    if (left > right)
+                                    {
+                                        psource[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                        psource[sourceIOffset + j + 1] = 0;
+                                    }
+                                    else
+                                    {
+                                        psource[sourceIOffset + j + 1] = ppooled[resultXOffset + y++];
+                                        psource[sourceIOffset + j] = 0;
+                                    }
                                 }
                             }
                         }
@@ -181,8 +187,16 @@ namespace NeuralNetworkNET.Helpers
                                     float
                                         up = psource[sourceIOffset + j],
                                         down = psource[sourceI_1Offset + j];
-                                    if (up > down) presult[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                    else presult[sourceI_1Offset + j] = ppooled[resultXOffset + y++];
+                                    if (up > down)
+                                    {
+                                        psource[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                        psource[sourceI_1Offset + j] = 0;
+                                    }
+                                    else
+                                    {
+                                        psource[sourceI_1Offset + j] = ppooled[resultXOffset + y++];
+                                        psource[sourceIOffset + j] = 0;
+                                    }
                                 }
                                 else
                                 {
@@ -193,20 +207,26 @@ namespace NeuralNetworkNET.Helpers
                                     if (next > max)
                                     {
                                         max = next;
+                                        psource[offset] = 0;
                                         offset = sourceIOffset + j + 1;
                                     }
+                                    else psource[sourceIOffset + j + 1] = 0;
                                     next = psource[sourceI_1Offset + j];
                                     if (next > max)
                                     {
                                         max = next;
+                                        psource[offset] = 0;
                                         offset = sourceI_1Offset + j;
                                     }
+                                    else psource[sourceI_1Offset + j] = 0;
                                     next = psource[sourceI_1Offset + j + 1];
                                     if (next > max)
                                     {
+                                        psource[offset] = 0;
                                         offset = sourceI_1Offset + j + 1;
                                     }
-                                    presult[offset] = ppooled[resultXOffset + y++];
+                                    else psource[sourceI_1Offset + j + 1] = 0;
+                                    psource[offset] = ppooled[resultXOffset + y++];
                                 }
                             }
                         }

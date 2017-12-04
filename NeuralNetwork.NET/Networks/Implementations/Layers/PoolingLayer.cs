@@ -49,12 +49,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
-        {
-            z.UpscalePool2x2(delta_1, InputVolume.Depth, out FloatSpan2D upscaled);
-            z.Overwrite(upscaled);
-            upscaled.Free();
-        }
+        public override void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputVolume.Depth);
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputVolume, ActivationFunctionType);

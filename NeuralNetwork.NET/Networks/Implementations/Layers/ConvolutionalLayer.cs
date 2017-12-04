@@ -74,13 +74,17 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
         {
-            Weights.Rotate180(KernelVolume.Depth, out FloatSpan2D w180);
-            MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume, out FloatSpan2D delta);
-            w180.Free();
-            z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
-            delta.Free();
+            fixed (float* pw = Weights)
+            {
+                FloatSpan2D.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out FloatSpan2D weights);
+                weights.Rotate180(KernelVolume.Depth, out FloatSpan2D w180);
+                MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume, out FloatSpan2D delta);
+                w180.Free();
+                z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
+                delta.Free();
+            }
         }
 
         /// <inheritdoc/>

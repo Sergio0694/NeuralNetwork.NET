@@ -394,60 +394,6 @@ namespace NeuralNetworkNET.Helpers
             Parallel.For(0, h * depth, Kernel).AssertCompleted();
         }
 
-        /// <summary>
-        /// Rotates the input volume by 180 degrees
-        /// </summary>
-        /// <param name="source">The input matrix to rotate</param>
-        /// <param name="depth">The number of images per row</param>
-        /// <param name="result">The rotated input matrix</param>
-        public static unsafe void Rotate180([NotNull] this float[,] source, int depth, out FloatSpan2D result)
-        {
-            // Checks and local parameters
-            if (source.Length == 0) throw new ArgumentException(nameof(source), "The source matrix can't be empty");
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
-            int
-                h = source.GetLength(0),
-                w = source.GetLength(1),
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
-                imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
-            int
-                threshold = imgSize / 2,
-                edge = imgSize - 1;
-            bool odd = imgSize % 2 == 1;
-            FloatSpan2D.New(h, w, out result);
-
-            // Inversion kernel
-            float* presult = result;
-            void Kernel(int index)
-            {
-                // Calculate the current indexes
-                int
-                    iSample = index / depth,    // Sample index
-                    z = index % depth;          // 2D slice index
-
-                // Reverse the input matrix sequentially
-                int baseOffset = iSample * w + z * imgSize;
-                fixed (float* psource = source)
-                {
-                    for (int i = 0; i < threshold; i++)
-                    {
-                        int
-                            left = baseOffset + i,
-                            right = baseOffset + edge - i;
-                        presult[left] = psource[right];
-                        presult[right] = psource[left];
-                    }
-                    if (odd)
-                    {
-                        int center = baseOffset + threshold;
-                        presult[center] = psource[center];
-                    }
-                }
-            }
-            Parallel.For(0, h * depth, Kernel).AssertCompleted();
-        }
-
         #endregion
     }
 }
