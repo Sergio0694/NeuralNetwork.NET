@@ -13,6 +13,7 @@ namespace NeuralNetworkNET.Cuda.Unit
     [SuppressMessage("ReSharper", "InvokeAsExtensionMethod")]
     public class ConvolutionCudaExtensionsTest
     {
+        /*
         [TestMethod]
         public void ConvolutionForward1()
         {
@@ -114,5 +115,6 @@ namespace NeuralNetworkNET.Cuda.Unit
                 gpuResult = ConvolutionGpuExtensions.ConvoluteGradient(source, (32, 32, 20), kernels, (24, 24, 10));
             Assert.IsTrue(cpuResult.ContentEquals(gpuResult, 1e-4f));
         }
+        */
     }
 }
