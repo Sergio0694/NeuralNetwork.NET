@@ -1,9 +1,8 @@
-﻿using NeuralNetworkNET.Exceptions;
-using NeuralNetworkNET.Structs;
+﻿using NeuralNetworkNET.Structs;
 using System;
 using System.Threading.Tasks;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// A static class with a collection of pooling extension methods

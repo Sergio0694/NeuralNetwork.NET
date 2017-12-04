@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Unit

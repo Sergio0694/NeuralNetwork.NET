@@ -1,6 +1,7 @@
 ﻿using System;
 using Alea;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Structs;
 

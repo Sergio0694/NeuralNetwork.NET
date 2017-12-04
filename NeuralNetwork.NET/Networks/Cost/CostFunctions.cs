@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
-using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Structs;
 

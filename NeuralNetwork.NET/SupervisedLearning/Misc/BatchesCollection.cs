@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.SupervisedLearning.Misc

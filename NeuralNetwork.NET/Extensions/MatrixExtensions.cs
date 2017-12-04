@@ -4,11 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Structs;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// An helper class with methods to process fixed-size matrices

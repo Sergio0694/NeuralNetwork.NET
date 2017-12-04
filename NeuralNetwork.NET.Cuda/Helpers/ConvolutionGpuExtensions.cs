@@ -2,7 +2,7 @@
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 

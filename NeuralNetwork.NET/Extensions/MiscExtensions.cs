@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// A simple class with some extension methods
     /// </summary>
-    public static class Extensions
+    public static class MiscExtensions
     {
         /// <summary>
         /// Casts the input item to a class or interface that inherits from the initial type
@@ -113,6 +114,17 @@ namespace NeuralNetworkNET.Helpers
             using (IEnumerator<T> enumerator = values.GetEnumerator())
                 while (enumerator.MoveNext())
                     yield return GetChunk(enumerator).ToArray();
+        }
+
+        /// <summary>
+        /// Raises an <see cref="InvalidOperationException"/> if the loop wasn't completed successfully
+        /// </summary>
+        /// <param name="result">The <see cref="ParallelLoopResult"/> to test</param>
+        [AssertionMethod]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AssertCompleted(in this ParallelLoopResult result)
+        {
+            if (!result.IsCompleted) throw new InvalidOperationException("Error while performing the parallel loop");
         }
     }
 }

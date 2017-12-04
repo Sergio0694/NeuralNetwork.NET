@@ -2,7 +2,7 @@
 using System.IO;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// A static class with some <see cref="Stream"/> extensions to load/write contents

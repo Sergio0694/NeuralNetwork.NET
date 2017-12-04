@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
 namespace NeuralNetworkNET.SupervisedLearning.Optimization.Misc

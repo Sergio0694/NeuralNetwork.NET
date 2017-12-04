@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -10,7 +10,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.Primitives;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Helpers.Imaging
 {
     /// <summary>
     /// A static class with some helper methods to quickly load a sample from a target image file

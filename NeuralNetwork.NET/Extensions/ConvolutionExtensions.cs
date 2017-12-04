@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// A static class with a collection of convolution extension methods
