@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset((float[,] X ,float[,] Y) dataset, int size)
+        public static BatchesCollection FromDataset((float[,] X, float[,] Y) dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
@@ -118,64 +118,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
                 }
                 return new TrainingBatch(xBatch, yBatch);
             }).ToArray();
-            return new BatchesCollection(batches);
-        }
-
-        /// <summary>
-        /// Creates a series of batches from the input dataset and expected results
-        /// </summary>
-        /// <param name="dataset">The source dataset to create the batches</param>
-        /// <param name="size">The desired batch size</param>
-        /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
-        [NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset([NotNull] IReadOnlyList<(float[] X, float[] Y)> dataset, int size)
-        {
-            // Local parameters
-            if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
-            int
-                samples = dataset.Count,
-                w = dataset[0].X.Length,
-                wy = dataset[0].Y.Length;
-            if (dataset.Any(t => t.X.Length != w || t.Y.Length != wy)) throw new ArgumentException("The number of features in each sample must be the same");
-
-            // Prepare the different batches
-            int
-                nBatches = samples / size,
-                nBatchMod = samples % size;
-            bool oddBatchPresent = nBatchMod > 0;
-            TrainingBatch[] batches = new TrainingBatch[nBatches + (oddBatchPresent ? 1 : 0)];
-            for (int i = 0; i < batches.Length; i++)
-            {
-                if (oddBatchPresent && i == batches.Length - 1)
-                {
-                    float[,]
-                        batch = new float[nBatchMod, w],
-                        batchY = new float[nBatchMod, wy];
-                    int sampleOffset = i * size;
-                    for (int j = 0; j < nBatchMod; j++)
-                    {
-                        int targetSample = sampleOffset + j;
-                        Buffer.BlockCopy(dataset[targetSample].X, 0, batch, sizeof(float) * j * w, sizeof(float) * w);
-                        Buffer.BlockCopy(dataset[targetSample].Y, 0, batchY, sizeof(float) * j * wy, sizeof(float) * wy);
-                    }
-                    batches[batches.Length - 1] = new TrainingBatch(batch, batchY);
-                }
-                else
-                {
-                    float[,]
-                        batch = new float[size, w],
-                        batchY = new float[size, wy];
-                    int sampleOffset = i * size;
-                    for (int j = 0; j < size; j++)
-                    {
-                        int targetSample = sampleOffset + j;
-                        Buffer.BlockCopy(dataset[targetSample].X, 0, batch, sizeof(float) * j * w, sizeof(float) * w);
-                        Buffer.BlockCopy(dataset[targetSample].Y, 0, batchY, sizeof(float) * j * wy, sizeof(float) * wy);
-                    }
-                    batches[i] = new TrainingBatch(batch, batchY);
-                }
-            }
             return new BatchesCollection(batches);
         }
 
