@@ -344,6 +344,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             float l2Factor = eta * lambda / miniBatches.Samples;
             for (int i = 0; i < epochs; i++)
             {
+                // Shuffle the training set
+                miniBatches.CrossShuffle();
+
                 // Gradient descent over the current batches
                 for (int j = 0; j < miniBatches.Count; j++)
                 {
@@ -373,9 +376,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                     testReports.Add(new DatasetEvaluationResult(cost, accuracy));
                     testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
                 }
-
-                // Shuffle the training set
-                miniBatches.CrossShuffle();
             }
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
         }

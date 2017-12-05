@@ -12,7 +12,7 @@ namespace NeuralNetworkNET.Extensions
     /// <summary>
     /// An helper class with methods to process fixed-size matrices
     /// </summary>
-    internal static class MatrixExtensions
+    public static class MatrixExtensions
     {
         #region Subtraction
 
@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second</param>
-        public static unsafe void Subtract(in this FloatSpan2D m1, in FloatSpan2D m2)
+        internal static unsafe void Subtract(in this FloatSpan2D m1, in FloatSpan2D m2)
         {
             int
                 h = m1.Height,
@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second matrix</param>
-        public static unsafe void InPlaceHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2)
+        internal static unsafe void InPlaceHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2)
         {
             // Check
             int
@@ -79,7 +79,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second matrix</param>
         /// <param name="activation">The activation function to use</param>
-        public static unsafe void InPlaceActivationAndHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction activation)
+        internal static unsafe void InPlaceActivationAndHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction activation)
         {
             // Check
             int
@@ -107,7 +107,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="result">The resulting matrix</param>
-        public static unsafe void Multiply(in this FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
+        internal static unsafe void Multiply(in this FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
         {
             // Initialize the parameters and the result matrix
             if (m1.Width != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -147,7 +147,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m">The input to process</param>
         /// <param name="activation">The activation function to use</param>
         /// <param name="result">The resulting matrix</param>
-        public static unsafe void Activation(in this FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        internal static unsafe void Activation(in this FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
         {
             // Setup
             int h = m.Height, w = m.Width;
@@ -167,7 +167,7 @@ namespace NeuralNetworkNET.Extensions
         /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
         /// </summary>
         /// <param name="m">The matrix to normalize</param>
-        public static unsafe void InPlaceSoftmaxNormalization(in this FloatSpan2D m)
+        internal static unsafe void InPlaceSoftmaxNormalization(in this FloatSpan2D m)
         {
             // Setup
             int h = m.Height, w = m.Width;
@@ -207,7 +207,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix</param>
         /// <param name="result">The resulting matrix</param>
-        public static unsafe void MultiplyWithSum(in this FloatSpan2D m1, [NotNull] float[,] m2, [NotNull] float[] v, out FloatSpan2D result)
+        internal static unsafe void MultiplyWithSum(in this FloatSpan2D m1, [NotNull] float[,] m2, [NotNull] float[] v, out FloatSpan2D result)
         {
             // Initialize the parameters and the result matrix
             if (m1.Width != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -247,7 +247,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="delta">The first matrix to multiply</param>
         /// <param name="wt">The second matrix to multiply</param>
         /// <param name="prime">The activation prime function to use</param>
-        public static unsafe void InPlaceMultiplyAndHadamardProductWithActivationPrime(
+        internal static unsafe void InPlaceMultiplyAndHadamardProductWithActivationPrime(
             in this FloatSpan2D z, in FloatSpan2D delta, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
@@ -291,7 +291,7 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m">The matrix to transpose</param>
         /// <param name="result">The resulting matrix</param>
-        public static unsafe void Transpose(in this FloatSpan2D m, out FloatSpan2D result)
+        internal static unsafe void Transpose(in this FloatSpan2D m, out FloatSpan2D result)
         {
             // Setup
             int h = m.Height, w = m.Width;
@@ -315,7 +315,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="result">The resulting vector</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe void CompressVertically(in this FloatSpan2D m, out FloatSpan result)
+        internal static unsafe void CompressVertically(in this FloatSpan2D m, out FloatSpan result)
         {
             // Preliminary checks and declarations
             if (m.Height == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
@@ -342,7 +342,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m">The matrix to transpose</param>
         /// <param name="result">The resulting matrix</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe void Transpose([NotNull] this float[,] m, out FloatSpan2D result)
+        internal static unsafe void Transpose([NotNull] this float[,] m, out FloatSpan2D result)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
@@ -363,7 +363,7 @@ namespace NeuralNetworkNET.Extensions
         /// Calculates the position and the value of the biggest item in a matrix
         /// </summary>
         /// <param name="m">The input matrix</param>
-        public static (int x, int y, float value) Max([NotNull] this float[,] m)
+        internal static (int x, int y, float value) Max([NotNull] this float[,] m)
         {
             // Checks and local variables setup
             if (m.Length == 0) throw new ArgumentOutOfRangeException("The input matrix can't be empty");
@@ -391,7 +391,7 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="p">A pointer to the memory area to scan</param>
         /// <param name="length">The number of items to scan</param>
-        public static unsafe (float Min, float Max) MinMax(float* p, int length)
+        internal static unsafe (float Min, float Max) MinMax(float* p, int length)
         {
             if (length == 0) return (0, 0);
             float min = float.MaxValue, max = float.MinValue;
@@ -504,45 +504,23 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Splits the input matrix into two matrices with the desired number of rows each
-        /// </summary>
-        /// <param name="m">The source matrix to read from</param>
-        /// <param name="rows">The number of rows in the first returned matrix</param>
-        [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        private static (float[,], float[,]) SplitRows([NotNull] float[,] m, int rows)
-        {
-            int
-                h = m.GetLength(0),
-                w = m.GetLength(1);
-            if (rows >= h) throw new ArgumentOutOfRangeException(nameof(rows), "The number of rows must be smaller than the original height");
-            float[,]
-            m1 = new float[rows, w],
-            m2 = new float[h - rows, w];
-            Buffer.BlockCopy(m, 0, m1, 0, sizeof(float) * m1.Length);
-            Buffer.BlockCopy(m, sizeof(float) * w * rows, m2, 0, sizeof(float) * m2.Length);
-            return (m1, m2);
-        }
-
-        /// <summary>
         /// Merges the input samples into a matrix dataset
         /// </summary>
         /// <param name="samples">The vectors to merge</param>
         [PublicAPI]
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static (float[,], float[,]) MergeRows([NotNull] this (float[] X, float[] Y)[] samples)
+        public static (float[,], float[,]) MergeRows([NotNull] this IReadOnlyList<(float[] X, float[] Y)> samples)
         {
             // Preliminary checks and declarations
-            if (samples.Length == 0) throw new ArgumentOutOfRangeException("The samples list can't be empty");
+            if (samples.Count == 0) throw new ArgumentOutOfRangeException("The samples list can't be empty");
             int
                 xLength = samples[0].X.Length,
                 yLength = samples[0].Y.Length;
             float[,]
-                x = new float[samples.Length, xLength],
-                y = new float[samples.Length, yLength];
-            for (int i = 0; i < samples.Length; i++)
+                x = new float[samples.Count, xLength],
+                y = new float[samples.Count, yLength];
+            for (int i = 0; i < samples.Count; i++)
             {
                 Buffer.BlockCopy(samples[i].X, 0, x, sizeof(float) * xLength * i, sizeof(float) * xLength);
                 Buffer.BlockCopy(samples[i].Y, 0, y, sizeof(float) * yLength * i, sizeof(float) * yLength);
@@ -587,7 +565,7 @@ namespace NeuralNetworkNET.Extensions
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[] CompressVertically([NotNull] this float[,] m)
+        internal static float[] CompressVertically([NotNull] this float[,] m)
         {
             // Preliminary checks and declarations
             if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
@@ -614,58 +592,6 @@ namespace NeuralNetworkNET.Extensions
             return vector;
         }
 
-        /// <summary>
-        /// Extracts a series of serialized matrices from a single matrix
-        /// </summary>
-        /// <param name="m">The source matrix</param>
-        [PublicAPI]
-        [Pure, NotNull, ItemNotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[][,] Extract3DVolume([NotNull] this float[,] m)
-        {
-            int
-                h = m.GetLength(0),
-                w = m.GetLength(1),
-                axis = w.IntegerSquare();
-            if (axis * axis != w) throw new ArgumentOutOfRangeException("Invalid matrix size");
-            float[][,] raw = new float[h][,];
-            int bytesize = sizeof(float) * w;
-            Parallel.For(0, h, i =>
-            {
-                float[,] _2d = new float[axis, axis];
-                Buffer.BlockCopy(m, i * bytesize, _2d, 0, bytesize);
-                raw[i] = _2d;
-            });
-            return raw;
-        }
-
-        /// <summary>
-        /// Edits the contents of the given matrix by applying a function to every item
-        /// </summary>
-        /// <param name="m">The matrix to edit</param>
-        /// <param name="f">The function to modify the matrix elements</param>
-        [CollectionAccess(CollectionAccessType.ModifyExistingContent)]
-        public static void Tweak([NotNull] this float[,] m, Func<float, float> f)
-        {
-            int w = m.GetLength(1);
-            bool result = Parallel.For(0, m.GetLength(0), i =>
-            {
-                unsafe
-                {
-                    fixed (float* p = m)
-                    {
-                        int offset = i * w;
-                        for (int j = 0; j < w; j++)
-                        {
-                            int target = offset + j;
-                            p[target] = f(p[target]);
-                        }
-                    }
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-        }
-
         #endregion
 
         #region Argmax
@@ -676,7 +602,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="p">A pointer to the buffer to read</param>
         /// <param name="length">The length of the buffer to consider</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe int Argmax(float* p, int length)
+        internal static unsafe int Argmax(float* p, int length)
         {
             if (length < 2) return 0;
             int index = 0;

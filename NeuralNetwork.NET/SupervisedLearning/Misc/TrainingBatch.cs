@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
 
@@ -27,11 +28,31 @@ namespace NeuralNetworkNET.SupervisedLearning.Misc
         /// </summary>
         /// <param name="x">The batch data</param>
         /// <param name="y">The batch expected results</param>
-        public TrainingBatch([NotNull] float[,] x, [NotNull] float[,] y)
+        internal TrainingBatch([NotNull] float[,] x, [NotNull] float[,] y)
         {
             if (x.GetLength(0) != y.GetLength(0)) throw new ArgumentException("The number of samples in the data and results must be the same");
             X = x;
             Y = y;
+        }
+
+        /// <summary>
+        /// Creates a new instance from the input partition
+        /// </summary>
+        /// <param name="batch">The source batch</param>
+        internal  static TrainingBatch From([NotNull] IReadOnlyList<(float[] X, float[] Y)> batch)
+        {
+            int
+                wx = batch[0].X.Length,
+                wy = batch[0].Y.Length;
+            float[,]
+                xBatch = new float[batch.Count, wx],
+                yBatch = new float[batch.Count, wy];
+            for (int i = 0; i < batch.Count; i++)
+            {
+                Buffer.BlockCopy(batch[i].X, 0, xBatch, sizeof(float) * i * wx, sizeof(float) * wx);
+                Buffer.BlockCopy(batch[i].Y, 0, yBatch, sizeof(float) * i * wy, sizeof(float) * wy);
+            }
+            return new TrainingBatch(xBatch, yBatch);
         }
     }
 }
