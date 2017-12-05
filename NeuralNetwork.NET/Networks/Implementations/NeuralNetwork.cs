@@ -5,17 +5,21 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Exceptions;
+using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Helpers.Imaging;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
-using NeuralNetworkNET.Networks.Implementations.Misc;
-using NeuralNetworkNET.Networks.PublicAPIs;
+using NeuralNetworkNET.Structs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Misc;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -47,7 +51,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
-        private readonly IReadOnlyList<NetworkLayerBase> _Layers;
+        private readonly NetworkLayerBase[] _Layers;
+
+        // The list of layers with weights to update
+        private readonly int[] WeightedLayersIndexes;
 
         /// <summary>
         /// Initializes a new network with the given parameters
@@ -71,37 +78,130 @@ namespace NeuralNetworkNET.Networks.Implementations
             Inputs = layers[0].Inputs;
             Outputs = layers[layers.Length - 1].Outputs;
             _Layers = layers.Cast<NetworkLayerBase>().ToArray();
+            WeightedLayersIndexes = layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i)).Where(t => t.Layer != null).Select(t => t.Index).ToArray();
         }
 
-        #region Single processing
+        #region Public APIs
 
         /// <inheritdoc/>
-        public float[] Forward(float[] x) => Forward(x.ToMatrix()).Flatten();
+        public unsafe float[] Forward(float[] x)
+        {
+            fixed (float* px = x)
+            {
+                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
+                Forward(xSpan, out FloatSpan2D yHatSpan);
+                float[] yHat = yHatSpan.ToArray();
+                yHatSpan.Free();
+                return yHat;
+            }
+        }
 
         /// <inheritdoc/>
-        public float CalculateCost(float[] x, float[] y) => CalculateCost(x.ToMatrix(), y.ToMatrix());
+        public unsafe float CalculateCost(float[] x, float[] y)
+        {
+            fixed (float* px = x, py = y)
+            {
+                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
+                FloatSpan2D.Fix(py, 1, y.Length, out FloatSpan2D ySpan);
+                return CalculateCost(xSpan, ySpan);
+            }
+        }
+
+        /// <inheritdoc/>
+        public unsafe IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures(float[] x)
+        {
+            fixed (float* px = x)
+            {
+                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
+                FloatSpan2D*
+                    zList = stackalloc FloatSpan2D[_Layers.Length],
+                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                }
+                (float[], float[])[] features = new(float[], float[])[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    features[i] = (zList[i].ToArray(), aList[i].ToArray());
+                    zList[i].Free();
+                    aList[i].Free();
+                }
+                return features;
+            }
+        }
+
+        /// <inheritdoc/>
+        public unsafe float[,] Forward(float[,] x)
+        {
+            fixed (float* px = x)
+            {
+                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
+                Forward(xSpan, out FloatSpan2D yHatSpan);
+                float[,] yHat = yHatSpan.ToArray2D();
+                yHatSpan.Free();
+                return yHat;
+            }
+        }
+
+        /// <inheritdoc/>
+        public unsafe float CalculateCost(float[,] x, float[,] y)
+        {
+            fixed (float* px = x, py = y)
+            {
+                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
+                FloatSpan2D.Fix(py, y.GetLength(0), y.GetLength(1), out FloatSpan2D ySpan);
+                return CalculateCost(xSpan, ySpan);
+            }
+        }
+
+        /// <inheritdoc/>
+        public unsafe IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
+        {
+            fixed (float* px = x)
+            {
+                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
+                FloatSpan2D*
+                    zList = stackalloc FloatSpan2D[_Layers.Length],
+                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                }
+                (float[,], float[,])[] features = new(float[,], float[,])[_Layers.Length];
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    features[i] = (zList[i].ToArray2D(), aList[i].ToArray2D());
+                    zList[i].Free();
+                    aList[i].Free();
+                }
+                return features;
+            }
+        }
 
         #endregion
 
-        #region Batch processing
+        #region Implementation
 
-        /// <inheritdoc/>
-        public float[,] Forward(float[,] x)
+        private void Forward(in FloatSpan2D x, out FloatSpan2D yHat)
         {
-            float[,] yHat = x;
-            foreach (NetworkLayerBase layer in _Layers)
-                (_, yHat) = layer.Forward(yHat); // Forward the inputs through all the network layers
-            return yHat;
+            FloatSpan2D input = x;
+            for (int i = 0; i < _Layers.Length; i++)
+            {
+                _Layers[i].Forward(input, out FloatSpan2D z, out FloatSpan2D a); // Forward the inputs through all the network layers
+                z.Free();
+                if (i > 0) input.Free();
+                input = a;
+            }
+            yHat = input;
         }
 
-        /// <inheritdoc/>
-        public float CalculateCost(float[,] input, float[,] y)
+        private float CalculateCost(in FloatSpan2D x, in FloatSpan2D y)
         {
-            // Forward the input
-            float[,] yHat = Forward(input);
-
-            // Calculate the cost
-            return _Layers[_Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
+            Forward(x, out FloatSpan2D yHat);
+            float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
+            yHat.Free();
+            return cost;
         }
 
         /// <summary>
@@ -110,63 +210,94 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="x">The input data</param>
         /// <param name="y">The expected results</param>
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal IReadOnlyList<LayerGradient> Backpropagate([NotNull] float[,] x, [NotNull] float[,] y, float dropout)
+        /// <param name="eta">The learning rate for the training session</param>
+        /// <param name="l2Factor">The L2 regularization factor</param>
+        private unsafe void Backpropagate(in TrainingBatch batch, float dropout, float eta, float l2Factor)
         {
-            // Feedforward
-            float[][,]
-                zList = new float[_Layers.Count][,],
-                aList = new float[_Layers.Count][,];
-            float[][,] dropoutMasks = new float[_Layers.Count - 1][,];
-            foreach ((NetworkLayerBase layer, int i) in _Layers.Select((l, i) => (l, i)))
+            fixed (float* px = batch.X, py = batch.Y)
             {
-                // Save the intermediate steps to be able to reuse them later
-                (zList[i], aList[i]) = layer.Forward(i == 0 ? x : aList[i - 1]);
-                if (layer.LayerType == LayerType.FullyConnected && dropout > 0)
+                // Setup
+                FloatSpan2D*
+                    zList = stackalloc FloatSpan2D[_Layers.Length],
+                    aList = stackalloc FloatSpan2D[_Layers.Length],
+                    dropoutMasks = stackalloc FloatSpan2D[_Layers.Length - 1];
+                FloatSpan2D.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out FloatSpan2D x);
+                FloatSpan2D.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out FloatSpan2D y);
+                FloatSpan2D** deltas = stackalloc FloatSpan2D*[_Layers.Length]; // One delta for each hop through the network
+
+                // Feedforward
+                for (int i = 0; i < _Layers.Length; i++)
                 {
-                    dropoutMasks[i] = ThreadSafeRandom.NextDropoutMask(aList[i].GetLength(0), aList[i].GetLength(1), dropout);
-                    aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                    _Layers[i].Forward(i == 0 ? x : aList[i - 1], out zList[i], out aList[i]);
+                    if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
+                    {
+                        ThreadSafeRandom.NextDropoutMask(aList[i].Height, aList[i].Width, dropout, out dropoutMasks[i]);
+                        aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                    }
                 }
-            }
 
-            // Backpropagation deltas
-            float[][,] deltas = new float[_Layers.Count][,]; // One delta for each hop through the network
-
-            /* ======================
-             * Calculate delta(L)
-             * ======================
-             * Perform the sigmoid prime of zL, the activity on the last layer
-             * Calculate the gradient of C with respect to a
-             * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
-             * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
-             *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-            deltas[deltas.Length - 1] = _Layers[_Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[aList.Length -1], y, zList[zList.Length - 1]);
-            for (int l = _Layers.Count - 2; l >= 0; l--)
-            {
                 /* ======================
-                 * Calculate delta(l)
+                 * Calculate delta(L)
                  * ======================
-                 * Perform the sigmoid prime of z(l), the activity on the previous layer
-                 * Multiply the previous delta with the transposed weights of the following layer
-                 * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                deltas[l] = _Layers[l + 1].Backpropagate(deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
-                if (dropoutMasks[l] != null) deltas[l].InPlaceHadamardProduct(dropoutMasks[l]);
-            }
+                 * Perform the sigmoid prime of zL, the activity on the last layer
+                 * Calculate the gradient of C with respect to a
+                 * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
+                 * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
+                 *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
+                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1]);
+                deltas[_Layers.Length - 1] = aList + _Layers.Length - 1;
+                for (int l = _Layers.Length - 2; l >= 0; l--)
+                {
+                    /* ======================
+                     * Calculate delta(l)
+                     * ======================
+                     * Perform the sigmoid prime of z(l), the activity on the previous layer
+                     * Multiply the previous delta with the transposed weights of the following layer
+                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
+                    _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
+                    if (dropoutMasks[l].Ptr != IntPtr.Zero) zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
+                    deltas[l] = zList + l;
+                }
 
-            /* =============================================
-             * Compute the gradients DJDw(l) and DJDb(l)
-             * =============================================
-             * Compute the gradients for each layer with weights and biases.
-             * NOTE: the gradient is only computed for layers with weights and biases, for all the other
-             *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-            LayerGradient[] gradient = new LayerGradient[_Layers.Count]; // One gradient item for layer
-            foreach ((WeightedLayerBase layer, int i) in _Layers.Select((l, i) => (Layer: l as WeightedLayerBase, i)).Where(t => t.Layer != null))
-            {
-                gradient[i] = layer.ComputeGradient(i == 0 ? x : aList[i - 1], deltas[i]);
+                /* =============================================
+                 * Compute the gradients DJDw(l) and DJDb(l)
+                 * =============================================
+                 * Compute the gradients for each layer with weights and biases.
+                 * NOTE: the gradient is only computed for layers with weights and biases, for all the other
+                 *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
+                FloatSpan2D* dJdw = stackalloc FloatSpan2D[WeightedLayersIndexes.Length]; // One gradient item for layer
+                FloatSpan* dJdb = stackalloc FloatSpan[WeightedLayersIndexes.Length];
+                for (int j = 0; j < WeightedLayersIndexes.Length; j++)
+                {
+                    int i = WeightedLayersIndexes[j];
+                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().ComputeGradient(i == 0 ? x : aList[i - 1], *deltas[i], out dJdw[j], out dJdb[j]);
+                }
+
+                /* ====================
+                 * Gradient descent
+                 * ====================
+                 * Edit the network weights according to the computed gradients and the current training parameters. 
+                 * The learning rate indicates the desired convergence speed, while the L2 factor is used to regularize the network and keep the weights small */
+                float alpha = eta / batch.X.GetLength(0);
+                void Kernel(int j)
+                {
+                    int i = WeightedLayersIndexes[j];
+                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().Minimize(dJdw[j], dJdb[j], alpha, l2Factor);
+                    dJdw[j].Free();
+                    dJdb[j].Free();
+                }
+                Parallel.For(0, WeightedLayersIndexes.Length, Kernel).AssertCompleted();
+
+                // Cleanup
+                for (int i = 0; i < _Layers.Length - 1; i++)
+                {
+                    zList[i].Free();
+                    aList[i].Free();
+                    if (dropoutMasks[i].Ptr != IntPtr.Zero) dropoutMasks[i].Free();
+                }
+                zList[_Layers.Length - 1].Free();
+                aList[_Layers.Length - 1].Free();
             }
-            return gradient;
         }
 
         #endregion
@@ -214,19 +345,16 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < epochs; i++)
             {
                 // Gradient descent over the current batches
-                foreach (TrainingBatch batch in miniBatches.NextEpoch())
+                for (int j = 0; j < miniBatches.Count; j++)
                 {
                     if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
-                    IReadOnlyList<LayerGradient> dJ = Backpropagate(batch.X, batch.Y, dropout);
-                    int size = batch.X.GetLength(0);
-                    UpdateWeights(dJ, size, eta, l2Factor);
+                    Backpropagate(miniBatches.Batches[j], dropout, eta, l2Factor);
                 }
 
                 // Check for overflows
-                if (!Parallel.For(0, _Layers.Count, (j, state) =>
+                if (!Parallel.For(0, _Layers.Length, (j, state) =>
                 {
-                    if (_Layers[j] is WeightedLayerBase layer &&
-                        !layer.ValidateWeights()) state.Break();
+                    if (_Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
                 }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 
                 // Check the validation dataset
@@ -245,44 +373,30 @@ namespace NeuralNetworkNET.Networks.Implementations
                     testReports.Add(new DatasetEvaluationResult(cost, accuracy));
                     testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
                 }
+
+                // Shuffle the training set
+                miniBatches.CrossShuffle();
             }
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
-        }
-
-        /// <summary>
-        /// Updates the current network weights after a backpropagation on a training batch
-        /// </summary>
-        /// <param name="dJ">The gradient for the cost function over the last training batch</param>
-        /// <param name="batchSize">The size of the last training batch</param>
-        /// <param name="eta">The learning rate for the training session</param>
-        /// <param name="l2Factor">The L2 regularization factor</param>
-        private void UpdateWeights([NotNull] IReadOnlyList<LayerGradient> dJ, int batchSize, float eta, float l2Factor)
-        {
-            float alpha = eta / batchSize;
-            IEnumerable<(WeightedLayerBase Layer, LayerGradient Gradient)> targets =
-                from layer in _Layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i))
-                where layer.Layer != null
-                select (layer.Layer, dJ[layer.Index]);
-            Parallel.ForEach(targets, target => target.Layer.Minimize(target.Gradient, alpha, l2Factor));
         }
 
         /// <summary>
         /// Calculates the current network performances with the given test samples
         /// </summary>
         /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
-        internal (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
+        /// <param name="batchSize">The number of test samples to forward in parallel</param>
+        internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
-            // Feedforward
-            float[,] yHat = Forward(evaluationSet.X);
-            int
-                h = evaluationSet.X.GetLength(0),
-                wy = evaluationSet.Y.GetLength(1),
-                total = 0;
-
-            // Function that counts the correctly classified items
-            unsafe void Kernel(int i)
+            // Auxiliary function to forward a test batch
+            (float Cost, int Classified) Evaluate(in FloatSpan2D x, in FloatSpan2D y)
             {
-                fixed (float* pyHat = yHat, pY = evaluationSet.Y)
+                // Feedforward
+                Forward(x, out FloatSpan2D yHat);
+
+                // Function that counts the correctly classified items
+                float* pyHat = yHat, pY = y;
+                int wy = y.Width, total = 0;
+                void Kernel(int i)
                 {
                     int
                         offset = i * wy,
@@ -290,14 +404,48 @@ namespace NeuralNetworkNET.Networks.Implementations
                         max = MatrixExtensions.Argmax(pY + offset, wy);
                     if (max == maxHat) Interlocked.Increment(ref total);
                 }
+
+                // Check the correctly classified samples and calculate the cost
+                Parallel.For(0, x.Height, Kernel).AssertCompleted();
+                float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
+                yHat.Free();
+                return (cost, total);
             }
 
-            // Check the correctly classified samples and calculate the cost
-            Parallel.For(0, h, Kernel).AssertCompleted();
-            float
-                cost = _Layers[_Layers.Count - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, evaluationSet.Y),
-                accuracy = (float)total / h * 100;
-            return (cost, total, accuracy);
+            // Actual test evaluation
+            int batchSize = NetworkManager.MaximumBatchSize;
+            fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
+            {
+                int
+                    h = evaluationSet.X.GetLength(0),
+                    wx = evaluationSet.X.GetLength(1),
+                    wy = evaluationSet.Y.GetLength(1),
+                    batches = h / batchSize,
+                    batchMod = h % batchSize,
+                    classified = 0;
+                float cost = 0;
+
+                // Process the even batches
+                for (int i = 0; i < batches; i++)
+                {
+                    FloatSpan2D.Fix(px + i * batchSize * wx, batchSize, wx, out FloatSpan2D xSpan);
+                    FloatSpan2D.Fix(py + i * batchSize * wy, batchSize, wy, out FloatSpan2D ySpan);
+                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    cost += pCost;
+                    classified += pClassified;
+                }
+
+                // Process the remaining samples, if any
+                if (batchMod > 0)
+                {
+                    FloatSpan2D.Fix(px + batches * batchSize * wx, batchMod, wx, out FloatSpan2D xSpan);
+                    FloatSpan2D.Fix(py + batches * batchSize * wy, batchMod, wy, out FloatSpan2D ySpan);
+                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    cost += pCost;
+                    classified += pClassified;
+                }
+                return (cost, classified, (float)classified / h * 100);
+            }
         }
 
         #endregion
@@ -305,7 +453,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Tools
 
         /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
+        public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)
@@ -314,7 +462,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             if (other is NeuralNetwork network &&
                 other.Inputs == Inputs &&
                 other.Outputs == Outputs &&
-                _Layers.Count == network._Layers.Count)
+                _Layers.Length == network._Layers.Length)
             {
                 // Compare the individual layers
                 return _Layers.Zip(network._Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
@@ -328,7 +476,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             String path = $"{Path.Combine(directory.ToString(), name)}{NeuralNetworkLoader.NetworkFileExtension}";
             using (FileStream stream = File.OpenWrite(path))
             {
-                stream.Write(_Layers.Count);
+                stream.Write(_Layers.Length);
                 foreach (NetworkLayerBase layer in _Layers)
                 {
                     stream.WriteByte((byte)layer.LayerType);

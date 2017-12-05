@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 
@@ -17,23 +18,79 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void BatchDivisionTest1()
         {
+            // Sequential
             float[,]
-                x = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 784),
-                y = ThreadSafeRandom.NextGlorotNormalMatrix(60000, 10);
+                x = ThreadSafeRandom.NextUniformMatrix(20000, 784, 100),
+                y = ThreadSafeRandom.NextUniformMatrix(20000, 10, 100);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
-            IEnumerable<TrainingBatch> testList = batches.NextEpoch();
-            // TODO: check the shuffle is coherent
+            HashSet<int>
+                set1 = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
+            {
+                set1.Add(x.GetUid(i) ^ y.GetUid(i));
+            }
+            HashSet<int>
+                set2 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
+            {
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set2.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                }
+            }
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
+            batches.CrossShuffle();
+            HashSet<int>
+                set3 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
+            {
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set3.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                }
+            }
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set3.OrderBy(h => h)));
         }
 
         [TestMethod]
         public void BatchDivisionTest2()
         {
+            // Sequential
             float[,]
-                x = ThreadSafeRandom.NextGlorotNormalMatrix(20000, 784),
-                y = ThreadSafeRandom.NextGlorotNormalMatrix(20000, 10);
-            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 333);
-            IEnumerable<TrainingBatch> testList = batches.NextEpoch();
-            // TODO: check the shuffle is coherent
+                x = ThreadSafeRandom.NextUniformMatrix(20000, 784, 100),
+                y = ThreadSafeRandom.NextUniformMatrix(20000, 10, 100);
+            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1547);
+            HashSet<int>
+                set1 = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
+            {
+                set1.Add(x.GetUid(i) ^ y.GetUid(i));
+            }
+            HashSet<int>
+                set2 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
+            {
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set2.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                }
+            }
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
+            batches.CrossShuffle();
+            HashSet<int>
+                set3 = new HashSet<int>();
+            for (int i = 0; i < batches.Count; i++)
+            {
+                int h = batches.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set3.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                }
+            }
+            Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set3.OrderBy(h => h)));
         }
 
         [TestMethod]

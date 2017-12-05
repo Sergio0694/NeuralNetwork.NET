@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -15,7 +16,7 @@ namespace NeuralNetworkNET.Unit
         /// Vector-matrix multiplication test
         /// </summary>
         [TestMethod]
-        public void LinearMultiplication()
+        public unsafe void LinearMultiplication()
         {
             // Test values
             float[,] m =
@@ -27,20 +28,22 @@ namespace NeuralNetworkNET.Unit
             };
             float[]
                 v = { 1, 2, 0.1f, -2 },
-                r = { 1.1f, 5.1f, 1.1f, -0.9f },
-                t = v.Multiply(m);
-            Assert.IsTrue(t.ContentEquals(r));
-
-            // Exception test
-            float[] f = { 1, 2, 3, 4, 5, 6 };
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Multiply(m));
+                r = { 1.1f, 5.1f, 1.1f, -0.9f };
+            fixed (float* pm = m, pv = v)
+            {
+                FloatSpan2D.Fix(pm, 4, 4, out FloatSpan2D mSpan);
+                FloatSpan2D.Fix(pv, 1, 4, out FloatSpan2D vSpan);
+                vSpan.Multiply(mSpan, out FloatSpan2D rSpan);
+                Assert.IsTrue(rSpan.ToArray().ContentEquals(r));
+                rSpan.Free();
+            }
         }
 
         /// <summary>
         /// Matrix-matrix multiplication test
         /// </summary>
         [TestMethod]
-        public void SpatialMultiplication()
+        public unsafe void SpatialMultiplication()
         {
             // Test values
             float[,]
@@ -59,25 +62,22 @@ namespace NeuralNetworkNET.Unit
                 {
                     { -4.7f, 6.6f, -15.3f, 10.8f },
                     { 24.3f, 9.7999999999999989f, -5.5f, 11.09f }
-                },
-                t = m1.Multiply(m2);
-            Assert.IsTrue(t.ContentEquals(r));
-
-            // Exception test
-            float[,] f =
+                };
+            fixed (float* pm1 = m1, pm2 = m2)
             {
-                { 1, 2, 1, 0, 0 },
-                { 5, 0.1f, 0, 0, 0 }
-            };
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Multiply(m1));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => m2.Multiply(f));
+                FloatSpan2D.Fix(pm1, 2, 3, out FloatSpan2D m1Span);
+                FloatSpan2D.Fix(pm2, 3, 4, out FloatSpan2D m2Span);
+                m1Span.Multiply(m2Span, out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
+            }
         }
 
         /// <summary>
         /// Element-wise matrix-matrix multiplication test
         /// </summary>
         [TestMethod]
-        public void HadamardProductTest()
+        public unsafe void HadamardProductTest()
         {
             // Test values
             float[,]
@@ -98,25 +98,21 @@ namespace NeuralNetworkNET.Unit
                     { 5, 4, -3 },
                     { -25, 2, 14 },
                     { 1, 4, 6 }
-                },
-                t = m1.HadamardProduct(m2);
-            Assert.IsTrue(t.ContentEquals(r));
-
-            // Exception test
-            float[,] f =
+                };
+            fixed (float* pm1 = m1, pm2 = m2)
             {
-                { 1, 2, 1, 0, 0 },
-                { 5, 0.1f, 0, 0, 0 }
-            };
-            Assert.ThrowsException<ArgumentException>(() => f.HadamardProduct(m1));
-            Assert.ThrowsException<ArgumentException>(() => m2.HadamardProduct(f));
+                FloatSpan2D.Fix(pm1, 3, 3, out FloatSpan2D m1Span);
+                FloatSpan2D.Fix(pm2, 3, 3, out FloatSpan2D m2Span);
+                m1Span.InPlaceHadamardProduct(m2Span);
+                Assert.IsTrue(m1Span.ToArray2D().ContentEquals(r));
+            }
         }
 
         /// <summary>
         /// Matrix transposition
         /// </summary>
         [TestMethod]
-        public void Transposition()
+        public unsafe void Transposition()
         {
             // Test values
             float[,]
@@ -131,9 +127,14 @@ namespace NeuralNetworkNET.Unit
                     { 1, 2 },
                     { 1, -1 },
                     { 1, 0 }
-                },
-                t = m.Transpose();
-            Assert.IsTrue(t.ContentEquals(r));
+                };
+            fixed (float* pm = m)
+            {
+                FloatSpan2D.Fix(pm, 2, 4, out FloatSpan2D mSpan);
+                mSpan.Transpose(out FloatSpan2D result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
+            }
         }
 
         /// <summary>
