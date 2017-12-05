@@ -18,15 +18,17 @@ There's also a secondary .NET Framework 4.7 library, `NeuralNetwork.NET.Cuda` th
 
 ### Supervised learning
 
-Training a neural network is pretty straightforward - just use the methods in the `BackpropagationNetworkTrainer` class. For example, here's how to create and train a new neural network from scratch:
+Training a neural network is pretty straightforward - just use the methods in the `NetworkManager` class. For example, here's how to create and train a new neural network from scratch:
 
 ```C#
 // A simple network to use with the MNIST dataset
-INeuralNetwork network = NetworkTrainer.NewNetwork(
-    NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
-    NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+INeuralNetwork network = NetworkManager.NewNetwork(
+    NetworkLayers.Convolutional((28, 28, 1), (5, 5), 10, ActivationFunctionType.Identity),
+    NetworkLayers.Pooling((24, 24, 10), ActivationFunctionType.Sigmoid),
+    NetworkLayers.FullyConnected(12 * 12 * 10, 100, ActivationFunctionType.Sigmoid),
+    NetworkLayers.Softmax(100, 10));
     
-TrainingSessionResult result = await NetworkTrainer.TrainNetworkAsync(network, 
+TrainingSessionResult result = NetworkManager.TrainNetwork(network, 
     (training.X, training.Y), // A (float[,], float[,]) tuple with the training samples and labels
     60, // The expected number of training epochs to run
     10, // The size of each training mini-batch
@@ -40,9 +42,11 @@ TrainingSessionResult result = await NetworkTrainer.TrainNetworkAsync(network,
     0.025f); // The optional L2 regularization parameter
 ```
 
+**Note:** the `NetworkManager` methods are also available as asynchronous APIs.
+
 ### Serialization and deserialization
 
-The `INeuralNetwork` interface exposes a `SerializeAsJSON` method that can be used to serialize any network at any given time.
+The `INeuralNetwork` interface exposes a `SerializeAsJson` method that can be used to serialize any network at any given time.
 In order to get a new network instance from a serialized JSON string, just use the `NeuralNetworkLoader.TryLoadJson` method: it will parse the input text and automatically return a neural network with the original parameters.
 
 There's also an additional `Save` method to save a neural network to a binary file. This provides a small, easy to share file that contains all the info on the current network.
@@ -58,8 +62,10 @@ NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
 # Requirements
 
 The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is available for applications targeting:
-- .NET Framework >= 4.7
+- .NET Framework >= 4.7.1
 - .NET Core >= 2.0
 - New versions of Mono and Xamarin.
 
-The additional `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.7 and a CUDA enabled GPU.
+In addition to the frameworks above, you need an IDE with C# 7.2 support to compile the library on your PC.
+
+The `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.71 and a CUDA enabled GPU.
