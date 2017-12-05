@@ -384,23 +384,18 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Calculates the current network performances with the given test samples
         /// </summary>
         /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
+        /// <param name="batchSize">The number of test samples to forward in parallel</param>
         internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
-            fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
+            // Auxiliary function to forward a test batch
+            (float Cost, int Classified) Evaluate(in FloatSpan2D x, in FloatSpan2D y)
             {
-                // Setup
-                int
-                    h = evaluationSet.X.GetLength(0),
-                    wy = evaluationSet.Y.GetLength(1),
-                    total = 0;
-                FloatSpan2D.Fix(px, h, evaluationSet.X.GetLength(1), out FloatSpan2D xSpan);
-                FloatSpan2D.Fix(py, evaluationSet.Y.GetLength(0), wy, out FloatSpan2D ySpan);
-
                 // Feedforward
-                Forward(xSpan, out FloatSpan2D yHat);
+                Forward(x, out FloatSpan2D yHat);
 
                 // Function that counts the correctly classified items
-                float* pyHat = yHat, pY = ySpan;
+                float* pyHat = yHat, pY = y;
+                int wy = y.Width, total = 0;
                 void Kernel(int i)
                 {
                     int
@@ -411,12 +406,45 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
 
                 // Check the correctly classified samples and calculate the cost
-                Parallel.For(0, h, Kernel).AssertCompleted();
-                float
-                    cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, ySpan),
-                    accuracy = (float)total / h * 100;
+                Parallel.For(0, x.Height, Kernel).AssertCompleted();
+                float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
                 yHat.Free();
-                return (cost, total, accuracy);
+                return (cost, total);
+            }
+
+            // Actual test evaluation
+            int batchSize = NetworkManager.MaximumBatchSize;
+            fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
+            {
+                int
+                    h = evaluationSet.X.GetLength(0),
+                    wx = evaluationSet.X.GetLength(1),
+                    wy = evaluationSet.Y.GetLength(1),
+                    batches = h / batchSize,
+                    batchMod = h % batchSize,
+                    classified = 0;
+                float cost = 0;
+
+                // Process the even batches
+                for (int i = 0; i < batches; i++)
+                {
+                    FloatSpan2D.Fix(px + i * batchSize * wx, batchSize, wx, out FloatSpan2D xSpan);
+                    FloatSpan2D.Fix(py + i * batchSize * wy, batchSize, wy, out FloatSpan2D ySpan);
+                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    cost += pCost;
+                    classified += pClassified;
+                }
+
+                // Process the remaining samples, if any
+                if (batchMod > 0)
+                {
+                    FloatSpan2D.Fix(px + batches * batchSize * wx, batchMod, wx, out FloatSpan2D xSpan);
+                    FloatSpan2D.Fix(py + batches * batchSize * wy, batchMod, wy, out FloatSpan2D ySpan);
+                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    cost += pCost;
+                    classified += pClassified;
+                }
+                return (cost, classified, (float)classified / h * 100);
             }
         }
 
