@@ -425,7 +425,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Tools
 
         /// <inheritdoc/>
-        public String SerializeAsJSON() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
+        public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)

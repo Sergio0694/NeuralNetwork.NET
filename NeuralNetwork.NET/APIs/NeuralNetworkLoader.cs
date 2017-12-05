@@ -75,7 +75,7 @@ namespace NeuralNetworkNET.APIs
                     }
                 }).ToArray();
                 INeuralNetwork network = new NeuralNetwork(layers);
-                return json.Equals(network.SerializeAsJSON()) ? network : null;
+                return json.Equals(network.SerializeAsJson()) ? network : null;
             }
             catch
             {

@@ -1,8 +1,11 @@
-﻿namespace NeuralNetworkNET.APIs.Results
+﻿using Newtonsoft.Json;
+
+namespace NeuralNetworkNET.APIs.Results
 {
     /// <summary>
     /// A struct that contains information on a single completed evaluation of a test dataset
     /// </summary>
+    [JsonObject(MemberSerialization.OptOut)]
     public readonly struct DatasetEvaluationResult
     {
         /// <summary>

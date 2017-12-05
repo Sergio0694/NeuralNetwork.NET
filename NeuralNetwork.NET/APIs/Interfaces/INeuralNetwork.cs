@@ -93,7 +93,7 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// Serializes the network as a JSON string
         /// </summary>
         [Pure, NotNull]
-        String SerializeAsJSON();
+        String SerializeAsJson();
 
         /// <summary>
         /// Saves the network in the target directory

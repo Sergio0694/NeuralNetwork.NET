@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Misc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace NeuralNetworkNET.APIs.Results
 {
     /// <summary>
     /// A class that contains all the information on a completed training session
     /// </summary>
+    [JsonObject(MemberSerialization.OptOut)]
     public sealed class TrainingSessionResult
     {
         /// <summary>
@@ -36,6 +39,9 @@ namespace NeuralNetworkNET.APIs.Results
         /// </summary>
         [NotNull]
         public IReadOnlyList<DatasetEvaluationResult> TestReports { get; }
+
+        [Pure, NotNull]
+        public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         // Internal constructor
         internal TrainingSessionResult(
