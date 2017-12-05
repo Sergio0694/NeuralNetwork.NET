@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
+namespace NeuralNetworkNET.APIs.Interfaces
 {
     /// <summary>
     /// An interface for an object that supports deep cloning

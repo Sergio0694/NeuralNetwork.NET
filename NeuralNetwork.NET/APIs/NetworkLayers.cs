@@ -1,8 +1,11 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
+using NeuralNetworkNET.Networks.Implementations.Layers;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
+namespace NeuralNetworkNET.APIs
 {
     /// <summary>
     /// A static class that exposes the available network layer types

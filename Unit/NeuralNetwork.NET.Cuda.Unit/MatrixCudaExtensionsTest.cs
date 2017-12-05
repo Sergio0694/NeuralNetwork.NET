@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.Cuda.Helpers;
+using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;

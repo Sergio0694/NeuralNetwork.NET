@@ -5,9 +5,12 @@ using System.IO.Compression;
 using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 
 namespace NeuralNetworkNET.Unit

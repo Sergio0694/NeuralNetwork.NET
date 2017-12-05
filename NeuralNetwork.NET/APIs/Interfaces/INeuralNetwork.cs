@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Helpers.Imaging;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 
-namespace NeuralNetworkNET.Networks.PublicAPIs
+namespace NeuralNetworkNET.APIs.Interfaces
 {
     /// <summary>
     /// An interface to mask a neural network implementation

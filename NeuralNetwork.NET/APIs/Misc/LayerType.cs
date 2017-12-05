@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
+﻿namespace NeuralNetworkNET.APIs.Misc
 {
     /// <summary>
     /// Indicates the type of a neural network layer (for serialization purposes only)

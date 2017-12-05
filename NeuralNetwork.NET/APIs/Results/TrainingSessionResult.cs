@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.APIs.Misc;
 
-namespace NeuralNetworkNET.Networks.PublicAPIs
+namespace NeuralNetworkNET.APIs.Results
 {
     /// <summary>
     /// A class that contains all the information on a completed training session

@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Structs;
 
-namespace NeuralNetworkNET.Cuda.Helpers
+namespace NeuralNetworkNET.Cuda.Extensions
 {
     /// <summary>
     /// A static extension class that operates on matrices through Gpu computing

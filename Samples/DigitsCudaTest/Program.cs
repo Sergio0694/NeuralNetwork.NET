@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using MnistDatasetToolkit;
+using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
-using NeuralNetworkNET.Networks.PublicAPIs;
-using NeuralNetworkNET.SupervisedLearning;
-using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace DigitsCudaTest
 {
@@ -24,7 +24,7 @@ namespace DigitsCudaTest
             TrainingSessionResult result = await NetworkTrainer.TrainNetworkAsync(network, (training.X, training.Y), 60, 10, null,
                 new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
-                    Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
+                    Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
                 })), 0.5f, 0.5f);
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
             Console.ReadKey();

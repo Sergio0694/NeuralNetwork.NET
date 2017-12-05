@@ -1,6 +1,7 @@
-﻿using System;
+﻿using NeuralNetworkNET.APIs.Misc;
+using System;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
+namespace NeuralNetworkNET.APIs.Interfaces
 {
     /// <summary>
     /// An interface that represents a single layer in a multilayer neural network

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using Newtonsoft.Json;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
+namespace NeuralNetworkNET.APIs.Misc
 {
     /// <summary>
     /// A struct that represents a data volume with square 2D slices

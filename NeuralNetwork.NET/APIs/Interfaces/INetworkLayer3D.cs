@@ -1,4 +1,6 @@
-﻿namespace NeuralNetworkNET.Networks.Implementations.Layers.APIs
+﻿using NeuralNetworkNET.APIs.Misc;
+
+namespace NeuralNetworkNET.APIs.Interfaces
 {
     /// <summary>
     /// An interface for an <see cref="INetworkLayer"/> instance that processes a data volume

@@ -2,16 +2,17 @@
 using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace NeuralNetworkNET.Networks.PublicAPIs
+namespace NeuralNetworkNET.APIs
 {
     /// <summary>
     /// A static class that handles the JSON deserialization for the neural networks

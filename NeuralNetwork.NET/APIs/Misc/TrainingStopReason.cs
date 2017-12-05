@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.SupervisedLearning.Misc
+﻿namespace NeuralNetworkNET.APIs.Misc
 {
     /// <summary>
     /// Indicates the reason why a network training session has stopped

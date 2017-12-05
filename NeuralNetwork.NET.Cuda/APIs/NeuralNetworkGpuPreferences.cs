@@ -1,5 +1,5 @@
 ﻿using System;
-using NeuralNetworkNET.Cuda.Helpers;
+using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.DependencyInjection;
 
 namespace NeuralNetworkNET.Cuda.APIs

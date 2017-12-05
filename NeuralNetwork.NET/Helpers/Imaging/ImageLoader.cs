@@ -2,8 +2,8 @@
 using System.IO;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;

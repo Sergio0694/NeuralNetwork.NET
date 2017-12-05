@@ -1,7 +1,8 @@
 ﻿using System;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 

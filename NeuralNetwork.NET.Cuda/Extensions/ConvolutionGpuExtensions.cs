@@ -2,11 +2,11 @@
 using Alea;
 using Alea.Parallel;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 
-namespace NeuralNetworkNET.Cuda.Helpers
+namespace NeuralNetworkNET.Cuda.Extensions
 {
     /// <summary>
     /// A static class that contains some GPU-accelerated convolution extension methods

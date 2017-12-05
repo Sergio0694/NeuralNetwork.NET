@@ -3,13 +3,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
-using NeuralNetworkNET.Networks.PublicAPIs;
 
 namespace NeuralNetworkNET.Unit
 {

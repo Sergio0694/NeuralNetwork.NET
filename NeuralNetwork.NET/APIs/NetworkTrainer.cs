@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
-using NeuralNetworkNET.Networks.PublicAPIs;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 
-namespace NeuralNetworkNET.SupervisedLearning
+namespace NeuralNetworkNET.APIs
 {
     /// <summary>
     /// A static class that create and trains a neural network for the input data and expected results

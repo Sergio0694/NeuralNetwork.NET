@@ -2,10 +2,9 @@
 using Alea;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Structs;
 
-namespace NeuralNetworkNET.Cuda.Helpers
+namespace NeuralNetworkNET.Cuda.Extensions
 {
     /// <summary>
     /// An extension class with some additions to the <see cref="Gpu"/> class

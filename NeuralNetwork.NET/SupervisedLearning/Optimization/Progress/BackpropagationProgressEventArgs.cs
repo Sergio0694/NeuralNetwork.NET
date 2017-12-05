@@ -1,9 +1,12 @@
-﻿namespace NeuralNetworkNET.SupervisedLearning.Misc
+﻿using NeuralNetworkNET.APIs.Results;
+using System;
+
+namespace NeuralNetworkNET.SupervisedLearning.Progress
 {
     /// <summary>
     /// A structure that contains the base progress data while optimizing a network
     /// </summary>
-    public sealed class BackpropagationProgressEventArgs
+    public sealed class BackpropagationProgressEventArgs : EventArgs
     {
         /// <summary>
         /// Gets the current iteration number
@@ -13,12 +16,7 @@
         /// <summary>
         /// Gets the current cost value for the network
         /// </summary>
-        public float Cost { get; }
-
-        /// <summary>
-        /// Gets the current percentage of correctly classified test samples
-        /// </summary>
-        public float Accuracy { get; }
+        public DatasetEvaluationResult Result { get; }
 
         /// <summary>
         /// Internal constructor for the event args base
@@ -29,8 +27,7 @@
         internal BackpropagationProgressEventArgs(int iteration, float cost, float accuracy)
         {
             Iteration = iteration;
-            Cost = cost;
-            Accuracy = accuracy;
+            Result = new DatasetEvaluationResult(cost, accuracy);
         }
     }
 }

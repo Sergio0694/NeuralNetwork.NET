@@ -1,10 +1,9 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers

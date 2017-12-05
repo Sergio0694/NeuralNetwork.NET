@@ -1,8 +1,8 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 

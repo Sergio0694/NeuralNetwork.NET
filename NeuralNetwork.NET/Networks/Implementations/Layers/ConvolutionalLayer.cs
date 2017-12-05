@@ -1,11 +1,11 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.DependencyInjection;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.APIs;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
