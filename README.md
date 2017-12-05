@@ -23,8 +23,10 @@ Training a neural network is pretty straightforward - just use the methods in th
 ```C#
 // A simple network to use with the MNIST dataset
 INeuralNetwork network = NetworkTrainer.NewNetwork(
-    NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Sigmoid),
-    NetworkLayers.FullyConnected(100, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+    NetworkLayers.Convolutional((28, 28, 1), (5, 5), 10, ActivationFunctionType.Identity),
+    NetworkLayers.Pooling((24, 24, 10), ActivationFunctionType.Tanh),
+    NetworkLayers.FullyConnected(784, 100, ActivationFunctionType.Tanh),
+    NetworkLayers.Softmax(100, 10));
     
 TrainingSessionResult result = await NetworkTrainer.TrainNetworkAsync(network, 
     (training.X, training.Y), // A (float[,], float[,]) tuple with the training samples and labels
