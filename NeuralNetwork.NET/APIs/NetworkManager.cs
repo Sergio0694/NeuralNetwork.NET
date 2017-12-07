@@ -8,6 +8,7 @@ using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Misc;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.APIs
 {
@@ -33,11 +34,12 @@ namespace NeuralNetworkNET.APIs
         /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
         /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
@@ -50,9 +52,11 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             IEnumerable<Func<(float[] X, float[] Y)>> trainingSet,
             int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
         {
             // Preliminary checks
             if (!(network is NeuralNetwork localNet)) throw new ArgumentException(nameof(network), "Invalid network instance");
@@ -61,7 +65,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            return localNet.StochasticGradientDescent(batches, epochs, validationParameters, testParameters, eta, dropout, lambda, token);
+            return localNet.StochasticGradientDescent(batches, epochs, eta, dropout, lambda, trainingProgress, validationParameters, testParameters, token);
         }
 
         /// <summary>
@@ -71,11 +75,12 @@ namespace NeuralNetworkNET.APIs
         /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
         /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
@@ -88,9 +93,11 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             IEnumerable<(float[] X, float[] Y)> trainingSet,
             int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
         {
             // Preliminary checks
             if (!(network is NeuralNetwork localNet)) throw new ArgumentException(nameof(network), "Invalid network instance");
@@ -99,7 +106,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            return localNet.StochasticGradientDescent(batches, epochs, validationParameters, testParameters, eta, dropout, lambda, token);
+            return localNet.StochasticGradientDescent(batches, epochs, eta, dropout, lambda, trainingProgress, validationParameters, testParameters, token);
         }
 
         /// <summary>
@@ -109,11 +116,12 @@ namespace NeuralNetworkNET.APIs
         /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> tuple with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
         /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
@@ -126,9 +134,11 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
         {
             // Preliminary checks
             if (!(network is NeuralNetwork localNet)) throw new ArgumentException(nameof(network), "Invalid network instance");
@@ -141,7 +151,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            return localNet.StochasticGradientDescent(batches, epochs, validationParameters, testParameters, eta, dropout, lambda, token);
+            return localNet.StochasticGradientDescent(batches, epochs, eta, dropout, lambda, trainingProgress, validationParameters, testParameters, token);
         }
 
         #endregion
@@ -155,11 +165,12 @@ namespace NeuralNetworkNET.APIs
         /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
         /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
@@ -172,11 +183,13 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             IEnumerable<Func<(float[] X, float[] Y)>> trainingSet,
             int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, validationParameters, testParameters, eta, dropout, lambda, token), token);
+            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, eta, dropout, lambda, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         /// <summary>
@@ -186,11 +199,12 @@ namespace NeuralNetworkNET.APIs
         /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
         /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
@@ -203,11 +217,13 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             IEnumerable<(float[] X, float[] Y)> trainingSet,
             int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, validationParameters, testParameters, eta, dropout, lambda, token), token);
+            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, eta, dropout, lambda, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         /// <summary>
@@ -217,11 +233,12 @@ namespace NeuralNetworkNET.APIs
         /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> tuple with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>
         /// <param name="eta">The desired learning rate for the stochastic gradient descent training</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The optional L2 regularization value to scale down the weights during the gradient descent and avoid overfitting</param>
+        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         /// <remarks>
         /// <para>The <paramref name="eta"/> value is divided by the <paramref name="batchSize"/> and indicates the rate at which the cost function is minimized</para>
@@ -234,11 +251,13 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             (float[,] X, float[,] Y) trainingSet,
             int epochs, int batchSize,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
-            float eta = 0.1f, float dropout = 0, float lambda = 0, CancellationToken token = default)
+            float eta = 0.1f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, validationParameters, testParameters, eta, dropout, lambda, token), token);
+            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, eta, dropout, lambda, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         #endregion

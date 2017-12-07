@@ -309,20 +309,22 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="miniBatches">The training baatches for the current session</param>
         /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
         /// <param name="eta">The learning rate</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="lambda">The L2 regularization factor</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
+        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
+        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         internal TrainingSessionResult StochasticGradientDescent(
             BatchesCollection miniBatches,
             int epochs,
-            ValidationParameters validationParameters = null,
-            TestParameters testParameters = null,
             float eta = 0.5f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,         
             CancellationToken token = default)
         {
             // Setup
@@ -360,6 +362,13 @@ namespace NeuralNetworkNET.Networks.Implementations
                     if (_Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
                 }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 
+                // Check the training progress
+                if (trainingProgress != null)
+                {
+                    (float cost, _, float accuracy) = Evaluate(miniBatches);
+                    trainingProgress.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
+                }
+
                 // Check the validation dataset
                 if (convergence != null)
                 {
@@ -380,6 +389,35 @@ namespace NeuralNetworkNET.Networks.Implementations
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
         }
 
+        #endregion
+
+        #region Evaluation
+
+        // Auxiliary function to forward a test batch
+        private unsafe (float Cost, int Classified) Evaluate(in FloatSpan2D x, in FloatSpan2D y)
+        {
+            // Feedforward
+            Forward(x, out FloatSpan2D yHat);
+
+            // Function that counts the correctly classified items
+            float* pyHat = yHat, pY = y;
+            int wy = y.Width, total = 0;
+            void Kernel(int i)
+            {
+                int
+                    offset = i * wy,
+                    maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
+                    max = MatrixExtensions.Argmax(pY + offset, wy);
+                if (max == maxHat) Interlocked.Increment(ref total);
+            }
+
+            // Check the correctly classified samples and calculate the cost
+            Parallel.For(0, x.Height, Kernel).AssertCompleted();
+            float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
+            yHat.Free();
+            return (cost, total);
+        }
+
         /// <summary>
         /// Calculates the current network performances with the given test samples
         /// </summary>
@@ -387,31 +425,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="batchSize">The number of test samples to forward in parallel</param>
         internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
-            // Auxiliary function to forward a test batch
-            (float Cost, int Classified) Evaluate(in FloatSpan2D x, in FloatSpan2D y)
-            {
-                // Feedforward
-                Forward(x, out FloatSpan2D yHat);
-
-                // Function that counts the correctly classified items
-                float* pyHat = yHat, pY = y;
-                int wy = y.Width, total = 0;
-                void Kernel(int i)
-                {
-                    int
-                        offset = i * wy,
-                        maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
-                        max = MatrixExtensions.Argmax(pY + offset, wy);
-                    if (max == maxHat) Interlocked.Increment(ref total);
-                }
-
-                // Check the correctly classified samples and calculate the cost
-                Parallel.For(0, x.Height, Kernel).AssertCompleted();
-                float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
-                yHat.Free();
-                return (cost, total);
-            }
-
             // Actual test evaluation
             int batchSize = NetworkManager.MaximumBatchSize;
             fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
@@ -446,6 +459,32 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
                 return (cost, classified, (float)classified / h * 100);
             }
+        }
+
+        /// <summary>
+        /// Calculates the current network performances with the given test samples
+        /// </summary>
+        /// <param name="batchSize">The training batches currently used to train the network</param>
+        internal unsafe (float Cost, int Classified, float Accuracy) Evaluate([NotNull] BatchesCollection batches)
+        {
+            // Actual test evaluation
+            int
+                batchSize = NetworkManager.MaximumBatchSize,
+                classified = 0;
+            float cost = 0;
+            for (int i = 0; i < batches.Count; i++)
+            {
+                ref readonly TrainingBatch batch = ref batches.Batches[i];
+                fixed (float* px = batch.X, py = batch.Y)
+                {
+                    FloatSpan2D.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out FloatSpan2D xSpan);
+                    FloatSpan2D.Fix(py, xSpan.Height, batch.Y.GetLength(1), out FloatSpan2D ySpan);
+                    var partial = Evaluate(xSpan, ySpan);
+                    cost += partial.Cost;
+                    classified += partial.Classified;
+                }
+            }
+            return (cost, classified, (float)classified / batches.Samples * 100);
         }
 
         #endregion

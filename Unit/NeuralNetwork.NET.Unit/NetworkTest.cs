@@ -115,7 +115,7 @@ namespace NeuralNetworkNET.Unit
             NeuralNetwork network = NeuralNetworkLoader.TryLoad(Path.Combine(path, "TestNetwork.nnet")) as NeuralNetwork;
             Assert.IsTrue(network != null);
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, 10);
-            TrainingSessionResult result = network.StochasticGradientDescent(batches, 4, null, null, 0.5f, 0, 0);
+            TrainingSessionResult result = network.StochasticGradientDescent(batches, 4, 0.5f);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
             (_, _, float accuracy) = network.Evaluate(testSet);
             Assert.IsTrue(accuracy > 80);

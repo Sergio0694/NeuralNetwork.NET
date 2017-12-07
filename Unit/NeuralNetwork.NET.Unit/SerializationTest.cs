@@ -31,7 +31,7 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.Pooling(new VolumeInformation(8, 8, 10), ActivationFunctionType.ReLU),
                 NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid), 
                 NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            String json = network.SerializeAsJSON();
+            String json = network.SerializeAsJson();
             INeuralNetwork copy = NeuralNetworkLoader.TryLoadJson(json);
             Assert.IsTrue(copy != null);
             Assert.IsTrue(copy.Equals(network));

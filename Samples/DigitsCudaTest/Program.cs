@@ -31,11 +31,11 @@ namespace DigitsCudaTest
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400, null,
-                new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400, 0.1f, 0.5f,
+                testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
-                })), 0.1f, 0.5f, token: cts.Token);
+                })), token: cts.Token);
 
             // Save the training reports
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");

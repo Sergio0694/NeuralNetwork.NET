@@ -18,6 +18,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             if (activation == ActivationFunctionType.Softmax || cost == CostFunctionType.LogLikelyhood)
                 throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");
+            if (activation != ActivationFunctionType.Sigmoid && cost == CostFunctionType.CrossEntropy)
+                throw new ArgumentException("The cross-entropy cost function can only accept inputs in the (0,1) range");
         }
 
         public OutputLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
