@@ -10,7 +10,7 @@ namespace NeuralNetworkNET.Cuda.Extensions
     /// <summary>
     /// A static extension class that operates on matrices through Gpu computing
     /// </summary>
-    internal static class MatrixGpuExtensions
+    internal static class Blas
     {
         /// <summary>
         /// Performs the multiplication between two matrices after transposing the first one
@@ -136,7 +136,7 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="prime">The activation prime function to use</param>
-        public static void MultiplyAndHadamardProductWithActivation(
+        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime(
             in Tensor z, in Tensor m1, in Tensor m2, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix

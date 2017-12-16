@@ -27,7 +27,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            MatrixGpuExtensions.MultiplyWithSum(x, Weights, Biases, out z);
+            Blas.MultiplyWithSum(x, Weights, Biases, out z);
             Gpu gpu = Gpu.Default;
             Dnn dnn = Dnn.Get(gpu);
             SoftmaxInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, Outputs, 1, 1);

@@ -99,7 +99,7 @@ namespace NeuralNetworkNET.Cuda.Layers
 
                     // Activation
                     if (ActivationFunctionType == ActivationFunctionType.Identity) z.Duplicate(out a);
-                    else MatrixGpuExtensions.Activation(z, ActivationFunctions.Activation, out a);
+                    else Blas.Activation(z, ActivationFunctions.Activation, out a);
                 }
             }
         }

@@ -27,7 +27,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 Tensor.Fix(pm1, 13, 5, out Tensor m1Span);
                 MatrixExtensions.MultiplyWithSum(m1Span, m2, v, out Tensor mul);
-                MatrixGpuExtensions.MultiplyWithSum(m1Span, m2, v, out Tensor mulGpu);
+                Blas.MultiplyWithSum(m1Span, m2, v, out Tensor mulGpu);
                 Assert.IsTrue(mul.ToArray2D().ContentEquals(mulGpu.ToArray2D(), 1e-4f));
                 mul.Free();
                 mulGpu.Free();
@@ -39,7 +39,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 Tensor.Fix(pm1, 1500, 800, out Tensor m1Span);
                 MatrixExtensions.MultiplyWithSum(m1Span, m2, v, out Tensor mul);
-                MatrixGpuExtensions.MultiplyWithSum(m1Span, m2, v, out Tensor mulGpu);
+                Blas.MultiplyWithSum(m1Span, m2, v, out Tensor mulGpu);
                 Assert.IsTrue(mul.ToArray2D().ContentEquals(mulGpu.ToArray2D(), 1e-4f));
                 mul.Free();
                 mulGpu.Free();
@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Fix(pm2, 5, 4, out Tensor m2Span);
                 MatrixExtensions.Transpose(m1Span, out Tensor m1t);
                 MatrixExtensions.Multiply(m1t, m2Span, out Tensor mul);
-                MatrixGpuExtensions.TransposeAndMultiply(m1Span, m2Span, out Tensor mulGpu);
+                Blas.TransposeAndMultiply(m1Span, m2Span, out Tensor mulGpu);
                 Assert.IsTrue(mul.ToArray2D().ContentEquals(mulGpu.ToArray2D(), 1e-4f));
                 m1t.Free();
                 mul.Free();
@@ -73,7 +73,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Fix(pm2, 800, 40, out Tensor m2Span);
                 MatrixExtensions.Transpose(m1Span, out Tensor m1t);
                 MatrixExtensions.Multiply(m1t, m2Span, out Tensor mul);
-                MatrixGpuExtensions.TransposeAndMultiply(m1Span, m2Span, out Tensor mulGpu);
+                Blas.TransposeAndMultiply(m1Span, m2Span, out Tensor mulGpu);
                 Assert.IsTrue(mul.ToArray2D().ContentEquals(mulGpu.ToArray2D(), 1e-4f));
                 m1t.Free();
                 mul.Free();
@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 Tensor.Fix(pm, 20, 35, out Tensor mSpan);
                 MatrixExtensions.Activation(mSpan, ActivationFunctions.Sigmoid, out Tensor activation);
-                MatrixGpuExtensions.Activation(mSpan, ActivationFunctions.Sigmoid, out Tensor activationGpu);
+                Blas.Activation(mSpan, ActivationFunctions.Sigmoid, out Tensor activationGpu);
                 Assert.IsTrue(activation.ToArray2D().ContentEquals(activationGpu.ToArray2D(), 1e-4f));
                 activation.Free();
                 activationGpu.Free();
@@ -99,7 +99,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 Tensor.Fix(pm, 1500, 800, out Tensor mSpan);
                 MatrixExtensions.Activation(mSpan, ActivationFunctions.Sigmoid, out Tensor activation);
-                MatrixGpuExtensions.Activation(mSpan, ActivationFunctions.Sigmoid, out Tensor activationGpu);
+                Blas.Activation(mSpan, ActivationFunctions.Sigmoid, out Tensor activationGpu);
                 Assert.IsTrue(activation.ToArray2D().ContentEquals(activationGpu.ToArray2D(), 1e-4f));
                 activation.Free();
                 activationGpu.Free();
@@ -121,7 +121,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Fix(pm2, 10, 50, out Tensor m2Span);
                 Tensor.Fix(pz2, 40, 50, out Tensor z2Span);
                 MatrixExtensions.InPlaceMultiplyAndHadamardProductWithActivationPrime(zSpan, m1Span, m2Span, ActivationFunctions.SigmoidPrime);
-                MatrixGpuExtensions.MultiplyAndHadamardProductWithActivation(z2Span, m1Span, m2Span, ActivationFunctions.SigmoidPrime);
+                Blas.InPlaceMultiplyAndHadamardProductWithActivationPrime(z2Span, m1Span, m2Span, ActivationFunctions.SigmoidPrime);
                 Assert.IsTrue(zSpan.ToArray2D().ContentEquals(z2Span.ToArray2D(), 1e-4f));
             }
             z = ThreadSafeRandom.NextGlorotNormalMatrix(200, 200);
@@ -135,7 +135,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Fix(pm2, 200, 200, out Tensor m2Span);
                 Tensor.Fix(pz2, 200, 200, out Tensor z2Span);
                 MatrixExtensions.InPlaceMultiplyAndHadamardProductWithActivationPrime(zSpan, m1Span, m2Span, ActivationFunctions.SigmoidPrime);
-                MatrixGpuExtensions.MultiplyAndHadamardProductWithActivation(z2Span, m1Span, m2Span, ActivationFunctions.SigmoidPrime);
+                Blas.InPlaceMultiplyAndHadamardProductWithActivationPrime(z2Span, m1Span, m2Span, ActivationFunctions.SigmoidPrime);
                 Assert.IsTrue(zSpan.ToArray2D().ContentEquals(z2Span.ToArray2D(), 1e-4f));
             }
 
