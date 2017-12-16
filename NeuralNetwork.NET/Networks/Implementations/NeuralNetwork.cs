@@ -212,7 +212,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="eta">The learning rate for the training session</param>
         /// <param name="l2Factor">The L2 regularization factor</param>
-        private unsafe void Backpropagate(in TrainingBatch batch, float dropout, float eta, float l2Factor)
+        private unsafe void Backpropagate2(in TrainingBatch batch, float dropout, float eta, float l2Factor)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
@@ -301,6 +301,103 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
         }
 
+        internal delegate void WeightsUpdater(int i, in Tensor dJdw, in Tensor dJdb, int samples, [NotNull] WeightedLayerBase layer);
+
+        /// <summary>
+        /// Calculates the gradient of the cost function with respect to the individual weights and biases
+        /// </summary>
+        /// <param name="x">The input data</param>
+        /// <param name="y">The expected results</param>
+        /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="eta">The learning rate for the training session</param>
+        /// <param name="l2Factor">The L2 regularization factor</param>
+        private unsafe void Backpropagate(in TrainingBatch batch, float dropout, [NotNull] WeightsUpdater update)
+        {
+            fixed (float* px = batch.X, py = batch.Y)
+            {
+                // Setup
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length],
+                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
+                Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
+                Tensor.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
+                Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
+
+                // Feedforward
+                for (int i = 0; i < _Layers.Length; i++)
+                {
+                    _Layers[i].Forward(i == 0 ? x : aList[i - 1], out zList[i], out aList[i]);
+                    if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
+                    {
+                        ThreadSafeRandom.NextDropoutMask(aList[i].Entities, aList[i].Length, dropout, out dropoutMasks[i]);
+                        aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                    }
+                }
+
+                /* ======================
+                 * Calculate delta(L)
+                 * ======================
+                 * Perform the sigmoid prime of zL, the activity on the last layer
+                 * Calculate the gradient of C with respect to a
+                 * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
+                 * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
+                 *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
+                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1]);
+                deltas[_Layers.Length - 1] = aList + _Layers.Length - 1;
+                for (int l = _Layers.Length - 2; l >= 0; l--)
+                {
+                    /* ======================
+                     * Calculate delta(l)
+                     * ======================
+                     * Perform the sigmoid prime of z(l), the activity on the previous layer
+                     * Multiply the previous delta with the transposed weights of the following layer
+                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
+                    _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
+                    if (dropoutMasks[l].Ptr != IntPtr.Zero) zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
+                    deltas[l] = zList + l;
+                }
+
+                /* =============================================
+                 * Compute the gradients DJDw(l) and DJDb(l)
+                 * =============================================
+                 * Compute the gradients for each layer with weights and biases.
+                 * NOTE: the gradient is only computed for layers with weights and biases, for all the other
+                 *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
+                Tensor*
+                    dJdw = stackalloc Tensor[WeightedLayersIndexes.Length], // One gradient item for layer
+                    dJdb = stackalloc Tensor[WeightedLayersIndexes.Length];
+                for (int j = 0; j < WeightedLayersIndexes.Length; j++)
+                {
+                    int i = WeightedLayersIndexes[j];
+                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().ComputeGradient(i == 0 ? x : aList[i - 1], *deltas[i], out dJdw[j], out dJdb[j]);
+                }
+
+                /* ====================
+                 * Gradient descent
+                 * ====================
+                 * Edit the network weights according to the computed gradients and the current training parameters */
+                int samples = batch.X.GetLength(0);
+                Parallel.For(0, WeightedLayersIndexes.Length, i =>
+                {
+                    int l = WeightedLayersIndexes[i];
+                    update(i, dJdw[i], dJdb[i], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
+                    dJdw[i].Free();
+                    dJdb[i].Free();
+                }).AssertCompleted();
+
+                // Cleanup
+                for (int i = 0; i < _Layers.Length - 1; i++)
+                {
+                    zList[i].Free();
+                    aList[i].Free();
+                    if (dropoutMasks[i].Ptr != IntPtr.Zero) dropoutMasks[i].Free();
+                }
+                zList[_Layers.Length - 1].Free();
+                aList[_Layers.Length - 1].Free();
+            }
+        }
+
         #endregion
 
         #region Training
@@ -319,10 +416,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal TrainingSessionResult StochasticGradientDescent(
+        internal TrainingSessionResult Optimize(
             BatchesCollection miniBatches,
             int epochs,
-            float eta = 0.5f, float dropout = 0, float lambda = 0,
+            [NotNull] WeightsUpdater update,
+            float dropout = 0,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,         
@@ -344,7 +442,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                 : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
 
             // Create the training batches
-            float l2Factor = eta * lambda / miniBatches.Samples;
             for (int i = 0; i < epochs; i++)
             {
                 // Shuffle the training set
@@ -354,7 +451,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 for (int j = 0; j < miniBatches.Count; j++)
                 {
                     if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
-                    Backpropagate(miniBatches.Batches[j], dropout, eta, l2Factor);
+                    Backpropagate(miniBatches.Batches[j], dropout, update);
                 }
 
                 // Check for overflows
@@ -388,6 +485,65 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
+        }
+
+        /// <summary>
+        /// Trains the current network using the gradient descent algorithm
+        /// </summary>
+        /// <param name="miniBatches">The training baatches for the current session</param>
+        /// <param name="epochs">The desired number of training epochs to run</param>
+        /// <param name="eta">The learning rate</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="lambda">The L2 regularization factor</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
+        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
+        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
+        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
+        [NotNull]
+        internal TrainingSessionResult StochasticGradientDescent(
+            BatchesCollection miniBatches,
+            int epochs,
+            float eta = 0.5f, float dropout = 0, float lambda = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
+        {
+            
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights)
+                {
+                    float* pdj = dJdw;
+                    int
+                        h = layer.Weights.GetLength(0),
+                        w = layer.Weights.GetLength(1);
+                    for (int x = 0; x < h; x++)
+                    {
+                        int offset = x * w;
+                        for (int y = 0; y < w; y++)
+                        {
+                            int target = offset + y;
+                            pw[target] -= l2Factor * pw[target] + alpha * pdj[target];
+                        }
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases)
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int x = 0; x < w; x++)
+                        pb[x] -= alpha * pdj[x];
+                }
+            }
+
+            return Optimize(miniBatches, epochs, Minimize, dropout, trainingProgress, validationParameters, testParameters, token);
         }
 
         #endregion
