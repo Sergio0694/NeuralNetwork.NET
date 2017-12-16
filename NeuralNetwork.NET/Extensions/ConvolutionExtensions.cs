@@ -306,9 +306,9 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="source">The matrix to compress</param>
         /// <param name="depth">The number of images per row</param>
-        /// <param name="result">The resulting vector</param>
+        /// <param name="result">The resulting tensor</param>
         [PublicAPI]
-        public static unsafe void CompressVertically(in this Tensor source, int depth, out FloatSpan result)
+        public static unsafe void CompressVertically(in this Tensor source, int depth, out Tensor result)
         {
             // Checks and local parameters
             if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");

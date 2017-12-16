@@ -45,7 +45,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out FloatSpan dJdb)
+        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             MatrixServiceProvider.TransposeAndMultiply(a, delta, out dJdw);
             delta.CompressVertically(out dJdb);

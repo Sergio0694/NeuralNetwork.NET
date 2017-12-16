@@ -27,7 +27,7 @@ namespace NeuralNetworkNET.Networks.Cost
             if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculate the cost (half the squared difference)
-            FloatSpan.New(h, out FloatSpan v);
+            Tensor.New(h, 1, out Tensor v);
 
             // Kernel to compute the partial sum
             float* pv = v, pyHat = yHat, py = y;
@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.Networks.Cost
             if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculates the components for each training sample
-            FloatSpan.New(h, out FloatSpan v);
+            Tensor.New(h, 1, out Tensor v);
 
             // Function to calculate cost for each sample
             float* pyHat = yHat, py = y, pv = v;
@@ -122,7 +122,7 @@ namespace NeuralNetworkNET.Networks.Cost
             if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculates the components for each training sample
-            FloatSpan.New(h, out FloatSpan v);
+            Tensor.New(h, 1, out Tensor v);
 
             // Kernel to compute the partial sum
             float* pv = v, pyHat = yHat, py = y;

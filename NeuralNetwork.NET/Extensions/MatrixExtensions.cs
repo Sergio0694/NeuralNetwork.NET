@@ -315,14 +315,14 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="result">The resulting vector</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe void CompressVertically(in this Tensor m, out FloatSpan result)
+        internal static unsafe void CompressVertically(in this Tensor m, out Tensor result)
         {
             // Preliminary checks and declarations
             if (m.Entities == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
             int
                 h = m.Entities,
                 w = m.Length;
-            FloatSpan.New(w, out result);
+            Tensor.New(1, w, out result);
             float* pm = m, pv = result;
 
             // Compress the matrix

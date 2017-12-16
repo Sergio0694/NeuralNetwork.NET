@@ -265,8 +265,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Compute the gradients for each layer with weights and biases.
                  * NOTE: the gradient is only computed for layers with weights and biases, for all the other
                  *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-                Tensor* dJdw = stackalloc Tensor[WeightedLayersIndexes.Length]; // One gradient item for layer
-                FloatSpan* dJdb = stackalloc FloatSpan[WeightedLayersIndexes.Length];
+                Tensor*
+                    dJdw = stackalloc Tensor[WeightedLayersIndexes.Length], // One gradient item for layer
+                    dJdb = stackalloc Tensor[WeightedLayersIndexes.Length];
                 for (int j = 0; j < WeightedLayersIndexes.Length; j++)
                 {
                     int i = WeightedLayersIndexes[j];

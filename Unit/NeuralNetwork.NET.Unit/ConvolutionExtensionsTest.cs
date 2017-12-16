@@ -616,7 +616,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pm = m)
             {
                 Tensor.Fix(pm, 1, 9, out Tensor mSpan);
-                mSpan.CompressVertically(1, out FloatSpan v);
+                mSpan.CompressVertically(1, out Tensor v);
                 Assert.IsTrue(v.ToArray().ContentEquals(r));
                 v.Free();
             }
@@ -652,7 +652,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pm = m)
             {
                 Tensor.Fix(pm, 2, 18, out Tensor mSpan);
-                mSpan.CompressVertically(2, out FloatSpan v);
+                mSpan.CompressVertically(2, out Tensor v);
                 Assert.IsTrue(v.ToArray().ContentEquals(r));
                 v.Free();
             }

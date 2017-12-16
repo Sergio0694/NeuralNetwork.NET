@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out FloatSpan dJdb)
+        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Rotate180(InputVolume.Depth, out Tensor a180);
             MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume, out dJdw);
