@@ -28,9 +28,10 @@ namespace NeuralNetworkNET.Cuda.Extensions
             int w = m2.Length;
             int l = m1.Length;
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
-            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(l, w)) // The first matrix will be transposed
+            using (DeviceMemory2D<float> 
+                m1_gpu = gpu.AllocateDevice2D(m1),
+                m2_gpu = gpu.AllocateDevice2D(m2),
+                mresult_gpu = gpu.AllocateDevice<float>(l, w)) // The first matrix will be transposed
             {
                 // Local parameters
                 deviceptr<float>
@@ -85,10 +86,11 @@ namespace NeuralNetworkNET.Cuda.Extensions
             int w = m2.GetLength(1);
             int l = m1.Length;
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<float>
+                m1_gpu = gpu.AllocateDevice2D(m1),
+                m2_gpu = gpu.AllocateDevice(m2),
+                mresult_gpu = gpu.AllocateDevice<float>(h, w))
             using (DeviceMemory<float> v_gpu = gpu.AllocateDevice(v))
-            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Pointers and pitches
                 deviceptr<float>
@@ -148,9 +150,10 @@ namespace NeuralNetworkNET.Cuda.Extensions
 
             // Initialize the parameters and the result matrix
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<float> z_gpu = gpu.AllocateDevice(z))
-            using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
-            using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
+            using (DeviceMemory2D<float> 
+                z_gpu = gpu.AllocateDevice2D(z),
+                m1_gpu = gpu.AllocateDevice2D(m1),
+                m2_gpu = gpu.AllocateDevice2D(m2))
             {
                 // Pointers and pitches
                 deviceptr<float>
@@ -204,8 +207,9 @@ namespace NeuralNetworkNET.Cuda.Extensions
                 h = m.Entities,
                 w = m.Length;
             Gpu gpu = Gpu.Default;
-            using (DeviceMemory2D<float> m_gpu = gpu.AllocateDevice(m))
-            using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))
+            using (DeviceMemory2D<float> 
+                m_gpu = gpu.AllocateDevice2D(m),
+                mresult_gpu = gpu.AllocateDevice<float>(h, w))
             {
                 // Local parameters
                 deviceptr<float>
