@@ -18,15 +18,15 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="result">The resulting matrix</param>
-        public static void TransposeAndMultiply(in FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
+        public static void TransposeAndMultiply(in Tensor m1, in Tensor m2, out Tensor result)
         {
             // Checks
-            if (m1.Height != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (m1.Entities != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
 
             // Initialize the parameters and the result matrix
-            int h = m1.Height;
-            int w = m2.Width;
-            int l = m1.Width;
+            int h = m1.Entities;
+            int w = m2.Length;
+            int l = m1.Length;
             Gpu gpu = Gpu.Default;
             using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
             using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
@@ -74,16 +74,16 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix</param>
         /// <param name="result">The resulting matrix</param>
-        public static void MultiplyWithSum(in FloatSpan2D m1, float[,] m2, float[] v, out FloatSpan2D result)
+        public static void MultiplyWithSum(in Tensor m1, float[,] m2, float[] v, out Tensor result)
         {
             // Checks
-            if (m1.Width != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (m1.Length != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
             if (m2.GetLength(1) != v.Length) throw new ArgumentException(nameof(v), "Invalid vector length");
 
             // Initialize the parameters and the result matrix
-            int h = m1.Height;
+            int h = m1.Entities;
             int w = m2.GetLength(1);
-            int l = m1.Width;
+            int l = m1.Length;
             Gpu gpu = Gpu.Default;
             using (DeviceMemory2D<float> m1_gpu = gpu.AllocateDevice(m1))
             using (DeviceMemory2D<float> m2_gpu = gpu.AllocateDevice(m2))
@@ -135,16 +135,16 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="prime">The activation prime function to use</param>
         public static void MultiplyAndHadamardProductWithActivation(
-            in FloatSpan2D z, in FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction prime)
+            in Tensor z, in Tensor m1, in Tensor m2, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
-            int h = m1.Height;
-            int w = m2.Width;
-            int l = m1.Width;
+            int h = m1.Entities;
+            int w = m2.Length;
+            int l = m1.Length;
 
             // Checks
-            if (l != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
-            if (h != z.Height || w != z.Width) throw new ArgumentException("The matrices must be of equal size");
+            if (l != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (h != z.Entities || w != z.Length) throw new ArgumentException("The matrices must be of equal size");
 
             // Initialize the parameters and the result matrix
             Gpu gpu = Gpu.Default;
@@ -197,12 +197,12 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="m">The input matrix</param>
         /// <param name="activation">The activation function to use</param>
         /// <param name="result">The resulting matrix</param>
-        public static void Activation(in FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        public static void Activation(in Tensor m, [NotNull] ActivationFunction activation, out Tensor result)
         {
             // Setup
             int
-                h = m.Height,
-                w = m.Width;
+                h = m.Entities,
+                w = m.Length;
             Gpu gpu = Gpu.Default;
             using (DeviceMemory2D<float> m_gpu = gpu.AllocateDevice(m))
             using (DeviceMemory2D<float> mresult_gpu = gpu.AllocateDevice<float>(h, w))

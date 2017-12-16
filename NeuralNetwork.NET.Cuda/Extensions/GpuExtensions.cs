@@ -15,22 +15,22 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// Allocates a 2D memory area on device memory and copies the contents of the input 2D span
         /// </summary>
         /// <param name="gpu">The <see cref="Gpu"/> device to use</param>
-        /// <param name="source">The source <see cref="FloatSpan2D"/> with the data to copy</param>
+        /// <param name="source">The source <see cref="Tensor"/> with the data to copy</param>
         [MustUseReturnValue, NotNull]
-        public static unsafe DeviceMemory2D<float> AllocateDevice([NotNull] this Gpu gpu, in FloatSpan2D source)
+        public static unsafe DeviceMemory2D<float> AllocateDevice([NotNull] this Gpu gpu, in Tensor source)
         {
-            DeviceMemory2D<float> result_gpu = gpu.AllocateDevice<float>(source.Height, source.Width);
+            DeviceMemory2D<float> result_gpu = gpu.AllocateDevice<float>(source.Entities, source.Length);
             CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc CUDAInterop.CUDA_MEMCPY2D_st[1];
             ptSt[0] = new CUDAInterop.CUDA_MEMCPY2D_st
             {
                 srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
                 srcHost = source.Ptr,
-                srcPitch = new IntPtr(sizeof(float) * source.Width),
+                srcPitch = new IntPtr(sizeof(float) * source.Length),
                 dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
                 dstDevice = result_gpu.Handle,
                 dstPitch = result_gpu.Pitch,
-                WidthInBytes = new IntPtr(sizeof(float) * source.Width),
-                Height = new IntPtr(source.Height)
+                WidthInBytes = new IntPtr(sizeof(float) * source.Length),
+                Height = new IntPtr(source.Entities)
             };
             return CUDAInterop.cuMemcpy2D(ptSt) == CUDAInterop.cudaError_enum.CUDA_SUCCESS
                 ? result_gpu
@@ -41,8 +41,8 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// Copies the contents of the input <see cref="DeviceMemory2D{T}"/> instance to the target host memory area
         /// </summary>
         /// <param name="source">The <see cref="DeviceMemory2D{T}"/> area to read</param>
-        /// <param name="destination">The destination <see cref="FloatSpan2D"/> memory to write on</param>
-        public static unsafe void CopyTo([NotNull] this DeviceMemory2D<float> source, in FloatSpan2D destination)
+        /// <param name="destination">The destination <see cref="Tensor"/> memory to write on</param>
+        public static unsafe void CopyTo([NotNull] this DeviceMemory2D<float> source, in Tensor destination)
         {
             CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc CUDAInterop.CUDA_MEMCPY2D_st[1];
             ptSt[0] = new CUDAInterop.CUDA_MEMCPY2D_st
@@ -52,9 +52,9 @@ namespace NeuralNetworkNET.Cuda.Extensions
                 srcPitch = source.Pitch,
                 dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
                 dstHost = destination.Ptr,
-                dstPitch = new IntPtr(sizeof(float) * destination.Width),
-                WidthInBytes = new IntPtr(sizeof(float) * destination.Width),
-                Height = new IntPtr(destination.Height)
+                dstPitch = new IntPtr(sizeof(float) * destination.Length),
+                WidthInBytes = new IntPtr(sizeof(float) * destination.Length),
+                Height = new IntPtr(destination.Entities)
             };
             if (CUDAInterop.cuMemcpy2D(ptSt) != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
                 throw new InvalidOperationException("Failed to copy the source data on the given destination");
@@ -66,10 +66,10 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="source">The source <see cref="DeviceMemory2D{T}"/> memory to copy</param>
         /// <param name="result">The resulting maatrix</param>
         [MustUseReturnValue]
-        public static void CopyToHost([NotNull] this DeviceMemory2D<float> source, out FloatSpan2D result)
+        public static void CopyToHost([NotNull] this DeviceMemory2D<float> source, out Tensor result)
         {
             MemoryLayout.Layout2D layout = source.Layout.To<MemoryLayout, MemoryLayout.Layout2D>();
-            FloatSpan2D.New(layout.height.ToInt32(), layout.width.ToInt32(), out result);
+            Tensor.New(layout.height.ToInt32(), layout.width.ToInt32(), out result);
             source.CopyTo(result);
         }
 

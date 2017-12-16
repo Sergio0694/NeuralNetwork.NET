@@ -25,10 +25,10 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static void ConvoluteForward(
-            in FloatSpan2D source, in VolumeInformation sourceInfo,
+            in Tensor source, in VolumeInformation sourceInfo,
             [NotNull] float[,] kernels, in VolumeInformation kernelsInfo,
             [NotNull] float[] biases,
-            out FloatSpan2D result)
+            out Tensor result)
         {
             // Checks and local parameters
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
@@ -40,8 +40,8 @@ namespace NeuralNetworkNET.Cuda.Extensions
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 sourceDepth = sourceInfo.Depth,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
@@ -140,22 +140,22 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static void ConvoluteBackwards(
-            in FloatSpan2D source, in VolumeInformation sourceInfo,
-            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
-            out FloatSpan2D result)
+            in Tensor source, in VolumeInformation sourceInfo,
+            in Tensor kernels, in VolumeInformation kernelsInfo,
+            out Tensor result)
         {
             // Checks and local parameters
             int
-                nKernels = kernels.Height,
-                kw = kernels.Width,
+                nKernels = kernels.Entities,
+                kw = kernels.Length,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width,
                 kDepth = kernelsInfo.Depth;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -252,22 +252,22 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static void ConvoluteGradient(
-            in FloatSpan2D source, in VolumeInformation sourceInfo,
-            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
-            out FloatSpan2D result)
+            in Tensor source, in VolumeInformation sourceInfo,
+            in Tensor kernels, in VolumeInformation kernelsInfo,
+            out Tensor result)
         {
             // Checks and local parameters
             int
-                nKernels = kernels.Height,
-                kw = kernels.Width,
+                nKernels = kernels.Entities,
+                kw = kernels.Length,
                 kDepth = kernelsInfo.Depth,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;

@@ -18,7 +18,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         { }
 
         /// <inheritdoc/>
-        public override void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
+        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             base.Forward(x, out z, out a);
             a.InPlaceSoftmaxNormalization();

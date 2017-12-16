@@ -24,9 +24,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(10, 25);
             fixed (float* psource = source)
             {
-                FloatSpan2D.Fix(psource, 100, 784, out FloatSpan2D sourceSpan);
-                ConvolutionExtensions.ConvoluteForward(sourceSpan, (28, 28, 1), kernels, (5, 5, 1), biases, out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteForward(sourceSpan, (28, 28, 1), kernels, (5, 5, 1), biases, out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 100, 784, out Tensor sourceSpan);
+                ConvolutionExtensions.ConvoluteForward(sourceSpan, (28, 28, 1), kernels, (5, 5, 1), biases, out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteForward(sourceSpan, (28, 28, 1), kernels, (5, 5, 1), biases, out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -42,9 +42,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(10, 25 * 3);
             fixed (float* psource = source)
             {
-                FloatSpan2D.Fix(psource, 100, 784 * 3, out FloatSpan2D sourceSpan);
-                ConvolutionExtensions.ConvoluteForward(sourceSpan, (28, 28, 3), kernels, (5, 5, 3), biases, out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteForward(sourceSpan, (28, 28, 3), kernels, (5, 5, 3), biases, out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 100, 784 * 3, out Tensor sourceSpan);
+                ConvolutionExtensions.ConvoluteForward(sourceSpan, (28, 28, 3), kernels, (5, 5, 3), biases, out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteForward(sourceSpan, (28, 28, 3), kernels, (5, 5, 3), biases, out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -60,9 +60,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(10, 9 * 6);
             fixed (float* psource = source)
             {
-                FloatSpan2D.Fix(psource, 100, 1024 * 6, out FloatSpan2D sourceSpan);
-                ConvolutionExtensions.ConvoluteForward(sourceSpan, (32, 32, 6), kernels, (3, 3, 6), biases, out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteForward(sourceSpan, (32, 32, 6), kernels, (3, 3, 6), biases, out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 100, 1024 * 6, out Tensor sourceSpan);
+                ConvolutionExtensions.ConvoluteForward(sourceSpan, (32, 32, 6), kernels, (3, 3, 6), biases, out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteForward(sourceSpan, (32, 32, 6), kernels, (3, 3, 6), biases, out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -77,10 +77,10 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(1, 24 * 24 * 6);
             fixed (float* psource = source, pkernels = kernels)
             {
-                FloatSpan2D.Fix(psource, 30, 28 * 28, out FloatSpan2D sourceSpan);
-                FloatSpan2D.Fix(pkernels, 1, 24 * 24 * 6, out FloatSpan2D kernelsSpan);
-                ConvolutionExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 1), kernelsSpan, (24, 24, 6), out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 1), kernelsSpan, (24, 24, 6), out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 30, 28 * 28, out Tensor sourceSpan);
+                Tensor.Fix(pkernels, 1, 24 * 24 * 6, out Tensor kernelsSpan);
+                ConvolutionExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 1), kernelsSpan, (24, 24, 6), out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 1), kernelsSpan, (24, 24, 6), out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -95,10 +95,10 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(10, 24 * 24 * 3);
             fixed (float* psource = source, pkernels = kernels)
             {
-                FloatSpan2D.Fix(psource, 25, 28 * 28 * 10, out FloatSpan2D sourceSpan);
-                FloatSpan2D.Fix(pkernels, 10, 24 * 24 * 3, out FloatSpan2D kernelsSpan);
-                ConvolutionExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 3), out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 3), out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 25, 28 * 28 * 10, out Tensor sourceSpan);
+                Tensor.Fix(pkernels, 10, 24 * 24 * 3, out Tensor kernelsSpan);
+                ConvolutionExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 3), out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 3), out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -113,10 +113,10 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(4, 24 * 24 * 8);
             fixed (float* psource = source, pkernels = kernels)
             {
-                FloatSpan2D.Fix(psource, 20, 28 * 28 * 4, out FloatSpan2D sourceSpan);
-                FloatSpan2D.Fix(pkernels, 4, 24 * 24 * 8, out FloatSpan2D kernelsSpan);
-                ConvolutionExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 8), out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 8), out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 20, 28 * 28 * 4, out Tensor sourceSpan);
+                Tensor.Fix(pkernels, 4, 24 * 24 * 8, out Tensor kernelsSpan);
+                ConvolutionExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 8), out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteBackwards(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 8), out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -131,10 +131,10 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(30, 24 * 24 * 7);
             fixed (float* psource = source, pkernels = kernels)
             {
-                FloatSpan2D.Fix(psource, 30, 28 * 28 * 4, out FloatSpan2D sourceSpan);
-                FloatSpan2D.Fix(pkernels, 30, 24 * 24 * 7, out FloatSpan2D kernelsSpan);
-                ConvolutionExtensions.ConvoluteGradient(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 7), out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteGradient(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 7), out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 30, 28 * 28 * 4, out Tensor sourceSpan);
+                Tensor.Fix(pkernels, 30, 24 * 24 * 7, out Tensor kernelsSpan);
+                ConvolutionExtensions.ConvoluteGradient(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 7), out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteGradient(sourceSpan, (28, 28, 4), kernelsSpan, (24, 24, 7), out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -149,10 +149,10 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(25, 24 * 24 * 5);
             fixed (float* psource = source, pkernels = kernels)
             {
-                FloatSpan2D.Fix(psource, 25, 28 * 28 * 10, out FloatSpan2D sourceSpan);
-                FloatSpan2D.Fix(pkernels, 25, 24 * 24 * 5, out FloatSpan2D kernelsSpan);
-                ConvolutionExtensions.ConvoluteGradient(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 5), out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteGradient(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 5), out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 25, 28 * 28 * 10, out Tensor sourceSpan);
+                Tensor.Fix(pkernels, 25, 24 * 24 * 5, out Tensor kernelsSpan);
+                ConvolutionExtensions.ConvoluteGradient(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 5), out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteGradient(sourceSpan, (28, 28, 10), kernelsSpan, (24, 24, 5), out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();
@@ -167,10 +167,10 @@ namespace NeuralNetworkNET.Cuda.Unit
                 kernels = ThreadSafeRandom.NextGlorotNormalMatrix(10, 24 * 24 * 10);
             fixed (float* psource = source, pkernels = kernels)
             {
-                FloatSpan2D.Fix(psource, 10, 32 * 32 * 20, out FloatSpan2D sourceSpan);
-                FloatSpan2D.Fix(pkernels, 10, 24 * 24 * 10, out FloatSpan2D kernelsSpan);
-                ConvolutionExtensions.ConvoluteGradient(sourceSpan, (32, 32, 20), kernelsSpan, (24, 24, 10), out FloatSpan2D result);
-                ConvolutionGpuExtensions.ConvoluteGradient(sourceSpan, (32, 32, 20), kernelsSpan, (24, 24, 10), out FloatSpan2D resultGpu);
+                Tensor.Fix(psource, 10, 32 * 32 * 20, out Tensor sourceSpan);
+                Tensor.Fix(pkernels, 10, 24 * 24 * 10, out Tensor kernelsSpan);
+                ConvolutionExtensions.ConvoluteGradient(sourceSpan, (32, 32, 20), kernelsSpan, (24, 24, 10), out Tensor result);
+                ConvolutionGpuExtensions.ConvoluteGradient(sourceSpan, (32, 32, 20), kernelsSpan, (24, 24, 10), out Tensor resultGpu);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(resultGpu.ToArray2D(), 1e-4f));
                 result.Free();
                 resultGpu.Free();

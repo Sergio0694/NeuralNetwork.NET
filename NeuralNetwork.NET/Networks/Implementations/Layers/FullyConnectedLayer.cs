@@ -30,22 +30,22 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             : base(weights, biases, activation) { }
 
         /// <inheritdoc/>
-        public override void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
+        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             MatrixServiceProvider.MultiplyWithSum(x, Weights, Biases, out z);
             MatrixServiceProvider.Activation(z, ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
-            Weights.Transpose(out FloatSpan2D wt);
+            Weights.Transpose(out Tensor wt);
             MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
             wt.Free();
         }
 
         /// <inheritdoc/>
-        public override void ComputeGradient(in FloatSpan2D a, in FloatSpan2D delta, out FloatSpan2D dJdw, out FloatSpan dJdb)
+        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out FloatSpan dJdb)
         {
             MatrixServiceProvider.TransposeAndMultiply(a, delta, out dJdw);
             delta.CompressVertically(out dJdb);

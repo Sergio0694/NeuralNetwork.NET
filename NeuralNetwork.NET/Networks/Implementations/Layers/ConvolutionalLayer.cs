@@ -67,21 +67,21 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override unsafe void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a)
+        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume, Biases, out z);
-            if (ActivationFunctionType == ActivationFunctionType.Identity) FloatSpan2D.From(z, z.Height, z.Width, out a);
+            if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
             else MatrixServiceProvider.Activation(z, ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
             fixed (float* pw = Weights)
             {
-                FloatSpan2D.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out FloatSpan2D weights);
-                weights.Rotate180(KernelVolume.Depth, out FloatSpan2D w180);
-                MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume, out FloatSpan2D delta);
+                Tensor.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out Tensor weights);
+                weights.Rotate180(KernelVolume.Depth, out Tensor w180);
+                MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume, out Tensor delta);
                 w180.Free();
                 z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
                 delta.Free();
@@ -89,9 +89,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override void ComputeGradient(in FloatSpan2D a, in FloatSpan2D delta, out FloatSpan2D dJdw, out FloatSpan dJdb)
+        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out FloatSpan dJdb)
         {
-            a.Rotate180(InputVolume.Depth, out FloatSpan2D a180);
+            a.Rotate180(InputVolume.Depth, out Tensor a180);
             MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume, out dJdw);
             a180.Free();
             delta.CompressVertically(out dJdb);

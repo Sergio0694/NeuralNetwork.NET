@@ -23,9 +23,9 @@ namespace DigitsCudaTest
             NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewNetwork(
-                NetworkLayers.Convolutional((28, 28, 1), (5, 5), 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling((24, 24, 10), ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(12 * 12 * 10, 100, ActivationFunctionType.Sigmoid),
+                NetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling((24, 24, 20), ActivationFunctionType.Sigmoid),
+                NetworkLayers.FullyConnected(12 * 12 * 20, 100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.Softmax(100, 10));
 
             // Setup and start the training

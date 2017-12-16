@@ -88,8 +88,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
-                Forward(xSpan, out FloatSpan2D yHatSpan);
+                Tensor.Fix(px, 1, x.Length, out Tensor xSpan);
+                Forward(xSpan, out Tensor yHatSpan);
                 float[] yHat = yHatSpan.ToArray();
                 yHatSpan.Free();
                 return yHat;
@@ -101,8 +101,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
-                FloatSpan2D.Fix(py, 1, y.Length, out FloatSpan2D ySpan);
+                Tensor.Fix(px, 1, x.Length, out Tensor xSpan);
+                Tensor.Fix(py, 1, y.Length, out Tensor ySpan);
                 return CalculateCost(xSpan, ySpan);
             }
         }
@@ -112,10 +112,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
-                FloatSpan2D*
-                    zList = stackalloc FloatSpan2D[_Layers.Length],
-                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                Tensor.Fix(px, 1, x.Length, out Tensor xSpan);
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
                 {
                     _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
@@ -136,8 +136,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
-                Forward(xSpan, out FloatSpan2D yHatSpan);
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xSpan);
+                Forward(xSpan, out Tensor yHatSpan);
                 float[,] yHat = yHatSpan.ToArray2D();
                 yHatSpan.Free();
                 return yHat;
@@ -149,8 +149,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
-                FloatSpan2D.Fix(py, y.GetLength(0), y.GetLength(1), out FloatSpan2D ySpan);
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xSpan);
+                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor ySpan);
                 return CalculateCost(xSpan, ySpan);
             }
         }
@@ -160,10 +160,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
-                FloatSpan2D*
-                    zList = stackalloc FloatSpan2D[_Layers.Length],
-                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xSpan);
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
                 {
                     _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
@@ -183,12 +183,12 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Implementation
 
-        private void Forward(in FloatSpan2D x, out FloatSpan2D yHat)
+        private void Forward(in Tensor x, out Tensor yHat)
         {
-            FloatSpan2D input = x;
+            Tensor input = x;
             for (int i = 0; i < _Layers.Length; i++)
             {
-                _Layers[i].Forward(input, out FloatSpan2D z, out FloatSpan2D a); // Forward the inputs through all the network layers
+                _Layers[i].Forward(input, out Tensor z, out Tensor a); // Forward the inputs through all the network layers
                 z.Free();
                 if (i > 0) input.Free();
                 input = a;
@@ -196,9 +196,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             yHat = input;
         }
 
-        private float CalculateCost(in FloatSpan2D x, in FloatSpan2D y)
+        private float CalculateCost(in Tensor x, in Tensor y)
         {
-            Forward(x, out FloatSpan2D yHat);
+            Forward(x, out Tensor yHat);
             float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
             yHat.Free();
             return cost;
@@ -217,13 +217,13 @@ namespace NeuralNetworkNET.Networks.Implementations
             fixed (float* px = batch.X, py = batch.Y)
             {
                 // Setup
-                FloatSpan2D*
-                    zList = stackalloc FloatSpan2D[_Layers.Length],
-                    aList = stackalloc FloatSpan2D[_Layers.Length],
-                    dropoutMasks = stackalloc FloatSpan2D[_Layers.Length - 1];
-                FloatSpan2D.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out FloatSpan2D x);
-                FloatSpan2D.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out FloatSpan2D y);
-                FloatSpan2D** deltas = stackalloc FloatSpan2D*[_Layers.Length]; // One delta for each hop through the network
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length],
+                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
+                Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
+                Tensor.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
+                Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
 
                 // Feedforward
                 for (int i = 0; i < _Layers.Length; i++)
@@ -231,7 +231,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     _Layers[i].Forward(i == 0 ? x : aList[i - 1], out zList[i], out aList[i]);
                     if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
                     {
-                        ThreadSafeRandom.NextDropoutMask(aList[i].Height, aList[i].Width, dropout, out dropoutMasks[i]);
+                        ThreadSafeRandom.NextDropoutMask(aList[i].Entities, aList[i].Length, dropout, out dropoutMasks[i]);
                         aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
                     }
                 }
@@ -265,7 +265,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Compute the gradients for each layer with weights and biases.
                  * NOTE: the gradient is only computed for layers with weights and biases, for all the other
                  *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-                FloatSpan2D* dJdw = stackalloc FloatSpan2D[WeightedLayersIndexes.Length]; // One gradient item for layer
+                Tensor* dJdw = stackalloc Tensor[WeightedLayersIndexes.Length]; // One gradient item for layer
                 FloatSpan* dJdb = stackalloc FloatSpan[WeightedLayersIndexes.Length];
                 for (int j = 0; j < WeightedLayersIndexes.Length; j++)
                 {
@@ -394,14 +394,14 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Evaluation
 
         // Auxiliary function to forward a test batch
-        private unsafe (float Cost, int Classified) Evaluate(in FloatSpan2D x, in FloatSpan2D y)
+        private unsafe (float Cost, int Classified) Evaluate(in Tensor x, in Tensor y)
         {
             // Feedforward
-            Forward(x, out FloatSpan2D yHat);
+            Forward(x, out Tensor yHat);
 
             // Function that counts the correctly classified items
             float* pyHat = yHat, pY = y;
-            int wy = y.Width, total = 0;
+            int wy = y.Length, total = 0;
             void Kernel(int i)
             {
                 int
@@ -412,7 +412,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Check the correctly classified samples and calculate the cost
-            Parallel.For(0, x.Height, Kernel).AssertCompleted();
+            Parallel.For(0, x.Entities, Kernel).AssertCompleted();
             float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
             yHat.Free();
             return (cost, total);
@@ -441,8 +441,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the even batches
                 for (int i = 0; i < batches; i++)
                 {
-                    FloatSpan2D.Fix(px + i * batchSize * wx, batchSize, wx, out FloatSpan2D xSpan);
-                    FloatSpan2D.Fix(py + i * batchSize * wy, batchSize, wy, out FloatSpan2D ySpan);
+                    Tensor.Fix(px + i * batchSize * wx, batchSize, wx, out Tensor xSpan);
+                    Tensor.Fix(py + i * batchSize * wy, batchSize, wy, out Tensor ySpan);
                     (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
                     cost += pCost;
                     classified += pClassified;
@@ -451,8 +451,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the remaining samples, if any
                 if (batchMod > 0)
                 {
-                    FloatSpan2D.Fix(px + batches * batchSize * wx, batchMod, wx, out FloatSpan2D xSpan);
-                    FloatSpan2D.Fix(py + batches * batchSize * wy, batchMod, wy, out FloatSpan2D ySpan);
+                    Tensor.Fix(px + batches * batchSize * wx, batchMod, wx, out Tensor xSpan);
+                    Tensor.Fix(py + batches * batchSize * wy, batchMod, wy, out Tensor ySpan);
                     (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
                     cost += pCost;
                     classified += pClassified;
@@ -477,8 +477,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 ref readonly TrainingBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
-                    FloatSpan2D.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out FloatSpan2D xSpan);
-                    FloatSpan2D.Fix(py, xSpan.Height, batch.Y.GetLength(1), out FloatSpan2D ySpan);
+                    Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xSpan);
+                    Tensor.Fix(py, xSpan.Entities, batch.Y.GetLength(1), out Tensor ySpan);
                     var partial = Evaluate(xSpan, ySpan);
                     cost += partial.Cost;
                     classified += partial.Classified;

@@ -11,7 +11,7 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <param name="m2">The second matrix to multiply</param>
     /// <param name="result">The resulting matrix</param>
     public delegate void Multiplication(
-        in FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result);
+        in Tensor m1, in Tensor m2, out Tensor result);
 
     /// <summary>
     /// A delegate that wraps a method that performs the multiplication between two input matrices and sums a vector to the result
@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <param name="v">The bias vector to sum</param>
     /// <param name="result">The resulting matrix</param>
     public delegate void MultiplicationWithSum(
-        in FloatSpan2D m1, float[,] m2, float[] v, out FloatSpan2D result);
+        in Tensor m1, float[,] m2, float[] v, out Tensor result);
 
     /// <summary>
     /// A delegate that wraps a method that executes the given activation function on all the input values
@@ -29,7 +29,7 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <param name="m">The target matrix</param>
     /// <param name="activation">The activation function to use</param>
     /// <param name="result">The resulting matrix</param>
-    public delegate void Activation(in FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result);
+    public delegate void Activation(in Tensor m, [NotNull] ActivationFunction activation, out Tensor result);
 
     /// <summary>
     /// A delegate that wraps a method that multiplies two matrices, activates the third and performs the product of the two results
@@ -39,5 +39,5 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <param name="wt">The second matrix to multiply</param>
     /// <param name="prime">The activation function to use</param>
     public delegate void MultiplicationAndHadamardProductWithActivation(
-        in FloatSpan2D m, in FloatSpan2D di, in FloatSpan2D wt, [NotNull] ActivationFunction prime);
+        in Tensor m, in Tensor di, in Tensor wt, [NotNull] ActivationFunction prime);
 }

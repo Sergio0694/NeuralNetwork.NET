@@ -40,7 +40,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="delta">The output delta</param>
         /// <param name="dJdw">The resulting gradient with respect to the weights</param>
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
-        public abstract void ComputeGradient(in FloatSpan2D a, in FloatSpan2D delta, out FloatSpan2D dJdw, out FloatSpan dJdb);
+        public abstract void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out FloatSpan dJdb);
 
 
         #region Implementation
@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="dJdb">The gradient with respect to the biases</param>
         /// <param name="alpha">The learning rate to use when updating the weights</param>
         /// <param name="l2Factor">The L2 regularization factor to resize the weights</param>
-        public unsafe void Minimize(in FloatSpan2D dJdw, in FloatSpan dJdb, float alpha, float l2Factor)
+        public unsafe void Minimize(in Tensor dJdw, in FloatSpan dJdb, float alpha, float l2Factor)
         {
             // Tweak the weights
             fixed (float* pw = Weights)

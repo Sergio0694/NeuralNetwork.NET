@@ -16,10 +16,10 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <exception cref="System.ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
     /// <exception cref="System.ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
     public delegate void ConvolutionWithBias(
-        in FloatSpan2D source, in VolumeInformation sourceInfo,
+        in Tensor source, in VolumeInformation sourceInfo,
         [NotNull] float[,] kernels, in VolumeInformation kernelsInfo,
         [NotNull] float[] biases,
-        out FloatSpan2D result);
+        out Tensor result);
 
     /// <summary>
     /// A delegates that wraps a method that performs a generic convolution operation on the source matrix, using the given kernels
@@ -32,7 +32,7 @@ namespace NeuralNetworkNET.DependencyInjection.Delegates
     /// <exception cref="System.ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
     /// <exception cref="System.ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
     public delegate void Convolution(
-        in FloatSpan2D source, in VolumeInformation sourceInfo,
-        in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
-        out FloatSpan2D result);
+        in Tensor source, in VolumeInformation sourceInfo,
+        in Tensor kernels, in VolumeInformation kernelsInfo,
+        out Tensor result);
 }

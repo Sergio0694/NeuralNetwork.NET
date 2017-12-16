@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="x">The input to process</param>
         /// <param name="z">The output activity on the current layer</param>
         /// <param name="a">The output activation on the current layer</param>
-        public abstract void Forward(in FloatSpan2D x, out FloatSpan2D z, out FloatSpan2D a);
+        public abstract void Forward(in Tensor x, out Tensor z, out Tensor a);
 
         /// <summary>
         /// Backpropagates the error to compute the delta for the inputs of the layer
@@ -68,7 +68,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="delta_1">The output error delta</param>
         /// <param name="z">The activity on the inputs of the layer. It will be modified to become the computed delta</param>
         /// <param name="activationPrime">The activation prime function performed by the previous layer</param>
-        public abstract void Backpropagate(in FloatSpan2D delta_1, in FloatSpan2D z, ActivationFunction activationPrime);
+        public abstract void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime);
 
         #region Equality check
 

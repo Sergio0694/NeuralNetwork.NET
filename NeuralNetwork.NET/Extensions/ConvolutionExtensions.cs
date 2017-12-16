@@ -23,10 +23,10 @@ namespace NeuralNetworkNET.Extensions
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static unsafe void ConvoluteForward(
-            in this FloatSpan2D source, in VolumeInformation sourceInfo,
+            in this Tensor source, in VolumeInformation sourceInfo,
             [NotNull] float[,] kernels, in VolumeInformation kernelsInfo,
             [NotNull] float[] biases,
-            out FloatSpan2D result)
+            out Tensor result)
         {
             // Checks and local parameters
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
@@ -38,8 +38,8 @@ namespace NeuralNetworkNET.Extensions
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 sourceDepth = sourceInfo.Depth,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
@@ -63,7 +63,7 @@ namespace NeuralNetworkNET.Extensions
                 finalWidth = convolutionOutputSize * nKernels;      // Final size of each sample row
 
             // Process the valid convolution
-            FloatSpan2D.New(h, finalWidth, out result);
+            Tensor.New(h, finalWidth, out result);
             float* psource = source, presult = result;
             void ForwardKernel(int index)
             {
@@ -123,22 +123,22 @@ namespace NeuralNetworkNET.Extensions
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static unsafe void ConvoluteBackwards(
-            in this FloatSpan2D source, in VolumeInformation sourceInfo,
-            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
-            out FloatSpan2D result)
+            in this Tensor source, in VolumeInformation sourceInfo,
+            in Tensor kernels, in VolumeInformation kernelsInfo,
+            out Tensor result)
         {
             // Checks and local parameters
             int
-                nKernels = kernels.Height,
-                kw = kernels.Width,
+                nKernels = kernels.Entities,
+                kw = kernels.Length,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width,
                 kDepth = kernelsInfo.Depth;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -159,7 +159,7 @@ namespace NeuralNetworkNET.Extensions
                 finalWidth = convolutionOutputSize * kDepth;        // Final size of each sample row
 
             // Process the full convolution
-            FloatSpan2D.New(h, finalWidth, out result);
+            Tensor.New(h, finalWidth, out result);
             float* psource = source, pkernels = kernels, presult = result;
             void BackwardsKernel(int index)
             {
@@ -219,22 +219,22 @@ namespace NeuralNetworkNET.Extensions
         /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static unsafe void ConvoluteGradient(
-            in this FloatSpan2D source, in VolumeInformation sourceInfo,
-            in FloatSpan2D kernels, in VolumeInformation kernelsInfo,
-            out FloatSpan2D result)
+            in this Tensor source, in VolumeInformation sourceInfo,
+            in Tensor kernels, in VolumeInformation kernelsInfo,
+            out Tensor result)
         {
             // Checks and local parameters
             int
-                nKernels = kernels.Height,
-                kw = kernels.Width,
+                nKernels = kernels.Entities,
+                kw = kernels.Length,
                 kDepth = kernelsInfo.Depth,
                 kSize = kw / kernelsInfo.Depth,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width;
             if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(kernels), "The kernel must be at least 2x2");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 imgSize = sourceInfo.SliceSize,
                 imgHeight = sourceInfo.Height,
                 imgWidth = sourceInfo.Width;
@@ -257,7 +257,7 @@ namespace NeuralNetworkNET.Extensions
                 iterationsPerSample = sourceInfo.Depth * kDepth;            // Each sample has its own list of 3D gradients, one for each kernel
 
             // Process the valid convolution
-            FloatSpan2D.New(h, finalWidth, out result);
+            Tensor.New(h, finalWidth, out result);
             float* psource = source, pkernels = kernels, presult = result;
             unsafe void GradientKernel(int index)
             {
@@ -308,17 +308,17 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="depth">The number of images per row</param>
         /// <param name="result">The resulting vector</param>
         [PublicAPI]
-        public static unsafe void CompressVertically(in this FloatSpan2D source, int depth, out FloatSpan result)
+        public static unsafe void CompressVertically(in this Tensor source, int depth, out FloatSpan result)
         {
             // Checks and local parameters
             if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
             if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
-            FloatSpan2D.New(h, depth, out FloatSpan2D temp);
+            Tensor.New(h, depth, out Tensor temp);
 
             // Kernel to sum each slice
             float* ptemp = temp, psource = source;
@@ -349,13 +349,13 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="source">The input matrix to rotate</param>
         /// <param name="depth">The number of images per row</param>
         /// <param name="result">The rotated input matrix</param>
-        public static unsafe void Rotate180(in this FloatSpan2D source, int depth, out FloatSpan2D result)
+        public static unsafe void Rotate180(in this Tensor source, int depth, out Tensor result)
         {
             // Checks and local parameters
             if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
             int
-                h = source.Height,
-                w = source.Width,
+                h = source.Entities,
+                w = source.Length,
                 imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
             if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
@@ -363,7 +363,7 @@ namespace NeuralNetworkNET.Extensions
                 threshold = imgSize / 2,
                 edge = imgSize - 1;
             bool odd = imgSize % 2 == 1;
-            FloatSpan2D.New(h, w, out result);
+            Tensor.New(h, w, out result);
 
             // Inversion kernel
             float* presult = result, psource = source;

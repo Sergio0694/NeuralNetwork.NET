@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.DependencyInjection
         /// </summary>
         [MustUseReturnValue]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void MultiplyWithSum(in FloatSpan2D m1, float[,] m2, float[] v, out FloatSpan2D result)
+        public static void MultiplyWithSum(in Tensor m1, float[,] m2, float[] v, out Tensor result)
         {
             if (_MultiplyWithSumOverride == null) m1.MultiplyWithSum(m2, v, out result);
             else _MultiplyWithSumOverride(m1, m2, v, out result);
@@ -74,11 +74,11 @@ namespace NeuralNetworkNET.DependencyInjection
         /// </summary>
         [MustUseReturnValue]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TransposeAndMultiply(in FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
+        public static void TransposeAndMultiply(in Tensor m1, in Tensor m2, out Tensor result)
         {
             if (_TransposeAndMultiplyOverride == null)
             {
-                m1.Transpose(out FloatSpan2D m1t);
+                m1.Transpose(out Tensor m1t);
                 m1t.Multiply(m2, out result);
                 m1t.Free();
             }
@@ -93,7 +93,7 @@ namespace NeuralNetworkNET.DependencyInjection
         /// </summary>
         [MustUseReturnValue]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Activation(in FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        public static void Activation(in Tensor m, [NotNull] ActivationFunction activation, out Tensor result)
         {
             if (_ActivationOverride == null) m.Activation(activation, out result);
             else _ActivationOverride(m, activation, out result);
@@ -113,7 +113,7 @@ namespace NeuralNetworkNET.DependencyInjection
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteForward"/> method
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ConvoluteForward(in FloatSpan2D m1, in VolumeInformation m1Info, [NotNull] float[,] m2, in VolumeInformation m2Info, [NotNull] float[] biases, out FloatSpan2D result)
+        public static void ConvoluteForward(in Tensor m1, in VolumeInformation m1Info, [NotNull] float[,] m2, in VolumeInformation m2Info, [NotNull] float[] biases, out Tensor result)
         {
             if (_ConvoluteForwardOverride == null) m1.ConvoluteForward(m1Info, m2, m2Info, biases, out result);
             else _ConvoluteForwardOverride(m1, m1Info, m2, m2Info, biases, out result);
@@ -129,7 +129,7 @@ namespace NeuralNetworkNET.DependencyInjection
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteBackwards"/> method
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ConvoluteBackwards(in FloatSpan2D m1, in VolumeInformation m1Info, in FloatSpan2D m2, in VolumeInformation m2Info, out FloatSpan2D result)
+        public static void ConvoluteBackwards(in Tensor m1, in VolumeInformation m1Info, in Tensor m2, in VolumeInformation m2Info, out Tensor result)
         {
             if (_ConvoluteBackwardsOverride == null) m1.ConvoluteBackwards(m1Info, m2, m2Info, out result);
             else _ConvoluteBackwardsOverride(m1, m1Info, m2, m2Info, out result);
@@ -145,7 +145,7 @@ namespace NeuralNetworkNET.DependencyInjection
         /// Forwards the base <see cref="ConvolutionExtensions.ConvoluteGradient"/> method
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ConvoluteGradient(in FloatSpan2D m1, in VolumeInformation m1Info, in FloatSpan2D m2, in VolumeInformation m2Info, out FloatSpan2D result)
+        public static void ConvoluteGradient(in Tensor m1, in VolumeInformation m1Info, in Tensor m2, in VolumeInformation m2Info, out Tensor result)
         {
             if (_ConvoluteGradientOverride == null) m1.ConvoluteGradient(m1Info, m2, m2Info, out result);
             else _ConvoluteGradientOverride(m1, m1Info, m2, m2Info, out result);
@@ -162,7 +162,7 @@ namespace NeuralNetworkNET.DependencyInjection
         /// Forwards the base <see cref="MatrixExtensions.InPlaceMultiplyAndHadamardProductWithActivationPrime"/> method
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime(in FloatSpan2D m, in FloatSpan2D di, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
+        public static void InPlaceMultiplyAndHadamardProductWithActivationPrime(in Tensor m, in Tensor di, in Tensor wt, [NotNull] ActivationFunction prime)
         {
             if (_InPlaceMultiplyAndHadamardProductWithAcrivationPrime == null) m.InPlaceMultiplyAndHadamardProductWithActivationPrime(di, wt, prime);
             else _InPlaceMultiplyAndHadamardProductWithAcrivationPrime(m, di, wt, prime);

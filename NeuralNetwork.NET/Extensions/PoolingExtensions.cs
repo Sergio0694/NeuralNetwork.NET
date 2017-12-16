@@ -15,11 +15,11 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="source">The input matrix to pool</param>
         /// <param name="depth">The number of images for each matrix row</param>
         /// <param name="result">The resulting pooled matrix</param>
-        public static unsafe void Pool2x2(in this FloatSpan2D source, int depth, out FloatSpan2D result)
+        public static unsafe void Pool2x2(in this Tensor source, int depth, out Tensor result)
         {
             // Prepare the result matrix
             if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
-            int h = source.Height, w = source.Width;
+            int h = source.Entities, w = source.Length;
             if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
             int
                 imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Extensions
                 poolSize = poolAxis * poolAxis,
                 poolFinalWidth = depth * poolSize,
                 edge = imgAxis - 1;
-            FloatSpan2D.New(h, poolFinalWidth, out result);
+            Tensor.New(h, poolFinalWidth, out result);
 
             // Pooling kernel
             float* psource = source, presult = result;
@@ -109,11 +109,11 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="source">The activation matrix that will also hold the final result</param>
         /// <param name="pooled">The matrix to upscale according to the source values</param>
         /// <param name="depth">The number of images for each matrix row</param>
-        public static unsafe void UpscalePool2x2(in this FloatSpan2D source, in FloatSpan2D pooled, int depth)
+        public static unsafe void UpscalePool2x2(in this Tensor source, in Tensor pooled, int depth)
         {
             // Prepare the result matrix
             if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
-            int h = source.Height, w = source.Width;
+            int h = source.Entities, w = source.Length;
             if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
             int
                 imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
@@ -125,8 +125,8 @@ namespace NeuralNetworkNET.Extensions
                 poolFinalWidth = depth * poolSize,
                 edge = imgAxis - 1;
             int
-                ph = pooled.Height,
-                pw = pooled.Width;
+                ph = pooled.Entities,
+                pw = pooled.Length;
             if (ph != h || pw != poolFinalWidth) throw new ArgumentException("Invalid pooled matrix", nameof(pooled));
 
             // Pooling kernel
