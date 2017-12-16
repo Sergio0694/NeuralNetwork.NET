@@ -32,9 +32,9 @@ namespace NeuralNetworkNET.Cuda.APIs
                                 MatrixGpuExtensions.TransposeAndMultiply,
                                 MatrixGpuExtensions.Activation,
                                 MatrixGpuExtensions.MultiplyAndHadamardProductWithActivation,
-                                ConvolutionGpuExtensions.ConvoluteForward,
-                                ConvolutionGpuExtensions.ConvoluteBackwards,
-                                ConvolutionGpuExtensions.ConvoluteGradient);
+                                null,
+                                null,
+                                null);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(value), value, null);

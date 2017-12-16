@@ -13,7 +13,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// A pooling layer, with a 2x2 window and a stride of 2
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class PoolingLayer : NetworkLayerBase, INetworkLayer3D
+    internal class PoolingLayer : NetworkLayerBase, INetworkLayer3D
     {
         #region Parameters
 

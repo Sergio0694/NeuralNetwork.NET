@@ -16,7 +16,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// A convolutional layer, used in a CNN network
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class ConvolutionalLayer : WeightedLayerBase, INetworkLayer3D
+    internal class ConvolutionalLayer : WeightedLayerBase, INetworkLayer3D
     {
         #region Parameters
 
