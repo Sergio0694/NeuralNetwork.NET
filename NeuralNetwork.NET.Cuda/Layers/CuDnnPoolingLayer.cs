@@ -54,10 +54,11 @@ namespace NeuralNetworkNET.Cuda.Layers
                 OutputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputVolume.Depth, OutputVolume.Height, OutputVolume.Width);
                 dnn.PoolingForward(PoolDescriptor, 1, InputInfo, x_gpu.Ptr, 0, OutputInfo, z_gpu.Ptr);
                 z_gpu.CopyToHost(x.Entities, Outputs, out z);
-            }
 
-            // Activation
-            Blas.Activation(z, ActivationFunctions.Activation, out a);
+                // Activation
+                dnn.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);
+                z_gpu.CopyToHost(z.Entities, z.Length, out a);
+            }
         }
 
         /// <inheritdoc/>

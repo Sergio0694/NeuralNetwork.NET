@@ -22,7 +22,7 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="y">The output memory area</param>
         /// <param name="ldy">The main dimension of the output memory area</param>
         /// <param name="f">The activation function to use</param>
-        public static void Activation([NotNull] this Dnn dnn, int n, int w, deviceptr<float> x, int ldx, deviceptr<float> y, int ldy, [NotNull] ActivationFunction f)
+        public static void ActivationForward([NotNull] this Dnn dnn, int n, int w, deviceptr<float> x, int ldx, deviceptr<float> y, int ldy, [NotNull] ActivationFunction f)
         {
             // Wrapper
             void Kernel(int i)
@@ -35,6 +35,34 @@ namespace NeuralNetworkNET.Cuda.Extensions
             }
 
             // Execute the multiplication in parallel
+            dnn.Gpu.For(0, n, Kernel);
+        }
+
+        /// <summary>
+        /// Executes the backward activation function on the target memory area, with the given error delta
+        /// </summary>
+        /// <param name="dnn">The current <see cref="Dnn"/> instance being used</param>
+        /// <param name="n">The number of samples in the input tensor</param>
+        /// <param name="w">The size of each sample to process</param>
+        /// <param name="z">A pointer to the input memory area</param>
+        /// <param name="ldz">The main dimension of the input memory area (the pitch)</param>
+        /// <param name="delta">The delta memory area</param>
+        /// <param name="lddelta">The main dimension of the delta memory area</param>
+        /// <param name="f">The activation function to use</param>
+        internal static unsafe void ActivationBackward([NotNull] this Dnn dnn, int n, int w, deviceptr<float> z, int ldz, deviceptr<float> delta, int lddelta, [NotNull] ActivationFunction f)
+        {
+            // Loop in parallel
+            void Kernel(int i)
+            {
+                int
+                    z_offset = i * ldz,
+                    delta_offset = i * lddelta;
+                for (int j = 0; j < w; j++)
+                {
+                    int z_position = z_offset + j;
+                    z[z_position] = f(z[z_position]) * delta[delta_offset + j];
+                }
+            }
             dnn.Gpu.For(0, n, Kernel);
         }
     }
