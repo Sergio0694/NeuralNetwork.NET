@@ -1,7 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
-using NeuralNetworkNET.DependencyInjection;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -69,9 +68,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            MatrixServiceProvider.ConvoluteForward(x, InputVolume, Weights, KernelVolume, Biases, out z);
+            x.ConvoluteForward(InputVolume, Weights, KernelVolume, Biases, out z);
             if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
-            else MatrixServiceProvider.Activation(z, ActivationFunctions.Activation, out a);
+            else z.Activation(ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
@@ -81,7 +80,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             {
                 Tensor.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out Tensor weights);
                 weights.Rotate180(KernelVolume.Depth, out Tensor w180);
-                MatrixServiceProvider.ConvoluteBackwards(delta_1, OutputVolume, w180, KernelVolume, out Tensor delta);
+                delta_1.ConvoluteBackwards(OutputVolume, w180, KernelVolume, out Tensor delta);
                 w180.Free();
                 z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
                 delta.Free();
@@ -92,7 +91,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Rotate180(InputVolume.Depth, out Tensor a180);
-            MatrixServiceProvider.ConvoluteGradient(a180, InputVolume, delta, OutputVolume, out dJdw);
+            a180.ConvoluteGradient(InputVolume, delta, OutputVolume, out dJdw);
             a180.Free();
             delta.CompressVertically(out dJdb);
         }

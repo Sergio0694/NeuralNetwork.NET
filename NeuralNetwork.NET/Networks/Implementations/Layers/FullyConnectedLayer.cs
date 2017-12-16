@@ -1,6 +1,5 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.DependencyInjection;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -32,22 +31,24 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            MatrixServiceProvider.MultiplyWithSum(x, Weights, Biases, out z);
-            MatrixServiceProvider.Activation(z, ActivationFunctions.Activation, out a);
+            x.MultiplyWithSum(Weights, Biases, out z);
+            z.Activation(ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
         public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
             Weights.Transpose(out Tensor wt);
-            MatrixServiceProvider.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
+            z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
             wt.Free();
         }
 
         /// <inheritdoc/>
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
-            MatrixServiceProvider.TransposeAndMultiply(a, delta, out dJdw);
+            a.Transpose(out Tensor at);
+            at.Multiply(delta, out dJdw);
+            at.Free();
             delta.CompressVertically(out dJdb);
         }
 

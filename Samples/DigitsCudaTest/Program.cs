@@ -7,7 +7,6 @@ using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
-using NeuralNetworkNET.Cuda.APIs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
@@ -20,7 +19,6 @@ namespace DigitsCudaTest
         static async Task Main()
         {
             // Parse the dataset and create the network
-            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewNetwork(
                 NetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
