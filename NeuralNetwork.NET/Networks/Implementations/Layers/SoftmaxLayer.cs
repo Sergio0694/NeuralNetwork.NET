@@ -11,7 +11,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// <summary>
     /// An output layer with the softmax activation function and log-likelyhood cost function
     /// </summary>
-    internal sealed class SoftmaxLayer : OutputLayerBase
+    internal class SoftmaxLayer : OutputLayerBase
     {
         public SoftmaxLayer(int inputs, int outputs)
             : base(inputs, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood)
