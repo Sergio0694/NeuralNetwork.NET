@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -14,6 +15,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// </summary>
     internal class FullyConnectedLayer : WeightedLayerBase
     {
+        /// <inheritdoc/>
+        public override LayerType LayerType { get; } = LayerType.FullyConnected;
+
         /// <inheritdoc/>
         public override int Inputs => Weights.GetLength(0);
 

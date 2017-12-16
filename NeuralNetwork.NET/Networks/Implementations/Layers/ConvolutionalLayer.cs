@@ -20,6 +20,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #region Parameters
 
         /// <inheritdoc/>
+        public override LayerType LayerType { get; } = LayerType.Convolutional;
+
+        /// <inheritdoc/>
         public override int Inputs => InputVolume.Volume;
 
         /// <inheritdoc/>

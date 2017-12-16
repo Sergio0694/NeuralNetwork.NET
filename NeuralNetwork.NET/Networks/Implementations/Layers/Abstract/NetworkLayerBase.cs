@@ -18,14 +18,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         /// <inheritdoc/>
         [JsonProperty(nameof(LayerType), Required = Required.Always, Order = 1)]
-        public LayerType LayerType
-        {
-            get
-            {
-                Enum.TryParse(GetType().Name.Replace("Layer", String.Empty), out LayerType type);
-                return type;
-            }
-        }
+        public abstract LayerType LayerType { get; }
 
         /// <inheritdoc/>
         [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 2)]

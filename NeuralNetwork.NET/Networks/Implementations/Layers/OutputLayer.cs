@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
@@ -13,6 +14,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// </summary>
     internal sealed class OutputLayer : OutputLayerBase
     {
+        /// <inheritdoc/>
+        public override LayerType LayerType { get; } = LayerType.Output;
+
         public OutputLayer(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
             : base(inputs, outputs, activation, cost)
         {

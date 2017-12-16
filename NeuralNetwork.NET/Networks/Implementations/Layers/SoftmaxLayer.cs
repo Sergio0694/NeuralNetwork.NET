@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
@@ -13,6 +14,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// </summary>
     internal class SoftmaxLayer : OutputLayerBase
     {
+        /// <inheritdoc/>
+        public override LayerType LayerType { get; } = LayerType.Softmax;
+
         public SoftmaxLayer(int inputs, int outputs)
             : base(inputs, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood)
         { }
