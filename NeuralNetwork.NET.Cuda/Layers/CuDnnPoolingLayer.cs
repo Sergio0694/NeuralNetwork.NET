@@ -33,10 +33,6 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly TensorDescriptor OutputInfo = new TensorDescriptor();
 
-        // The activation info to use when forwarding the inputs
-        [NotNull]
-        private readonly ActivationDescriptor ActivationInfo = new ActivationDescriptor();
-
         #endregion
 
         public CuDnnPoolingLayer(VolumeInformation input, ActivationFunctionType activation) : base(input, activation)
@@ -58,11 +54,10 @@ namespace NeuralNetworkNET.Cuda.Layers
                 OutputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputVolume.Depth, OutputVolume.Height, OutputVolume.Width);
                 dnn.PoolingForward(PoolDescriptor, 1, InputInfo, x_gpu.Ptr, 0, OutputInfo, z_gpu.Ptr);
                 z_gpu.CopyToHost(x.Entities, Outputs, out z);
-
-                // Activation
-                dnn.ActivationForward(ActivationInfo, 1, OutputInfo, z_gpu.Ptr, 0, OutputInfo, z_gpu.Ptr);
-                z_gpu.CopyToHost(z.Entities, z.Length, out a);
             }
+
+            // Activation
+            Blas.Activation(z, ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>

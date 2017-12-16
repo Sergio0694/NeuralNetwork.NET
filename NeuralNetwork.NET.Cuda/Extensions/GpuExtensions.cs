@@ -34,9 +34,8 @@ namespace NeuralNetworkNET.Cuda.Extensions
         /// <param name="destination">The destination <see cref="Tensor"/> to write on</param>
         public static unsafe void CopyTo([NotNull] this DeviceMemory<float> source, in Tensor destination)
         {
-            int bytes = sizeof(float) * destination.Size;
-            if (bytes != source.Length) throw new ArgumentException("The target tensor doesn't have the same salid as the source GPU memory");
-            if (CUDAInterop.cuMemcpy(destination.Ptr, source.Handle, new IntPtr(bytes)) != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
+            if (destination.Size != source.Length) throw new ArgumentException("The target tensor doesn't have the same size as the source GPU memory");
+            if (CUDAInterop.cuMemcpy(destination.Ptr, source.Handle, new IntPtr(sizeof(float) * destination.Size)) != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
                 throw new InvalidOperationException("Failed to copy the source data on the given destination");
         }
 

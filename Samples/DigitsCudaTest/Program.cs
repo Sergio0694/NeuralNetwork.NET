@@ -21,10 +21,10 @@ namespace DigitsCudaTest
             // Parse the dataset and create the network
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewNetwork(
-                NetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling((24, 24, 20), ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(12 * 12 * 20, 100, ActivationFunctionType.Sigmoid),
-                NetworkLayers.Softmax(100, 10));
+                CuDnnNetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling((24, 24, 20), ActivationFunctionType.Sigmoid),
+                CuDnnNetworkLayers.FullyConnected(12 * 12 * 20, 100, ActivationFunctionType.Sigmoid),
+                CuDnnNetworkLayers.Softmax(100, 10));
 
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
