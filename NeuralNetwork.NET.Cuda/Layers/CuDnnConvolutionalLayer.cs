@@ -99,7 +99,11 @@ namespace NeuralNetworkNET.Cuda.Layers
 
                     // Activation
                     if (ActivationFunctionType == ActivationFunctionType.Identity) z.Duplicate(out a);
-                    else Blas.Activation(z, ActivationFunctions.Activation, out a);
+                    else
+                    {
+                        dnn.Activation(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);
+                        z_gpu.CopyToHost(z.Entities, z.Length, out a);
+                    }
                 }
             }
         }
