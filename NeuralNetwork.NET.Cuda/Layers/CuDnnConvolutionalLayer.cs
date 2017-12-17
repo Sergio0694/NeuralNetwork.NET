@@ -4,7 +4,6 @@ using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Cuda.Extensions;
-using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;

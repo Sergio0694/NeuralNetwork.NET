@@ -1,4 +1,6 @@
-﻿using JetBrains.Annotations;
+﻿using Alea;
+using Alea.cuDNN;
+using JetBrains.Annotations;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
@@ -18,8 +20,19 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            Blas.MultiplyWithSum(x, Weights, Biases, out z);
-            Blas.Activation(z, ActivationFunctions.Activation, out a);
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory2D<float>
+                x_gpu = gpu.AllocateDevice2D(x),
+                w_gpu = gpu.AllocateDevice(Weights),
+                y_gpu = gpu.AllocateDevice<float>(x.Entities, Outputs))
+            using (DeviceMemory<float> b_gpu = gpu.AllocateDevice(Biases))
+            {
+                Dnn dnn = Dnn.Get(gpu);
+                dnn.FullyConnectedForward(x.Entities, x.Length, Outputs, x_gpu.Ptr, x_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), b_gpu.Ptr, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32());
+                y_gpu.CopyToHost(out z);
+                dnn.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32(), y_gpu.Ptr, y_gpu.PitchInElements.ToInt32(), ActivationFunctions.Activation);
+                y_gpu.CopyToHost(out a);
+            }
         }
 
         /// <inheritdoc/>

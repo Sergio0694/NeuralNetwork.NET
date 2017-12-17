@@ -21,16 +21,21 @@ namespace DigitsCudaTest
             // Parse the dataset and create the network
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewNetwork(
-                CuDnnNetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling((24, 24, 20), ActivationFunctionType.Sigmoid),
-                CuDnnNetworkLayers.FullyConnected(12 * 12 * 20, 100, ActivationFunctionType.Sigmoid),
-                CuDnnNetworkLayers.Softmax(100, 10));
+                CuDnnNetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional((24, 24, 20), (5, 5), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling((20, 20, 20), ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional((10, 10, 20), (3, 3), 40, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional((8, 8, 40), (3, 3), 40, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling((6, 6, 40), ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.FullyConnected(3 * 3 * 40, 125, ActivationFunctionType.LeCunTanh),
+                CuDnnNetworkLayers.FullyConnected(125, 64, ActivationFunctionType.LeCunTanh),
+                CuDnnNetworkLayers.Softmax(64, 10));
 
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400,
-                TrainingAlgorithmsInfo.CreateForStochasticGradientDescent(), 0.5f,
+                TrainingAlgorithmsInfo.CreateForAdadelta(), 0.5f,
                 testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
