@@ -1,6 +1,7 @@
 ﻿using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Cuda.Services;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Structs;
@@ -18,6 +19,12 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly TensorDescriptor SoftmaxInfo = new TensorDescriptor();
 
+        /// <summary>
+        /// Gets the <see cref="Dnn"/> instance for the current layer
+        /// </summary>
+        [NotNull]
+        private readonly Dnn DnnInstance = DnnService.Instance;
+
         #endregion
 
         public CuDnnSoftmaxLayer(int inputs, int outputs) : base(inputs, outputs) { }
@@ -28,14 +35,12 @@ namespace NeuralNetworkNET.Cuda.Layers
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             Blas.MultiplyWithSum(x, Weights, Biases, out z);
-            Gpu gpu = Gpu.Default;
-            Dnn dnn = Dnn.Get(gpu);
             SoftmaxInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, Outputs, 1, 1);
             using (DeviceMemory<float>
-                z_gpu = gpu.AllocateDevice(z),
-                y_gpu = gpu.AllocateDevice<float>(z.Size))
+                z_gpu = DnnInstance.Gpu.AllocateDevice(z),
+                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
             {
-                dnn.SoftmaxForward(SoftmaxAlgorithm.FAST, SoftmaxMode.INSTANCE, 1, SoftmaxInfo, z_gpu.Ptr, 0, SoftmaxInfo, y_gpu.Ptr);
+                DnnInstance.SoftmaxForward(SoftmaxAlgorithm.FAST, SoftmaxMode.INSTANCE, 1, SoftmaxInfo, z_gpu.Ptr, 0, SoftmaxInfo, y_gpu.Ptr);
                 y_gpu.CopyToHost(x.Entities, Outputs, out a);
             }
         }

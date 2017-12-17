@@ -10,6 +10,7 @@ using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
+using NeuralNetworkNET.Cuda.Services;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {
@@ -33,6 +34,12 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly TensorDescriptor OutputInfo = new TensorDescriptor();
 
+        /// <summary>
+        /// Gets the <see cref="Dnn"/> instance for the current layer
+        /// </summary>
+        [NotNull]
+        private readonly Dnn DnnInstance = DnnService.Instance;
+
         #endregion
 
         public CuDnnPoolingLayer(VolumeInformation input, ActivationFunctionType activation) : base(input, activation)
@@ -43,20 +50,18 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            Gpu gpu = Gpu.Default;
-            Dnn dnn = Dnn.Get(gpu);
             using (DeviceMemory<float>
-                x_gpu = gpu.AllocateDevice(x),
-                z_gpu = gpu.AllocateDevice<float>(x.Entities * Outputs))
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * Outputs))
             {
                 // Pooling
                 InputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputVolume.Depth, InputVolume.Height, InputVolume.Width);
                 OutputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputVolume.Depth, OutputVolume.Height, OutputVolume.Width);
-                dnn.PoolingForward(PoolDescriptor, 1, InputInfo, x_gpu.Ptr, 0, OutputInfo, z_gpu.Ptr);
+                DnnInstance.PoolingForward(PoolDescriptor, 1, InputInfo, x_gpu.Ptr, 0, OutputInfo, z_gpu.Ptr);
                 z_gpu.CopyToHost(x.Entities, Outputs, out z);
 
                 // Activation
-                dnn.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);
+                DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);
                 z_gpu.CopyToHost(z.Entities, z.Length, out a);
             }
         }

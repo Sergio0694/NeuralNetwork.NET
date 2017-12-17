@@ -2,6 +2,7 @@
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.DependencyInjections;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Structs;
@@ -44,6 +45,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             [CanBeNull] TestParameters testParameters,
             CancellationToken token)
         {
+            LibraryRuntimeHelper.SynchronizeContext?.Invoke();
             switch (algorithm)
             {
                 case StochasticGradientDescentInfo sgd:

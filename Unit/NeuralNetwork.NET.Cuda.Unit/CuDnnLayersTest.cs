@@ -1,5 +1,4 @@
 ﻿using Alea.cuDNN;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
