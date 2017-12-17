@@ -11,7 +11,7 @@ using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.SupervisedLearning.Data;
 
 namespace NeuralNetworkNET.Unit
 {
