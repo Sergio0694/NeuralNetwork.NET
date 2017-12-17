@@ -508,8 +508,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
             CancellationToken token = default)
-        {
-            
+        {            
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Tweak the weights
@@ -519,18 +518,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 fixed (float* pw = layer.Weights)
                 {
                     float* pdj = dJdw;
-                    int
-                        h = layer.Weights.GetLength(0),
-                        w = layer.Weights.GetLength(1);
-                    for (int x = 0; x < h; x++)
-                    {
-                        int offset = x * w;
-                        for (int y = 0; y < w; y++)
-                        {
-                            int target = offset + y;
-                            pw[target] -= l2Factor * pw[target] + alpha * pdj[target];
-                        }
-                    }
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                        pw[x] -= l2Factor * pw[x] + alpha * pdj[x];
                 }
 
                 // Tweak the biases of the lth layer
@@ -540,6 +530,77 @@ namespace NeuralNetworkNET.Networks.Implementations
                     int w = layer.Biases.Length;
                     for (int x = 0; x < w; x++)
                         pb[x] -= alpha * pdj[x];
+                }
+            }
+
+            return Optimize(miniBatches, epochs, Minimize, dropout, trainingProgress, validationParameters, testParameters, token);
+        }
+
+        [NotNull]
+        internal unsafe TrainingSessionResult Adadelta(
+            BatchesCollection miniBatches,
+            int epochs, float dropout = 0, float rho = 0.95f, float epsilon = 1e-8f, float l2Factor = 0,
+            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationParameters validationParameters = null,
+            [CanBeNull] TestParameters testParameters = null,
+            CancellationToken token = default)
+        {
+            // Initialize Adadelta parameters
+            Tensor*
+                egSquaredW = stackalloc Tensor[WeightedLayersIndexes.Length],
+                eDeltaxSquaredW = stackalloc Tensor[WeightedLayersIndexes.Length],
+                egSquaredB = stackalloc Tensor[WeightedLayersIndexes.Length],
+                eDeltaxSquaredB = stackalloc Tensor[WeightedLayersIndexes.Length];
+            for (int i = 0; i < WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = _Layers[WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                Tensor.NewZeroed(layer.Weights.GetLength(0), layer.Weights.GetLength(1), out egSquaredW[i]);
+                Tensor.NewZeroed(layer.Weights.GetLength(0), layer.Weights.GetLength(1), out eDeltaxSquaredW[i]);
+                Tensor.NewZeroed(1, layer.Biases.Length, out egSquaredB[i]);
+                Tensor.NewZeroed(1, layer.Biases.Length, out eDeltaxSquaredB[i]);
+            }
+
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                fixed (float* pw = layer.Weights)
+                {
+                    float*
+                        pdj = dJdw,
+                        egSqrt = egSquaredW[i],
+                        eDSqrtx = eDeltaxSquaredW[i];
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        float gt = pdj[x];
+                        egSqrt[x] = rho * egSqrt[x] + (1 - rho) * gt * gt;
+                        float 
+                            rmsDx_1 = (float)Math.Sqrt(eDSqrtx[x] + epsilon),
+                            rmsGt = (float)Math.Sqrt(egSqrt[x] + epsilon),
+                            dx = -(rmsDx_1 / rmsGt) * gt;
+                        eDSqrtx[x] = rho * eDSqrtx[x] + (1 - rho) * dx * dx;
+                        pw[x] += dx - l2Factor * pw[x];
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases)
+                {
+                    float*
+                        pdj = dJdb,
+                        egSqrt = egSquaredB[i],
+                        eDSqrtb = eDeltaxSquaredB[i];
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        float gt = pdj[b];
+                        egSqrt[b] = rho * egSqrt[b] + (1 - rho) * gt * gt;
+                        float
+                            rmsDx_1 = (float)Math.Sqrt(eDSqrtb[b] + epsilon),
+                            rmsGt = (float)Math.Sqrt(egSqrt[b] + epsilon),
+                            db = -(rmsDx_1 / rmsGt) * gt;
+                        eDSqrtb[b] = rho * eDSqrtb[b] + (1 - rho) * db * db;
+                        pb[b] += db - l2Factor * pb[b];
+                    }
                 }
             }
 
