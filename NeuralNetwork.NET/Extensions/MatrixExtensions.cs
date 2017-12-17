@@ -681,6 +681,24 @@ namespace NeuralNetworkNET.Extensions
         /// <summary>
         /// Checks if two matrices have the same size and content
         /// </summary>
+        /// <param name="m">The first <see cref="Tensor"/> to test</param>
+        /// <param name="o">The second <see cref="Tensor"/> to test</param>
+        /// <param name="delta">The comparison threshold</param>
+        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o, float delta = 1e-6f)
+        {
+            if (m.Ptr == IntPtr.Zero && o.Ptr == IntPtr.Zero) return true;
+            if (m.Ptr == IntPtr.Zero || o.Ptr == IntPtr.Zero) return false;
+            if (m.Entities != o.Entities || m.Length != o.Length) return false;
+            float* pm = m, po = o;
+            int items = m.Size;
+            for (int i = 0; i < items; i++)
+                if (!pm[i].EqualsWithDelta(po[i], delta)) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if two matrices have the same size and content
+        /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
         /// <param name="delta">The comparison threshold</param>
@@ -712,23 +730,29 @@ namespace NeuralNetworkNET.Extensions
             return true;
         }
 
+        // GetUid helper method
+        private static unsafe int GetUid(float* p, int n)
+        {
+            int hash = 17;
+            unchecked
+            {
+                for (int i = 0; i < n; i++)
+                    hash = hash * 23 + p[i].GetHashCode();
+                return hash;
+            }
+        }
+
         /// <summary>
         /// Calculates a unique hash code for the target row of the input matrix
         /// </summary>
         [Pure]
         public static unsafe int GetUid([NotNull] this float[,] m, int row)
         {
-            int hash = 17, w = m.GetLength(1);
+            int
+                w = m.GetLength(1),
+                offset = row * w;
             fixed (float* pm = m)
-            {
-                unchecked
-                {
-                    int offset = row * w;
-                    for (int i = 0; i < w; i++)
-                        hash = hash * 23 + pm[offset + i].GetHashCode();
-                    return hash;
-                }
-            }
+                return GetUid(pm + offset, w);
         }
 
         /// <summary>
@@ -738,14 +762,8 @@ namespace NeuralNetworkNET.Extensions
         [Pure]
         public static unsafe int GetUid([NotNull] this float[,] m)
         {
-            int hash = 17;
-            unchecked
-            {
-                fixed (float* pm = m)
-                    for (int i = 0; i < m.Length; i++)
-                        hash = hash * 23 + pm[i].GetHashCode();
-                return hash;
-            }
+            fixed (float* pm = m)
+                return GetUid(pm, m.Length);
         }
 
         /// <summary>
@@ -755,14 +773,8 @@ namespace NeuralNetworkNET.Extensions
         [Pure]
         public static unsafe int GetUid([NotNull] this float[] v)
         {
-            int hash = 17;
-            unchecked
-            {
-                fixed (float* pv = v)
-                    for (int i = 0; i < v.Length; i++)
-                        hash = hash * 23 + pv[i].GetHashCode();
-                return hash;
-            }
+            fixed (float* pv = v)
+                return GetUid(pv, v.Length);
         }
 
         #endregion
