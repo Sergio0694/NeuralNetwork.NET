@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.SupervisedLearning.Misc
+namespace NeuralNetworkNET.SupervisedLearning.Data
 {
     /// <summary>
     /// A class that represents a set of training batches to be used in circular order

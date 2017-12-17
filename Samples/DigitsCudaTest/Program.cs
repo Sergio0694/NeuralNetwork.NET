@@ -29,7 +29,8 @@ namespace DigitsCudaTest
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400, 0.1f, 0.5f,
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400,
+                TrainingAlgorithmsInfo.CreateForStochasticGradientDescent(), 0.5f,
                 testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");

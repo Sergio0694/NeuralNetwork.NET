@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.SupervisedLearning.Misc;
+using NeuralNetworkNET.SupervisedLearning.Data;
 
 namespace NeuralNetworkNET.Unit
 {

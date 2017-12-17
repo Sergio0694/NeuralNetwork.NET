@@ -8,7 +8,6 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
-using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Helpers.Imaging;
@@ -16,10 +15,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Structs;
-using NeuralNetworkNET.SupervisedLearning.Misc;
-using NeuralNetworkNET.SupervisedLearning.Optimization;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Progress;
+using NeuralNetworkNET.SupervisedLearning.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -51,10 +47,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
-        private readonly NetworkLayerBase[] _Layers;
+        internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
-        private readonly int[] WeightedLayersIndexes;
+        internal readonly int[] WeightedLayersIndexes;
 
         /// <summary>
         /// Initializes a new network with the given parameters
@@ -207,111 +203,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Calculates the gradient of the cost function with respect to the individual weights and biases
         /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="y">The expected results</param>
+        /// <param name="batch">The input training batch</param>
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="eta">The learning rate for the training session</param>
-        /// <param name="l2Factor">The L2 regularization factor</param>
-        private unsafe void Backpropagate2(in TrainingBatch batch, float dropout, float eta, float l2Factor)
-        {
-            fixed (float* px = batch.X, py = batch.Y)
-            {
-                // Setup
-                Tensor*
-                    zList = stackalloc Tensor[_Layers.Length],
-                    aList = stackalloc Tensor[_Layers.Length],
-                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
-                Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
-                Tensor.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
-                Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
-
-                // Feedforward
-                for (int i = 0; i < _Layers.Length; i++)
-                {
-                    _Layers[i].Forward(i == 0 ? x : aList[i - 1], out zList[i], out aList[i]);
-                    if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
-                    {
-                        ThreadSafeRandom.NextDropoutMask(aList[i].Entities, aList[i].Length, dropout, out dropoutMasks[i]);
-                        aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
-                    }
-                }
-
-                /* ======================
-                 * Calculate delta(L)
-                 * ======================
-                 * Perform the sigmoid prime of zL, the activity on the last layer
-                 * Calculate the gradient of C with respect to a
-                 * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
-                 * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
-                 *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1]);
-                deltas[_Layers.Length - 1] = aList + _Layers.Length - 1;
-                for (int l = _Layers.Length - 2; l >= 0; l--)
-                {
-                    /* ======================
-                     * Calculate delta(l)
-                     * ======================
-                     * Perform the sigmoid prime of z(l), the activity on the previous layer
-                     * Multiply the previous delta with the transposed weights of the following layer
-                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                    _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
-                    if (dropoutMasks[l].Ptr != IntPtr.Zero) zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
-                    deltas[l] = zList + l;
-                }
-
-                /* =============================================
-                 * Compute the gradients DJDw(l) and DJDb(l)
-                 * =============================================
-                 * Compute the gradients for each layer with weights and biases.
-                 * NOTE: the gradient is only computed for layers with weights and biases, for all the other
-                 *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-                Tensor*
-                    dJdw = stackalloc Tensor[WeightedLayersIndexes.Length], // One gradient item for layer
-                    dJdb = stackalloc Tensor[WeightedLayersIndexes.Length];
-                for (int j = 0; j < WeightedLayersIndexes.Length; j++)
-                {
-                    int i = WeightedLayersIndexes[j];
-                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().ComputeGradient(i == 0 ? x : aList[i - 1], *deltas[i], out dJdw[j], out dJdb[j]);
-                }
-
-                /* ====================
-                 * Gradient descent
-                 * ====================
-                 * Edit the network weights according to the computed gradients and the current training parameters. 
-                 * The learning rate indicates the desired convergence speed, while the L2 factor is used to regularize the network and keep the weights small */
-                float alpha = eta / batch.X.GetLength(0);
-                void Kernel(int j)
-                {
-                    int i = WeightedLayersIndexes[j];
-                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().Minimize(dJdw[j], dJdb[j], alpha, l2Factor);
-                    dJdw[j].Free();
-                    dJdb[j].Free();
-                }
-                Parallel.For(0, WeightedLayersIndexes.Length, Kernel).AssertCompleted();
-
-                // Cleanup
-                for (int i = 0; i < _Layers.Length - 1; i++)
-                {
-                    zList[i].Free();
-                    aList[i].Free();
-                    if (dropoutMasks[i].Ptr != IntPtr.Zero) dropoutMasks[i].Free();
-                }
-                zList[_Layers.Length - 1].Free();
-                aList[_Layers.Length - 1].Free();
-            }
-        }
-
-        internal delegate void WeightsUpdater(int i, in Tensor dJdw, in Tensor dJdb, int samples, [NotNull] WeightedLayerBase layer);
-
-        /// <summary>
-        /// Calculates the gradient of the cost function with respect to the individual weights and biases
-        /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="y">The expected results</param>
-        /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="eta">The learning rate for the training session</param>
-        /// <param name="l2Factor">The L2 regularization factor</param>
-        private unsafe void Backpropagate(in TrainingBatch batch, float dropout, [NotNull] WeightsUpdater update)
+        /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
+        internal unsafe void Backpropagate(in TrainingBatch batch, float dropout, [NotNull] WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
@@ -381,7 +276,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Parallel.For(0, WeightedLayersIndexes.Length, i =>
                 {
                     int l = WeightedLayersIndexes[i];
-                    update(i, dJdw[i], dJdb[i], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
+                    updater(i, dJdw[i], dJdb[i], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
                     dJdw[i].Free();
                     dJdb[i].Free();
                 }).AssertCompleted();
@@ -396,215 +291,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                 zList[_Layers.Length - 1].Free();
                 aList[_Layers.Length - 1].Free();
             }
-        }
-
-        #endregion
-
-        #region Training
-
-        /// <summary>
-        /// Trains the current network using the gradient descent algorithm
-        /// </summary>
-        /// <param name="miniBatches">The training baatches for the current session</param>
-        /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="eta">The learning rate</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="lambda">The L2 regularization factor</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal TrainingSessionResult Optimize(
-            BatchesCollection miniBatches,
-            int epochs,
-            [NotNull] WeightsUpdater update,
-            float dropout = 0,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,         
-            CancellationToken token = default)
-        {
-            // Setup
-            DateTime startTime = DateTime.Now;
-            List<DatasetEvaluationResult>
-                validationReports = new List<DatasetEvaluationResult>(),
-                testReports = new List<DatasetEvaluationResult>();
-            TrainingSessionResult PrepareResult(TrainingStopReason reason, int loops)
-            {
-                return new TrainingSessionResult(reason, loops, DateTime.Now.Subtract(startTime).RoundToSeconds(), validationReports, testReports);
-            }
-
-            // Convergence manager for the validation dataset
-            RelativeConvergence convergence = validationParameters == null
-                ? null
-                : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
-
-            // Create the training batches
-            for (int i = 0; i < epochs; i++)
-            {
-                // Shuffle the training set
-                miniBatches.CrossShuffle();
-
-                // Gradient descent over the current batches
-                for (int j = 0; j < miniBatches.Count; j++)
-                {
-                    if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
-                    Backpropagate(miniBatches.Batches[j], dropout, update);
-                }
-
-                // Check for overflows
-                if (!Parallel.For(0, _Layers.Length, (j, state) =>
-                {
-                    if (_Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
-                }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
-
-                // Check the training progress
-                if (trainingProgress != null)
-                {
-                    (float cost, _, float accuracy) = Evaluate(miniBatches);
-                    trainingProgress.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
-                }
-
-                // Check the validation dataset
-                if (convergence != null)
-                {
-                    (float cost, _, float accuracy) = Evaluate(validationParameters.Dataset);
-                    validationReports.Add(new DatasetEvaluationResult(cost, accuracy));
-                    convergence.Value = accuracy;
-                    if (convergence.HasConverged) return PrepareResult(TrainingStopReason.EarlyStopping, i);
-                }
-
-                // Report progress if necessary
-                if (testParameters != null)
-                {
-                    (float cost, _, float accuracy) = Evaluate(testParameters.Dataset);
-                    testReports.Add(new DatasetEvaluationResult(cost, accuracy));
-                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
-                }
-            }
-            return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
-        }
-
-        /// <summary>
-        /// Trains the current network using the gradient descent algorithm
-        /// </summary>
-        /// <param name="miniBatches">The training baatches for the current session</param>
-        /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="eta">The learning rate</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="lambda">The L2 regularization factor</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [NotNull]
-        internal TrainingSessionResult StochasticGradientDescent(
-            BatchesCollection miniBatches,
-            int epochs,
-            float eta = 0.5f, float dropout = 0, float lambda = 0,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
-            CancellationToken token = default)
-        {            
-            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
-            {
-                // Tweak the weights
-                float
-                    alpha = eta / samples,
-                    l2Factor = eta * lambda / samples;
-                fixed (float* pw = layer.Weights)
-                {
-                    float* pdj = dJdw;
-                    int w = layer.Weights.Length;
-                    for (int x = 0; x < w; x++)
-                        pw[x] -= l2Factor * pw[x] + alpha * pdj[x];
-                }
-
-                // Tweak the biases of the lth layer
-                fixed (float* pb = layer.Biases)
-                {
-                    float* pdj = dJdb;
-                    int w = layer.Biases.Length;
-                    for (int x = 0; x < w; x++)
-                        pb[x] -= alpha * pdj[x];
-                }
-            }
-
-            return Optimize(miniBatches, epochs, Minimize, dropout, trainingProgress, validationParameters, testParameters, token);
-        }
-
-        [NotNull]
-        internal unsafe TrainingSessionResult Adadelta(
-            BatchesCollection miniBatches,
-            int epochs, float dropout = 0, float rho = 0.95f, float epsilon = 1e-8f, float l2Factor = 0,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
-            CancellationToken token = default)
-        {
-            // Initialize Adadelta parameters
-            Tensor*
-                egSquaredW = stackalloc Tensor[WeightedLayersIndexes.Length],
-                eDeltaxSquaredW = stackalloc Tensor[WeightedLayersIndexes.Length],
-                egSquaredB = stackalloc Tensor[WeightedLayersIndexes.Length],
-                eDeltaxSquaredB = stackalloc Tensor[WeightedLayersIndexes.Length];
-            for (int i = 0; i < WeightedLayersIndexes.Length; i++)
-            {
-                WeightedLayerBase layer = _Layers[WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
-                Tensor.NewZeroed(layer.Weights.GetLength(0), layer.Weights.GetLength(1), out egSquaredW[i]);
-                Tensor.NewZeroed(layer.Weights.GetLength(0), layer.Weights.GetLength(1), out eDeltaxSquaredW[i]);
-                Tensor.NewZeroed(1, layer.Biases.Length, out egSquaredB[i]);
-                Tensor.NewZeroed(1, layer.Biases.Length, out eDeltaxSquaredB[i]);
-            }
-
-            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
-            {
-                fixed (float* pw = layer.Weights)
-                {
-                    float*
-                        pdj = dJdw,
-                        egSqrt = egSquaredW[i],
-                        eDSqrtx = eDeltaxSquaredW[i];
-                    int w = layer.Weights.Length;
-                    for (int x = 0; x < w; x++)
-                    {
-                        float gt = pdj[x];
-                        egSqrt[x] = rho * egSqrt[x] + (1 - rho) * gt * gt;
-                        float 
-                            rmsDx_1 = (float)Math.Sqrt(eDSqrtx[x] + epsilon),
-                            rmsGt = (float)Math.Sqrt(egSqrt[x] + epsilon),
-                            dx = -(rmsDx_1 / rmsGt) * gt;
-                        eDSqrtx[x] = rho * eDSqrtx[x] + (1 - rho) * dx * dx;
-                        pw[x] += dx - l2Factor * pw[x];
-                    }
-                }
-
-                // Tweak the biases of the lth layer
-                fixed (float* pb = layer.Biases)
-                {
-                    float*
-                        pdj = dJdb,
-                        egSqrt = egSquaredB[i],
-                        eDSqrtb = eDeltaxSquaredB[i];
-                    int w = layer.Biases.Length;
-                    for (int b = 0; b < w; b++)
-                    {
-                        float gt = pdj[b];
-                        egSqrt[b] = rho * egSqrt[b] + (1 - rho) * gt * gt;
-                        float
-                            rmsDx_1 = (float)Math.Sqrt(eDSqrtb[b] + epsilon),
-                            rmsGt = (float)Math.Sqrt(egSqrt[b] + epsilon),
-                            db = -(rmsDx_1 / rmsGt) * gt;
-                        eDSqrtb[b] = rho * eDSqrtb[b] + (1 - rho) * db * db;
-                        pb[b] += db - l2Factor * pb[b];
-                    }
-                }
-            }
-
-            return Optimize(miniBatches, epochs, Minimize, dropout, trainingProgress, validationParameters, testParameters, token);
         }
 
         #endregion

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkNET.SupervisedLearning.Misc
+namespace NeuralNetworkNET.SupervisedLearning.Data
 {
     /// <summary>
     /// A simple struct that keeps a reference of a training set and its expected results
