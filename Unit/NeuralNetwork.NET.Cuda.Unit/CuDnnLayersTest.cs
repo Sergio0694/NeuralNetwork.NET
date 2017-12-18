@@ -1,5 +1,6 @@
 ﻿using Alea.cuDNN;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
@@ -152,8 +153,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 58 * 58 * 3);
             ConvolutionalLayer
-                cpu = new ConvolutionalLayer((58, 58, 3), (5, 5), 20, ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputVolume, cpu.KernelVolume, cpu.OutputVolume, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType, ConvolutionMode.CONVOLUTION);
+                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelVolume, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType, ConvolutionMode.CONVOLUTION);
             TestForward(cpu, gpu, x);
         }
 
@@ -190,8 +191,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 58 * 58 * 3);
             PoolingLayer
-                cpu = new PoolingLayer((58, 58, 3), ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnPoolingLayer(cpu.InputVolume, ActivationFunctionType.LeakyReLU);
+                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), ActivationFunctionType.LeakyReLU),
+                gpu = new CuDnnPoolingLayer(cpu.InputInfo, ActivationFunctionType.LeakyReLU);
             TestForward(cpu, gpu, x);
         }
 
@@ -202,8 +203,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta_1 = ThreadSafeRandom.NextGlorotNormalMatrix(400, 29 * 29 * 3),
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(400, 58 * 58 * 3);
             PoolingLayer
-                cpu = new PoolingLayer((58, 58, 3), ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnPoolingLayer(cpu.InputVolume, ActivationFunctionType.LeakyReLU);
+                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), ActivationFunctionType.LeakyReLU),
+                gpu = new CuDnnPoolingLayer(cpu.InputInfo, ActivationFunctionType.LeakyReLU);
             TestBackward(cpu, gpu, delta_1, z);
         }
 

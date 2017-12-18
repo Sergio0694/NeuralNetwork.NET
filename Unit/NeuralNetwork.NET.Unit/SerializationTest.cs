@@ -25,10 +25,10 @@ namespace NeuralNetworkNET.Unit
         public void JsonSerialize()
         {
             INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.Convolutional(new VolumeInformation(28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new VolumeInformation(24, 24, 20), ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional(new VolumeInformation(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new VolumeInformation(8, 8, 10), ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional(new TensorInfo(28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(new TensorInfo(24, 24, 20), ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional(new TensorInfo(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
                 NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid), 
                 NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String json = network.SerializeAsJson();
@@ -95,10 +95,10 @@ namespace NeuralNetworkNET.Unit
         public void BinarySerialize2()
         {
             INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.Convolutional(new VolumeInformation(28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new VolumeInformation(24, 24, 20), ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional(new VolumeInformation(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new VolumeInformation(8, 8, 10), ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional(new TensorInfo(28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(new TensorInfo(24, 24, 20), ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional(new TensorInfo(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
                 NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid),
                 NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

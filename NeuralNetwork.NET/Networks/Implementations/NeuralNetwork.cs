@@ -428,21 +428,21 @@ namespace NeuralNetworkNET.Networks.Implementations
                     stream.Write(layer.Outputs);
                     if (layer is PoolingLayer pooling)
                     {
-                        stream.Write(pooling.InputVolume.Height);
-                        stream.Write(pooling.InputVolume.Width);
-                        stream.Write(pooling.InputVolume.Depth);
+                        stream.Write(pooling.InputInfo.Height);
+                        stream.Write(pooling.InputInfo.Width);
+                        stream.Write(pooling.InputInfo.Channels);
                     }
                     if (layer is ConvolutionalLayer convolutional)
                     {
-                        stream.Write(convolutional.InputVolume.Height);
-                        stream.Write(convolutional.InputVolume.Width);
-                        stream.Write(convolutional.InputVolume.Depth);
-                        stream.Write(convolutional.OutputVolume.Height);
-                        stream.Write(convolutional.OutputVolume.Width);
-                        stream.Write(convolutional.OutputVolume.Depth);
+                        stream.Write(convolutional.InputInfo.Height);
+                        stream.Write(convolutional.InputInfo.Width);
+                        stream.Write(convolutional.InputInfo.Channels);
+                        stream.Write(convolutional.OutputInfo.Height);
+                        stream.Write(convolutional.OutputInfo.Width);
+                        stream.Write(convolutional.OutputInfo.Channels);
                         stream.Write(convolutional.KernelVolume.Height);
                         stream.Write(convolutional.KernelVolume.Width);
-                        stream.Write(convolutional.KernelVolume.Depth);
+                        stream.Write(convolutional.KernelVolume.Channels);
                     }
                     if (layer is WeightedLayerBase weighted)
                     {

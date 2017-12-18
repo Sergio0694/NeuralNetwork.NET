@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
@@ -21,12 +22,12 @@ namespace DigitsCudaTest
             // Parse the dataset and create the network
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewNetwork(
-                CuDnnNetworkLayers.Convolutional((28, 28, 1), (5, 5), 20, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional((24, 24, 20), (5, 5), 20, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling((20, 20, 20), ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional((10, 10, 20), (3, 3), 40, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional((8, 8, 40), (3, 3), 40, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling((6, 6, 40), ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(new TensorInfo(28, 28, 1), (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(new TensorInfo(24, 24, 20), (5, 5), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(new TensorInfo(20, 20, 20), ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(new TensorInfo(10, 10, 20), (3, 3), 40, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(new TensorInfo(8, 8, 40), (3, 3), 40, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(new TensorInfo(6, 6, 40), ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.FullyConnected(3 * 3 * 40, 125, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.FullyConnected(125, 64, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.Softmax(64, 10));

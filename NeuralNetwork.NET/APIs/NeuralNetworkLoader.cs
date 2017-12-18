@@ -50,15 +50,15 @@ namespace NeuralNetworkNET.APIs
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Convolutional:
                             return new ConvolutionalLayer(
-                                layer["InputVolume"].ToObject<VolumeInformation>(),
-                                layer["KernelVolume"].ToObject<VolumeInformation>(),
-                                layer["OutputVolume"].ToObject<VolumeInformation>(),
+                                layer["InputVolume"].ToObject<TensorInfo>(),
+                                layer["KernelVolume"].ToObject<TensorInfo>(),
+                                layer["OutputVolume"].ToObject<TensorInfo>(),
                                 layer["Weights"].ToObject<float[,]>(),
                                 layer["Biases"].ToObject<float[]>(),
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Pooling:
                             return new PoolingLayer(
-                                layer["InputVolume"].ToObject<VolumeInformation>(),
+                                layer["InputVolume"].ToObject<TensorInfo>(),
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Output:
                             return new OutputLayer(
@@ -129,16 +129,16 @@ namespace NeuralNetworkNET.APIs
                         layers[i] = new FullyConnectedLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation);
                         break;
                     case LayerType.Convolutional:
-                        VolumeInformation
-                            inVolume = (stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
-                            outVolume = (stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
-                            kVolume = (stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
+                        TensorInfo
+                            inVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
+                            outVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
+                            kVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
                         layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
-                            stream.ReadFloatArray(outVolume.Depth, kVolume.Volume),
-                            stream.ReadFloatArray(outVolume.Depth), activation);
+                            stream.ReadFloatArray(outVolume.Channels, kVolume.Size),
+                            stream.ReadFloatArray(outVolume.Channels), activation);
                         break;
                     case LayerType.Pooling:
-                        layers[i] = new PoolingLayer((stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
+                        layers[i] = new PoolingLayer(new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
                         break;
                     case LayerType.Output:
                         layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());

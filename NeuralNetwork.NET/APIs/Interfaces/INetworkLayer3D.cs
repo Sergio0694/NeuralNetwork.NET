@@ -10,11 +10,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// <summary>
         /// Gets the input data volume for the network
         /// </summary>
-        VolumeInformation InputVolume { get; }
+        TensorInfo InputInfo { get; }
 
         /// <summary>
         /// Gets the output data volume for the network
         /// </summary>
-        VolumeInformation OutputVolume { get; }
+        TensorInfo OutputInfo { get; }
     }
 }

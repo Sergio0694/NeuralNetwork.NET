@@ -24,15 +24,15 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         // The NCHW tensor info for the layer inputs
         [NotNull]
-        private readonly TensorDescriptor InputInfo = new TensorDescriptor();
+        private readonly TensorDescriptor InputDescription = new TensorDescriptor();
 
         // The descriptor for the pooling operation performed by the layer
         [NotNull]
-        private readonly PoolingDescriptor PoolDescriptor = new PoolingDescriptor();
+        private readonly PoolingDescriptor PoolingDescription = new PoolingDescriptor();
 
         // The NCHW tensor info for the layer outputs
         [NotNull]
-        private readonly TensorDescriptor OutputInfo = new TensorDescriptor();
+        private readonly TensorDescriptor OutputDescription = new TensorDescriptor();
 
         /// <summary>
         /// Gets the <see cref="Dnn"/> instance for the current layer
@@ -42,9 +42,9 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
-        public CuDnnPoolingLayer(VolumeInformation input, ActivationFunctionType activation) : base(input, activation)
+        public CuDnnPoolingLayer(TensorInfo input, ActivationFunctionType activation) : base(input, activation)
         {
-            PoolDescriptor.Set2D(PoolingMode.MAX, NanPropagation.PROPAGATE_NAN, 2, 2, 0, 0, 2, 2);
+            PoolingDescription.Set2D(PoolingMode.MAX, NanPropagation.PROPAGATE_NAN, 2, 2, 0, 0, 2, 2);
         }
 
         /// <inheritdoc/>
@@ -55,9 +55,9 @@ namespace NeuralNetworkNET.Cuda.Layers
                 z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * Outputs))
             {
                 // Pooling
-                InputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputVolume.Depth, InputVolume.Height, InputVolume.Width);
-                OutputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputVolume.Depth, OutputVolume.Height, OutputVolume.Width);
-                DnnInstance.PoolingForward(PoolDescriptor, 1, InputInfo, x_gpu.Ptr, 0, OutputInfo, z_gpu.Ptr);
+                InputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
+                OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputInfo.Channels, OutputInfo.Height, OutputInfo.Width);
+                DnnInstance.PoolingForward(PoolingDescription, 1, InputDescription, x_gpu.Ptr, 0, OutputDescription, z_gpu.Ptr);
                 z_gpu.CopyToHost(x.Entities, Outputs, out z);
 
                 // Activation
@@ -67,9 +67,9 @@ namespace NeuralNetworkNET.Cuda.Layers
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputVolume.Depth);
+        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputInfo.Channels);
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new PoolingLayer(InputVolume, ActivationFunctionType);
+        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, ActivationFunctionType);
     }
 }

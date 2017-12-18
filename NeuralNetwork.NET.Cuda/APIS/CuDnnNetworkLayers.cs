@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="mode">The desired convolution mode to use</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Convolutional(VolumeInformation input, (int X, int Y) kernel, int kernels, ActivationFunctionType activation, ConvolutionMode mode = ConvolutionMode.CONVOLUTION) => new CuDnnConvolutionalLayer(input, kernel, kernels, activation, mode);
+        public static INetworkLayer Convolutional(TensorInfo input, (int X, int Y) kernel, int kernels, ActivationFunctionType activation, ConvolutionMode mode = ConvolutionMode.CONVOLUTION) => new CuDnnConvolutionalLayer(input, kernel, kernels, activation, mode);
 
         /// <summary>
         /// Creates a pooling layer with a window of size 2 and a stride of 2
@@ -50,6 +50,6 @@ namespace NeuralNetworkNET.APIs
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Pooling(VolumeInformation input, ActivationFunctionType activation) => new CuDnnPoolingLayer(input, activation);
+        public static INetworkLayer Pooling(TensorInfo input, ActivationFunctionType activation) => new CuDnnPoolingLayer(input, activation);
     }
 }
