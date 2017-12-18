@@ -1,7 +1,6 @@
 ﻿using System;
 using Alea;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Cuda.Extensions
@@ -66,12 +65,12 @@ namespace NeuralNetworkNET.Cuda.Extensions
         {
             // Set the context
             CUDAInterop.cudaError_enum result = CUDAInterop.cuCtxSetCurrent(Gpu.Default.Context.Handle);
-            if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS) throw new InvalidOperationException($"Error setting the GPU context: {result}");
+            if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS) throw new InvalidOperationException($"Error setting the GPU context, [CUDA ERROR] {result}");
 
             // Get the memory info
             IntPtr* pointers = stackalloc IntPtr[2];
             result = CUDAInterop.cuMemGetInfo(pointers, pointers + 1);
-            if (result != 0) throw new InvalidOperationException("Error while retrieving the memory info");
+            if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS) throw new InvalidOperationException($"Error while retrieving the memory info, [CUDA ERROR] {result}");
             return ((ulong)pointers[0].ToInt64(), (ulong)pointers[1].ToInt64());
         }
     }
