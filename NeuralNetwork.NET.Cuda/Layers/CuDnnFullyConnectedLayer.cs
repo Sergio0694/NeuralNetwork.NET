@@ -43,9 +43,14 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
-            Weights.Transpose(out Tensor wt);
-            Blas.InPlaceMultiplyAndHadamardProductWithActivationPrime(z, delta_1, wt, activationPrime);
-            wt.Free();
+            using (DeviceMemory2D<float>
+                delta_1_gpu = DnnInstance.Gpu.AllocateDevice2D(delta_1),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                z_gpu = DnnInstance.Gpu.AllocateDevice2D(z))
+            {
+                DnnInstance.FullyConnectedBackwardData(z.Entities, Inputs, Outputs, z_gpu.Ptr, z_gpu.PitchInElements.ToInt32(), delta_1_gpu.Ptr, delta_1_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), activationPrime);
+                z_gpu.CopyTo(z);
+            }
         }
 
         /// <inheritdoc/>
