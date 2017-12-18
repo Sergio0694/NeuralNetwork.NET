@@ -3,6 +3,8 @@ using Alea.cuDNN;
 using Alea.Parallel;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
+using NeuralNetworkNET.Structs;
+using System;
 
 namespace NeuralNetworkNET.Cuda.Extensions
 {
@@ -141,6 +143,26 @@ namespace NeuralNetworkNET.Cuda.Extensions
                 z[z_offset] = f_(z[z_offset]) * sum;
             }
             dnn.Gpu.For(0, n * k, Kernel);
+        }
+
+        public static void FullyConnectedBackwardFilter([NotNull] this Dnn dnn, int n, int l, int k, deviceptr<float> x, deviceptr<float> dy, deviceptr<float> dw)
+        {
+            void Kernel(int index)
+            {
+                // Calculate the current indexes
+                int
+                    i = index / k,
+                    j = index % k;
+
+                // Perform the multiplication
+                float sum = 0;
+                for (int iter = 0; iter < n; iter++)
+                {
+                    sum += x[iter * l + i] * dy[iter * k + j];
+                }
+                dw[i * k + j] = sum;
+            }
+            dnn.Gpu.For(0, l * k, Kernel);
         }
 
         #endregion

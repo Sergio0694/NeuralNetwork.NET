@@ -66,7 +66,14 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
-            Blas.TransposeAndMultiply(a, delta, out dJdw);
+            using (DeviceMemory<float>
+                a_gpu = DnnInstance.Gpu.AllocateDevice(a),
+                delta_gpu = DnnInstance.Gpu.AllocateDevice(delta),
+                w_gpu = DnnInstance.Gpu.AllocateDevice<float>(a.Length * delta.Length))
+            {
+                DnnInstance.FullyConnectedBackwardFilter(a.Entities, a.Length, delta.Length, a_gpu.Ptr, delta_gpu.Ptr, w_gpu.Ptr);
+                w_gpu.CopyToHost(a.Length, delta.Length, out dJdw);
+            }
             delta.CompressVertically(out dJdb);
         }
     }
