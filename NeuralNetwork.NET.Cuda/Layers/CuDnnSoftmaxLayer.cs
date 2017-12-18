@@ -33,18 +33,22 @@ namespace NeuralNetworkNET.Cuda.Layers
         public CuDnnSoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases) : base(weights, biases) { }
 
         /// <inheritdoc/>
-        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
             {
                 // Linear pass
-                using (DeviceMemory2D<float>
-                    x_gpu = DnnInstance.Gpu.AllocateDevice2D(x),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice(Weights))
-                using (DeviceMemory<float> b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
+                fixed (float* pw = Weights)
                 {
-                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, x_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), b_gpu.Ptr, z_gpu.Ptr, OutputInfo.Size);
-                    z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
+                    Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                    using (DeviceMemory<float>
+                        x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                        w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
+                        b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
+                    {
+                        DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, w_gpu.Ptr, b_gpu.Ptr, z_gpu.Ptr);
+                        z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
+                    }
                 }
 
                 // Activation

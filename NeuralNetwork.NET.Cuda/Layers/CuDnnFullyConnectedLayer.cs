@@ -38,9 +38,9 @@ namespace NeuralNetworkNET.Cuda.Layers
                     y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size),
                     b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
                 {
-                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, x.Length, w_gpu.Ptr, wSpan.Length, b_gpu.Ptr, y_gpu.Ptr, OutputInfo.Size);
+                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, w_gpu.Ptr, b_gpu.Ptr, y_gpu.Ptr);
                     y_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
-                    DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, OutputInfo.Size, y_gpu.Ptr, OutputInfo.Size, ActivationFunctions.Activation);
+                    DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
                     y_gpu.CopyToHost(z.Entities, z.Length, out a);
                 }
             }
@@ -57,7 +57,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan),
                     z_gpu = DnnInstance.Gpu.AllocateDevice(z))
                 {
-                    DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, z.Length, delta_1_gpu.Ptr, delta_1.Length, w_gpu.Ptr, wSpan.Length, activationPrime);
+                    DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, delta_1_gpu.Ptr, w_gpu.Ptr, activationPrime);
                     z_gpu.CopyTo(z);
                 }
             }
@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 DnnInstance.FullyConnectedBackwardFilter(a.Entities, a.Length, delta.Length, a_gpu.Ptr, delta_gpu.Ptr, w_gpu.Ptr);
                 w_gpu.CopyToHost(a.Length, delta.Length, out dJdw);
             }
-            delta.CompressVertically(out dJdb);
+            delta.CompressVertically(out dJdb); // Doing this on CPU is generally faster than launching the kernels
         }
     }
 }

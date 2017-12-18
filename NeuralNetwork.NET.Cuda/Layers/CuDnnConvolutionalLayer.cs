@@ -105,7 +105,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     if (ActivationFunctionType == ActivationFunctionType.Identity) z.Duplicate(out a);
                     else
                     {
-                        DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);
+                        DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z_gpu.Ptr, ActivationFunctions.Activation);
                         z_gpu.CopyToHost(z.Entities, z.Length, out a);
                     }
                 }
@@ -134,7 +134,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     // Activation
                     using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice(z))
                     {
-                        DnnInstance.ActivationBackward(z.Entities, z.Length, z_gpu.Ptr, z.Length, delta_gpu.Ptr, z.Length, activationPrime);
+                        DnnInstance.ActivationBackward(z.Entities, z.Length, z_gpu.Ptr, delta_gpu.Ptr, activationPrime);
                         z_gpu.CopyTo(z);
                     }
                 }

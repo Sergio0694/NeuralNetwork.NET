@@ -61,7 +61,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
 
                 // Activation
-                DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);
+                DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z_gpu.Ptr, ActivationFunctions.Activation);
                 z_gpu.CopyToHost(z.Entities, z.Length, out a);
             }
         }
