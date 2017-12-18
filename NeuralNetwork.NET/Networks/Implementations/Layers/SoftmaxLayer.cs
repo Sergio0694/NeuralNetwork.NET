@@ -17,8 +17,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Softmax;
 
-        public SoftmaxLayer(int inputs, int outputs)
-            : base(inputs, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood)
+        public SoftmaxLayer(in TensorInfo input, int outputs)
+            : base(input, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood)
         { }
 
         /// <inheritdoc/>

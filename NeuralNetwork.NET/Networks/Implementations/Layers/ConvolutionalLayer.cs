@@ -15,63 +15,47 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// A convolutional layer, used in a CNN network
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal class ConvolutionalLayer : WeightedLayerBase, INetworkLayer3D
+    internal class ConvolutionalLayer : WeightedLayerBase
     {
         #region Parameters
 
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Convolutional;
 
-        /// <inheritdoc/>
-        public override int Inputs => InputVolume.Volume;
-
-        /// <inheritdoc/>
-        public override int Outputs => OutputVolume.Volume;
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(InputVolume), Order = 4)]
-        public VolumeInformation InputVolume { get; }
-
         /// <summary>
-        /// Gets the <see cref="VolumeInformation"/> associated with each kernel in the layer
+        /// Gets the <see cref="TensorInfo"/> associated with each kernel in the layer
         /// </summary>
-        [JsonProperty(nameof(KernelVolume), Order = 5)]
-        public VolumeInformation KernelVolume { get; }
+        [JsonProperty(nameof(KernelInfo), Order = 4)]
+        public TensorInfo KernelInfo { get; }
 
         /// <summary>
         /// Gets the number of kernels in the current layer
         /// </summary>
-        [JsonProperty(nameof(Kernels), Order = 6)]
+        [JsonProperty(nameof(Kernels), Order = 5)]
         public int Kernels => Weights.GetLength(0);
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(OutputVolume), Order = 7)]
-        public VolumeInformation OutputVolume { get; }
 
         #endregion
 
-        public ConvolutionalLayer(VolumeInformation input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
-            : base(WeightsProvider.ConvolutionalKernels(input.Depth, kernelSize.X, kernelSize.Y, kernels),
+        public ConvolutionalLayer(in TensorInfo input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
+            : base(input, new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels),
+                  WeightsProvider.ConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.Biases(kernels), activation)
         {
-            InputVolume = input;
-            KernelVolume = (kernelSize.X, kernelSize.Y, input.Depth);
-            OutputVolume = (input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels);
+            KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
         }
 
-        public ConvolutionalLayer(VolumeInformation input, VolumeInformation kernels, VolumeInformation output,
+        public ConvolutionalLayer(
+            in TensorInfo input, in TensorInfo kernels, in TensorInfo output,
             [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
-            : base(weights, biases, activation)
+            : base(input, output, weights, biases, activation)
         {
-            InputVolume = input;
-            KernelVolume = kernels;
-            OutputVolume = output;
+            KernelInfo = kernels;
         }
 
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.ConvoluteForward(InputVolume, Weights, KernelVolume, Biases, out z);
+            x.ConvoluteForward(InputInfo, Weights, KernelInfo, Biases, out z);
             if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
             else z.Activation(ActivationFunctions.Activation, out a);
         }
@@ -82,8 +66,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             fixed (float* pw = Weights)
             {
                 Tensor.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out Tensor weights);
-                weights.Rotate180(KernelVolume.Depth, out Tensor w180);
-                delta_1.ConvoluteBackwards(OutputVolume, w180, KernelVolume, out Tensor delta);
+                weights.Rotate180(KernelInfo.Channels, out Tensor w180);
+                delta_1.ConvoluteBackwards(OutputInfo, w180, KernelInfo, out Tensor delta);
                 w180.Free();
                 z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
                 delta.Free();
@@ -93,13 +77,13 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
-            a.Rotate180(InputVolume.Depth, out Tensor a180);
-            a180.ConvoluteGradient(InputVolume, delta, OutputVolume, out dJdw);
+            a.Rotate180(InputInfo.Channels, out Tensor a180);
+            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out dJdw);
             a180.Free();
             delta.CompressVertically(out dJdb);
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new ConvolutionalLayer(InputVolume, KernelVolume, OutputVolume, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }

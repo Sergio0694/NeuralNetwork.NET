@@ -13,49 +13,29 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// A pooling layer, with a 2x2 window and a stride of 2
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal class PoolingLayer : NetworkLayerBase, INetworkLayer3D
+    internal class PoolingLayer : NetworkLayerBase
     {
-        #region Parameters
-
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Pooling;
 
-        /// <inheritdoc/>
-        public override int Inputs => InputVolume.Volume;
-
-        /// <inheritdoc/>
-        public override int Outputs => OutputVolume.Volume;
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(InputVolume), Order = 4)]
-        public VolumeInformation InputVolume { get; }
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(OutputVolume), Order = 7)]
-        public VolumeInformation OutputVolume { get; }
-
-        #endregion
-
-        public PoolingLayer(VolumeInformation input, ActivationFunctionType activation) : base(activation)
-        {
-            InputVolume = input;
-            int
-                outHeight = input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
-                outWidth = input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1);
-            OutputVolume = (outHeight, outWidth, input.Depth);
-        }
+        public PoolingLayer(in TensorInfo input, ActivationFunctionType activation)
+            : base(input, new TensorInfo(
+                input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
+                input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1),
+                input.Channels), activation)
+        { }
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.Pool2x2(InputVolume.Depth, out z);
+            x.Pool2x2(InputInfo.Channels, out z);
             z.Activation(ActivationFunctions.Activation, out a);
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputVolume.Depth);
+        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputInfo.Channels);
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new PoolingLayer(InputVolume, ActivationFunctionType);
+        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, ActivationFunctionType);
     }
 }

@@ -7,6 +7,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using NeuralNetworkNET.Structs;
+using System;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -18,19 +19,18 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.FullyConnected;
 
-        /// <inheritdoc/>
-        public override int Inputs => Weights.GetLength(0);
-
-        /// <inheritdoc/>
-        public override int Outputs => Weights.GetLength(1);
-
-        public FullyConnectedLayer(int inputs, int outputs, ActivationFunctionType activation)
-            : base(WeightsProvider.FullyConnectedWeights(inputs, outputs),
-                WeightsProvider.Biases(outputs), activation)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation)
+            : base(input, TensorInfo.CreateLinear(neurons),
+                  WeightsProvider.FullyConnectedWeights(input.Size, neurons),
+                  WeightsProvider.Biases(neurons), activation)
         { }
 
         public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
-            : base(weights, biases, activation) { }
+            : base(TensorInfo.CreateLinear(weights.GetLength(0)), TensorInfo.CreateLinear(weights.GetLength(1)), weights, biases, activation)
+        {
+            if (weights.GetLength(1) != biases.Length)
+                throw new ArgumentException("The biases vector must have the same size as the number of output neurons");
+        }
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)

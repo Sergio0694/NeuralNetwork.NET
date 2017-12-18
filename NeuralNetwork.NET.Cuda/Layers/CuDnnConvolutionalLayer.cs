@@ -21,23 +21,23 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         // The NCHW tensor info for the layer inputs
         [NotNull]
-        private readonly TensorDescriptor InputInfo = new TensorDescriptor();
+        private readonly TensorDescriptor InputDescription = new TensorDescriptor();
 
         // The NCHW info for the layer weights
         [NotNull]
-        private readonly FilterDescriptor FilterInfo = new FilterDescriptor();
+        private readonly FilterDescriptor FilterDescription = new FilterDescriptor();
 
         // The info on the layer bias (one value per output channel)
         [NotNull]
-        private readonly TensorDescriptor BiasInfo = new TensorDescriptor();
+        private readonly TensorDescriptor BiasDescription = new TensorDescriptor();
 
         // The convolution info
         [NotNull]
-        private readonly ConvolutionDescriptor ConvolutionInfo = new ConvolutionDescriptor();
+        private readonly ConvolutionDescriptor ConvolutionDescription = new ConvolutionDescriptor();
 
         // The NCHW tensor info for the layer outputs
         [NotNull]
-        private readonly TensorDescriptor OutputInfo = new TensorDescriptor();
+        private readonly TensorDescriptor OutputDescription = new TensorDescriptor();
 
         /// <summary>
         /// Gets the <see cref="Dnn"/> instance for the current layer
@@ -51,21 +51,21 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <param name="mode">The desired convolution mode</param>
         private void SetupCuDnnInfo(ConvolutionMode mode)
         {
-            ConvolutionInfo.Set2D(0, 0, 1, 1, 1, 1, mode);
-            FilterInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, OutputVolume.Depth, KernelVolume.Depth, KernelVolume.Height, KernelVolume.Width);
-            BiasInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, OutputVolume.Depth, 1, 1);
+            ConvolutionDescription.Set2D(0, 0, 1, 1, 1, 1, mode);
+            FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, OutputInfo.Channels, KernelInfo.Channels, KernelInfo.Height, KernelInfo.Width);
+            BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, OutputInfo.Channels, 1, 1);
         }
 
         #endregion
 
         public CuDnnConvolutionalLayer(
-            VolumeInformation input, (int X, int Y) kernelSize, int kernels,
+            TensorInfo input, (int X, int Y) kernelSize, int kernels,
             ActivationFunctionType activation, ConvolutionMode mode)
             : base(input, kernelSize, kernels, activation)
             => SetupCuDnnInfo(mode);
 
         public CuDnnConvolutionalLayer(
-            VolumeInformation input, VolumeInformation kernels, VolumeInformation output,
+            TensorInfo input, TensorInfo kernels, TensorInfo output,
             [NotNull] float[,] weights, [NotNull] float[] biases,
             ActivationFunctionType activation, ConvolutionMode mode)
             : base(input, kernels, output, weights, biases, activation)
@@ -76,30 +76,30 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputVolume.Depth, KernelVolume.Volume, out Tensor wSpan);
-                using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputVolume.Volume))
+                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wSpan);
+                using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
                 {
                     // Tensors info setup
-                    InputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputVolume.Depth, InputVolume.Height, InputVolume.Width);
-                    OutputInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputVolume.Depth, OutputVolume.Height, OutputVolume.Width);
+                    InputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
+                    OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputInfo.Channels, OutputInfo.Height, OutputInfo.Width);
 
                     // Forward convolution
-                    DnnInstance.GetConvolutionForwardAlgorithm(InputInfo, FilterInfo, ConvolutionInfo, OutputInfo, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
-                    DnnInstance.GetConvolutionForwardWorkspaceSize(InputInfo, FilterInfo, ConvolutionInfo, OutputInfo, algorithm, out IntPtr size);
+                    DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, FilterDescription, ConvolutionDescription, OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
+                    DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, FilterDescription, ConvolutionDescription, OutputDescription, algorithm, out IntPtr size);
                     using (DeviceMemory<float>
                         x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                         w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionForward(1, InputInfo, x_gpu.Ptr, FilterInfo, w_gpu.Ptr, ConvolutionInfo, algorithm, workspace_gpu.Ptr, size, 0, OutputInfo, z_gpu.Ptr);
+                        DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, FilterDescription, w_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, OutputDescription, z_gpu.Ptr);
                     }
 
                     // Biases
                     using (DeviceMemory<float> b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
                     {
-                        DnnInstance.AddTensor(1, BiasInfo, b_gpu.Ptr, 1, OutputInfo, z_gpu.Ptr);
+                        DnnInstance.AddTensor(1, BiasDescription, b_gpu.Ptr, 1, OutputDescription, z_gpu.Ptr);
                     }
-                    z_gpu.CopyToHost(x.Entities, OutputVolume.Volume, out z);
+                    z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
 
                     // Activation
                     if (ActivationFunctionType == ActivationFunctionType.Identity) z.Duplicate(out a);
@@ -117,9 +117,9 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputVolume.Depth, KernelVolume.Volume, out Tensor wSpan);
-                DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterInfo, OutputInfo, ConvolutionInfo, InputInfo, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
-                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterInfo, OutputInfo, ConvolutionInfo, InputInfo, algorithm, out IntPtr size);
+                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wSpan);
+                DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
+                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, algorithm, out IntPtr size);
                 using (DeviceMemory<float> delta_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
                 {
                     // Backwards convolution
@@ -128,7 +128,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                         w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionBackwardData(1, FilterInfo, w_gpu.Ptr, OutputInfo, delta_1_gpu.Ptr, ConvolutionInfo, algorithm, workspace_gpu.Ptr, size, 0, InputInfo, delta_gpu.Ptr);
+                        DnnInstance.ConvolutionBackwardData(1, FilterDescription, w_gpu.Ptr, OutputDescription, delta_1_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, InputDescription, delta_gpu.Ptr);
                     }
 
                     // Activation
@@ -149,22 +149,22 @@ namespace NeuralNetworkNET.Cuda.Layers
                 // Kernels
                 using (DeviceMemory<float>
                     a_gpu = DnnInstance.Gpu.AllocateDevice(a),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice<float>(Kernels * KernelVolume.Volume))
+                    w_gpu = DnnInstance.Gpu.AllocateDevice<float>(Kernels * KernelInfo.Size))
                 {
-                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputInfo, OutputInfo, ConvolutionInfo, FilterInfo, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputInfo, OutputInfo, ConvolutionInfo, FilterInfo, algorithm, out IntPtr size);
+                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
+                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, algorithm, out IntPtr size);
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionBackwardFilter(1, InputInfo, a_gpu.Ptr, OutputInfo, delta_gpu.Ptr, ConvolutionInfo, algorithm, workspace_gpu.Ptr, size, 0, FilterInfo, w_gpu.Ptr);
+                        DnnInstance.ConvolutionBackwardFilter(1, InputDescription, a_gpu.Ptr, OutputDescription, delta_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, FilterDescription, w_gpu.Ptr);
                     }
-                    w_gpu.CopyToHost(Kernels, KernelVolume.Volume, out dJdw);
+                    w_gpu.CopyToHost(Kernels, KernelInfo.Size, out dJdw);
                 }
 
                 // Bias
                 using (DeviceMemory<float> dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
                 {
-                    DnnInstance.ConvolutionBackwardBias(1, OutputInfo, delta_gpu.Ptr, 0, BiasInfo, dJdb_gpu.Ptr);
-                    dJdb_gpu.CopyToHost(1, OutputVolume.Depth, out dJdb);
+                    DnnInstance.ConvolutionBackwardBias(1, OutputDescription, delta_gpu.Ptr, 0, BiasDescription, dJdb_gpu.Ptr);
+                    dJdb_gpu.CopyToHost(1, OutputInfo.Channels, out dJdb);
                 }
             }
         }

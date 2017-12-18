@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Structs;
 
@@ -689,7 +690,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pl = l)
             {
                 Tensor.Fix(pl, 1, 9, out Tensor lSpan);
-                lSpan.ConvoluteForward((3, 3, 1), k, (2, 2, 1), b, out Tensor result);
+                lSpan.ConvoluteForward(new TensorInfo(3, 3, 1), k, new TensorInfo(2, 2, 1), b, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -734,7 +735,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pl = l)
             {
                 Tensor.Fix(pl, 2, 9, out Tensor lSpan);
-                lSpan.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new float[1], out Tensor result);
+                lSpan.ConvoluteForward(new TensorInfo(3, 3, 1), k, new TensorInfo(2, 2, 1), new float[1], out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -777,7 +778,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pl = l)
             {
                 Tensor.Fix(pl, 1, 9, out Tensor lSpan);
-                lSpan.ConvoluteForward((3, 3, 1), k, (2, 2, 1), new[] { 1, 0.5f }, out Tensor result);
+                lSpan.ConvoluteForward(new TensorInfo(3, 3, 1), k, new TensorInfo(2, 2, 1), new[] { 1, 0.5f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -820,7 +821,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pl = l)
             {
                 Tensor.Fix(pl, 1, 18, out Tensor lSpan);
-                lSpan.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0.1f }, out Tensor result);
+                lSpan.ConvoluteForward(new TensorInfo(3, 3, 2), k, new TensorInfo(2, 2, 2), new[] { 0.1f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -872,7 +873,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pl = l)
             {
                 Tensor.Fix(pl, 1, 18, out Tensor lSpan);
-                lSpan.ConvoluteForward((3, 3, 2), k, (2, 2, 2), new[] { 0, 0.2f }, out Tensor result);
+                lSpan.ConvoluteForward(new TensorInfo(3, 3, 2), k, new TensorInfo(2, 2, 2), new[] { 0, 0.2f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -905,7 +906,7 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pl = l)
             {
                 Tensor.Fix(pl, 1, 6, out Tensor lSpan);
-                lSpan.ConvoluteForward((2, 3, 1), k, (2, 2, 1), new[] { 0.9f }, out Tensor result);
+                lSpan.ConvoluteForward(new TensorInfo(2, 3, 1), k, new TensorInfo(2, 2, 1), new[] { 0.9f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -941,7 +942,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 1, 4, out Tensor lSpan);
                 Tensor.Fix(pk, 1, 4, out Tensor kSpan);
-                lSpan.ConvoluteBackwards((2, 2, 1), kSpan, (2, 2, 1), out Tensor result);
+                lSpan.ConvoluteBackwards(new TensorInfo(2, 2, 1), kSpan, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -984,7 +985,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 1, 8, out Tensor lSpan);
                 Tensor.Fix(pk, 2, 4, out Tensor kSpan);
-                lSpan.ConvoluteBackwards((2, 2, 2), kSpan, (2, 2, 1), out Tensor result);
+                lSpan.ConvoluteBackwards(new TensorInfo(2, 2, 2), kSpan, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1027,7 +1028,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 1, 4, out Tensor lSpan);
                 Tensor.Fix(pk, 1, 8, out Tensor kSpan);
-                lSpan.ConvoluteBackwards((2, 2, 1), kSpan, (2, 2, 2), out Tensor result);
+                lSpan.ConvoluteBackwards(new TensorInfo(2, 2, 1), kSpan, new TensorInfo(2, 2, 2), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1096,7 +1097,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 2, 8, out Tensor lSpan);
                 Tensor.Fix(pk, 2, 8, out Tensor kSpan);
-                lSpan.ConvoluteBackwards((2, 2, 2), kSpan, (2, 2, 2), out Tensor result);
+                lSpan.ConvoluteBackwards(new TensorInfo(2, 2, 2), kSpan, new TensorInfo(2, 2, 2), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1132,7 +1133,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 1, 9, out Tensor lSpan);
                 Tensor.Fix(pk, 1, 4, out Tensor kSpan);
-                lSpan.ConvoluteGradient((3, 3, 1), kSpan, (2, 2, 1), out Tensor result);
+                lSpan.ConvoluteGradient(new TensorInfo(3, 3, 1), kSpan, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1174,7 +1175,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 1, 9, out Tensor lSpan);
                 Tensor.Fix(pk, 1, 8, out Tensor kSpan);
-                lSpan.ConvoluteGradient((3, 3, 1), kSpan, (2, 2, 2), out Tensor result);
+                lSpan.ConvoluteGradient(new TensorInfo(3, 3, 1), kSpan, new TensorInfo(2, 2, 2), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1217,7 +1218,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 1, 18, out Tensor lSpan);
                 Tensor.Fix(pk, 1, 4, out Tensor kSpan);
-                lSpan.ConvoluteGradient((3, 3, 2), kSpan, (2, 2, 1), out Tensor result);
+                lSpan.ConvoluteGradient(new TensorInfo(3, 3, 2), kSpan, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1280,7 +1281,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 2, 18, out Tensor lSpan);
                 Tensor.Fix(pk, 2, 4, out Tensor kSpan);
-                lSpan.ConvoluteGradient((3, 3, 2), kSpan, (2, 2, 1), out Tensor result);
+                lSpan.ConvoluteGradient(new TensorInfo(3, 3, 2), kSpan, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -1361,7 +1362,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Fix(pl, 2, 18, out Tensor lSpan);
                 Tensor.Fix(pk, 2, 8, out Tensor kSpan);
-                lSpan.ConvoluteGradient((3, 3, 2), kSpan, (2, 2, 2), out Tensor result);
+                lSpan.ConvoluteGradient(new TensorInfo(3, 3, 2), kSpan, new TensorInfo(2, 2, 2), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
