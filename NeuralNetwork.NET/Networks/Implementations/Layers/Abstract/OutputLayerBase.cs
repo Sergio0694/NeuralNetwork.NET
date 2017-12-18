@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
@@ -29,8 +30,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         #endregion
 
-        protected OutputLayerBase(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
-            : base(inputs, outputs, activation)
+        protected OutputLayerBase(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost)
+            : base(input, neurons, activation)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
@@ -49,7 +50,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="yHat">The estimated outputs for the network</param>
         /// <param name="y">The expected outputs for the used inputs</param>
         /// <param name="z">The activity on the output layer</param>
-        public void Backpropagate(in FloatSpan2D yHat, in FloatSpan2D y, in FloatSpan2D z) => CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
+        public void Backpropagate(in Tensor yHat, in Tensor y, in Tensor z) => CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
 
         /// <summary>
         /// Calculates the output cost with respect to the cost function currently in use
@@ -58,7 +59,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <param name="y">The Expected outputs for the inputs used</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public float CalculateCost(in FloatSpan2D yHat, in FloatSpan2D y) => CostFunctions.Cost(yHat, y);
+        public float CalculateCost(in Tensor yHat, in Tensor y) => CostFunctions.Cost(yHat, y);
 
         #region Equality check
 

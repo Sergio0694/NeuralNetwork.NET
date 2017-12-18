@@ -32,7 +32,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         public static float[,] ConvolutionalKernels(int inputDepth, int kernelsHeight, int kernelsWidth, int kernels)
         {
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
-            float scale = (float)Math.Sqrt(6f / ((inputDepth + kernels) * kernelsHeight * kernelsWidth));
+            float scale = (float)Math.Sqrt(6f / (inputDepth * kernelsHeight * kernelsWidth));
             return ThreadSafeRandom.NextUniformMatrix(kernels, kernelsHeight * kernelsWidth * inputDepth, scale);
         }
 

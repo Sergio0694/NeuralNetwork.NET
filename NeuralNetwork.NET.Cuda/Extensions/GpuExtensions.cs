@@ -11,67 +11,51 @@ namespace NeuralNetworkNET.Cuda.Extensions
     /// </summary>
     internal static class GpuExtensions
     {
+        #region Memory copy
+
         /// <summary>
-        /// Allocates a 2D memory area on device memory and copies the contents of the input 2D span
+        /// Allocates a memory area on device memory and copies the contents of the input <see cref="Tensor"/>
         /// </summary>
         /// <param name="gpu">The <see cref="Gpu"/> device to use</param>
-        /// <param name="source">The source <see cref="FloatSpan2D"/> with the data to copy</param>
+        /// <param name="source">The source <see cref="Tensor"/> with the data to copy</param>
         [MustUseReturnValue, NotNull]
-        public static unsafe DeviceMemory2D<float> AllocateDevice([NotNull] this Gpu gpu, in FloatSpan2D source)
+        public static DeviceMemory<float> AllocateDevice([NotNull] this Gpu gpu, in Tensor source)
         {
-            DeviceMemory2D<float> result_gpu = gpu.AllocateDevice<float>(source.Height, source.Width);
-            CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc CUDAInterop.CUDA_MEMCPY2D_st[1];
-            ptSt[0] = new CUDAInterop.CUDA_MEMCPY2D_st
-            {
-                srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
-                srcHost = source.Ptr,
-                srcPitch = new IntPtr(sizeof(float) * source.Width),
-                dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
-                dstDevice = result_gpu.Handle,
-                dstPitch = result_gpu.Pitch,
-                WidthInBytes = new IntPtr(sizeof(float) * source.Width),
-                Height = new IntPtr(source.Height)
-            };
-            return CUDAInterop.cuMemcpy2D(ptSt) == CUDAInterop.cudaError_enum.CUDA_SUCCESS
+            DeviceMemory<float> result_gpu = gpu.AllocateDevice<float>(source.Size);
+            CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy(result_gpu.Handle, source.Ptr, new IntPtr(sizeof(float) * source.Size));
+            return result == CUDAInterop.cudaError_enum.CUDA_SUCCESS
                 ? result_gpu
-                : throw new InvalidOperationException("Failed to copy the source data on the target GPU device");
+                : throw new InvalidOperationException($"Failed to copy the source data on the target GPU device, [CUDA ERROR] {result}");
         }
 
         /// <summary>
-        /// Copies the contents of the input <see cref="DeviceMemory2D{T}"/> instance to the target host memory area
+        /// Copies the contents of the input <see cref="DeviceMemory{T}"/> instance to the target host memory area
         /// </summary>
-        /// <param name="source">The <see cref="DeviceMemory2D{T}"/> area to read</param>
-        /// <param name="destination">The destination <see cref="FloatSpan2D"/> memory to write on</param>
-        public static unsafe void CopyTo([NotNull] this DeviceMemory2D<float> source, in FloatSpan2D destination)
+        /// <param name="source">The <see cref="DeviceMemory{T}"/> area to read</param>
+        /// <param name="destination">The destination <see cref="Tensor"/> to write on</param>
+        public static void CopyTo([NotNull] this DeviceMemory<float> source, in Tensor destination)
         {
-            CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc CUDAInterop.CUDA_MEMCPY2D_st[1];
-            ptSt[0] = new CUDAInterop.CUDA_MEMCPY2D_st
-            {
-                srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
-                srcDevice = source.Handle,
-                srcPitch = source.Pitch,
-                dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
-                dstHost = destination.Ptr,
-                dstPitch = new IntPtr(sizeof(float) * destination.Width),
-                WidthInBytes = new IntPtr(sizeof(float) * destination.Width),
-                Height = new IntPtr(destination.Height)
-            };
-            if (CUDAInterop.cuMemcpy2D(ptSt) != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
-                throw new InvalidOperationException("Failed to copy the source data on the given destination");
+            if (destination.Size != source.Length) throw new ArgumentException("The target tensor doesn't have the same size as the source GPU memory");
+            CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy(destination.Ptr, source.Handle, new IntPtr(sizeof(float) * destination.Size));
+            if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
+                throw new InvalidOperationException($"Failed to copy the source data on the given destination, [CUDA ERROR] {result}");
         }
 
         /// <summary>
-        /// Copies the contents of the input <see cref="DeviceMemory2D{T}"/> to a new memory area on the unmanaged heap
+        /// Copies the contents of the input <see cref="DeviceMemory{T}"/> to a new memory area on the unmanaged heap
         /// </summary>
-        /// <param name="source">The source <see cref="DeviceMemory2D{T}"/> memory to copy</param>
-        /// <param name="result">The resulting maatrix</param>
+        /// <param name="source">The source <see cref="DeviceMemory{T}"/> memory to copy</param>
+        /// <param name="n">The height of the input memory area</param>
+        /// <param name="chw">The width of the input memory area</param>
+        /// <param name="result">The resulting matrix</param>
         [MustUseReturnValue]
-        public static void CopyToHost([NotNull] this DeviceMemory2D<float> source, out FloatSpan2D result)
+        public static void CopyToHost([NotNull] this DeviceMemory<float> source, int n, int chw, out Tensor result)
         {
-            MemoryLayout.Layout2D layout = source.Layout.To<MemoryLayout, MemoryLayout.Layout2D>();
-            FloatSpan2D.New(layout.height.ToInt32(), layout.width.ToInt32(), out result);
+            Tensor.New(n, chw, out result);
             source.CopyTo(result);
         }
+
+        #endregion
 
         /// <summary>
         /// Gets the amount of available GPU memory for a given GPU

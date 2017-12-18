@@ -21,12 +21,12 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second</param>
-        internal static unsafe void Subtract(in this FloatSpan2D m1, in FloatSpan2D m2)
+        internal static unsafe void Subtract(in this Tensor m1, in Tensor m2)
         {
             int
-                h = m1.Height,
-                w = m1.Width;
-            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+                h = m1.Entities,
+                w = m1.Length;
+            if (h != m2.Entities || w != m2.Length) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
 
             // Subtract in parallel
             float* pm1 = m1, pm2 = m2;
@@ -51,13 +51,13 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second matrix</param>
-        internal static unsafe void InPlaceHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2)
+        internal static unsafe void InPlaceHadamardProduct(in this Tensor m1, in Tensor m2)
         {
             // Check
             int
-                h = m1.Height,
-                w = m1.Width;
-            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+                h = m1.Entities,
+                w = m1.Length;
+            if (h != m2.Entities || w != m2.Length) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
             float* pm1 = m1, pm2 = m2;
 
             // Loop in parallel
@@ -79,13 +79,13 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m1">The first matrix</param>
         /// <param name="m2">The second matrix</param>
         /// <param name="activation">The activation function to use</param>
-        internal static unsafe void InPlaceActivationAndHadamardProduct(in this FloatSpan2D m1, in FloatSpan2D m2, [NotNull] ActivationFunction activation)
+        internal static unsafe void InPlaceActivationAndHadamardProduct(in this Tensor m1, in Tensor m2, [NotNull] ActivationFunction activation)
         {
             // Check
             int
-                h = m1.Height,
-                w = m1.Width;
-            if (h != m2.Height || w != m2.Width) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
+                h = m1.Entities,
+                w = m1.Length;
+            if (h != m2.Entities || w != m2.Length) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
             float* pm1 = m1, pm2 = m2;
 
             // Loop in parallel
@@ -107,15 +107,15 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m1">The first matrix to multiply</param>
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="result">The resulting matrix</param>
-        internal static unsafe void Multiply(in this FloatSpan2D m1, in FloatSpan2D m2, out FloatSpan2D result)
+        internal static unsafe void Multiply(in this Tensor m1, in Tensor m2, out Tensor result)
         {
             // Initialize the parameters and the result matrix
-            if (m1.Width != m2.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (m1.Length != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
             int
-                h = m1.Height,
-                w = m2.Width,
-                l = m1.Width;
-            FloatSpan2D.New(h, w, out result);
+                h = m1.Entities,
+                w = m2.Length,
+                l = m1.Length;
+            Tensor.New(h, w, out result);
             float* pm = result, pm1 = m1, pm2 = m2;
 
             // Execute the multiplication in parallel
@@ -147,11 +147,11 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m">The input to process</param>
         /// <param name="activation">The activation function to use</param>
         /// <param name="result">The resulting matrix</param>
-        internal static unsafe void Activation(in this FloatSpan2D m, [NotNull] ActivationFunction activation, out FloatSpan2D result)
+        internal static unsafe void Activation(in this Tensor m, [NotNull] ActivationFunction activation, out Tensor result)
         {
             // Setup
-            int h = m.Height, w = m.Width;
-            FloatSpan2D.New(h, w, out result);
+            int h = m.Entities, w = m.Length;
+            Tensor.New(h, w, out result);
             float* pr = result, pm = m;
 
             // Execute the activation in parallel
@@ -167,11 +167,11 @@ namespace NeuralNetworkNET.Extensions
         /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
         /// </summary>
         /// <param name="m">The matrix to normalize</param>
-        internal static unsafe void InPlaceSoftmaxNormalization(in this FloatSpan2D m)
+        internal static unsafe void InPlaceSoftmaxNormalization(in this Tensor m)
         {
             // Setup
-            int h = m.Height, w = m.Width;
-            FloatSpan2D.New(1, h, out FloatSpan2D partials);
+            int h = m.Entities, w = m.Length;
+            Tensor.New(1, h, out Tensor partials);
             float* pp = partials, pm = m;
 
             // Partial sum
@@ -207,15 +207,15 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix</param>
         /// <param name="result">The resulting matrix</param>
-        internal static unsafe void MultiplyWithSum(in this FloatSpan2D m1, [NotNull] float[,] m2, [NotNull] float[] v, out FloatSpan2D result)
+        internal static unsafe void MultiplyWithSum(in this Tensor m1, [NotNull] float[,] m2, [NotNull] float[] v, out Tensor result)
         {
             // Initialize the parameters and the result matrix
-            if (m1.Width != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (m1.Length != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
             int
-                h = m1.Height,
+                h = m1.Entities,
                 w = m2.GetLength(1),
-                l = m1.Width;
-            FloatSpan2D.New(h, w, out result);
+                l = m1.Length;
+            Tensor.New(h, w, out result);
             float* pm = result, pm1 = m1;
 
             // Execute the multiplication in parallel
@@ -248,16 +248,16 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="wt">The second matrix to multiply</param>
         /// <param name="prime">The activation prime function to use</param>
         internal static unsafe void InPlaceMultiplyAndHadamardProductWithActivationPrime(
-            in this FloatSpan2D z, in FloatSpan2D delta, in FloatSpan2D wt, [NotNull] ActivationFunction prime)
+            in this Tensor z, in Tensor delta, in Tensor wt, [NotNull] ActivationFunction prime)
         {
             // Initialize the parameters and the result matrix
-            int h = delta.Height;
-            int w = wt.Width;
-            int l = delta.Width;
+            int h = delta.Entities;
+            int w = wt.Length;
+            int l = delta.Length;
 
             // Checks
-            if (l != wt.Height) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
-            if (h != z.Height || w != z.Width) throw new ArgumentException("The matrices must be of equal size");
+            if (l != wt.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (h != z.Entities || w != z.Length) throw new ArgumentException("The matrices must be of equal size");
             float* pz = z, pm1 = delta, pm2 = wt;
 
             // Execute the multiplication in parallel
@@ -291,11 +291,11 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m">The matrix to transpose</param>
         /// <param name="result">The resulting matrix</param>
-        internal static unsafe void Transpose(in this FloatSpan2D m, out FloatSpan2D result)
+        internal static unsafe void Transpose(in this Tensor m, out Tensor result)
         {
             // Setup
-            int h = m.Height, w = m.Width;
-            FloatSpan2D.New(w, h, out result);
+            int h = m.Entities, w = m.Length;
+            Tensor.New(w, h, out result);
             float* pr = result;
 
             // Execute the transposition in parallel
@@ -315,14 +315,14 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="result">The resulting vector</param>
         [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe void CompressVertically(in this FloatSpan2D m, out FloatSpan result)
+        internal static unsafe void CompressVertically(in this Tensor m, out Tensor result)
         {
             // Preliminary checks and declarations
-            if (m.Height == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
+            if (m.Entities == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
             int
-                h = m.Height,
-                w = m.Width;
-            FloatSpan.New(w, out result);
+                h = m.Entities,
+                w = m.Length;
+            Tensor.New(1, w, out result);
             float* pm = m, pv = result;
 
             // Compress the matrix
@@ -342,11 +342,11 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m">The matrix to transpose</param>
         /// <param name="result">The resulting matrix</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe void Transpose([NotNull] this float[,] m, out FloatSpan2D result)
+        internal static unsafe void Transpose([NotNull] this float[,] m, out Tensor result)
         {
             // Setup
             int h = m.GetLength(0), w = m.GetLength(1);
-            FloatSpan2D.New(w, h, out result);
+            Tensor.New(w, h, out result);
 
             // Execute the transposition in parallel
             float* pr = result;
@@ -681,6 +681,24 @@ namespace NeuralNetworkNET.Extensions
         /// <summary>
         /// Checks if two matrices have the same size and content
         /// </summary>
+        /// <param name="m">The first <see cref="Tensor"/> to test</param>
+        /// <param name="o">The second <see cref="Tensor"/> to test</param>
+        /// <param name="delta">The comparison threshold</param>
+        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o, float delta = 1e-6f)
+        {
+            if (m.Ptr == IntPtr.Zero && o.Ptr == IntPtr.Zero) return true;
+            if (m.Ptr == IntPtr.Zero || o.Ptr == IntPtr.Zero) return false;
+            if (m.Entities != o.Entities || m.Length != o.Length) return false;
+            float* pm = m, po = o;
+            int items = m.Size;
+            for (int i = 0; i < items; i++)
+                if (!pm[i].EqualsWithDelta(po[i], delta)) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if two matrices have the same size and content
+        /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
         /// <param name="delta">The comparison threshold</param>
@@ -712,23 +730,29 @@ namespace NeuralNetworkNET.Extensions
             return true;
         }
 
+        // GetUid helper method
+        private static unsafe int GetUid(float* p, int n)
+        {
+            int hash = 17;
+            unchecked
+            {
+                for (int i = 0; i < n; i++)
+                    hash = hash * 23 + p[i].GetHashCode();
+                return hash;
+            }
+        }
+
         /// <summary>
         /// Calculates a unique hash code for the target row of the input matrix
         /// </summary>
         [Pure]
         public static unsafe int GetUid([NotNull] this float[,] m, int row)
         {
-            int hash = 17, w = m.GetLength(1);
+            int
+                w = m.GetLength(1),
+                offset = row * w;
             fixed (float* pm = m)
-            {
-                unchecked
-                {
-                    int offset = row * w;
-                    for (int i = 0; i < w; i++)
-                        hash = hash * 23 + pm[offset + i].GetHashCode();
-                    return hash;
-                }
-            }
+                return GetUid(pm + offset, w);
         }
 
         /// <summary>
@@ -738,14 +762,8 @@ namespace NeuralNetworkNET.Extensions
         [Pure]
         public static unsafe int GetUid([NotNull] this float[,] m)
         {
-            int hash = 17;
-            unchecked
-            {
-                fixed (float* pm = m)
-                    for (int i = 0; i < m.Length; i++)
-                        hash = hash * 23 + pm[i].GetHashCode();
-                return hash;
-            }
+            fixed (float* pm = m)
+                return GetUid(pm, m.Length);
         }
 
         /// <summary>
@@ -755,14 +773,8 @@ namespace NeuralNetworkNET.Extensions
         [Pure]
         public static unsafe int GetUid([NotNull] this float[] v)
         {
-            int hash = 17;
-            unchecked
-            {
-                fixed (float* pv = v)
-                    for (int i = 0; i < v.Length; i++)
-                        hash = hash * 23 + pv[i].GetHashCode();
-                return hash;
-            }
+            fixed (float* pv = v)
+                return GetUid(pv, v.Length);
         }
 
         #endregion
@@ -812,7 +824,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m">The matrix to convert to <see cref="String"/></param>
         [PublicAPI]
         [Pure, NotNull]
-        public static unsafe String ToFormattedString(in this FloatSpan2D m) => ToFormattedString(m, m.Height, m.Width);
+        public static unsafe String ToFormattedString(in this Tensor m) => ToFormattedString(m, m.Entities, m.Length);
 
         #endregion
     }

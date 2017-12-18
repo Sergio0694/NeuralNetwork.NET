@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
@@ -13,8 +14,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// </summary>
     internal sealed class OutputLayer : OutputLayerBase
     {
-        public OutputLayer(int inputs, int outputs, ActivationFunctionType activation, CostFunctionType cost)
-            : base(inputs, outputs, activation, cost)
+        /// <inheritdoc/>
+        public override LayerType LayerType { get; } = LayerType.Output;
+
+        public OutputLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost)
+            : base(input, neurons, activation, cost)
         {
             if (activation == ActivationFunctionType.Softmax || cost == CostFunctionType.LogLikelyhood)
                 throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");

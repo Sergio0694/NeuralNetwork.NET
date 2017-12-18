@@ -8,7 +8,6 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
-using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Helpers.Imaging;
@@ -16,10 +15,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Structs;
-using NeuralNetworkNET.SupervisedLearning.Misc;
-using NeuralNetworkNET.SupervisedLearning.Optimization;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Progress;
+using NeuralNetworkNET.SupervisedLearning.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -34,12 +30,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 1)]
-        public int Inputs { get; }
+        [JsonProperty(nameof(InputInfo), Required = Required.Always, Order = 1)]
+        public TensorInfo InputInfo => Layers[0].InputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
-        public int Outputs { get; }
+        [JsonProperty(nameof(OutputInfo), Required = Required.Always, Order = 2)]
+        public TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
         public IReadOnlyList<INetworkLayer> Layers => _Layers;
@@ -51,10 +47,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         [NotNull, ItemNotNull]
         [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
-        private readonly NetworkLayerBase[] _Layers;
+        internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
-        private readonly int[] WeightedLayersIndexes;
+        internal readonly int[] WeightedLayersIndexes;
 
         /// <summary>
         /// Initializes a new network with the given parameters
@@ -68,15 +64,14 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
-                if (i > 0 && layers[i - 1].Outputs != layer.Inputs) throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
+                if (i > 0 && layers[i - 1].OutputInfo.Size != layer.InputInfo.Size)
+                    throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
                 if (i > 0 && layer is PoolingLayer && 
                     layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationFunctionType != ActivationFunctionType.Identity)
                     throw new ArgumentException("A convolutional layer followed by a pooling layer must use the Identity activation function");
             }
 
             // Parameters setup
-            Inputs = layers[0].Inputs;
-            Outputs = layers[layers.Length - 1].Outputs;
             _Layers = layers.Cast<NetworkLayerBase>().ToArray();
             WeightedLayersIndexes = layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i)).Where(t => t.Layer != null).Select(t => t.Index).ToArray();
         }
@@ -88,10 +83,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
-                Forward(xSpan, out FloatSpan2D yHatSpan);
-                float[] yHat = yHatSpan.ToArray();
-                yHatSpan.Free();
+                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Forward(xTensor, out Tensor yHatTensor);
+                float[] yHat = yHatTensor.ToArray();
+                yHatTensor.Free();
                 return yHat;
             }
         }
@@ -101,9 +96,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
-                FloatSpan2D.Fix(py, 1, y.Length, out FloatSpan2D ySpan);
-                return CalculateCost(xSpan, ySpan);
+                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Fix(py, 1, y.Length, out Tensor yTensor);
+                return CalculateCost(xTensor, yTensor);
             }
         }
 
@@ -112,13 +107,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, 1, x.Length, out FloatSpan2D xSpan);
-                FloatSpan2D*
-                    zList = stackalloc FloatSpan2D[_Layers.Length],
-                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
                 {
-                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                    _Layers[i].Forward(i == 0 ? xTensor : aList[i - 1], out zList[i], out aList[i]);
                 }
                 (float[], float[])[] features = new(float[], float[])[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
@@ -136,10 +131,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
-                Forward(xSpan, out FloatSpan2D yHatSpan);
-                float[,] yHat = yHatSpan.ToArray2D();
-                yHatSpan.Free();
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Forward(xTensor, out Tensor yHatTensor);
+                float[,] yHat = yHatTensor.ToArray2D();
+                yHatTensor.Free();
                 return yHat;
             }
         }
@@ -149,9 +144,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
-                FloatSpan2D.Fix(py, y.GetLength(0), y.GetLength(1), out FloatSpan2D ySpan);
-                return CalculateCost(xSpan, ySpan);
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
+                return CalculateCost(xTensor, yTensor);
             }
         }
 
@@ -160,13 +155,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                FloatSpan2D.Fix(px, x.GetLength(0), x.GetLength(1), out FloatSpan2D xSpan);
-                FloatSpan2D*
-                    zList = stackalloc FloatSpan2D[_Layers.Length],
-                    aList = stackalloc FloatSpan2D[_Layers.Length];
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
                 {
-                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                    _Layers[i].Forward(i == 0 ? xTensor : aList[i - 1], out zList[i], out aList[i]);
                 }
                 (float[,], float[,])[] features = new(float[,], float[,])[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
@@ -183,12 +178,12 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Implementation
 
-        private void Forward(in FloatSpan2D x, out FloatSpan2D yHat)
+        private void Forward(in Tensor x, out Tensor yHat)
         {
-            FloatSpan2D input = x;
+            Tensor input = x;
             for (int i = 0; i < _Layers.Length; i++)
             {
-                _Layers[i].Forward(input, out FloatSpan2D z, out FloatSpan2D a); // Forward the inputs through all the network layers
+                _Layers[i].Forward(input, out Tensor z, out Tensor a); // Forward the inputs through all the network layers
                 z.Free();
                 if (i > 0) input.Free();
                 input = a;
@@ -196,9 +191,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             yHat = input;
         }
 
-        private float CalculateCost(in FloatSpan2D x, in FloatSpan2D y)
+        private float CalculateCost(in Tensor x, in Tensor y)
         {
-            Forward(x, out FloatSpan2D yHat);
+            Forward(x, out Tensor yHat);
             float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
             yHat.Free();
             return cost;
@@ -207,23 +202,21 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Calculates the gradient of the cost function with respect to the individual weights and biases
         /// </summary>
-        /// <param name="x">The input data</param>
-        /// <param name="y">The expected results</param>
+        /// <param name="batch">The input training batch</param>
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="eta">The learning rate for the training session</param>
-        /// <param name="l2Factor">The L2 regularization factor</param>
-        private unsafe void Backpropagate(in TrainingBatch batch, float dropout, float eta, float l2Factor)
+        /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
+        internal unsafe void Backpropagate(in TrainingBatch batch, float dropout, [NotNull] WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
                 // Setup
-                FloatSpan2D*
-                    zList = stackalloc FloatSpan2D[_Layers.Length],
-                    aList = stackalloc FloatSpan2D[_Layers.Length],
-                    dropoutMasks = stackalloc FloatSpan2D[_Layers.Length - 1];
-                FloatSpan2D.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out FloatSpan2D x);
-                FloatSpan2D.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out FloatSpan2D y);
-                FloatSpan2D** deltas = stackalloc FloatSpan2D*[_Layers.Length]; // One delta for each hop through the network
+                Tensor*
+                    zList = stackalloc Tensor[_Layers.Length],
+                    aList = stackalloc Tensor[_Layers.Length],
+                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
+                Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
+                Tensor.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
+                Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
 
                 // Feedforward
                 for (int i = 0; i < _Layers.Length; i++)
@@ -231,7 +224,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     _Layers[i].Forward(i == 0 ? x : aList[i - 1], out zList[i], out aList[i]);
                     if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
                     {
-                        ThreadSafeRandom.NextDropoutMask(aList[i].Height, aList[i].Width, dropout, out dropoutMasks[i]);
+                        ThreadSafeRandom.NextDropoutMask(aList[i].Entities, aList[i].Length, dropout, out dropoutMasks[i]);
                         aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
                     }
                 }
@@ -265,8 +258,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Compute the gradients for each layer with weights and biases.
                  * NOTE: the gradient is only computed for layers with weights and biases, for all the other
                  *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-                FloatSpan2D* dJdw = stackalloc FloatSpan2D[WeightedLayersIndexes.Length]; // One gradient item for layer
-                FloatSpan* dJdb = stackalloc FloatSpan[WeightedLayersIndexes.Length];
+                Tensor*
+                    dJdw = stackalloc Tensor[WeightedLayersIndexes.Length], // One gradient item for layer
+                    dJdb = stackalloc Tensor[WeightedLayersIndexes.Length];
                 for (int j = 0; j < WeightedLayersIndexes.Length; j++)
                 {
                     int i = WeightedLayersIndexes[j];
@@ -276,17 +270,15 @@ namespace NeuralNetworkNET.Networks.Implementations
                 /* ====================
                  * Gradient descent
                  * ====================
-                 * Edit the network weights according to the computed gradients and the current training parameters. 
-                 * The learning rate indicates the desired convergence speed, while the L2 factor is used to regularize the network and keep the weights small */
-                float alpha = eta / batch.X.GetLength(0);
-                void Kernel(int j)
+                 * Edit the network weights according to the computed gradients and the current training parameters */
+                int samples = batch.X.GetLength(0);
+                Parallel.For(0, WeightedLayersIndexes.Length, i =>
                 {
-                    int i = WeightedLayersIndexes[j];
-                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().Minimize(dJdw[j], dJdb[j], alpha, l2Factor);
-                    dJdw[j].Free();
-                    dJdb[j].Free();
-                }
-                Parallel.For(0, WeightedLayersIndexes.Length, Kernel).AssertCompleted();
+                    int l = WeightedLayersIndexes[i];
+                    updater(i, dJdw[i], dJdb[i], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
+                    dJdw[i].Free();
+                    dJdb[i].Free();
+                }).AssertCompleted();
 
                 // Cleanup
                 for (int i = 0; i < _Layers.Length - 1; i++)
@@ -302,106 +294,17 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        #region Training
-
-        /// <summary>
-        /// Trains the current network using the gradient descent algorithm
-        /// </summary>
-        /// <param name="miniBatches">The training baatches for the current session</param>
-        /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="eta">The learning rate</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="lambda">The L2 regularization factor</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal TrainingSessionResult StochasticGradientDescent(
-            BatchesCollection miniBatches,
-            int epochs,
-            float eta = 0.5f, float dropout = 0, float lambda = 0,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,         
-            CancellationToken token = default)
-        {
-            // Setup
-            DateTime startTime = DateTime.Now;
-            List<DatasetEvaluationResult>
-                validationReports = new List<DatasetEvaluationResult>(),
-                testReports = new List<DatasetEvaluationResult>();
-            TrainingSessionResult PrepareResult(TrainingStopReason reason, int loops)
-            {
-                return new TrainingSessionResult(reason, loops, DateTime.Now.Subtract(startTime).RoundToSeconds(), validationReports, testReports);
-            }
-
-            // Convergence manager for the validation dataset
-            RelativeConvergence convergence = validationParameters == null
-                ? null
-                : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
-
-            // Create the training batches
-            float l2Factor = eta * lambda / miniBatches.Samples;
-            for (int i = 0; i < epochs; i++)
-            {
-                // Shuffle the training set
-                miniBatches.CrossShuffle();
-
-                // Gradient descent over the current batches
-                for (int j = 0; j < miniBatches.Count; j++)
-                {
-                    if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
-                    Backpropagate(miniBatches.Batches[j], dropout, eta, l2Factor);
-                }
-
-                // Check for overflows
-                if (!Parallel.For(0, _Layers.Length, (j, state) =>
-                {
-                    if (_Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
-                }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
-
-                // Check the training progress
-                if (trainingProgress != null)
-                {
-                    (float cost, _, float accuracy) = Evaluate(miniBatches);
-                    trainingProgress.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
-                }
-
-                // Check the validation dataset
-                if (convergence != null)
-                {
-                    (float cost, _, float accuracy) = Evaluate(validationParameters.Dataset);
-                    validationReports.Add(new DatasetEvaluationResult(cost, accuracy));
-                    convergence.Value = accuracy;
-                    if (convergence.HasConverged) return PrepareResult(TrainingStopReason.EarlyStopping, i);
-                }
-
-                // Report progress if necessary
-                if (testParameters != null)
-                {
-                    (float cost, _, float accuracy) = Evaluate(testParameters.Dataset);
-                    testReports.Add(new DatasetEvaluationResult(cost, accuracy));
-                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
-                }
-            }
-            return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
-        }
-
-        #endregion
-
         #region Evaluation
 
         // Auxiliary function to forward a test batch
-        private unsafe (float Cost, int Classified) Evaluate(in FloatSpan2D x, in FloatSpan2D y)
+        private unsafe (float Cost, int Classified) Evaluate(in Tensor x, in Tensor y)
         {
             // Feedforward
-            Forward(x, out FloatSpan2D yHat);
+            Forward(x, out Tensor yHat);
 
             // Function that counts the correctly classified items
             float* pyHat = yHat, pY = y;
-            int wy = y.Width, total = 0;
+            int wy = y.Length, total = 0;
             void Kernel(int i)
             {
                 int
@@ -412,7 +315,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Check the correctly classified samples and calculate the cost
-            Parallel.For(0, x.Height, Kernel).AssertCompleted();
+            Parallel.For(0, x.Entities, Kernel).AssertCompleted();
             float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
             yHat.Free();
             return (cost, total);
@@ -441,9 +344,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the even batches
                 for (int i = 0; i < batches; i++)
                 {
-                    FloatSpan2D.Fix(px + i * batchSize * wx, batchSize, wx, out FloatSpan2D xSpan);
-                    FloatSpan2D.Fix(py + i * batchSize * wy, batchSize, wy, out FloatSpan2D ySpan);
-                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    Tensor.Fix(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
+                    Tensor.Fix(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
+                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
                 }
@@ -451,9 +354,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the remaining samples, if any
                 if (batchMod > 0)
                 {
-                    FloatSpan2D.Fix(px + batches * batchSize * wx, batchMod, wx, out FloatSpan2D xSpan);
-                    FloatSpan2D.Fix(py + batches * batchSize * wy, batchMod, wy, out FloatSpan2D ySpan);
-                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    Tensor.Fix(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
+                    Tensor.Fix(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
+                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
                 }
@@ -477,9 +380,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 ref readonly TrainingBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
-                    FloatSpan2D.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out FloatSpan2D xSpan);
-                    FloatSpan2D.Fix(py, xSpan.Height, batch.Y.GetLength(1), out FloatSpan2D ySpan);
-                    var partial = Evaluate(xSpan, ySpan);
+                    Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
+                    Tensor.Fix(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
+                    var partial = Evaluate(xTensor, yTensor);
                     cost += partial.Cost;
                     classified += partial.Classified;
                 }
@@ -499,8 +402,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             // Compare general features
             if (other is NeuralNetwork network &&
-                other.Inputs == Inputs &&
-                other.Outputs == Outputs &&
+                other.InputInfo == InputInfo &&
+                other.OutputInfo == OutputInfo &&
                 _Layers.Length == network._Layers.Length)
             {
                 // Compare the individual layers
@@ -520,25 +423,25 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     stream.WriteByte((byte)layer.LayerType);
                     stream.WriteByte((byte)layer.ActivationFunctionType);
-                    stream.Write(layer.Inputs);
-                    stream.Write(layer.Outputs);
+                    stream.Write(layer.InputInfo.Size);
+                    stream.Write(layer.OutputInfo.Size);
                     if (layer is PoolingLayer pooling)
                     {
-                        stream.Write(pooling.InputVolume.Height);
-                        stream.Write(pooling.InputVolume.Width);
-                        stream.Write(pooling.InputVolume.Depth);
+                        stream.Write(pooling.InputInfo.Height);
+                        stream.Write(pooling.InputInfo.Width);
+                        stream.Write(pooling.InputInfo.Channels);
                     }
                     if (layer is ConvolutionalLayer convolutional)
                     {
-                        stream.Write(convolutional.InputVolume.Height);
-                        stream.Write(convolutional.InputVolume.Width);
-                        stream.Write(convolutional.InputVolume.Depth);
-                        stream.Write(convolutional.OutputVolume.Height);
-                        stream.Write(convolutional.OutputVolume.Width);
-                        stream.Write(convolutional.OutputVolume.Depth);
-                        stream.Write(convolutional.KernelVolume.Height);
-                        stream.Write(convolutional.KernelVolume.Width);
-                        stream.Write(convolutional.KernelVolume.Depth);
+                        stream.Write(convolutional.InputInfo.Height);
+                        stream.Write(convolutional.InputInfo.Width);
+                        stream.Write(convolutional.InputInfo.Channels);
+                        stream.Write(convolutional.OutputInfo.Height);
+                        stream.Write(convolutional.OutputInfo.Width);
+                        stream.Write(convolutional.OutputInfo.Channels);
+                        stream.Write(convolutional.KernelInfo.Height);
+                        stream.Write(convolutional.KernelInfo.Width);
+                        stream.Write(convolutional.KernelInfo.Channels);
                     }
                     if (layer is WeightedLayerBase weighted)
                     {
@@ -562,7 +465,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 switch (layer)
                 {
                     case ConvolutionalLayer convolutional when i == 0:
-                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelVolume, scaling);
+                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelInfo, scaling);
                         break;
                     case ConvolutionalLayer _:
                         throw new NotImplementedException();
