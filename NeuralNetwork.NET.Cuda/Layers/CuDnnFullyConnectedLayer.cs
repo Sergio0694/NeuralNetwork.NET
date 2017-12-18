@@ -27,31 +27,39 @@ namespace NeuralNetworkNET.Cuda.Layers
             : base(weights, biases, activation) { }
 
         /// <inheritdoc/>
-        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            using (DeviceMemory2D<float>
-                x_gpu = DnnInstance.Gpu.AllocateDevice2D(x),
-                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities, OutputInfo.Size))
-            using (DeviceMemory<float> b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
+            fixed (float* pw = Weights)
             {
-                DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, x_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), b_gpu.Ptr, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32());
-                y_gpu.CopyToHost(out z);
-                DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32(), y_gpu.Ptr, y_gpu.PitchInElements.ToInt32(), ActivationFunctions.Activation);
-                y_gpu.CopyToHost(out a);
+                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wSpan);
+                using (DeviceMemory<float>
+                    x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                    w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan),
+                    y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size),
+                    b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
+                {
+                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, x.Length, w_gpu.Ptr, wSpan.Length, b_gpu.Ptr, y_gpu.Ptr, OutputInfo.Size);
+                    y_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
+                    DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, OutputInfo.Size, y_gpu.Ptr, OutputInfo.Size, ActivationFunctions.Activation);
+                    y_gpu.CopyToHost(z.Entities, z.Length, out a);
+                }
             }
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
-            using (DeviceMemory2D<float>
-                delta_1_gpu = DnnInstance.Gpu.AllocateDevice2D(delta_1),
-                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                z_gpu = DnnInstance.Gpu.AllocateDevice2D(z))
+            fixed (float* pw = Weights)
             {
-                DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, z_gpu.PitchInElements.ToInt32(), delta_1_gpu.Ptr, delta_1_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), activationPrime);
-                z_gpu.CopyTo(z);
+                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wSpan);
+                using (DeviceMemory<float>
+                    delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
+                    w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan),
+                    z_gpu = DnnInstance.Gpu.AllocateDevice(z))
+                {
+                    DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, z.Length, delta_1_gpu.Ptr, delta_1.Length, w_gpu.Ptr, wSpan.Length, activationPrime);
+                    z_gpu.CopyTo(z);
+                }
             }
         }
 

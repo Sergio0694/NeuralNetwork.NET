@@ -22,9 +22,10 @@ namespace NeuralNetworkNET.Cuda.Extensions
         public static unsafe DeviceMemory<float> AllocateDevice([NotNull] this Gpu gpu, in Tensor source)
         {
             DeviceMemory<float> result_gpu = gpu.AllocateDevice<float>(source.Size);
-            return CUDAInterop.cuMemcpy(result_gpu.Handle, source.Ptr, new IntPtr(sizeof(float) * source.Size)) == CUDAInterop.cudaError_enum.CUDA_SUCCESS
+            CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy(result_gpu.Handle, source.Ptr, new IntPtr(sizeof(float) * source.Size));
+            return result == CUDAInterop.cudaError_enum.CUDA_SUCCESS
                 ? result_gpu
-                : throw new InvalidOperationException("Failed to copy the source data on the target GPU device");
+                : throw new InvalidOperationException($"Failed to copy the source data on the target GPU device, [CUDA ERROR] {result}");
         }
 
         /// <summary>
@@ -35,8 +36,9 @@ namespace NeuralNetworkNET.Cuda.Extensions
         public static unsafe void CopyTo([NotNull] this DeviceMemory<float> source, in Tensor destination)
         {
             if (destination.Size != source.Length) throw new ArgumentException("The target tensor doesn't have the same size as the source GPU memory");
-            if (CUDAInterop.cuMemcpy(destination.Ptr, source.Handle, new IntPtr(sizeof(float) * destination.Size)) != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
-                throw new InvalidOperationException("Failed to copy the source data on the given destination");
+            CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy(destination.Ptr, source.Handle, new IntPtr(sizeof(float) * destination.Size));
+            if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
+                throw new InvalidOperationException($"Failed to copy the source data on the given destination, [CUDA ERROR] {result}");
         }
 
         /// <summary>
