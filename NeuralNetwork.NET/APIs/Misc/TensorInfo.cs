@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.APIs.Misc
 {
@@ -10,7 +11,7 @@ namespace NeuralNetworkNET.APIs.Misc
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     [DebuggerDisplay("Height: {Height}, Width: {Width}, Channels: {Channels}, Size: {Size}")]
-    public readonly struct TensorInfo
+    public readonly struct TensorInfo : IEquatable<TensorInfo>
     {
         /// <summary>
         /// Gets the height of each 2D slice
@@ -34,12 +35,22 @@ namespace NeuralNetworkNET.APIs.Misc
         /// Gets the total number of entries in the data volume
         /// </summary>
         [JsonProperty(nameof(Size), Order = 3)]
-        public int Size => Height * Width * Channels;
+        public int Size
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Height * Width * Channels;
+        }
 
         /// <summary>
         /// Gets the size of each 2D size
         /// </summary>
-        public int SliceSize => Height * Width;
+        public int SliceSize
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Height * Width;
+        }
 
         public TensorInfo(int height, int width, int channels)
         {
@@ -75,5 +86,34 @@ namespace NeuralNetworkNET.APIs.Misc
         [PublicAPI]
         [Pure]
         public static TensorInfo CreateLinear(int size) => new TensorInfo(1, 1, size);
+
+        #region Equality
+
+        /// <inheritdoc/>
+        public bool Equals(TensorInfo other) => this == other;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is TensorInfo tensor ? this == tensor : false;
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            unchecked
+            {
+                hash += Height;
+                hash = hash * 23 + Width;
+                hash = hash * 23 + Channels;
+            }
+            return hash;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(in TensorInfo a, in TensorInfo b) => a.Height == b.Height && a.Width == b.Width && a.Channels == b.Channels;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(in TensorInfo a, in TensorInfo b) => !(a == b);
+
+        #endregion
     }
 }
