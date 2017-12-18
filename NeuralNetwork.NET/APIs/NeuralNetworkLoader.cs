@@ -50,15 +50,15 @@ namespace NeuralNetworkNET.APIs
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Convolutional:
                             return new ConvolutionalLayer(
-                                layer["InputVolume"].ToObject<TensorInfo>(),
-                                layer["KernelVolume"].ToObject<TensorInfo>(),
-                                layer["OutputVolume"].ToObject<TensorInfo>(),
+                                layer["InputInfo"].ToObject<TensorInfo>(),
+                                layer["KernelInfo"].ToObject<TensorInfo>(),
+                                layer["OutputInfo"].ToObject<TensorInfo>(),
                                 layer["Weights"].ToObject<float[,]>(),
                                 layer["Biases"].ToObject<float[]>(),
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Pooling:
                             return new PoolingLayer(
-                                layer["InputVolume"].ToObject<TensorInfo>(),
+                                layer["InputInfo"].ToObject<TensorInfo>(),
                                 layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
                         case LayerType.Output:
                             return new OutputLayer(

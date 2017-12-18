@@ -35,8 +35,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <summary>
         /// Gets the <see cref="TensorInfo"/> associated with each kernel in the layer
         /// </summary>
-        [JsonProperty(nameof(KernelVolume), Order = 5)]
-        public TensorInfo KernelVolume { get; }
+        [JsonProperty(nameof(KernelInfo), Order = 5)]
+        public TensorInfo KernelInfo { get; }
 
         /// <summary>
         /// Gets the number of kernels in the current layer
@@ -55,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                   WeightsProvider.Biases(kernels), activation)
         {
             InputInfo = input;
-            KernelVolume = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
+            KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
             OutputInfo = new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels);
         }
 
@@ -64,14 +64,14 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             : base(weights, biases, activation)
         {
             InputInfo = input;
-            KernelVolume = kernels;
+            KernelInfo = kernels;
             OutputInfo = output;
         }
 
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.ConvoluteForward(InputInfo, Weights, KernelVolume, Biases, out z);
+            x.ConvoluteForward(InputInfo, Weights, KernelInfo, Biases, out z);
             if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
             else z.Activation(ActivationFunctions.Activation, out a);
         }
@@ -82,8 +82,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             fixed (float* pw = Weights)
             {
                 Tensor.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out Tensor weights);
-                weights.Rotate180(KernelVolume.Channels, out Tensor w180);
-                delta_1.ConvoluteBackwards(OutputInfo, w180, KernelVolume, out Tensor delta);
+                weights.Rotate180(KernelInfo.Channels, out Tensor w180);
+                delta_1.ConvoluteBackwards(OutputInfo, w180, KernelInfo, out Tensor delta);
                 w180.Free();
                 z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
                 delta.Free();
@@ -100,6 +100,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, KernelVolume, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }

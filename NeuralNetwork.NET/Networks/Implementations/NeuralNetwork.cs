@@ -440,9 +440,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                         stream.Write(convolutional.OutputInfo.Height);
                         stream.Write(convolutional.OutputInfo.Width);
                         stream.Write(convolutional.OutputInfo.Channels);
-                        stream.Write(convolutional.KernelVolume.Height);
-                        stream.Write(convolutional.KernelVolume.Width);
-                        stream.Write(convolutional.KernelVolume.Channels);
+                        stream.Write(convolutional.KernelInfo.Height);
+                        stream.Write(convolutional.KernelInfo.Width);
+                        stream.Write(convolutional.KernelInfo.Channels);
                     }
                     if (layer is WeightedLayerBase weighted)
                     {
@@ -466,7 +466,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 switch (layer)
                 {
                     case ConvolutionalLayer convolutional when i == 0:
-                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelVolume, scaling);
+                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelInfo, scaling);
                         break;
                     case ConvolutionalLayer _:
                         throw new NotImplementedException();

@@ -154,7 +154,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 58 * 58 * 3);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), (5, 5), 20, ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelVolume, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType, ConvolutionMode.CONVOLUTION);
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType, ConvolutionMode.CONVOLUTION);
             TestForward(cpu, gpu, x);
         }
 
