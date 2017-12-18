@@ -1,5 +1,4 @@
-﻿using Alea.cuDNN;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
@@ -50,7 +49,7 @@ namespace NeuralNetworkNET.APIs
         [Pure, NotNull]
         public static INetworkLayer Convolutional(
             TensorInfo input, (int X, int Y) kernel, int kernels, ActivationFunctionType activation, 
-            ConvolutionMode mode = ConvolutionMode.CONVOLUTION, 
+            ConvolutionMode mode = ConvolutionMode.Convolution, 
             BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => new CuDnnConvolutionalLayer(input, kernel, kernels, activation, mode, biasMode);
 

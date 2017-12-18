@@ -49,9 +49,9 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// Sets the cuDNN fields that will be used during future forward/backwards operations
         /// </summary>
         /// <param name="mode">The desired convolution mode</param>
-        private void SetupCuDnnInfo(ConvolutionMode mode)
+        private void SetupCuDnnInfo(APIs.Enums.ConvolutionMode mode)
         {
-            ConvolutionDescription.Set2D(0, 0, 1, 1, 1, 1, mode);
+            ConvolutionDescription.Set2D(0, 0, 1, 1, 1, 1, (Alea.cuDNN.ConvolutionMode)mode);
             FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, OutputInfo.Channels, KernelInfo.Channels, KernelInfo.Height, KernelInfo.Width);
             BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, OutputInfo.Channels, 1, 1);
         }
@@ -60,14 +60,14 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         public CuDnnConvolutionalLayer(
             TensorInfo input, (int X, int Y) kernelSize, int kernels,
-            ActivationFunctionType activation, ConvolutionMode mode, BiasInitializationMode biasMode)
+            ActivationFunctionType activation, APIs.Enums.ConvolutionMode mode, BiasInitializationMode biasMode)
             : base(input, kernelSize, kernels, activation, biasMode)
             => SetupCuDnnInfo(mode);
 
         public CuDnnConvolutionalLayer(
             TensorInfo input, TensorInfo kernels, TensorInfo output,
             [NotNull] float[,] weights, [NotNull] float[] biases,
-            ActivationFunctionType activation, ConvolutionMode mode)
+            ActivationFunctionType activation, APIs.Enums.ConvolutionMode mode)
             : base(input, kernels, output, weights, biases, activation)
             => SetupCuDnnInfo(mode);
 

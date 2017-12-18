@@ -3,7 +3,6 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Alea.cuDNN;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
@@ -24,11 +23,11 @@ namespace DigitsCudaTest
             // Parse the dataset and create the network
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
-                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.LeakyReLU, ConvolutionMode.CONVOLUTION, BiasInitializationMode.Zero),
-                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.Identity, ConvolutionMode.CONVOLUTION, BiasInitializationMode.Zero),
+                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.Identity),
                 t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
-                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.LeakyReLU, ConvolutionMode.CONVOLUTION, BiasInitializationMode.Zero),
-                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity, ConvolutionMode.CONVOLUTION, BiasInitializationMode.Zero),
+                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity),
                 t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
                 t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Zero),
                 t => CuDnnNetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Zero),

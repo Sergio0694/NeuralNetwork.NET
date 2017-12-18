@@ -1,5 +1,4 @@
-﻿using Alea.cuDNN;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Cuda.Layers;
@@ -178,7 +177,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(127, 58 * 58 * 3);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), (5, 5), 20, ActivationFunctionType.LeakyReLU, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType, ConvolutionMode.CONVOLUTION);
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType, ConvolutionMode.Convolution);
             TestForward(cpu, gpu, x);
         }
 
@@ -190,7 +189,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(127, 58 * 58 * 3);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), (5, 5), 20, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh, ConvolutionMode.CONVOLUTION);
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh, ConvolutionMode.Convolution);
             fixed (float* pz = z)
             {
                 Tensor.Fix(pz, z.GetLength(0), z.GetLength(1), out Tensor zTensor);
@@ -209,7 +208,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta = ThreadSafeRandom.NextGlorotNormalMatrix(127, 54 * 54 * 20);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), (5, 5), 20, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh, ConvolutionMode.CONVOLUTION);
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh, ConvolutionMode.Convolution);
             fixed (float* px = x)
             {
                 Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
