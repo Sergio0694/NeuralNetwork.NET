@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation)
             : base(input, TensorInfo.CreateLinear(neurons),
-                  WeightsProvider.FullyConnectedWeights(input.Channels, neurons),
+                  WeightsProvider.FullyConnectedWeights(input.Size, neurons),
                   WeightsProvider.Biases(neurons), activation)
         { }
 
