@@ -34,14 +34,25 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            Blas.MultiplyWithSum(x, Weights, Biases, out z);
-            SoftmaxInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, Outputs, 1, 1);
-            using (DeviceMemory<float>
-                z_gpu = DnnInstance.Gpu.AllocateDevice(z),
-                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
+            using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * Outputs))
             {
-                DnnInstance.SoftmaxForward(SoftmaxAlgorithm.FAST, SoftmaxMode.INSTANCE, 1, SoftmaxInfo, z_gpu.Ptr, 0, SoftmaxInfo, y_gpu.Ptr);
-                y_gpu.CopyToHost(x.Entities, Outputs, out a);
+                // Linear pass
+                using (DeviceMemory2D<float>
+                    x_gpu = DnnInstance.Gpu.AllocateDevice2D(x),
+                    w_gpu = DnnInstance.Gpu.AllocateDevice(Weights))
+                using (DeviceMemory<float> b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
+                {
+                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, Outputs, x_gpu.Ptr, x_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), b_gpu.Ptr, z_gpu.Ptr, Outputs);
+                    z_gpu.CopyToHost(x.Entities, Outputs, out z);
+                }
+
+                // Activation
+                SoftmaxInfo.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, Outputs, 1, 1);
+                using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
+                {
+                    DnnInstance.SoftmaxForward(SoftmaxAlgorithm.FAST, SoftmaxMode.INSTANCE, 1, SoftmaxInfo, z_gpu.Ptr, 0, SoftmaxInfo, y_gpu.Ptr);
+                    y_gpu.CopyToHost(x.Entities, Outputs, out a);
+                }
             }
         }
     }

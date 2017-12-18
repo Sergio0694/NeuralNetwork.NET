@@ -11,6 +11,8 @@ namespace NeuralNetworkNET.Cuda.Extensions
     /// </summary>
     internal static class DnnExtensions
     {
+        #region Activation
+
         /// <summary>
         /// Executes the input activation function on the target memory area. The input and output pointers can be the same, if needed
         /// </summary>
@@ -61,6 +63,10 @@ namespace NeuralNetworkNET.Cuda.Extensions
             }
             dnn.Gpu.For(0, n, Kernel);
         }
+
+        #endregion
+
+        #region Fully connected
 
         /// <summary>
         /// Executes the forward pass on a fully connected layer
@@ -136,5 +142,7 @@ namespace NeuralNetworkNET.Cuda.Extensions
             }
             dnn.Gpu.For(0, n * k, Kernel);
         }
+
+        #endregion
     }
 }
