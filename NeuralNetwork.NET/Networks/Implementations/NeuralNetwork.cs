@@ -30,12 +30,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Inputs), Required = Required.Always, Order = 1)]
-        public int Inputs { get; }
+        [JsonProperty(nameof(InputInfo), Required = Required.Always, Order = 1)]
+        public TensorInfo InputInfo => Layers[0].InputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Outputs), Required = Required.Always, Order = 2)]
-        public int Outputs { get; }
+        [JsonProperty(nameof(OutputInfo), Required = Required.Always, Order = 2)]
+        public TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
         public IReadOnlyList<INetworkLayer> Layers => _Layers;
@@ -64,15 +64,14 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
                 if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
-                if (i > 0 && layers[i - 1].Outputs != layer.Inputs) throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
+                if (i > 0 && layers[i - 1].OutputInfo.Size != layer.InputInfo.Size)
+                    throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
                 if (i > 0 && layer is PoolingLayer && 
                     layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationFunctionType != ActivationFunctionType.Identity)
                     throw new ArgumentException("A convolutional layer followed by a pooling layer must use the Identity activation function");
             }
 
             // Parameters setup
-            Inputs = layers[0].Inputs;
-            Outputs = layers[layers.Length - 1].Outputs;
             _Layers = layers.Cast<NetworkLayerBase>().ToArray();
             WeightedLayersIndexes = layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i)).Where(t => t.Layer != null).Select(t => t.Index).ToArray();
         }
@@ -403,8 +402,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             // Compare general features
             if (other is NeuralNetwork network &&
-                other.Inputs == Inputs &&
-                other.Outputs == Outputs &&
+                other.InputInfo == InputInfo &&
+                other.OutputInfo == OutputInfo &&
                 _Layers.Length == network._Layers.Length)
             {
                 // Compare the individual layers
@@ -424,8 +423,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     stream.WriteByte((byte)layer.LayerType);
                     stream.WriteByte((byte)layer.ActivationFunctionType);
-                    stream.Write(layer.Inputs);
-                    stream.Write(layer.Outputs);
+                    stream.Write(layer.InputInfo.Size);
+                    stream.Write(layer.OutputInfo.Size);
                     if (layer is PoolingLayer pooling)
                     {
                         stream.Write(pooling.InputInfo.Height);

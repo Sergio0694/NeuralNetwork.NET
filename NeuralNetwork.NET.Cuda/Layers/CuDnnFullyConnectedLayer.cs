@@ -8,6 +8,8 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Structs;
+using NeuralNetworkNET.APIs.Misc;
+
 namespace NeuralNetworkNET.Cuda.Layers
 {
     internal class CuDnnFullyConnectedLayer : FullyConnectedLayer
@@ -18,8 +20,8 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly Dnn DnnInstance = DnnService.Instance;
 
-        public CuDnnFullyConnectedLayer(int inputs, int outputs, ActivationFunctionType activation) 
-            : base(inputs, outputs, activation) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation) 
+            : base(input, outputs, activation) { }
 
         public CuDnnFullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
             : base(weights, biases, activation) { }
@@ -30,10 +32,10 @@ namespace NeuralNetworkNET.Cuda.Layers
             using (DeviceMemory2D<float>
                 x_gpu = DnnInstance.Gpu.AllocateDevice2D(x),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities, Outputs))
+                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities, OutputInfo.Size))
             using (DeviceMemory<float> b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
             {
-                DnnInstance.FullyConnectedForward(x.Entities, x.Length, Outputs, x_gpu.Ptr, x_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), b_gpu.Ptr, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32());
+                DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, x_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), b_gpu.Ptr, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32());
                 y_gpu.CopyToHost(out z);
                 DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, y_gpu.PitchInElements.ToInt32(), y_gpu.Ptr, y_gpu.PitchInElements.ToInt32(), ActivationFunctions.Activation);
                 y_gpu.CopyToHost(out a);
@@ -48,7 +50,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
                 z_gpu = DnnInstance.Gpu.AllocateDevice2D(z))
             {
-                DnnInstance.FullyConnectedBackwardData(z.Entities, Inputs, Outputs, z_gpu.Ptr, z_gpu.PitchInElements.ToInt32(), delta_1_gpu.Ptr, delta_1_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), activationPrime);
+                DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, z_gpu.PitchInElements.ToInt32(), delta_1_gpu.Ptr, delta_1_gpu.PitchInElements.ToInt32(), w_gpu.Ptr, w_gpu.PitchInElements.ToInt32(), activationPrime);
                 z_gpu.CopyTo(z);
             }
         }

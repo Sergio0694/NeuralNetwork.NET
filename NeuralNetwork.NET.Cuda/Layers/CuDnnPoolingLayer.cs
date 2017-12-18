@@ -52,13 +52,13 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             using (DeviceMemory<float>
                 x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * Outputs))
+                z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
             {
                 // Pooling
                 InputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                 OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputInfo.Channels, OutputInfo.Height, OutputInfo.Width);
                 DnnInstance.PoolingForward(PoolingDescription, 1, InputDescription, x_gpu.Ptr, 0, OutputDescription, z_gpu.Ptr);
-                z_gpu.CopyToHost(x.Entities, Outputs, out z);
+                z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
 
                 // Activation
                 DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z.Length, z_gpu.Ptr, z.Length, ActivationFunctions.Activation);

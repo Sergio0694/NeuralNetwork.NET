@@ -15,57 +15,41 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
     /// A convolutional layer, used in a CNN network
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal class ConvolutionalLayer : WeightedLayerBase, INetworkLayer3D
+    internal class ConvolutionalLayer : WeightedLayerBase
     {
         #region Parameters
 
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Convolutional;
 
-        /// <inheritdoc/>
-        public override int Inputs => InputInfo.Size;
-
-        /// <inheritdoc/>
-        public override int Outputs => OutputInfo.Size;
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Order = 4)]
-        public TensorInfo InputInfo { get; }
-
         /// <summary>
         /// Gets the <see cref="TensorInfo"/> associated with each kernel in the layer
         /// </summary>
-        [JsonProperty(nameof(KernelInfo), Order = 5)]
+        [JsonProperty(nameof(KernelInfo), Order = 4)]
         public TensorInfo KernelInfo { get; }
 
         /// <summary>
         /// Gets the number of kernels in the current layer
         /// </summary>
-        [JsonProperty(nameof(Kernels), Order = 6)]
+        [JsonProperty(nameof(Kernels), Order = 5)]
         public int Kernels => Weights.GetLength(0);
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(OutputInfo), Order = 7)]
-        public TensorInfo OutputInfo { get; }
 
         #endregion
 
-        public ConvolutionalLayer(TensorInfo input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
-            : base(WeightsProvider.ConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
+        public ConvolutionalLayer(in TensorInfo input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
+            : base(input, new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels),
+                  WeightsProvider.ConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.Biases(kernels), activation)
         {
-            InputInfo = input;
             KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
-            OutputInfo = new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels);
         }
 
-        public ConvolutionalLayer(TensorInfo input, TensorInfo kernels, TensorInfo output,
+        public ConvolutionalLayer(
+            in TensorInfo input, in TensorInfo kernels, in TensorInfo output,
             [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
-            : base(weights, biases, activation)
+            : base(input, output, weights, biases, activation)
         {
-            InputInfo = input;
             KernelInfo = kernels;
-            OutputInfo = output;
         }
 
         /// <inheritdoc/>

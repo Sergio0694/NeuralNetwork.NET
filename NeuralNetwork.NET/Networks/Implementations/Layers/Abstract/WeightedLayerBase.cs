@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Structs;
@@ -27,7 +28,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         [JsonProperty(nameof(Biases), Required = Required.Always, Order = 11)]
         public float[] Biases { get; }
 
-        protected WeightedLayerBase([NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) : base(activation)
+        protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) 
+            : base(input, output, activation)
         {
             Weights = w;
             Biases = b;

@@ -29,8 +29,8 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.Pooling(new TensorInfo(24, 24, 20), ActivationFunctionType.ReLU),
                 NetworkLayers.Convolutional(new TensorInfo(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
                 NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid), 
-                NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(160), 8, ActivationFunctionType.Sigmoid), 
+                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(8), 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String json = network.SerializeAsJson();
             INeuralNetwork copy = NeuralNetworkLoader.TryLoadJson(json);
             Assert.IsTrue(copy != null);
@@ -82,8 +82,8 @@ namespace NeuralNetworkNET.Unit
         public void BinarySerialize1()
         {
             INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.FullyConnected(784, 30, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(30, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(784), 30, ActivationFunctionType.Sigmoid),
+                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(30), 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             network.Save(new DirectoryInfo(folderPath), "test1");
             INeuralNetwork copy = NeuralNetworkLoader.TryLoad($"{Path.Combine(folderPath, "test1")}.nnet");
@@ -99,8 +99,8 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.Pooling(new TensorInfo(24, 24, 20), ActivationFunctionType.ReLU),
                 NetworkLayers.Convolutional(new TensorInfo(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
                 NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(160, 8, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(8, 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(160), 8, ActivationFunctionType.Sigmoid),
+                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(8), 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             String folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             network.Save(new DirectoryInfo(folderPath), "test2");
             INeuralNetwork copy = NeuralNetworkLoader.TryLoad($"{Path.Combine(folderPath, "test2")}.nnet");

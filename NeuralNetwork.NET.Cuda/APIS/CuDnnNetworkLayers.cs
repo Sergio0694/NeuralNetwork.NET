@@ -15,21 +15,21 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new fully connected layer with the specified number of input and output neurons, and the given activation function
         /// </summary>
-        /// <param name="inputs">The number of input neurons</param>
-        /// <param name="outputs">The number of output neurons</param>
+        /// <param name="input">The input <see cref="TensorInfo"/> descriptor</param>
+        /// <param name="neurons">The number of output neurons</param>
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer FullyConnected(int inputs, int outputs, ActivationFunctionType activation) => new CuDnnFullyConnectedLayer(inputs, outputs, activation);
+        public static INetworkLayer FullyConnected(in TensorInfo input, int neurons, ActivationFunctionType activation) => new CuDnnFullyConnectedLayer(input, neurons, activation);
 
         /// <summary>
         /// Creates a fully connected softmax output layer (used for classification problems with mutually-exclusive classes)
         /// </summary>
-        /// <param name="inputs">The number of input neurons</param>
+        /// <param name="input">The input <see cref="TensorInfo"/> descriptor</param>
         /// <param name="outputs">The number of output neurons</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Softmax(int inputs, int outputs) => new CuDnnSoftmaxLayer(inputs, outputs);
+        public static INetworkLayer Softmax(in TensorInfo input, int outputs) => new CuDnnSoftmaxLayer(input, outputs);
 
         /// <summary>
         /// Creates a convolutional layer with the desired number of kernels
