@@ -1,4 +1,5 @@
 ﻿using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using System;
 
 namespace NeuralNetworkNET.APIs.Interfaces

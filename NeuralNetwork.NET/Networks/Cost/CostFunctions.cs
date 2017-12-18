@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Networks.Cost
 {

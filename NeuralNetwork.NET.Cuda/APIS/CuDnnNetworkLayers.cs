@@ -1,7 +1,7 @@
 ﻿using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Networks.Activations;
 

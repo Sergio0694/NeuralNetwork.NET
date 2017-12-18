@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace NeuralNetworkNET.APIs.Misc
+namespace NeuralNetworkNET.APIs.Structs
 {
     /// <summary>
     /// A <see cref="struct"/> that contains info on the size of a given tensor

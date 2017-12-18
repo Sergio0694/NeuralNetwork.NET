@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Misc;
-using NeuralNetworkNET.Structs;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Extensions
 {

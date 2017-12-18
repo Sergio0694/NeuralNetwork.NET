@@ -1,4 +1,4 @@
-﻿using NeuralNetworkNET.Structs;
+﻿using NeuralNetworkNET.APIs.Structs;
 using System;
 using System.Threading.Tasks;
 

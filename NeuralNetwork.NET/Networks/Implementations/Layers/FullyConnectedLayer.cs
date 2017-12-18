@@ -1,12 +1,12 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
-using NeuralNetworkNET.Structs;
 using System;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
@@ -22,8 +22,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation)
             : base(input, TensorInfo.CreateLinear(neurons),
                   WeightsProvider.FullyConnectedWeights(input.Size, neurons),
-                  WeightsProvider.Biases(neurons), activation)
-        { }
+                  WeightsProvider.Biases(neurons), activation) { }
 
         public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(TensorInfo.CreateLinear(weights.GetLength(0)), TensorInfo.CreateLinear(weights.GetLength(1)), weights, biases, activation)

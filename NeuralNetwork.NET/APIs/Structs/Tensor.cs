@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NeuralNetworkNET.Extensions;
 
-namespace NeuralNetworkNET.Structs
+namespace NeuralNetworkNET.APIs.Structs
 {
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
@@ -179,20 +179,6 @@ namespace NeuralNetworkNET.Structs
             int size = sizeof(float) * Size;
             fixed (float* presult = result)
                 Buffer.MemoryCopy(this, presult, size, size);
-            return result;
-        }
-
-        /// <summary>
-        /// Returns a list of matrices of the given length, starting aat the input location
-        /// </summary>
-        /// <param name="p">A pointer to the first <see cref="Tensor"/> to convert to a managed array</param>
-        /// <param name="length">The total number of matrices to process</param>
-        [Pure, NotNull]
-        public static unsafe IReadOnlyList<float[,]> ToArraysList(Tensor* p, int length)
-        {
-            float[][,] result = new float[length][,];
-            for (int i = 0; i < length; i++)
-                result[i] = p[i].ToArray2D();
             return result;
         }
 

@@ -1,4 +1,4 @@
-﻿using NeuralNetworkNET.Structs;
+﻿using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Networks.Cost.Delegates
 {

@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Extensions
 {

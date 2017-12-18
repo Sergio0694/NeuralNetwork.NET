@@ -1,10 +1,10 @@
 ﻿using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
@@ -22,8 +22,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             : base(input, new TensorInfo(
                 input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
                 input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1),
-                input.Channels), activation)
-        { }
+                input.Channels), activation) { }
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)

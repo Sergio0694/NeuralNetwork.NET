@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers.Imaging;
 
 namespace NeuralNetworkNET.APIs.Interfaces

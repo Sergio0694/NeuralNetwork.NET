@@ -7,8 +7,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.Structs;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {

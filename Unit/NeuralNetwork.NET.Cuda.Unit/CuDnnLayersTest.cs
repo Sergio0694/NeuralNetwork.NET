@@ -1,13 +1,12 @@
 ﻿using Alea.cuDNN;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {

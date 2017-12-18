@@ -1,11 +1,11 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -18,8 +18,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override LayerType LayerType { get; } = LayerType.Softmax;
 
         public SoftmaxLayer(in TensorInfo input, int outputs)
-            : base(input, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood)
-        { }
+            : base(input, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood) { }
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)

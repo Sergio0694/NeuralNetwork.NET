@@ -2,13 +2,12 @@
 using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.Cuda.Services;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.Structs;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {

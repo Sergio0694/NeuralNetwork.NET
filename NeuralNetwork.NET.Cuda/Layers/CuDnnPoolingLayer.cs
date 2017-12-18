@@ -1,16 +1,15 @@
 ﻿using Alea;
 using Alea.cuDNN;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
-using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Structs;
 using Newtonsoft.Json;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Cuda.Services;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {

@@ -1,7 +1,7 @@
 ﻿using System;
 using Alea;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Structs;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Cuda.Extensions
 {

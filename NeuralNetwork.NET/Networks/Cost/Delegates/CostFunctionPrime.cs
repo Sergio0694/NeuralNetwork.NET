@@ -1,5 +1,5 @@
-﻿using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Structs;
+﻿using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Networks.Cost.Delegates
 {

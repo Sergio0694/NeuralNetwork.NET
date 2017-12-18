@@ -2,10 +2,10 @@
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.DependencyInjections;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Structs;
 using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
