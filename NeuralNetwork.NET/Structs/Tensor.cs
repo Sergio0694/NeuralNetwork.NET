@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -10,6 +11,7 @@ namespace NeuralNetworkNET.Structs
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged 2D memory area that has been allocated
     /// </summary>
+    [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("Entities: {Entities}, Length: {Length}, Ptr: {Ptr}")]
     public readonly struct Tensor
     {
@@ -206,15 +208,17 @@ namespace NeuralNetworkNET.Structs
         /// <summary>
         /// A proxy type to debug instances of the <see cref="FloatSpan2D"/> struct
         /// </summary>
-        private struct _FloatSpan2DProxy
+        private struct _TensorProxy
         {
             /// <summary>
             /// Gets a preview of the underlying memory area wrapped by this instance
             /// </summary>
             [NotNull]
+            [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
             public IEnumerable<float[]> RowsPreview { get; }
 
-            public unsafe _FloatSpan2DProxy(Tensor obj)
+            [SuppressMessage("ReSharper", "UnusedMember.Local")]
+            public unsafe _TensorProxy(Tensor obj)
             {
                 IEnumerable<float[]> ExtractRows()
                 {
