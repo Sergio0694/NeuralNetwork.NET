@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             a.Rotate180(InputInfo.Channels, out Tensor a180);
             a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out dJdw);
             a180.Free();
-            delta.CompressVertically(out dJdb);
+            delta.CompressVertically(OutputInfo.Channels, out dJdb);
         }
 
         /// <inheritdoc/>

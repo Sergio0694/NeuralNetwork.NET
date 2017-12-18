@@ -297,6 +297,9 @@ namespace NeuralNetworkNET.Extensions
                 }
             }
             Parallel.For(0, h * iterationsPerSample, GradientKernel).AssertCompleted();
+
+            // TODO: correct gradient implementation
+            throw new NotImplementedException("The CPU gradient convolution isn't implemented correctly yet");
         }
 
         #region Tools

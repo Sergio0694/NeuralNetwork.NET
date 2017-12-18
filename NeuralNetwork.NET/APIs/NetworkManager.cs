@@ -28,24 +28,17 @@ namespace NeuralNetworkNET.APIs
         public static INeuralNetwork NewNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers) => new NeuralNetwork(layers);
 
         /// <summary>
-        /// A <see cref="delegate"/> that wraps a method that takes an input <see cref="TensorInfo"/> descriptor and creates a new <see cref="INetworkLayer"/>
-        /// </summary>
-        /// <param name="input">The input description for the new layer to create</param>
-        [NotNull]
-        public delegate INetworkLayer LayerFactory(TensorInfo input);
-
-        /// <summary>
         /// Creates a new network with the specified parameters
         /// </summary>
         /// <param name="input">The input <see cref="TensorInfo"/> description</param>
         /// <param name="factories">A list of factories to create the different layers in the new network</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INeuralNetwork NewNetwork(TensorInfo input, [NotNull, ItemNotNull] params LayerFactory[] factories)
+        public static INeuralNetwork NewNetwork(TensorInfo input, [NotNull, ItemNotNull] params Func<TensorInfo, INetworkLayer>[] factories)
         {
             IEnumerable<INetworkLayer> BuildLayers()
             {
-                foreach (LayerFactory f in factories)
+                foreach (Func<TensorInfo, INetworkLayer> f in factories)
                 {
                     INetworkLayer layer = f(input);
                     yield return layer;
