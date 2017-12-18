@@ -21,16 +21,16 @@ namespace DigitsCudaTest
         {
             // Parse the dataset and create the network
             (var training, var test) = DataParser.LoadDatasets();
-            INeuralNetwork network = NetworkManager.NewNetwork(
-                CuDnnNetworkLayers.Convolutional(new TensorInfo(28, 28, 1), (5, 5), 20, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional(new TensorInfo(24, 24, 20), (5, 5), 20, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling(new TensorInfo(20, 20, 20), ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional(new TensorInfo(10, 10, 20), (3, 3), 40, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional(new TensorInfo(8, 8, 40), (3, 3), 40, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling(new TensorInfo(6, 6, 40), ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.FullyConnected(3 * 3 * 40, 125, ActivationFunctionType.LeCunTanh),
-                CuDnnNetworkLayers.FullyConnected(125, 64, ActivationFunctionType.LeCunTanh),
-                CuDnnNetworkLayers.Softmax(64, 10));
+            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
+                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.Identity),
+                t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity),
+                t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeCunTanh),
+                t => CuDnnNetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeCunTanh),
+                t => CuDnnNetworkLayers.Softmax(t, 10));
 
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();

@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.APIs.Misc
             get => Height * Width;
         }
 
-        public TensorInfo(int height, int width, int channels)
+        internal TensorInfo(int height, int width, int channels)
         {
             if (height * width <= 0) throw new ArgumentException("The height and width of the kernels must be positive values");
             if (channels < 1) throw new ArgumentOutOfRangeException(nameof(channels), "The number of channels must be at least equal to 1");
