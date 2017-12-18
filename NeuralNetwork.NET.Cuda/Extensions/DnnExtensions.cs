@@ -53,7 +53,7 @@ namespace NeuralNetworkNET.Cuda.Extensions
                 for (int j = 0; j < w; j++)
                 {
                     int target = offset + j;
-                    z[target] = f(z[target]) * delta[target + j];
+                    z[target] = f(z[target]) * delta[target];
                 }
             }
             dnn.Gpu.For(0, n, Kernel);

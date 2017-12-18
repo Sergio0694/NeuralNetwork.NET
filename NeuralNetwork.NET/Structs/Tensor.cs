@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Structs
 {
@@ -215,7 +216,12 @@ namespace NeuralNetworkNET.Structs
             /// </summary>
             [NotNull]
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
+            [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
             public IEnumerable<float[]> RowsPreview { get; }
+
+            private const int MaximumRowsCount = 10;
+
+            private const int MaximumItemsCount = 50000;
 
             [SuppressMessage("ReSharper", "UnusedMember.Local")]
             public unsafe _TensorProxy(Tensor obj)
@@ -233,7 +239,9 @@ namespace NeuralNetworkNET.Structs
                     }
 
                     // Spawn the sequence
-                    int up = obj.Entities > 10 ? 10 : obj.Entities;
+                    int up;
+                    if (obj.Size <= MaximumItemsCount) up = MaximumRowsCount.Min(obj.Entities);
+                    else up = MaximumItemsCount / obj.Length;
                     for (int i = 0; i < up; i++)
                         yield return ExtractRow(i);
                 }
