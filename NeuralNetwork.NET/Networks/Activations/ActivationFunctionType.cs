@@ -36,6 +36,12 @@
         LeakyReLU,
 
         /// <summary>
+        /// The absolute linear rectified function, |x|
+        /// </summary>
+        /// <remarks>It can perform well with images when the dataset contains samples with different brightness levels</remarks>
+        AbsoluteReLU,
+
+        /// <summary>
         /// The softmax function, e^x/sum{k}(e^x(k))
         /// </summary>
         Softmax,
