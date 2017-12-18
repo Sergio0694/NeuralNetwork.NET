@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wSpan);
+                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
                 {
                     // Tensors info setup
@@ -88,7 +88,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, FilterDescription, ConvolutionDescription, OutputDescription, algorithm, out IntPtr size);
                     using (DeviceMemory<float>
                         x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                        w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan))
+                        w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
                         DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, FilterDescription, w_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, OutputDescription, z_gpu.Ptr);
@@ -117,7 +117,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wSpan);
+                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
                 DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
                 DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, algorithm, out IntPtr size);
                 using (DeviceMemory<float> delta_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
@@ -125,7 +125,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     // Backwards convolution
                     using (DeviceMemory<float>
                         delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
-                        w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan))
+                        w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
                         DnnInstance.ConvolutionBackwardData(1, FilterDescription, w_gpu.Ptr, OutputDescription, delta_1_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, InputDescription, delta_gpu.Ptr);

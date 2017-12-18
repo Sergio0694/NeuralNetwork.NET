@@ -83,10 +83,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xSpan);
-                Forward(xSpan, out Tensor yHatSpan);
-                float[] yHat = yHatSpan.ToArray();
-                yHatSpan.Free();
+                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Forward(xTensor, out Tensor yHatTensor);
+                float[] yHat = yHatTensor.ToArray();
+                yHatTensor.Free();
                 return yHat;
             }
         }
@@ -96,9 +96,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xSpan);
-                Tensor.Fix(py, 1, y.Length, out Tensor ySpan);
-                return CalculateCost(xSpan, ySpan);
+                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Fix(py, 1, y.Length, out Tensor yTensor);
+                return CalculateCost(xTensor, yTensor);
             }
         }
 
@@ -107,13 +107,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xSpan);
+                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
                 {
-                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                    _Layers[i].Forward(i == 0 ? xTensor : aList[i - 1], out zList[i], out aList[i]);
                 }
                 (float[], float[])[] features = new(float[], float[])[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
@@ -131,10 +131,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xSpan);
-                Forward(xSpan, out Tensor yHatSpan);
-                float[,] yHat = yHatSpan.ToArray2D();
-                yHatSpan.Free();
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Forward(xTensor, out Tensor yHatTensor);
+                float[,] yHat = yHatTensor.ToArray2D();
+                yHatTensor.Free();
                 return yHat;
             }
         }
@@ -144,9 +144,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xSpan);
-                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor ySpan);
-                return CalculateCost(xSpan, ySpan);
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
+                return CalculateCost(xTensor, yTensor);
             }
         }
 
@@ -155,13 +155,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xSpan);
+                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
                 {
-                    _Layers[i].Forward(i == 0 ? xSpan : aList[i - 1], out zList[i], out aList[i]);
+                    _Layers[i].Forward(i == 0 ? xTensor : aList[i - 1], out zList[i], out aList[i]);
                 }
                 (float[,], float[,])[] features = new(float[,], float[,])[_Layers.Length];
                 for (int i = 0; i < _Layers.Length; i++)
@@ -344,9 +344,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the even batches
                 for (int i = 0; i < batches; i++)
                 {
-                    Tensor.Fix(px + i * batchSize * wx, batchSize, wx, out Tensor xSpan);
-                    Tensor.Fix(py + i * batchSize * wy, batchSize, wy, out Tensor ySpan);
-                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    Tensor.Fix(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
+                    Tensor.Fix(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
+                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
                 }
@@ -354,9 +354,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the remaining samples, if any
                 if (batchMod > 0)
                 {
-                    Tensor.Fix(px + batches * batchSize * wx, batchMod, wx, out Tensor xSpan);
-                    Tensor.Fix(py + batches * batchSize * wy, batchMod, wy, out Tensor ySpan);
-                    (float pCost, int pClassified) = Evaluate(xSpan, ySpan);
+                    Tensor.Fix(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
+                    Tensor.Fix(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
+                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
                 }
@@ -380,9 +380,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 ref readonly TrainingBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
-                    Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xSpan);
-                    Tensor.Fix(py, xSpan.Entities, batch.Y.GetLength(1), out Tensor ySpan);
-                    var partial = Evaluate(xSpan, ySpan);
+                    Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
+                    Tensor.Fix(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
+                    var partial = Evaluate(xTensor, yTensor);
                     cost += partial.Cost;
                     classified += partial.Classified;
                 }

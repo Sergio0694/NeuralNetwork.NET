@@ -31,10 +31,10 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wSpan);
+                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float>
                     x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan),
+                    w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
                     y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size),
                     b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
                 {
@@ -51,10 +51,10 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wSpan);
+                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float>
                     delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice(wSpan),
+                    w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
                     z_gpu = DnnInstance.Gpu.AllocateDevice(z))
                 {
                     DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, delta_1_gpu.Ptr, w_gpu.Ptr, activationPrime);

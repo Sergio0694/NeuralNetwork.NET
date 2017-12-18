@@ -9,7 +9,7 @@ using NeuralNetworkNET.SupervisedLearning.Data;
 namespace NeuralNetworkNET.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="SupervisedLearning.NetworkTrainer"/> class and dependencies
+    /// Test class for the <see cref="Networks.Implementations.NetworkTrainer"/> class and dependencies
     /// </summary>
     [TestClass]
     [TestCategory(nameof(TrainingTest))]

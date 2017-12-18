@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace NeuralNetworkNET.Structs
 {
     /// <summary>
-    /// A readonly struct that holds the info on an unmanaged 2D memory area that has been allocated
+    /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("Entities: {Entities}, Length: {Length}, Ptr: {Ptr}")]
@@ -203,10 +203,10 @@ namespace NeuralNetworkNET.Structs
 
         // Implicit pointer conversion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe implicit operator float*(in Tensor span) => (float*)span.Ptr.ToPointer();
+        public static unsafe implicit operator float*(in Tensor tensor) => (float*)tensor.Ptr.ToPointer();
 
         /// <summary>
-        /// A proxy type to debug instances of the <see cref="FloatSpan2D"/> struct
+        /// A proxy type to debug instances of the <see cref="Tensor"/> <see cref="struct"/>
         /// </summary>
         private struct _TensorProxy
         {
