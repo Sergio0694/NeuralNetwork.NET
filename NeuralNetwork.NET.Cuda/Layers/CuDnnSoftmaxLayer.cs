@@ -5,6 +5,7 @@ using NeuralNetworkNET.Cuda.Services;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.APIs.Enums;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {
@@ -27,7 +28,7 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
-        public CuDnnSoftmaxLayer(in TensorInfo input, int outputs) : base(input, outputs) { }
+        public CuDnnSoftmaxLayer(in TensorInfo input, int outputs, BiasInitializationMode biasMode) : base(input, outputs, biasMode) { }
 
         public CuDnnSoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases) : base(weights, biases) { }
 

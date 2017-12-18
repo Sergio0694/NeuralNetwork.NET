@@ -8,6 +8,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.APIs.Enums;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {
@@ -59,8 +60,8 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         public CuDnnConvolutionalLayer(
             TensorInfo input, (int X, int Y) kernelSize, int kernels,
-            ActivationFunctionType activation, ConvolutionMode mode)
-            : base(input, kernelSize, kernels, activation)
+            ActivationFunctionType activation, ConvolutionMode mode, BiasInitializationMode biasMode)
+            : base(input, kernelSize, kernels, activation, biasMode)
             => SetupCuDnnInfo(mode);
 
         public CuDnnConvolutionalLayer(

@@ -8,6 +8,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.APIs.Enums;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {
@@ -19,8 +20,8 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly Dnn DnnInstance = DnnService.Instance;
 
-        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation) 
-            : base(input, outputs, activation) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation, BiasInitializationMode biasMode) 
+            : base(input, outputs, activation, biasMode) { }
 
         public CuDnnFullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
             : base(weights, biases, activation) { }

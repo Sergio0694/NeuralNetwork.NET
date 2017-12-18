@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Structs;
@@ -36,10 +37,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         #endregion
 
-        public ConvolutionalLayer(in TensorInfo input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation)
+        public ConvolutionalLayer(in TensorInfo input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation, BiasInitializationMode biasMode)
             : base(input, new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels),
-                  WeightsProvider.ConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
-                  WeightsProvider.Biases(kernels), activation)
+                  WeightsProvider.NewConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
+                  WeightsProvider.NewBiases(kernels, biasMode), activation)
         {
             KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
         }

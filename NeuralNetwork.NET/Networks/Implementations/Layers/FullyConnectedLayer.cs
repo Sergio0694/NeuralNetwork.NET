@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Structs;
@@ -19,10 +20,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.FullyConnected;
 
-        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, BiasInitializationMode biasMode)
             : base(input, TensorInfo.CreateLinear(neurons),
-                  WeightsProvider.FullyConnectedWeights(input.Size, neurons),
-                  WeightsProvider.Biases(neurons), activation) { }
+                  WeightsProvider.NewFullyConnectedWeights(input.Size, neurons),
+                  WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
         public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(TensorInfo.CreateLinear(weights.GetLength(0)), TensorInfo.CreateLinear(weights.GetLength(1)), weights, biases, activation)

@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
@@ -29,8 +30,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         #endregion
 
-        protected OutputLayerBase(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost)
-            : base(input, neurons, activation)
+        protected OutputLayerBase(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost, BiasInitializationMode biasMode)
+            : base(input, neurons, activation, biasMode)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
