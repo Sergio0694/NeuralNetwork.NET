@@ -4,7 +4,7 @@
 `NeuralNetwork.NET` is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
 It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network in JSON/binary format and more.
 
-There's also a secondary .NET Framework 4.7 library, `NeuralNetwork.NET.Cuda` that leverages the GPU to greatly increase the performances when training or using a neural network.
+There's also a secondary .NET Framework 4.7.1 library available, `NeuralNetwork.NET.Cuda` that leverages the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
 # Table of Contents
 
@@ -21,25 +21,27 @@ There's also a secondary .NET Framework 4.7 library, `NeuralNetwork.NET.Cuda` th
 Training a neural network is pretty straightforward - just use the methods in the `NetworkManager` class. For example, here's how to create and train a new neural network from scratch:
 
 ```C#
-// A simple network to use with the MNIST dataset
-INeuralNetwork network = NetworkManager.NewNetwork(
-    NetworkLayers.Convolutional((28, 28, 1), (5, 5), 10, ActivationFunctionType.Identity),
-    NetworkLayers.Pooling((24, 24, 10), ActivationFunctionType.Sigmoid),
-    NetworkLayers.FullyConnected(12 * 12 * 10, 100, ActivationFunctionType.Sigmoid),
-    NetworkLayers.Softmax(100, 10));
+// A convolutional neural network to use with the MNIST dataset
+INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
+    t => NetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.Identity),
+    t => NetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
+    t => NetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity),
+    t => NetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
+    t => NetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeakyReLU),
+    t => NetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeakyReLU),
+    t => NetworkLayers.Softmax(t, 10));
     
+// Train the network using Adadelta and 0.5 dropout probability
 TrainingSessionResult result = NetworkManager.TrainNetwork(network, 
-    (training.X, training.Y), // A (float[,], float[,]) tuple with the training samples and labels
+    dataset, // A (float[,], float[,]) tuple with the training samples and labels
     60, // The expected number of training epochs to run
-    10, // The size of each training mini-batch
-    null, // An optional validation dataset for early-stopping
+    100, // The size of each training mini-batch
+    TrainingAlgorithmsInfo.CreateForAdadelta(), // The training algorithm to use
+    0.5f, // Dropout probability
     new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
     {
         Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
-    })), // The test dataset to monitor the progress
-    0.1f, // The learning rate
-    0.5f, // The dropout probability for the fully connected layers
-    0.025f); // The optional L2 regularization parameter
+    }))); // The test dataset to monitor the progress
 ```
 
 **Note:** the `NetworkManager` methods are also available as asynchronous APIs.
@@ -53,11 +55,9 @@ There's also an additional `Save` method to save a neural network to a binary fi
 
 # GPU acceleration
 
-When using the `NeuralNetwork.NET.Cuda` additional library, it is possible to enable and disable the GPU acceleration at any time. To turn it on, just set the static property in the dedicated settings class:
+When using the `NeuralNetwork.NET.Cuda` additional library, it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU.
 
-```C#
-NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
-```
+Just create a network using the layers from the `CuDnnNetworkLayers` class to enable the GPU processing mode.
 
 # Requirements
 
@@ -68,4 +68,4 @@ The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is ava
 
 In addition to the frameworks above, you need an IDE with C# 7.2 support to compile the library on your PC.
 
-The `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.71 and a CUDA enabled GPU.
+The `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.7.1 and a CUDA enabled GPU.
