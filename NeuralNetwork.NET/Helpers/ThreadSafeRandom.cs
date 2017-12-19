@@ -129,7 +129,6 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="x">The height of the matrix</param>
         /// <param name="y">The width of the matrix</param>
         /// <param name="fanIn">The input neurons</param>
-        /// <remarks>LeCun 98, Efficient Backprop, <see cref="http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf"/></remarks>
         [PublicAPI]
         [Pure, NotNull]
         public static float[,] NextLeCunUniformMatrix(int x, int y, int fanIn = 0)
@@ -147,7 +146,6 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="y">The width of the matrix</param>
         /// <param name="fanIn">The input neurons</param>
         /// <param name="fanOut">The output neurons</param>
-        /// <remarks>See Glorot & Bengio, AISTATS 2010</remarks>
         [PublicAPI]
         [Pure, NotNull]
         public static float[,] NextGlorotNormalMatrix(int x, int y, int fanIn = 0, int fanOut = 0)
@@ -167,7 +165,6 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="y">The width of the matrix</param>
         /// <param name="fanIn">The input neurons</param>
         /// <param name="fanOut">The output neurons</param>
-        /// <remarks>See Glorot & Bengio, AISTATS 2010, <see cref="http://github.com/fchollet/keras/blob/998efc04eefa0c14057c1fa87cab71df5b24bf7e/keras/initializations.py"/></remarks>
         [PublicAPI]
         [Pure, NotNull]
         public static float[,] NextGlorotUniformMatrix(int x, int y, int fanIn = 0, int fanOut = 0)
@@ -186,7 +183,6 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="x">The height of the matrix</param>
         /// <param name="y">The width of the matrix</param>
         /// <param name="fanIn">The input neurons</param>
-        /// <remarks>See He et al., <see cref="http://arxiv.org/abs/1502.01852"/></remarks>
         [PublicAPI]
         [Pure, NotNull]
         public static float[,] NextHeEtAlNormalMatrix(int x, int y, int fanIn = 0)
@@ -203,7 +199,6 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="x">The height of the matrix</param>
         /// <param name="y">The width of the matrix</param>
         /// <param name="fanIn">The input neurons</param>
-        /// <remarks>See He et al., <see cref="http://arxiv.org/abs/1502.01852"/></remarks>
         [PublicAPI]
         [Pure, NotNull]
         public static float[,] NextHeEtAlUniformMatrix(int x, int y, int fanIn = 0)

@@ -18,8 +18,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Softmax;
 
-        public SoftmaxLayer(in TensorInfo input, int outputs, BiasInitializationMode biasMode)
-            : base(input, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood, biasMode) { }
+        public SoftmaxLayer(in TensorInfo input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+            : base(input, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood, weightsMode, biasMode) { }
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)

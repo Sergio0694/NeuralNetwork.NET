@@ -20,9 +20,9 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.FullyConnected;
 
-        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, BiasInitializationMode biasMode)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
             : base(input, TensorInfo.CreateLinear(neurons),
-                  WeightsProvider.NewFullyConnectedWeights(input.Size, neurons),
+                  WeightsProvider.NewFullyConnectedWeights(input.Size, neurons, weightsMode),
                   WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
         public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)

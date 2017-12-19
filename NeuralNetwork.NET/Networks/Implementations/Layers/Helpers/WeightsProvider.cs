@@ -15,11 +15,20 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         /// </summary>
         /// <param name="inputs">The input neurons</param>
         /// <param name="outputs">The output neurons</param>
+        /// <param name="mode">The initialization mode for the weights</param>
         [Pure, NotNull]
-        public static float[,] NewFullyConnectedWeights(int inputs, int outputs)
+        public static float[,] NewFullyConnectedWeights(int inputs, int outputs, WeightsInitializationMode mode)
         {
             if (inputs <= 0 || outputs <= 0) throw new ArgumentOutOfRangeException("The inputs and outputs must be positive numbers");
-            return ThreadSafeRandom.NextGlorotUniformMatrix(inputs, outputs);
+            switch (mode)
+            {
+                case WeightsInitializationMode.LeCunUniform: return ThreadSafeRandom.NextLeCunUniformMatrix(inputs, outputs);
+                case WeightsInitializationMode.GlorotNormal: return ThreadSafeRandom.NextGlorotNormalMatrix(inputs, outputs);
+                case WeightsInitializationMode.GlorotUniform: return ThreadSafeRandom.NextGlorotUniformMatrix(inputs, outputs);
+                case WeightsInitializationMode.HeEtAlNormal: return ThreadSafeRandom.NextHeEtAlNormalMatrix(inputs, outputs);
+                case WeightsInitializationMode.HeEtAlUniform: return ThreadSafeRandom.NextHeEtAlUniformMatrix(inputs, outputs);
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported weights initialization mode");
+            }
         }
 
         /// <summary>
@@ -41,7 +50,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         /// Creates a vector of biases for a network layer
         /// </summary>
         /// <param name="length">The length of the vector</param>
-        /// <param name="mode">Indicates the initialization mode for the bias values</param>
+        /// <param name="mode">The initialization mode for the bias values</param>
         [Pure, NotNull]
         public static float[] NewBiases(int length, BiasInitializationMode mode)
         {

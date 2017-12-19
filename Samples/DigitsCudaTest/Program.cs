@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
-using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
@@ -29,8 +28,8 @@ namespace DigitsCudaTest
                 t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.LeakyReLU),
                 t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity),
                 t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
-                t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Zero),
-                t => CuDnnNetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Zero),
+                t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeCunTanh),
+                t => CuDnnNetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeCunTanh),
                 t => CuDnnNetworkLayers.Softmax(t, 10));
 
             // Setup and start the training

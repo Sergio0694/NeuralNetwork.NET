@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             FullyConnectedLayer
-                cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
+                cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnFullyConnectedLayer(cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
             TestForward(cpu, gpu, x);
         }
@@ -86,7 +86,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta_1 = ThreadSafeRandom.NextGlorotNormalMatrix(400, 127),
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             FullyConnectedLayer
-                cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
+                cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnFullyConnectedLayer(cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
             TestBackward(cpu, gpu, delta_1, z);
         }
@@ -98,7 +98,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250),
                 delta = ThreadSafeRandom.NextGlorotNormalMatrix(400, 127);
             FullyConnectedLayer
-                cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
+                cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnFullyConnectedLayer(cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
             TestGradient(cpu, gpu, x, delta);
         }
@@ -112,7 +112,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             SoftmaxLayer
-                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, BiasInitializationMode.Gaussian),
+                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
             TestForward(cpu, gpu, x);
         }
@@ -124,7 +124,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta_1 = ThreadSafeRandom.NextGlorotNormalMatrix(400, 127),
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             SoftmaxLayer
-                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, BiasInitializationMode.Gaussian),
+                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
             TestBackward(cpu, gpu, delta_1, z);
         }
@@ -136,7 +136,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 a = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250),
                 delta = ThreadSafeRandom.NextGlorotNormalMatrix(400, 127);
             SoftmaxLayer
-                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, BiasInitializationMode.Gaussian),
+                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
             TestGradient(cpu, gpu, a, delta);
         }
@@ -150,7 +150,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             for (int i = 0; i < 400; i++)
                 y[i, ThreadSafeRandom.NextInt(max: 127)] = 1;
             SoftmaxLayer
-                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, BiasInitializationMode.Gaussian),
+                cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
             fixed (float* px = x, py = y)
             {

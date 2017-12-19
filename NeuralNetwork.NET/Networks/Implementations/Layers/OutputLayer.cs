@@ -19,8 +19,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Output;
 
-        public OutputLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost, BiasInitializationMode biasMode)
-            : base(input, neurons, activation, cost, biasMode)
+        public OutputLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+            : base(input, neurons, activation, cost, weightsMode, biasMode)
         {
             if (activation == ActivationFunctionType.Softmax || cost == CostFunctionType.LogLikelyhood)
                 throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");

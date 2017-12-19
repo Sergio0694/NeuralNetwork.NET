@@ -20,8 +20,8 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly Dnn DnnInstance = DnnService.Instance;
 
-        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation, BiasInitializationMode biasMode) 
-            : base(input, outputs, activation, biasMode) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
+            : base(input, outputs, activation, weightsMode, biasMode) { }
 
         public CuDnnFullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
             : base(weights, biases, activation) { }
