@@ -1,4 +1,5 @@
 ﻿using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using System;
 
 namespace NeuralNetworkNET.APIs.Interfaces
@@ -14,13 +15,13 @@ namespace NeuralNetworkNET.APIs.Interfaces
         LayerType LayerType { get; }
 
         /// <summary>
-        /// Gets the number of inputs in the current layer
+        /// Gets the info on the layer inputs
         /// </summary>
-        int Inputs { get; }
+        TensorInfo InputInfo { get; }
 
         /// <summary>
-        /// Gets the number of outputs in the current layer
+        /// Gets the info on the layer outputs
         /// </summary>
-        int Outputs { get; }
+        TensorInfo OutputInfo { get; }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers.Imaging;
 
 namespace NeuralNetworkNET.APIs.Interfaces
@@ -16,12 +17,12 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// <summary>
         /// Gets the size of the input layer
         /// </summary>
-        int Inputs { get; }
+        TensorInfo InputInfo { get; }
 
         /// <summary>
         /// Gets the size of the output layer
         /// </summary>
-        int Outputs { get; }
+        TensorInfo OutputInfo { get; }
 
         /// <summary>
         /// Gets the list of layers in the network

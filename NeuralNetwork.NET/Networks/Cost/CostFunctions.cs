@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Networks.Cost
 {
@@ -20,14 +20,14 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="yHat">The current results</param>
         /// <param name="y">The expected results for the dataset</param>
         [Pure]
-        public static unsafe float QuadraticCost(in FloatSpan2D yHat, in FloatSpan2D y)
+        public static unsafe float QuadraticCost(in Tensor yHat, in Tensor y)
         {
             // Detect the size of the inputs
-            int h = yHat.Height, w = yHat.Width;
-            if (h != y.Height || w != y.Width) throw new ArgumentException("The two matrices must have the same size");
+            int h = yHat.Entities, w = yHat.Length;
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculate the cost (half the squared difference)
-            FloatSpan.New(h, out FloatSpan v);
+            Tensor.New(h, 1, out Tensor v);
 
             // Kernel to compute the partial sum
             float* pv = v, pyHat = yHat, py = y;
@@ -60,14 +60,14 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="yHat">The current results</param>
         /// <param name="y">The expected results for the dataset</param>
         [Pure]
-        public static unsafe float CrossEntropyCost(in FloatSpan2D yHat, in FloatSpan2D y)
+        public static unsafe float CrossEntropyCost(in Tensor yHat, in Tensor y)
         {
             // Detect the size of the inputs
-            int h = yHat.Height, w = yHat.Width;
-            if (h != y.Height || w != y.Width) throw new ArgumentException("The two matrices must have the same size");
+            int h = yHat.Entities, w = yHat.Length;
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculates the components for each training sample
-            FloatSpan.New(h, out FloatSpan v);
+            Tensor.New(h, 1, out Tensor v);
 
             // Function to calculate cost for each sample
             float* pyHat = yHat, py = y, pv = v;
@@ -115,14 +115,14 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="yHat">The current results</param>
         /// <param name="y">The expected results for the dataset</param>
         [Pure]
-        public static unsafe float LogLikelyhoodCost(in FloatSpan2D yHat, in FloatSpan2D y)
+        public static unsafe float LogLikelyhoodCost(in Tensor yHat, in Tensor y)
         {
             // Detect the size of the inputs
-            int h = yHat.Height, w = yHat.Width;
-            if (h != y.Height || w != y.Width) throw new ArgumentException("The two matrices must have the same size");
+            int h = yHat.Entities, w = yHat.Length;
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculates the components for each training sample
-            FloatSpan.New(h, out FloatSpan v);
+            Tensor.New(h, 1, out Tensor v);
 
             // Kernel to compute the partial sum
             float* pv = v, pyHat = yHat, py = y;
@@ -153,11 +153,11 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="y">The expected results for the dataset</param>
         /// <param name="z">The activity on the last network layer</param>
         /// <param name="activationPrime">The activation pime function for the last network layer</param>
-        public static unsafe void QuadraticCostPrime(in FloatSpan2D yHat, in FloatSpan2D y, in FloatSpan2D z, ActivationFunction activationPrime)
+        public static unsafe void QuadraticCostPrime(in Tensor yHat, in Tensor y, in Tensor z, ActivationFunction activationPrime)
         {
             // Detect the size of the inputs
-            int h = yHat.Height, w = yHat.Width;
-            if (h != y.Height || w != y.Width) throw new ArgumentException("The two matrices must have the same size");
+            int h = yHat.Entities, w = yHat.Length;
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculate (yHat - y) * activation'(z)
             float* pyHat = yHat, py = y, pz = z;
@@ -185,11 +185,11 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="y">The expected results for the dataset</param>
         /// <param name="z">The activity on the last network layer</param>
         /// <param name="activationPrime">The activation pime function for the last network layer</param>
-        public static void CrossEntropyCostPrime(in FloatSpan2D yHat, in FloatSpan2D y, in FloatSpan2D z, ActivationFunction activationPrime)
+        public static void CrossEntropyCostPrime(in Tensor yHat, in Tensor y, in Tensor z, ActivationFunction activationPrime)
         {
             // Detect the size of the inputs
-            int h = yHat.Height, w = yHat.Width;
-            if (h != y.Height || w != y.Width) throw new ArgumentException("The two matrices must have the same size");
+            int h = yHat.Entities, w = yHat.Length;
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculate (yHat - y)
             yHat.Subtract(y);

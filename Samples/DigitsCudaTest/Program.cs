@@ -7,7 +7,7 @@ using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
-using NeuralNetworkNET.Cuda.APIs;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
@@ -20,22 +20,27 @@ namespace DigitsCudaTest
         static async Task Main()
         {
             // Parse the dataset and create the network
-            NeuralNetworkGpuPreferences.ProcessingMode = ProcessingMode.Gpu;
             (var training, var test) = DataParser.LoadDatasets();
-            INeuralNetwork network = NetworkManager.NewNetwork(
-                NetworkLayers.Convolutional((28, 28, 1), (5, 5), 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling((24, 24, 10), ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(12 * 12 * 10, 100, ActivationFunctionType.Sigmoid),
-                NetworkLayers.Softmax(100, 10));
+            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
+                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.Identity),
+                t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity),
+                t => CuDnnNetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
+                t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeCunTanh),
+                t => CuDnnNetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeCunTanh),
+                t => CuDnnNetworkLayers.Softmax(t, 10));
 
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400, null,
-                new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400,
+                TrainingAlgorithmsInfo.CreateForAdadelta(), 0.5f,
+                testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
-                })), 0.1f, 0.5f, token: cts.Token);
+                })), token: cts.Token);
 
             // Save the training reports
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");

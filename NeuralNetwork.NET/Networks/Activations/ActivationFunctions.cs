@@ -184,6 +184,24 @@ namespace NeuralNetworkNET.Networks.Activations
         public static float ELUPrime(float x) => x >= 0 ? 1 : (float)Math.Exp(x);
 
         /// <summary>
+        /// Applies the absolute ReLU linear unit function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float AbsoluteReLU(float x) => x >= 0 ? x : -x;
+
+        /// <summary>
+        /// Applies the derivative of the <see cref="AbsoluteReLU"/> function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float AbsoluteReLUPrime(float x) => x >= 0 ? 1 : -1;
+
+        /// <summary>
         /// Applies the identity function
         /// </summary>
         /// <param name="x">The input to process</param>

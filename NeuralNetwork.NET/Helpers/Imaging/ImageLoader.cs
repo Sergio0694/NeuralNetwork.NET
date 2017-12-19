@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -131,14 +131,14 @@ namespace NeuralNetworkNET.Helpers.Imaging
         /// <param name="kernelsInfo">The size info for the input kernels</param>
         /// <param name="scaling">The desired image scaling to use</param>
         [PublicAPI]
-        public static unsafe void ExportGrayscaleKernels([NotNull] String directory, [NotNull] float[,] kernels, VolumeInformation kernelsInfo, ImageScaling scaling)
+        public static unsafe void ExportGrayscaleKernels([NotNull] String directory, [NotNull] float[,] kernels, TensorInfo kernelsInfo, ImageScaling scaling)
         {
             // Setup
             Directory.CreateDirectory(directory);
             int
                 h = kernels.GetLength(0),
                 w = kernels.GetLength(1);
-            if (kernelsInfo.Depth != 1) throw new ArgumentException("Only a 2D kernel can be exported as an image with this method");
+            if (kernelsInfo.Channels != 1) throw new ArgumentException("Only a 2D kernel can be exported as an image with this method");
 
             // Export a single kernel matrix (one per weights row)
             void Kernel(int k)

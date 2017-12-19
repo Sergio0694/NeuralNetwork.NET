@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Structs;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -31,11 +31,11 @@ namespace NeuralNetworkNET.Unit
                 r = { 1.1f, 5.1f, 1.1f, -0.9f };
             fixed (float* pm = m, pv = v)
             {
-                FloatSpan2D.Fix(pm, 4, 4, out FloatSpan2D mSpan);
-                FloatSpan2D.Fix(pv, 1, 4, out FloatSpan2D vSpan);
-                vSpan.Multiply(mSpan, out FloatSpan2D rSpan);
-                Assert.IsTrue(rSpan.ToArray().ContentEquals(r));
-                rSpan.Free();
+                Tensor.Fix(pm, 4, 4, out Tensor mTensor);
+                Tensor.Fix(pv, 1, 4, out Tensor vTensor);
+                vTensor.Multiply(mTensor, out Tensor rTensor);
+                Assert.IsTrue(rTensor.ToArray().ContentEquals(r));
+                rTensor.Free();
             }
         }
 
@@ -65,9 +65,9 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm1 = m1, pm2 = m2)
             {
-                FloatSpan2D.Fix(pm1, 2, 3, out FloatSpan2D m1Span);
-                FloatSpan2D.Fix(pm2, 3, 4, out FloatSpan2D m2Span);
-                m1Span.Multiply(m2Span, out FloatSpan2D result);
+                Tensor.Fix(pm1, 2, 3, out Tensor m1Tensor);
+                Tensor.Fix(pm2, 3, 4, out Tensor m2Tensor);
+                m1Tensor.Multiply(m2Tensor, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
@@ -101,10 +101,10 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm1 = m1, pm2 = m2)
             {
-                FloatSpan2D.Fix(pm1, 3, 3, out FloatSpan2D m1Span);
-                FloatSpan2D.Fix(pm2, 3, 3, out FloatSpan2D m2Span);
-                m1Span.InPlaceHadamardProduct(m2Span);
-                Assert.IsTrue(m1Span.ToArray2D().ContentEquals(r));
+                Tensor.Fix(pm1, 3, 3, out Tensor m1Tensor);
+                Tensor.Fix(pm2, 3, 3, out Tensor m2Tensor);
+                m1Tensor.InPlaceHadamardProduct(m2Tensor);
+                Assert.IsTrue(m1Tensor.ToArray2D().ContentEquals(r));
             }
         }
 
@@ -130,8 +130,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                FloatSpan2D.Fix(pm, 2, 4, out FloatSpan2D mSpan);
-                mSpan.Transpose(out FloatSpan2D result);
+                Tensor.Fix(pm, 2, 4, out Tensor mTensor);
+                mTensor.Transpose(out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
