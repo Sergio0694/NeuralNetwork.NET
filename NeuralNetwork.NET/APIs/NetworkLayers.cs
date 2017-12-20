@@ -71,7 +71,7 @@ namespace NeuralNetworkNET.APIs
         public static INetworkLayer Convolutional(
             in TensorInfo input, (int X, int Y) kernel, int kernels, ActivationFunctionType activation, 
             BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
-            => new ConvolutionalLayer(input, kernel, kernels, activation, biasMode);
+            => new ConvolutionalLayer(input, ConvolutionInfo.Default, kernel, kernels, activation, biasMode);
 
         /// <summary>
         /// Creates a pooling layer with a window of size 2 and a stride of 2
@@ -80,6 +80,6 @@ namespace NeuralNetworkNET.APIs
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Pooling(in TensorInfo input, ActivationFunctionType activation) => new PoolingLayer(input, PoolingInfo.DefaultMax2x2, activation);
+        public static INetworkLayer Pooling(in TensorInfo input, ActivationFunctionType activation) => new PoolingLayer(input, PoolingInfo.Default, activation);
     }
 }

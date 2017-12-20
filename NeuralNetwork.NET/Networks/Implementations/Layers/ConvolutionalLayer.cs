@@ -24,6 +24,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override LayerType LayerType { get; } = LayerType.Convolutional;
 
         /// <summary>
+        /// Gets the info on the convolution operation performed by the layer
+        /// </summary>
+        public ConvolutionInfo OperationInfo { get; }
+
+        /// <summary>
         /// Gets the <see cref="TensorInfo"/> associated with each kernel in the layer
         /// </summary>
         [JsonProperty(nameof(KernelInfo), Order = 4)]
@@ -37,19 +42,21 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         #endregion
 
-        public ConvolutionalLayer(in TensorInfo input, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation, BiasInitializationMode biasMode)
+        public ConvolutionalLayer(in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation, BiasInitializationMode biasMode)
             : base(input, new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels),
                   WeightsProvider.NewConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.NewBiases(kernels, biasMode), activation)
         {
+            OperationInfo = operation;
             KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
         }
 
         public ConvolutionalLayer(
-            in TensorInfo input, in TensorInfo kernels, in TensorInfo output,
+            in TensorInfo input, in ConvolutionInfo operation, in TensorInfo kernels, in TensorInfo output,
             [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(input, output, weights, biases, activation)
         {
+            OperationInfo = operation;
             KernelInfo = kernels;
         }
 
@@ -85,6 +92,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }

@@ -9,6 +9,8 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.APIs.Interfaces;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {
@@ -48,10 +50,9 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <summary>
         /// Sets the cuDNN fields that will be used during future forward/backwards operations
         /// </summary>
-        /// <param name="mode">The desired convolution mode</param>
-        private void SetupCuDnnInfo(APIs.Enums.ConvolutionMode mode)
+        private void SetupCuDnnInfo()
         {
-            ConvolutionDescription.Set2D(0, 0, 1, 1, 1, 1, (Alea.cuDNN.ConvolutionMode)mode);
+            ConvolutionDescription.Set2D(OperationInfo.VerticalPadding, OperationInfo.HorizontalPadding, OperationInfo.VerticalStride, OperationInfo.HorizontalStride, 1, 1, (Alea.cuDNN.ConvolutionMode)OperationInfo.Mode);
             FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, OutputInfo.Channels, KernelInfo.Channels, KernelInfo.Height, KernelInfo.Width);
             BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, OutputInfo.Channels, 1, 1);
         }
@@ -59,17 +60,18 @@ namespace NeuralNetworkNET.Cuda.Layers
         #endregion
 
         public CuDnnConvolutionalLayer(
-            in TensorInfo input, (int X, int Y) kernelSize, int kernels,
-            ActivationFunctionType activation, APIs.Enums.ConvolutionMode mode, BiasInitializationMode biasMode)
-            : base(input, kernelSize, kernels, activation, biasMode)
-            => SetupCuDnnInfo(mode);
+            in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels,
+            ActivationFunctionType activation, BiasInitializationMode biasMode)
+            : base(input, operation, kernelSize, kernels, activation, biasMode)
+            => SetupCuDnnInfo();
 
         public CuDnnConvolutionalLayer(
-            in TensorInfo input, TensorInfo kernels, TensorInfo output,
-            [NotNull] float[,] weights, [NotNull] float[] biases,
-            ActivationFunctionType activation, APIs.Enums.ConvolutionMode mode)
-            : base(input, kernels, output, weights, biases, activation)
-            => SetupCuDnnInfo(mode);
+            in TensorInfo input, in ConvolutionInfo operation, TensorInfo kernels, TensorInfo output,
+            [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            : base(input, operation, kernels, output, weights, biases, activation)
+            => SetupCuDnnInfo();
+
+        #region Implementation
 
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
@@ -168,5 +170,10 @@ namespace NeuralNetworkNET.Cuda.Layers
                 }
             }
         }
+
+        #endregion
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
     }
 }

@@ -19,7 +19,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override LayerType LayerType { get; } = LayerType.Pooling;
 
         /// <summary>
-        /// Gets the info onthe pooling operation performed by the layer
+        /// Gets the info on the pooling operation performed by the layer
         /// </summary>
         public PoolingInfo OperationInfo { get; }
 

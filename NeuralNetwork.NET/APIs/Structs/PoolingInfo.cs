@@ -69,7 +69,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Gets the default 2x2 max pooling info, with a stride of 2 in both directions and no padding
         /// </summary>
-        public static PoolingInfo DefaultMax2x2 { get; } = new PoolingInfo(PoolingMode.Max, 2, 2, 0, 0, 2, 2);
+        public static PoolingInfo Default { get; } = new PoolingInfo(PoolingMode.Max, 2, 2, 0, 0, 2, 2);
 
         /// <summary>
         /// Creates a new pooling operation description with the input parameters
@@ -84,9 +84,9 @@ namespace NeuralNetworkNET.APIs.Structs
         [PublicAPI]
         [Pure]
         public static PoolingInfo New(
-            PoolingMode mode, int windowHeight, int windowWidth,
-            int verticalPadding, int horizontalPadding,
-            int verticalStride, int horizontalStride)
+            PoolingMode mode, int windowHeight = 2, int windowWidth = 2,
+            int verticalPadding = 0, int horizontalPadding = 0,
+            int verticalStride = 2, int horizontalStride = 2)
             => new PoolingInfo(mode, windowHeight, windowWidth, verticalPadding, horizontalPadding, verticalStride, horizontalStride);
     }
 }
