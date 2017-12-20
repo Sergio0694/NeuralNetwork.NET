@@ -10,6 +10,7 @@ using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 using NeuralNetworkNET.SupervisedLearning.Progress;
 using System;
 using System.Collections.Generic;
@@ -27,11 +28,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Trains the target <see cref="NeuralNetwork"/> with the given parameters and data
         /// </summary>
         /// <param name="network">The target <see cref="NeuralNetwork"/> to train</param>
-        /// <param name="miniBatches">The training baatches for the current session</param>
+        /// <param name="batches">The training baatches for the current session</param>
         /// <param name="epochs">The desired number of training epochs to run</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="algorithm">The info on the training algorithm to use</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
         /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -40,6 +42,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             [NotNull] NeuralNetwork network, [NotNull] BatchesCollection batches,
             int epochs, float dropout,
             [NotNull] ITrainingAlgorithmInfo algorithm,
+            [CanBeNull] IProgress<BatchProgress> batchProgress,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
             [CanBeNull] ValidationParameters validationParameters,
             [CanBeNull] TestParameters testParameters,
@@ -49,9 +52,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             switch (algorithm)
             {
                 case StochasticGradientDescentInfo sgd:
-                    return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, trainingProgress, validationParameters, testParameters, token);
+                    return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationParameters, testParameters, token);
                 case AdadeltaInfo adadelta:
-                    return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, trainingProgress, validationParameters, testParameters, token);
+                    return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationParameters, testParameters, token);
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }
@@ -62,21 +65,12 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Trains the target <see cref="NeuralNetwork"/> using the gradient descent algorithm
         /// </summary>
-        /// <param name="network">The target <see cref="NeuralNetwork"/> to train</param>
-        /// <param name="miniBatches">The training baatches for the current session</param>
-        /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="eta">The learning rate</param>
-        /// <param name="lambda">The L2 regularization factor</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         private static TrainingSessionResult StochasticGradientDescent(
             NeuralNetwork network,
             BatchesCollection miniBatches,
             int epochs, float dropout, float eta, float lambda,
+            [CanBeNull] IProgress<BatchProgress> batchProgress,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
             [CanBeNull] ValidationParameters validationParameters,
             [CanBeNull] TestParameters testParameters,
@@ -107,28 +101,18 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
 
-            return Optimize(network, miniBatches, epochs, dropout, Minimize, trainingProgress, validationParameters, testParameters, token);
+            return Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
         /// <summary>
         /// Trains the target <see cref="NeuralNetwork"/> using the Adadelta algorithm
         /// </summary>
-        /// <param name="network">The target <see cref="NeuralNetwork"/> to train</param>
-        /// <param name="miniBatches">The training baatches for the current session</param>
-        /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="rho">The Adadelta rho parameter</param>
-        /// <param name="epsilon">The Adadelta epsilon parameter</param>
-        /// <param name="l2Factor">The L2-regularization factor to use</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         private static unsafe TrainingSessionResult Adadelta(
             NeuralNetwork network,
             BatchesCollection miniBatches,
             int epochs, float dropout, float rho, float epsilon, float l2Factor,
+            [CanBeNull] IProgress<BatchProgress> batchProgress,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
             [CanBeNull] ValidationParameters validationParameters,
             [CanBeNull] TestParameters testParameters,
@@ -194,7 +178,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
 
-            return Optimize(network, miniBatches, epochs, dropout, Minimize, trainingProgress, validationParameters, testParameters, token);
+            return Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
         #endregion
@@ -204,21 +188,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Trains the target <see cref="NeuralNetwork"/> using the input algorithm
         /// </summary>
-        /// <param name="network">The target <see cref="NeuralNetwork"/> to train</param>
-        /// <param name="miniBatches">The training baatches for the current session</param>
-        /// <param name="epochs">The desired number of training epochs to run</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="updater">The <see cref="WeightsUpdater"/> delegate to use to optimize the network</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         private static TrainingSessionResult Optimize(
             NeuralNetwork network,
             BatchesCollection miniBatches,
             int epochs, float dropout,
             [NotNull] WeightsUpdater updater,
+            [CanBeNull] IProgress<BatchProgress> batchProgress,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
             [CanBeNull] ValidationParameters validationParameters,
             [CanBeNull] TestParameters testParameters,
@@ -239,6 +215,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 ? null
                 : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
 
+            // Optional batch monitor
+            BatchProgressMonitor batchMonitor = batchProgress == null ? null : new BatchProgressMonitor(miniBatches.Samples, batchProgress);
+
             // Create the training batches
             for (int i = 0; i < epochs; i++)
             {
@@ -250,7 +229,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
                     network.Backpropagate(miniBatches.Batches[j], dropout, updater);
+                    batchMonitor?.NotifyCompletedBatch(miniBatches.Batches[j].X.GetLength(0));
                 }
+                batchMonitor?.Reset();
 
                 // Check for overflows
                 if (!Parallel.For(0, network._Layers.Length, (j, state) =>

@@ -11,6 +11,7 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace DigitsCudaTest
@@ -37,6 +38,14 @@ namespace DigitsCudaTest
             Console.CancelKeyPress += (s, e) => cts.Cancel();
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400,
                 TrainingAlgorithmsInfo.CreateForAdadelta(), 0.5f,
+                new Progress<BatchProgress>(p =>
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop);
+                    int n = (int)(p.Percentage * 32 / 100);
+                    char[] c = new char[32];
+                    for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
+                    Console.Write($"[{new String(c)}] ");
+                }),
                 testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
