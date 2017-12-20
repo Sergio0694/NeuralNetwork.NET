@@ -18,11 +18,17 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Pooling;
 
-        public PoolingLayer(in TensorInfo input, ActivationFunctionType activation)
+        /// <summary>
+        /// Gets the info onthe pooling operation performed by the layer
+        /// </summary>
+        public PoolingInfo OperationInfo { get; }
+
+        public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation)
             : base(input, new TensorInfo(
                 input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
                 input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1),
-                input.Channels), activation) { }
+                input.Channels), activation)
+            => OperationInfo = operation;
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
@@ -35,6 +41,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputInfo.Channels);
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, ActivationFunctionType);
+        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
     }
 }

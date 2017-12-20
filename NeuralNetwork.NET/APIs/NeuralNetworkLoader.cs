@@ -34,55 +34,7 @@ namespace NeuralNetworkNET.APIs
         [Pure, CanBeNull]
         public static INeuralNetwork TryLoadJson([NotNull] String json)
         {
-            try
-            {
-                // Get the general parameters and the hidden layers info
-                JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
-                INetworkLayer[] layers = jObject["Layers"].Select<JToken, INetworkLayer>(layer =>
-                {
-                    if (!Enum.TryParse(layer["LayerType"].ToString(), out LayerType type))
-                        throw new InvalidOperationException("Unsupported JSON network");
-                    switch (type)
-                    {
-                        case LayerType.FullyConnected:
-                            return new FullyConnectedLayer(
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
-                        case LayerType.Convolutional:
-                            return new ConvolutionalLayer(
-                                layer["InputInfo"].ToObject<TensorInfo>(),
-                                layer["KernelInfo"].ToObject<TensorInfo>(),
-                                layer["OutputInfo"].ToObject<TensorInfo>(),
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
-                        case LayerType.Pooling:
-                            return new PoolingLayer(
-                                layer["InputInfo"].ToObject<TensorInfo>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
-                        case LayerType.Output:
-                            return new OutputLayer(
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>(),
-                                layer["CostFunctionType"].ToObject<CostFunctionType>());
-                        case LayerType.Softmax:
-                            return new SoftmaxLayer(
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>());
-                        default:
-                            throw new InvalidOperationException("Unsupported JSON network");
-                    }
-                }).ToArray();
-                INeuralNetwork network = new NeuralNetwork(layers);
-                return json.Equals(network.SerializeAsJson()) ? network : null;
-            }
-            catch
-            {
-                // Invalid JSON
-                return null;
-            }
+            throw new NotImplementedException("Json serialization is not supported");
         }
 
         /// <summary>
@@ -139,8 +91,8 @@ namespace NeuralNetworkNET.APIs
                             stream.ReadFloatArray(outVolume.Channels), activation);
                         break;
                     case LayerType.Pooling:
-                        layers[i] = new PoolingLayer(new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
-                        break;
+                        throw new NotImplementedException("Pooling deserialization not implemented yet");
+                        //layers[i] = new PoolingLayer(new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
                     case LayerType.Output:
                         layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());
                         break;

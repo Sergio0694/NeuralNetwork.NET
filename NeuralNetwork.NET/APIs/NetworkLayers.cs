@@ -80,6 +80,6 @@ namespace NeuralNetworkNET.APIs
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INetworkLayer Pooling(in TensorInfo input, ActivationFunctionType activation) => new PoolingLayer(input, activation);
+        public static INetworkLayer Pooling(in TensorInfo input, ActivationFunctionType activation) => new PoolingLayer(input, PoolingInfo.DefaultMax2x2, activation);
     }
 }

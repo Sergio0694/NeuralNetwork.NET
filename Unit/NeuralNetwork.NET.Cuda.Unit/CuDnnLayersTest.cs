@@ -228,8 +228,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 58 * 58 * 3);
             PoolingLayer
-                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnPoolingLayer(cpu.InputInfo, ActivationFunctionType.LeakyReLU);
+                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.DefaultMax2x2, ActivationFunctionType.LeakyReLU),
+                gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.DefaultMax2x2, ActivationFunctionType.LeakyReLU);
             TestForward(cpu, gpu, x);
         }
 
@@ -240,8 +240,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta_1 = ThreadSafeRandom.NextGlorotNormalMatrix(400, 29 * 29 * 3),
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(400, 58 * 58 * 3);
             PoolingLayer
-                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnPoolingLayer(cpu.InputInfo, ActivationFunctionType.LeakyReLU);
+                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.DefaultMax2x2, ActivationFunctionType.LeakyReLU),
+                gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.DefaultMax2x2, ActivationFunctionType.LeakyReLU);
             TestBackward(cpu, gpu, delta_1, z);
         }
 

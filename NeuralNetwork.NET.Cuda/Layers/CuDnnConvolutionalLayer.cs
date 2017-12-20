@@ -59,13 +59,13 @@ namespace NeuralNetworkNET.Cuda.Layers
         #endregion
 
         public CuDnnConvolutionalLayer(
-            TensorInfo input, (int X, int Y) kernelSize, int kernels,
+            in TensorInfo input, (int X, int Y) kernelSize, int kernels,
             ActivationFunctionType activation, APIs.Enums.ConvolutionMode mode, BiasInitializationMode biasMode)
             : base(input, kernelSize, kernels, activation, biasMode)
             => SetupCuDnnInfo(mode);
 
         public CuDnnConvolutionalLayer(
-            TensorInfo input, TensorInfo kernels, TensorInfo output,
+            in TensorInfo input, TensorInfo kernels, TensorInfo output,
             [NotNull] float[,] weights, [NotNull] float[] biases,
             ActivationFunctionType activation, APIs.Enums.ConvolutionMode mode)
             : base(input, kernels, output, weights, biases, activation)
