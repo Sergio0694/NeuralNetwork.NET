@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
@@ -20,6 +21,32 @@ namespace NeuralNetworkNET.Unit
     [TestCategory(nameof(SerializationTest))]
     public class SerializationTest
     {
+        [TestMethod]
+        public void StructSerialize()
+        {
+            PoolingInfo info = PoolingInfo.New(PoolingMode.AverageIncludingPadding, 3, 3, 1, 1, 2, 2);
+            using (MemoryStream stream = new MemoryStream())
+            {
+                stream.Write(ref info);
+                stream.Seek(0, SeekOrigin.Begin);
+                PoolingInfo copy = stream.Read<PoolingInfo>();
+                Assert.IsTrue(info.Equals(copy));
+            }
+        }
+
+        [TestMethod]
+        public void EnumSerialize()
+        {
+            PoolingMode mode = PoolingMode.AverageIncludingPadding;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                stream.Write(ref mode);
+                stream.Seek(0, SeekOrigin.Begin);
+                PoolingMode copy = stream.Read<PoolingMode>();
+                Assert.IsTrue(mode == copy);
+            }
+        }
+
         [TestMethod]
         public void StreamSerialize()
         {
@@ -48,16 +75,6 @@ namespace NeuralNetworkNET.Unit
                 stream.Seek(0, SeekOrigin.Begin);
                 float[] copy = stream.ReadFloatArray(723);
                 Assert.IsTrue(v.ContentEquals(copy));
-            }
-            using (MemoryStream stream = new MemoryStream())
-            {
-                stream.Write(6);
-                stream.Write(677);
-                stream.Write(int.MaxValue);
-                stream.Seek(0, SeekOrigin.Begin);
-                Assert.IsTrue(stream.ReadInt32() == 6);
-                Assert.IsTrue(stream.ReadInt32() == 677);
-                Assert.IsTrue(stream.ReadInt32() == int.MaxValue);
             }
         }
 
