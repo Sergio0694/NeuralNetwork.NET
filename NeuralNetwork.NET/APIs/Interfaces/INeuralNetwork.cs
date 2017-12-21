@@ -91,10 +91,10 @@ namespace NeuralNetworkNET.APIs.Interfaces
         #region Tools
 
         /// <summary>
-        /// Serializes the network as a JSON string
+        /// Serializes the network metadata as a JSON string
         /// </summary>
         [Pure, NotNull]
-        String SerializeAsJson();
+        String SerializeMetadataAsJson();
 
         /// <summary>
         /// Saves the network in the target directory

@@ -21,6 +21,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <summary>
         /// Gets the info on the pooling operation performed by the layer
         /// </summary>
+        [JsonProperty(nameof(OperationInfo), Order = 5)]
         public PoolingInfo OperationInfo { get; }
 
         public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation)

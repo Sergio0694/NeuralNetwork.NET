@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
+using Newtonsoft.Json;
 using System;
 
 namespace NeuralNetworkNET.APIs.Structs
@@ -7,6 +8,7 @@ namespace NeuralNetworkNET.APIs.Structs
     /// <summary>
     /// A <see cref="struct"/> containing all the info on a pooling operation
     /// </summary>
+    [JsonObject(MemberSerialization.Fields)]
     public readonly struct PoolingInfo
     {
         /// <summary>

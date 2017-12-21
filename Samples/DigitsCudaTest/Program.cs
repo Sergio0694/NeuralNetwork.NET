@@ -36,7 +36,7 @@ namespace DigitsCudaTest
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 400,
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 20, 400,
                 TrainingAlgorithmsInfo.CreateForAdadelta(), 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
@@ -52,17 +52,17 @@ namespace DigitsCudaTest
                 })), token: cts.Token);
 
             // Save the training reports
-            Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
             String
+                timestamp = DateTime.Now.ToString("yy-MM-dd-hh-mm-ss"),
                 root = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetExecutingAssembly().Location)),
-                path = Path.Combine(root ?? throw new InvalidOperationException("The dll path can't be null"), "TrainingResults", DateTime.Now.ToString("yy-MM-dd"));
+                path = Path.Combine(root ?? throw new InvalidOperationException("The dll path can't be null"), "TrainingResults", timestamp);
             Directory.CreateDirectory(path);
-            String timestamp = DateTime.Now.ToString("yy-MM-dd-mm-ss");
             File.WriteAllText(Path.Combine(path, $"{timestamp}_cost.py"), result.TestReports.AsPythonMatplotlibChart(TrainingReportType.Cost));
             File.WriteAllText(Path.Combine(path, $"{timestamp}_accuracy.py"), result.TestReports.AsPythonMatplotlibChart(TrainingReportType.Accuracy));
             network.Save(new DirectoryInfo(path), timestamp);
-            File.WriteAllText(Path.Combine(path, $"{timestamp}.json"), network.SerializeAsJson());
+            File.WriteAllText(Path.Combine(path, $"{timestamp}.json"), network.SerializeMetadataAsJson());
             File.WriteAllText(Path.Combine(path, $"{timestamp}_report.json"), result.SerializeAsJson());
+            Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
             Console.ReadKey();
         }
 

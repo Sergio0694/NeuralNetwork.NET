@@ -16,21 +16,21 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         #region Parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(LayerType), Required = Required.Always, Order = 1)]
+        [JsonProperty(nameof(LayerType), Order = 1)]
         public abstract LayerType LayerType { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Required = Required.Always, Order = 2)]
+        [JsonProperty(nameof(InputInfo), Order = 2)]
         public TensorInfo InputInfo { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputInfo), Required = Required.Always, Order = 3)]
+        [JsonProperty(nameof(OutputInfo), Order = 3)]
         public TensorInfo OutputInfo { get; }
 
         /// <summary>
         /// Gets the activation type used in the current layer
         /// </summary>
-        [JsonProperty(nameof(ActivationFunctionType), Required = Required.Always, Order = 8)]
+        [JsonProperty(nameof(ActivationFunctionType), Order = 4)]
         public ActivationFunctionType ActivationFunctionType { get; }
 
         /// <summary>

@@ -30,11 +30,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Required = Required.Always, Order = 1)]
+        [JsonProperty(nameof(InputInfo), Order = 1)]
         public TensorInfo InputInfo => Layers[0].InputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputInfo), Required = Required.Always, Order = 2)]
+        [JsonProperty(nameof(OutputInfo), Order = 2)]
         public TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
@@ -46,7 +46,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
+        [JsonProperty(nameof(Layers), Order = 3)]
         internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
@@ -395,7 +395,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Tools
 
         /// <inheritdoc/>
-        public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
+        public String SerializeMetadataAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)

@@ -4,6 +4,9 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Security.Cryptography;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -14,17 +17,54 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
     internal abstract class WeightedLayerBase : NetworkLayerBase
     {
         /// <summary>
+        /// Gets an SHA256 hash calculated on both the weights and biases of the layer
+        /// </summary>
+        [NotNull]
+        [JsonProperty(nameof(Hash), Order = 5)]
+        public unsafe String Hash
+        {
+            [Pure]
+            get
+            {
+                fixed (float* pw = Weights, pb = Biases)
+                {
+                    // Use unmanaged streams to avoid copying the weights and biases
+                    int
+                        weightsSize = sizeof(float) * Weights.Length,
+                        biasesSize = sizeof(float) * Biases.Length;
+                    using (UnmanagedMemoryStream
+                        weightsStream = new UnmanagedMemoryStream((byte*)pw, weightsSize, weightsSize, FileAccess.Read),
+                        biasesStream = new UnmanagedMemoryStream((byte*)pb, biasesSize, biasesSize, FileAccess.Read))
+                    using (HashAlgorithm provider = HashAlgorithm.Create(HashAlgorithmName.SHA256.Name))
+                    {
+                        // Compute the two SHA256 hashes and combine them (there isn't a way to concatenate two streams with the hash class)
+                        byte[]
+                            weightsHash = provider.ComputeHash(weightsStream),
+                            biasesHash = provider.ComputeHash(biasesStream),
+                            hash = new byte[32];
+                        unchecked
+                        {
+                            for (int i = 0; i < 32; i++)
+                                hash[i] = (byte)((17 * 31 * weightsHash[i] * 31 * biasesHash[i]) % byte.MaxValue); // Trust me
+                        }
+
+                        // Convert the final hash to a base64 string
+                        return Convert.ToBase64String(hash);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the weights for the current network layer
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Weights), Required = Required.Always, Order = 10)]
         public float[,] Weights { get; }
 
         /// <summary>
         /// Gets the biases for the current network layer
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Biases), Required = Required.Always, Order = 11)]
         public float[] Biases { get; }
 
         protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) 

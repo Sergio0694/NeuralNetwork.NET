@@ -26,18 +26,19 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <summary>
         /// Gets the info on the convolution operation performed by the layer
         /// </summary>
+        [JsonProperty(nameof(OperationInfo), Order = 6)]
         public ConvolutionInfo OperationInfo { get; }
 
         /// <summary>
         /// Gets the <see cref="TensorInfo"/> associated with each kernel in the layer
         /// </summary>
-        [JsonProperty(nameof(KernelInfo), Order = 4)]
+        [JsonProperty(nameof(KernelInfo), Order = 7)]
         public TensorInfo KernelInfo { get; }
 
         /// <summary>
         /// Gets the number of kernels in the current layer
         /// </summary>
-        [JsonProperty(nameof(Kernels), Order = 5)]
+        [JsonProperty(nameof(Kernels), Order = 8)]
         public int Kernels => Weights.GetLength(0);
 
         #endregion
