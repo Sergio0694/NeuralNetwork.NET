@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Extensions
@@ -9,6 +10,33 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     internal static class StreamExtensions
     {
+        /// <summary>
+        /// Writes the input <see cref="struct"/> to the target <see cref="Stream"/> instance
+        /// </summary>
+        /// <typeparam name="T">The <see cref="struct"/> type to serialize</typeparam>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the data</param>
+        /// <param name="value">A reference to the <see cref="struct"/> to write to the <see cref="Stream"/> instance</param>
+        public static unsafe void Write<T>([NotNull] this Stream stream, ref T value) where T : struct
+        {
+            byte[] bytes = new byte[Unsafe.SizeOf<T>()];
+            fixed (void* p = bytes) Unsafe.Copy(p, ref value);
+            stream.Write(bytes, 0, bytes.Length);
+        }
+
+        /// <summary>
+        /// Reads a value of the given <see cref="struct"/> type from the input <see cref="Stream"/> instance
+        /// </summary>
+        /// <typeparam name="T">The <see cref="struct"/> type to read and return</typeparam>
+        /// <param name="stream">The source <see cref="Stream"/> instance to use to read the data</param>
+        public static unsafe T Read<T>([NotNull] this Stream stream) where T : struct
+        {
+            byte[] bytes = new byte[Unsafe.SizeOf<T>()];
+            stream.Read(bytes, 0, bytes.Length);
+            T value = new T();
+            fixed (void* p = bytes) Unsafe.Copy(ref value, p);
+            return value;
+        }
+
         /// <summary>
         /// Writes a 32-bits int to the target <see cref="Stream"/>
         /// </summary>
