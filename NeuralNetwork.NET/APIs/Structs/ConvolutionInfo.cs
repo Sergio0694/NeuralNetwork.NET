@@ -2,6 +2,7 @@
 using NeuralNetworkNET.APIs.Enums;
 using Newtonsoft.Json;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.APIs.Structs
 {
@@ -9,7 +10,7 @@ namespace NeuralNetworkNET.APIs.Structs
     /// A <see cref="struct"/> containing all the info on a convolution operation
     /// </summary>
     [JsonObject(MemberSerialization.Fields)]
-    public readonly struct ConvolutionInfo
+    public readonly struct ConvolutionInfo : IEquatable<ConvolutionInfo>
     {
         /// <summary>
         /// Gets the current convolution mode for the layer
@@ -35,6 +36,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// Gets the horizontal stride length while sliding the receptive window over the input
         /// </summary>
         public readonly int HorizontalStride;
+
+        #region Constructors
 
         // Internal constructor
         private ConvolutionInfo(
@@ -74,5 +77,40 @@ namespace NeuralNetworkNET.APIs.Structs
             int verticalPadding = 0, int horizontalPadding = 0,
             int verticalStride = 1, int horizontalStride = 1)
             => new ConvolutionInfo(mode, verticalPadding, horizontalPadding, verticalStride, horizontalStride);
+
+        #endregion
+
+        #region Equality
+
+        /// <inheritdoc/>
+        public bool Equals(ConvolutionInfo other) => this == other;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ConvolutionInfo info ? this == info : false;
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            unchecked
+            {
+                hash = hash * 31 + (int)Mode;
+                hash = hash * 31 + VerticalPadding;
+                hash = hash * 31 + HorizontalPadding;
+                hash = hash * 31 + VerticalStride;
+                hash = hash * 31 + HorizontalStride;
+            }
+            return hash;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(in ConvolutionInfo a, in ConvolutionInfo b) => a.Mode == b.Mode &&
+                                                                                      a.VerticalPadding == b.VerticalPadding && a.HorizontalPadding == b.HorizontalPadding &&
+                                                                                      a.VerticalStride == b.VerticalStride && a.HorizontalStride == b.HorizontalStride;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(in ConvolutionInfo a, in ConvolutionInfo b) => !(a == b);
+
+        #endregion
     }
 }

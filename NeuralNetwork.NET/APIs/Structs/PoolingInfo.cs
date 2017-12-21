@@ -2,6 +2,7 @@
 using NeuralNetworkNET.APIs.Enums;
 using Newtonsoft.Json;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.APIs.Structs
 {
@@ -9,7 +10,7 @@ namespace NeuralNetworkNET.APIs.Structs
     /// A <see cref="struct"/> containing all the info on a pooling operation
     /// </summary>
     [JsonObject(MemberSerialization.Fields)]
-    public readonly struct PoolingInfo
+    public readonly struct PoolingInfo : IEquatable<PoolingInfo>
     {
         /// <summary>
         /// Gets the current pooling mode for the layer
@@ -46,9 +47,11 @@ namespace NeuralNetworkNET.APIs.Structs
         /// </summary>
         public readonly int HorizontalStride;
 
+        #region Constructors
+
         // Internal constructor
         private PoolingInfo(
-            PoolingMode mode, int windowHeight, int windowWidth, 
+            PoolingMode mode, int windowHeight, int windowWidth,
             int verticalPadding, int horizontalPadding,
             int verticalStride, int horizontalStride)
         {
@@ -90,5 +93,43 @@ namespace NeuralNetworkNET.APIs.Structs
             int verticalPadding = 0, int horizontalPadding = 0,
             int verticalStride = 2, int horizontalStride = 2)
             => new PoolingInfo(mode, windowHeight, windowWidth, verticalPadding, horizontalPadding, verticalStride, horizontalStride);
+
+        #endregion
+
+        #region Equality
+
+        /// <inheritdoc/>
+        public bool Equals(PoolingInfo other) => this == other;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is PoolingInfo info ? this == info : false;
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            unchecked
+            {
+                hash = hash * 31 + (int)Mode;
+                hash = hash * 31 + WindowHeight;
+                hash = hash * 31 + WindowWidth;
+                hash = hash * 31 + VerticalPadding;
+                hash = hash * 31 + HorizontalPadding;
+                hash = hash * 31 + VerticalStride;
+                hash = hash * 31 + HorizontalStride;
+            }
+            return hash;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(in PoolingInfo a, in PoolingInfo b) => a.Mode == b.Mode &&
+                                                                              a.WindowHeight == b.WindowHeight && a.WindowWidth == b.WindowWidth &&
+                                                                              a.VerticalPadding == b.VerticalPadding && a.HorizontalPadding == b.HorizontalPadding &&
+                                                                              a.VerticalStride == b.VerticalStride && a.HorizontalStride == b.HorizontalStride;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(in PoolingInfo a, in PoolingInfo b) => !(a == b);
+
+        #endregion
     }
 }
