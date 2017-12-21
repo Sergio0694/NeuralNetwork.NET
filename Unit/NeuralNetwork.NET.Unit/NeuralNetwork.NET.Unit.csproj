@@ -19,27 +19,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\Networks\TestNetwork.nnet" />
-    <None Remove="Assets\t10k-images-idx3-ubyte.gz" />
-    <None Remove="Assets\t10k-labels-idx1-ubyte.gz" />
-    <None Remove="Assets\train-images-idx3-ubyte.gz" />
-    <None Remove="Assets\train-labels-idx1-ubyte.gz" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Assets\MNIST\t10k-images-idx3-ubyte.gz">
+    <Content Include="Assets\t10k-images-idx3-ubyte.gz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\MNIST\t10k-labels-idx1-ubyte.gz">
+    <Content Include="Assets\t10k-labels-idx1-ubyte.gz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\MNIST\train-images-idx3-ubyte.gz">
+    <Content Include="Assets\train-images-idx3-ubyte.gz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\MNIST\train-labels-idx1-ubyte.gz">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\Networks\TestNetwork.nnet">
+    <Content Include="Assets\train-labels-idx1-ubyte.gz">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

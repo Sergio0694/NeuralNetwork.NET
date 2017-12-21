@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -68,9 +67,9 @@ namespace NeuralNetworkNET.Unit
             INeuralNetwork network = new NeuralNetwork(
                 NetworkLayers.FullyConnected(TensorInfo.CreateLinear(784), 30, ActivationFunctionType.Sigmoid),
                 NetworkLayers.FullyConnected(TensorInfo.CreateLinear(30), 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            String folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            network.Save(new DirectoryInfo(folderPath), "test1");
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad($"{Path.Combine(folderPath, "test1")}.nnet");
+            FileInfo file = new FileInfo(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"test1{NeuralNetworkLoader.NetworkFileExtension}"));
+            network.Save(file);
+            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(file);
             Assert.IsTrue(copy != null);
             Assert.IsTrue(copy.Equals(network));
         }
@@ -85,9 +84,9 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
                 NetworkLayers.FullyConnected(TensorInfo.CreateLinear(160), 8, ActivationFunctionType.Sigmoid),
                 NetworkLayers.FullyConnected(TensorInfo.CreateLinear(8), 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            String folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            network.Save(new DirectoryInfo(folderPath), "test2");
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad($"{Path.Combine(folderPath, "test2")}.nnet");
+            FileInfo file = new FileInfo(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"test2{NeuralNetworkLoader.NetworkFileExtension}"));
+            network.Save(file);
+            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(file);
             Assert.IsTrue(copy != null);
             Assert.IsTrue(copy.Equals(network));
         }

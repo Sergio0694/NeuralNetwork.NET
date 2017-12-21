@@ -11,7 +11,6 @@ using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Helpers.Imaging;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
@@ -392,7 +391,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        #region Tools
+        #region Serialization and misc
 
         /// <inheritdoc/>
         public String SerializeMetadataAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
@@ -413,71 +412,48 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public String Save(DirectoryInfo directory, String name)
+        public void Save(FileInfo file)
         {
-            String path = $"{Path.Combine(directory.ToString(), name)}{NeuralNetworkLoader.NetworkFileExtension}";
-            using (FileStream stream = File.OpenWrite(path))
-            {
-                stream.Write(_Layers.Length);
-                foreach (NetworkLayerBase layer in _Layers)
-                {
-                    stream.WriteByte((byte)layer.LayerType);
-                    stream.WriteByte((byte)layer.ActivationFunctionType);
-                    stream.Write(layer.InputInfo.Size);
-                    stream.Write(layer.OutputInfo.Size);
-                    if (layer is PoolingLayer pooling)
-                    {
-                        stream.Write(pooling.InputInfo.Height);
-                        stream.Write(pooling.InputInfo.Width);
-                        stream.Write(pooling.InputInfo.Channels);
-                    }
-                    if (layer is ConvolutionalLayer convolutional)
-                    {
-                        stream.Write(convolutional.InputInfo.Height);
-                        stream.Write(convolutional.InputInfo.Width);
-                        stream.Write(convolutional.InputInfo.Channels);
-                        stream.Write(convolutional.OutputInfo.Height);
-                        stream.Write(convolutional.OutputInfo.Width);
-                        stream.Write(convolutional.OutputInfo.Channels);
-                        stream.Write(convolutional.KernelInfo.Height);
-                        stream.Write(convolutional.KernelInfo.Width);
-                        stream.Write(convolutional.KernelInfo.Channels);
-                    }
-                    if (layer is WeightedLayerBase weighted)
-                    {
-                        stream.Write(weighted.Weights);
-                        stream.Write(weighted.Biases);
-                    }
-                    if (layer is OutputLayerBase output)
-                    {
-                        stream.WriteByte((byte)output.CostFunctionType);
-                    }
-                }
-            }
-            return path;
+            using (FileStream stream = file.OpenWrite()) Save(stream);
         }
 
         /// <inheritdoc/>
-        public void ExportWeightsAsImages(DirectoryInfo directory, ImageScaling scaling)
+        public void Save(Stream stream)
         {
-            foreach ((INetworkLayer layer, int i) in Layers.Select((l, i) => (l, i)))
+            // TODO
+            stream.Write(_Layers.Length);
+            foreach (NetworkLayerBase layer in _Layers)
             {
-                switch (layer)
+                stream.WriteByte((byte)layer.LayerType);
+                stream.WriteByte((byte)layer.ActivationFunctionType);
+                stream.Write(layer.InputInfo.Size);
+                stream.Write(layer.OutputInfo.Size);
+                if (layer is PoolingLayer pooling)
                 {
-                    case ConvolutionalLayer convolutional when i == 0:
-                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelInfo, scaling);
-                        break;
-                    case ConvolutionalLayer _:
-                        throw new NotImplementedException();
-                    case OutputLayer output:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Output"), output.Weights, output.Biases, scaling);
-                        break;
-                    case SoftmaxLayer softmax:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Softmax"), softmax.Weights, softmax.Biases, scaling);
-                        break;
-                    case FullyConnectedLayer fullyConnected:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Fully connected"), fullyConnected.Weights, fullyConnected.Biases, scaling);
-                        break;
+                    stream.Write(pooling.InputInfo.Height);
+                    stream.Write(pooling.InputInfo.Width);
+                    stream.Write(pooling.InputInfo.Channels);
+                }
+                if (layer is ConvolutionalLayer convolutional)
+                {
+                    stream.Write(convolutional.InputInfo.Height);
+                    stream.Write(convolutional.InputInfo.Width);
+                    stream.Write(convolutional.InputInfo.Channels);
+                    stream.Write(convolutional.OutputInfo.Height);
+                    stream.Write(convolutional.OutputInfo.Width);
+                    stream.Write(convolutional.OutputInfo.Channels);
+                    stream.Write(convolutional.KernelInfo.Height);
+                    stream.Write(convolutional.KernelInfo.Width);
+                    stream.Write(convolutional.KernelInfo.Channels);
+                }
+                if (layer is WeightedLayerBase weighted)
+                {
+                    stream.Write(weighted.Weights);
+                    stream.Write(weighted.Biases);
+                }
+                if (layer is OutputLayerBase output)
+                {
+                    stream.WriteByte((byte)output.CostFunctionType);
                 }
             }
         }
