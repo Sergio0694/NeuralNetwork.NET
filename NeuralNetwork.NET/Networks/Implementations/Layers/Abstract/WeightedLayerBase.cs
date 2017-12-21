@@ -157,5 +157,13 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        public override void Serialize([NotNull] Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(Weights);
+            stream.Write(Biases);
+        }
     }
 }

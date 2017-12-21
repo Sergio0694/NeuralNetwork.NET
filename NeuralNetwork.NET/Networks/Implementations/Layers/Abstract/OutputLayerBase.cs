@@ -2,10 +2,12 @@
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -72,5 +74,12 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        public override void Serialize([NotNull] Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(CostFunctionType);
+        }
     }
 }

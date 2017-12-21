@@ -27,7 +27,7 @@ namespace NeuralNetworkNET.Unit
             PoolingInfo info = PoolingInfo.New(PoolingMode.AverageIncludingPadding, 3, 3, 1, 1, 2, 2);
             using (MemoryStream stream = new MemoryStream())
             {
-                stream.Write(ref info);
+                stream.Write(info);
                 stream.Seek(0, SeekOrigin.Begin);
                 PoolingInfo copy = stream.Read<PoolingInfo>();
                 Assert.IsTrue(info.Equals(copy));
@@ -40,7 +40,7 @@ namespace NeuralNetworkNET.Unit
             PoolingMode mode = PoolingMode.AverageIncludingPadding;
             using (MemoryStream stream = new MemoryStream())
             {
-                stream.Write(ref mode);
+                stream.Write(mode);
                 stream.Seek(0, SeekOrigin.Begin);
                 PoolingMode copy = stream.Read<PoolingMode>();
                 Assert.IsTrue(mode == copy);

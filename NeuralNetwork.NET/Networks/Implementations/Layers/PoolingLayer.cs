@@ -1,4 +1,5 @@
-﻿using NeuralNetworkNET.APIs.Interfaces;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
@@ -6,6 +7,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -43,5 +45,12 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
+
+        /// <inheritdoc/>
+        public override void Serialize([NotNull] Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(OperationInfo);
+        }
     }
 }

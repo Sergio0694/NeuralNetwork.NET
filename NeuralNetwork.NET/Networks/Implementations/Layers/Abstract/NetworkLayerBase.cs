@@ -1,9 +1,12 @@
-﻿using NeuralNetworkNET.APIs.Interfaces;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Misc;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -82,5 +85,17 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         /// <inheritdoc/>
         public abstract INetworkLayer Clone();
+
+        /// <summary>
+        /// Writes the current layer to the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the layer data</param>
+        public virtual void Serialize([NotNull] Stream stream)
+        {
+            stream.Write(LayerType);
+            stream.Write(InputInfo);
+            stream.Write(OutputInfo);
+            stream.Write(ActivationFunctionType);
+        }
     }
 }

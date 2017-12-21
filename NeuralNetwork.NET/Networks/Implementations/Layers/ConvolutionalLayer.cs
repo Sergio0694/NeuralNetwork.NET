@@ -9,6 +9,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -94,5 +95,13 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+
+        /// <inheritdoc/>
+        public override void Serialize([NotNull] Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(OperationInfo);
+            stream.Write(KernelInfo);
+        }
     }
 }

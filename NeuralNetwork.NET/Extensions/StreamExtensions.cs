@@ -15,8 +15,8 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <typeparam name="T">The <see cref="struct"/> type to serialize</typeparam>
         /// <param name="stream">The target <see cref="Stream"/> to use to write the data</param>
-        /// <param name="value">A reference to the <see cref="struct"/> to write to the <see cref="Stream"/> instance</param>
-        public static unsafe void Write<T>([NotNull] this Stream stream, ref T value) where T : struct
+        /// <param name="value">The <see cref="struct"/> to write to the <see cref="Stream"/> instance</param>
+        public static unsafe void Write<T>([NotNull] this Stream stream, T value) where T : struct
         {
             byte[] bytes = new byte[Unsafe.SizeOf<T>()];
             fixed (void* p = bytes) Unsafe.Copy(p, ref value);

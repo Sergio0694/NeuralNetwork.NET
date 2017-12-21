@@ -420,42 +420,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public void Save(Stream stream)
         {
-            // TODO
-            stream.Write(_Layers.Length);
-            foreach (NetworkLayerBase layer in _Layers)
-            {
-                stream.WriteByte((byte)layer.LayerType);
-                stream.WriteByte((byte)layer.ActivationFunctionType);
-                stream.Write(layer.InputInfo.Size);
-                stream.Write(layer.OutputInfo.Size);
-                if (layer is PoolingLayer pooling)
-                {
-                    stream.Write(pooling.InputInfo.Height);
-                    stream.Write(pooling.InputInfo.Width);
-                    stream.Write(pooling.InputInfo.Channels);
-                }
-                if (layer is ConvolutionalLayer convolutional)
-                {
-                    stream.Write(convolutional.InputInfo.Height);
-                    stream.Write(convolutional.InputInfo.Width);
-                    stream.Write(convolutional.InputInfo.Channels);
-                    stream.Write(convolutional.OutputInfo.Height);
-                    stream.Write(convolutional.OutputInfo.Width);
-                    stream.Write(convolutional.OutputInfo.Channels);
-                    stream.Write(convolutional.KernelInfo.Height);
-                    stream.Write(convolutional.KernelInfo.Width);
-                    stream.Write(convolutional.KernelInfo.Channels);
-                }
-                if (layer is WeightedLayerBase weighted)
-                {
-                    stream.Write(weighted.Weights);
-                    stream.Write(weighted.Biases);
-                }
-                if (layer is OutputLayerBase output)
-                {
-                    stream.WriteByte((byte)output.CostFunctionType);
-                }
-            }
+            foreach (NetworkLayerBase layer in _Layers) layer.Serialize(stream);
         }
 
         /// <inheritdoc/>

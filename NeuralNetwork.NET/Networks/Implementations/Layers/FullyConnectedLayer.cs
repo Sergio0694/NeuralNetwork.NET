@@ -9,6 +9,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using System;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -58,5 +59,12 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new FullyConnectedLayer(Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            stream.Write(InputInfo);
+            stream.Write(OutputInfo);            
+        }
     }
 }
