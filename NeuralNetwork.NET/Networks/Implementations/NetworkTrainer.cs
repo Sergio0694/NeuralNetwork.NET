@@ -178,7 +178,18 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
 
-            return Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationParameters, testParameters, token);
+            TrainingSessionResult result = Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationParameters, testParameters, token);
+
+            // Cleanup
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                egSquaredW[i].Free();
+                eDeltaxSquaredW[i].Free();
+                egSquaredB[i].Free();
+                eDeltaxSquaredB[i].Free();
+            }
+            return result;
         }
 
         #endregion
