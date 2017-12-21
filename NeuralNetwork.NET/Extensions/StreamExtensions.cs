@@ -38,24 +38,6 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Writes a 32-bits int to the target <see cref="Stream"/>
-        /// </summary>
-        /// <param name="stream">The target <see cref="Stream"/></param>
-        /// <param name="n">The value to write</param>
-        public static void Write([NotNull] this Stream stream, int n) => stream.Write(BitConverter.GetBytes(n), 0, sizeof(int));
-
-        /// <summary>
-        /// Reads a 32-bits int from the target <see cref="Stream"/>
-        /// </summary>
-        /// <param name="stream">The target <see cref="Stream"/></param>
-        public static int ReadInt32([NotNull] this Stream stream)
-        {
-            byte[] bytes = new byte[sizeof(int)];
-            stream.Read(bytes, 0, sizeof(int));
-            return BitConverter.ToInt32(bytes, 0);
-        }
-
-        /// <summary>
         /// Writes a <see cref="float"/> matrix to the target <see cref="Stream"/>
         /// </summary>
         /// <param name="stream">The target <see cref="Stream"/></param>
