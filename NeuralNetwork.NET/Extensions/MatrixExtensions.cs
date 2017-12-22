@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -613,6 +614,50 @@ namespace NeuralNetworkNET.Extensions
         public static unsafe int Argmax([NotNull] this float[,] m)
         {
             fixed (float* p = m) return Argmax(p, m.Length);
+        }
+
+        #endregion
+
+        #region Fill
+
+        // Private fill method for arbitrary memory areas
+        private static unsafe void Fill(float* p, int n, [NotNull] Func<float> provider)
+        {
+            // Fill in parallel
+            int
+                cores = Environment.ProcessorCount,
+                batch = n / cores,
+                mod = n % cores;
+            Parallel.For(0, cores, i =>
+            {
+                int offset = i * batch;
+                for (int j = 0; j < batch; j++)
+                    p[offset + j] = provider();
+            }).AssertCompleted();
+
+            // Remaining values
+            if (mod > 1)
+                for (int i = n - mod; i < n; i++)
+                    p[i] = provider();
+        }
+
+        /// <summary>
+        /// Fills the target <see cref="Tensor"/> with the input values provider
+        /// </summary>
+        /// <param name="tensor">The <see cref="Tensor"/> to fill up</param>
+        /// <param name="provider"></param>
+        internal static unsafe void Fill(in this Tensor tensor, [NotNull] Func<float> provider) => Fill(tensor, tensor.Size, provider);
+
+        /// <summary>
+        /// Fills the target <see cref="Array"/> with the input values provider
+        /// </summary>
+        /// <param name="array">The <see cref="Array"/> to fill up</param>
+        /// <param name="provider"></param>
+        internal static unsafe void Fill([NotNull] this Array array, [NotNull] Func<float> provider)
+        {
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            Fill((float*)handle.AddrOfPinnedObject().ToPointer(), array.Length, provider);
+            handle.Free();
         }
 
         #endregion
