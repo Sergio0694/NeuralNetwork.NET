@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         public CuDnnSoftmaxLayer(in TensorInfo input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(input, outputs, weightsMode, biasMode) { }
 
-        public CuDnnSoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases) : base(weights, biases) { }
+        public CuDnnSoftmaxLayer(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases) : base(input, outputs, weights, biases) { }
 
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
@@ -40,7 +40,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 // Linear pass
                 fixed (float* pw = Weights)
                 {
-                    Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                    Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                     using (DeviceMemory<float>
                         x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                         w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),

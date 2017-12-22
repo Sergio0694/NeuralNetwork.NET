@@ -127,14 +127,14 @@ namespace NeuralNetworkNET.Networks.Implementations
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
                 WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
-                Tensor.NewZeroed(layer.Weights.GetLength(0), layer.Weights.GetLength(1), out egSquaredW[i]);
-                Tensor.NewZeroed(layer.Weights.GetLength(0), layer.Weights.GetLength(1), out eDeltaxSquaredW[i]);
+                Tensor.NewZeroed(1, layer.Weights.Length, out egSquaredW[i]);
+                Tensor.NewZeroed(1, layer.Weights.Length, out eDeltaxSquaredW[i]);
                 Tensor.NewZeroed(1, layer.Biases.Length, out egSquaredB[i]);
                 Tensor.NewZeroed(1, layer.Biases.Length, out eDeltaxSquaredB[i]);
             }
 
             // Adadelta update for weights and biases
-            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 fixed (float* pw = layer.Weights)
                 {

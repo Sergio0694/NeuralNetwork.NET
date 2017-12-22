@@ -19,8 +19,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Output;
 
-        public OutputLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
-            : base(input, neurons, activation, cost, weightsMode, biasMode)
+        public OutputLayer(in TensorInfo input, int outputs, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+            : base(input, outputs, activation, cost, weightsMode, biasMode)
         {
             if (activation == ActivationFunctionType.Softmax || cost == CostFunctionType.LogLikelyhood)
                 throw new ArgumentException("The softmax activation and log-likelyhood cost function must be used together in a softmax layer");
@@ -28,10 +28,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                 throw new ArgumentException("The cross-entropy cost function can only accept inputs in the (0,1) range");
         }
 
-        public OutputLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
-            : base(weights, biases, activation, cost) { }
+        public OutputLayer(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
+            : base(input, outputs, weights, biases, activation, cost) { }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new OutputLayer(Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType, CostFunctionType);
+        public override INetworkLayer Clone() => new OutputLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType, CostFunctionType);
     }
 }

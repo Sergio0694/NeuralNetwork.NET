@@ -1,16 +1,10 @@
 ﻿using System.IO;
 using System.Linq;
-using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -52,7 +46,7 @@ namespace NeuralNetworkNET.Unit
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                float[,] m = ThreadSafeRandom.NextGlorotNormalMatrix(784, 30);
+                float[,] m = WeightsProvider.NewFullyConnectedWeights(784, 30, WeightsInitializationMode.GlorotNormal).AsMatrix(784, 30);
                 stream.Write(m);
                 byte[] test = new byte[10];
                 stream.Seek(-10, SeekOrigin.Current);
@@ -65,7 +59,7 @@ namespace NeuralNetworkNET.Unit
             }
             using (MemoryStream stream = new MemoryStream())
             {
-                float[] v = ThreadSafeRandom.NextGaussianVector(723);
+                float[] v = WeightsProvider.NewBiases(723, BiasInitializationMode.Gaussian);
                 stream.Write(v);
                 byte[] test = new byte[10];
                 stream.Seek(-10, SeekOrigin.Current);
@@ -76,36 +70,6 @@ namespace NeuralNetworkNET.Unit
                 float[] copy = stream.ReadFloatArray(723);
                 Assert.IsTrue(v.ContentEquals(copy));
             }
-        }
-
-        [TestMethod]
-        public void BinarySerialize1()
-        {
-            INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(784), 30, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(30), 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            FileInfo file = new FileInfo(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"test1{NeuralNetworkLoader.NetworkFileExtension}"));
-            network.Save(file);
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(file);
-            Assert.IsTrue(copy != null);
-            Assert.IsTrue(copy.Equals(network));
-        }
-
-        [TestMethod]
-        public void BinarySerialize2()
-        {
-            INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.Convolutional(new TensorInfo(28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new TensorInfo(24, 24, 20), ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional(new TensorInfo(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(160), 8, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(8), 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            FileInfo file = new FileInfo(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"test2{NeuralNetworkLoader.NetworkFileExtension}"));
-            network.Save(file);
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(file);
-            Assert.IsTrue(copy != null);
-            Assert.IsTrue(copy.Equals(network));
         }
     }
 }

@@ -26,26 +26,34 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                   WeightsProvider.NewFullyConnectedWeights(input.Size, neurons, weightsMode),
                   WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
-        public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
-            : base(TensorInfo.CreateLinear(weights.GetLength(0)), TensorInfo.CreateLinear(weights.GetLength(1)), weights, biases, activation)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            : base(input, TensorInfo.CreateLinear(neurons), weights, biases, activation)
         {
-            if (weights.GetLength(1) != biases.Length)
+            if (neurons != biases.Length)
                 throw new ArgumentException("The biases vector must have the same size as the number of output neurons");
         }
 
         /// <inheritdoc/>
-        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.MultiplyWithSum(Weights, Biases, out z);
-            z.Activation(ActivationFunctions.Activation, out a);
+            fixed (float* pw = Weights)
+            {
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                x.MultiplyWithSum(wTensor, Biases, out z);
+                z.Activation(ActivationFunctions.Activation, out a);
+            }
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
-            Weights.Transpose(out Tensor wt);
-            z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
-            wt.Free();
+            fixed (float* pw = Weights)
+            {
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                wTensor.Transpose(out Tensor wt);
+                z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
+                wt.Free();
+            }
         }
 
         /// <inheritdoc/>
@@ -58,7 +66,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new FullyConnectedLayer(Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)

@@ -82,7 +82,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
                 Forward(xTensor, out Tensor yHatTensor);
                 float[] yHat = yHatTensor.ToArray();
                 yHatTensor.Free();
@@ -95,8 +95,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
-                Tensor.Fix(py, 1, y.Length, out Tensor yTensor);
+                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Reshape(py, 1, y.Length, out Tensor yTensor);
                 return CalculateCost(xTensor, yTensor);
             }
         }
@@ -106,7 +106,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length];
@@ -130,7 +130,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 Forward(xTensor, out Tensor yHatTensor);
                 float[,] yHat = yHatTensor.ToArray2D();
                 yHatTensor.Free();
@@ -143,8 +143,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
-                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
                 return CalculateCost(xTensor, yTensor);
             }
         }
@@ -154,7 +154,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length];
@@ -213,8 +213,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length],
                     dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
-                Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
-                Tensor.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
+                Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
+                Tensor.Reshape(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
                 Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
 
                 // Feedforward
@@ -343,8 +343,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the even batches
                 for (int i = 0; i < batches; i++)
                 {
-                    Tensor.Fix(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
-                    Tensor.Fix(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
+                    Tensor.Reshape(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
+                    Tensor.Reshape(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
                     (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
@@ -353,8 +353,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the remaining samples, if any
                 if (batchMod > 0)
                 {
-                    Tensor.Fix(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
-                    Tensor.Fix(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
+                    Tensor.Reshape(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
+                    Tensor.Reshape(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
                     (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
@@ -379,8 +379,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 ref readonly TrainingBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
-                    Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
-                    Tensor.Fix(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
+                    Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
+                    Tensor.Reshape(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
                     var partial = Evaluate(xTensor, yTensor);
                     cost += partial.Cost;
                     classified += partial.Classified;
