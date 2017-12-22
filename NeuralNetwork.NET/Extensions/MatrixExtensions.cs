@@ -455,6 +455,23 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
+        /// Returns a matrix with the reshaped content of the input vector
+        /// </summary>
+        /// <param name="v">The input vector</param>
+        /// <param name="h">The number of matrix rows</param>
+        /// <param name="w">The number of matrix columns</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[,] AsMatrix([NotNull] this float[] v, int h, int w)
+        {
+            if (h * w != v.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
+            float[,] m = new float[h, w];
+            Buffer.BlockCopy(v, 0, m, 0, sizeof(float) * v.Length);
+            return m;
+        }
+
+        /// <summary>
         /// Flattens the input volume in a linear array
         /// </summary>
         /// <param name="volume">The volume to flatten</param>

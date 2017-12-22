@@ -1,16 +1,10 @@
 ﻿using System.IO;
 using System.Linq;
-using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -52,7 +46,7 @@ namespace NeuralNetworkNET.Unit
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                float[,] m = ThreadSafeRandom.NextGlorotNormalMatrix(784, 30);
+                float[,] m = WeightsProvider.NewFullyConnectedWeights(784, 30, WeightsInitializationMode.GlorotNormal).AsMatrix(784, 30);
                 stream.Write(m);
                 byte[] test = new byte[10];
                 stream.Seek(-10, SeekOrigin.Current);
@@ -65,7 +59,7 @@ namespace NeuralNetworkNET.Unit
             }
             using (MemoryStream stream = new MemoryStream())
             {
-                float[] v = ThreadSafeRandom.NextGaussianVector(723);
+                float[] v = WeightsProvider.NewBiases(723, BiasInitializationMode.Gaussian);
                 stream.Write(v);
                 byte[] test = new byte[10];
                 stream.Seek(-10, SeekOrigin.Current);
