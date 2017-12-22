@@ -28,10 +28,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             a.InPlaceSoftmaxNormalization();
         }
 
-        public SoftmaxLayer([NotNull] float[,] weights, [NotNull] float[] biases)
-            : base(weights, biases, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood) { }
+        public SoftmaxLayer(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases)
+            : base(input, outputs, weights, biases, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood) { }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new SoftmaxLayer(Weights.BlockCopy(), Biases.BlockCopy());
+        public override INetworkLayer Clone() => new SoftmaxLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy());
     }
 }

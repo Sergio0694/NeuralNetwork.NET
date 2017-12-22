@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <param name="chw">The width of the final matrix</param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Fix(float* p, int n, int chw, out Tensor tensor)
+        public static unsafe void Reshape(float* p, int n, int chw, out Tensor tensor)
         {
             IntPtr ptr = new IntPtr(p);
             tensor = new Tensor(ptr, n, chw);

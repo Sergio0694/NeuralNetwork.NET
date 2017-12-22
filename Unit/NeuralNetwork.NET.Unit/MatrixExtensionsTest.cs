@@ -31,8 +31,8 @@ namespace NeuralNetworkNET.Unit
                 r = { 1.1f, 5.1f, 1.1f, -0.9f };
             fixed (float* pm = m, pv = v)
             {
-                Tensor.Fix(pm, 4, 4, out Tensor mTensor);
-                Tensor.Fix(pv, 1, 4, out Tensor vTensor);
+                Tensor.Reshape(pm, 4, 4, out Tensor mTensor);
+                Tensor.Reshape(pv, 1, 4, out Tensor vTensor);
                 vTensor.Multiply(mTensor, out Tensor rTensor);
                 Assert.IsTrue(rTensor.ToArray().ContentEquals(r));
                 rTensor.Free();
@@ -65,8 +65,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm1 = m1, pm2 = m2)
             {
-                Tensor.Fix(pm1, 2, 3, out Tensor m1Tensor);
-                Tensor.Fix(pm2, 3, 4, out Tensor m2Tensor);
+                Tensor.Reshape(pm1, 2, 3, out Tensor m1Tensor);
+                Tensor.Reshape(pm2, 3, 4, out Tensor m2Tensor);
                 m1Tensor.Multiply(m2Tensor, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
@@ -101,8 +101,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm1 = m1, pm2 = m2)
             {
-                Tensor.Fix(pm1, 3, 3, out Tensor m1Tensor);
-                Tensor.Fix(pm2, 3, 3, out Tensor m2Tensor);
+                Tensor.Reshape(pm1, 3, 3, out Tensor m1Tensor);
+                Tensor.Reshape(pm2, 3, 3, out Tensor m2Tensor);
                 m1Tensor.InPlaceHadamardProduct(m2Tensor);
                 Assert.IsTrue(m1Tensor.ToArray2D().ContentEquals(r));
             }
@@ -130,7 +130,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 2, 4, out Tensor mTensor);
+                Tensor.Reshape(pm, 2, 4, out Tensor mTensor);
                 mTensor.Transpose(out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();

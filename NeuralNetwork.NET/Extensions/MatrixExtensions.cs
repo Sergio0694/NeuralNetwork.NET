@@ -620,26 +620,10 @@ namespace NeuralNetworkNET.Extensions
         #region Memory management
 
         /// <summary>
-        /// Returns a deep copy of the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to clone</param>
-        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.MemoryCopy"/></remarks>
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe float[,] BlockCopy([NotNull] this float[,] m)
-        {
-            int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[h, w];
-            int size = sizeof(float) * h * w;
-            fixed (float* pm = m, presult = result)
-                Buffer.MemoryCopy(pm, presult, size, size);
-            return result;
-        }
-
-        /// <summary>
         /// Returns a deep copy of the input vector
         /// </summary>
         /// <param name="v">The vector to clone</param>
+        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.MemoryCopy"/></remarks>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static unsafe float[] BlockCopy([NotNull] this float[] v)

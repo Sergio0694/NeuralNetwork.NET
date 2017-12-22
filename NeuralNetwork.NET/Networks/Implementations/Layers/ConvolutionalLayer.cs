@@ -55,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         public ConvolutionalLayer(
             in TensorInfo input, in ConvolutionInfo operation, in TensorInfo kernels, in TensorInfo output,
-            [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(input, output, weights, biases, activation)
         {
             OperationInfo = operation;
@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
                 x.ConvoluteForward(InputInfo, wTensor, KernelInfo, Biases, out z);
                 if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
                 else z.Activation(ActivationFunctions.Activation, out a);
@@ -79,7 +79,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
                 wTensor.Rotate180(KernelInfo.Channels, out Tensor w180);
                 delta_1.ConvoluteBackwards(OutputInfo, w180, KernelInfo, out Tensor delta);
                 w180.Free();

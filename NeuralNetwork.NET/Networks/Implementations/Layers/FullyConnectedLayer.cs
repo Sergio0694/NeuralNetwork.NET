@@ -26,10 +26,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                   WeightsProvider.NewFullyConnectedWeights(input.Size, neurons, weightsMode),
                   WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
-        public FullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
-            : base(TensorInfo.CreateLinear(weights.GetLength(0)), TensorInfo.CreateLinear(weights.GetLength(1)), weights, biases, activation)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            : base(input, TensorInfo.CreateLinear(neurons), weights, biases, activation)
         {
-            if (weights.GetLength(1) != biases.Length)
+            if (neurons != biases.Length)
                 throw new ArgumentException("The biases vector must have the same size as the number of output neurons");
         }
 
@@ -38,7 +38,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 x.MultiplyWithSum(wTensor, Biases, out z);
                 z.Activation(ActivationFunctions.Activation, out a);
             }
@@ -49,7 +49,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 wTensor.Transpose(out Tensor wt);
                 z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
                 wt.Free();
@@ -66,7 +66,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new FullyConnectedLayer(Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)

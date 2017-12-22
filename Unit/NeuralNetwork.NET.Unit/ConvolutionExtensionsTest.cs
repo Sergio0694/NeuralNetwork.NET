@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 1, 16, out Tensor mTensor);
+                Tensor.Reshape(pm, 1, 16, out Tensor mTensor);
                 mTensor.Pool2x2(1, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
 
@@ -82,7 +82,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 1, 49, out Tensor mTensor);
+                Tensor.Reshape(pm, 1, 49, out Tensor mTensor);
                 mTensor.Pool2x2(1, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
@@ -107,7 +107,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 1, 4, out Tensor mTensor);
+                Tensor.Reshape(pm, 1, 4, out Tensor mTensor);
                 mTensor.Pool2x2(1, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
@@ -147,7 +147,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 2, 16, out Tensor mTensor);
+                Tensor.Reshape(pm, 2, 16, out Tensor mTensor);
                 mTensor.Pool2x2(1, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
@@ -203,7 +203,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 2, 32, out Tensor mTensor);
+                Tensor.Reshape(pm, 2, 32, out Tensor mTensor);
                 mTensor.Pool2x2(2, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
@@ -231,7 +231,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 1, 4, out Tensor tensor);
+                Tensor.Reshape(pm, 1, 4, out Tensor tensor);
                 tensor.Rotate180(1, out Tensor tTensor);
                 Assert.IsTrue(tTensor.ToArray2D().ContentEquals(r));
                 tTensor.Free();
@@ -261,7 +261,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 1, 9, out Tensor tensor);
+                Tensor.Reshape(pm, 1, 9, out Tensor tensor);
                 tensor.Rotate180(1, out Tensor tTensor);
                 Assert.IsTrue(tTensor.ToArray2D().ContentEquals(r));
                 tTensor.Free();
@@ -317,7 +317,7 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 2, 18, out Tensor tensor);
+                Tensor.Reshape(pm, 2, 18, out Tensor tensor);
                 tensor.Rotate180(2, out Tensor tTensor);
                 Assert.IsTrue(tTensor.ToArray2D().ContentEquals(r));
                 tTensor.Free();
@@ -355,8 +355,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m, pp = p)
             {
-                Tensor.Fix(pm, 1, 16, out Tensor mTensor);
-                Tensor.Fix(pp, 1, 4, out Tensor pTensor);
+                Tensor.Reshape(pm, 1, 16, out Tensor mTensor);
+                Tensor.Reshape(pp, 1, 4, out Tensor pTensor);
                 mTensor.UpscalePool2x2(pTensor, 1);
                 Assert.IsTrue(mTensor.ToArray2D().ContentEquals(r));
             }
@@ -406,8 +406,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m, pp = p)
             {
-                Tensor.Fix(pm, 1, 32, out Tensor mTensor);
-                Tensor.Fix(pp, 1, 8, out Tensor pTensor);
+                Tensor.Reshape(pm, 1, 32, out Tensor mTensor);
+                Tensor.Reshape(pp, 1, 8, out Tensor pTensor);
                 mTensor.UpscalePool2x2(pTensor, 2);
                 Assert.IsTrue(mTensor.ToArray2D().ContentEquals(r));
             }
@@ -486,8 +486,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m, pp = p)
             {
-                Tensor.Fix(pm, 2, 32, out Tensor mTensor);
-                Tensor.Fix(pp, 2, 8, out Tensor pTensor);
+                Tensor.Reshape(pm, 2, 32, out Tensor mTensor);
+                Tensor.Reshape(pp, 2, 8, out Tensor pTensor);
                 mTensor.UpscalePool2x2(pTensor, 2);
                 Assert.IsTrue(mTensor.ToArray2D().ContentEquals(r));
             }
@@ -592,8 +592,8 @@ namespace NeuralNetworkNET.Unit
                 };
             fixed (float* pm = m, pp = p)
             {
-                Tensor.Fix(pm, 2, 48, out Tensor mTensor);
-                Tensor.Fix(pp, 2, 12, out Tensor pTensor);
+                Tensor.Reshape(pm, 2, 48, out Tensor mTensor);
+                Tensor.Reshape(pp, 2, 12, out Tensor pTensor);
                 mTensor.UpscalePool2x2(pTensor, 3);
                 Assert.IsTrue(mTensor.ToArray2D().ContentEquals(r));
             }
@@ -615,7 +615,7 @@ namespace NeuralNetworkNET.Unit
             float[] r = { 45 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 1, 9, out Tensor mTensor);
+                Tensor.Reshape(pm, 1, 9, out Tensor mTensor);
                 mTensor.CompressVertically(1, out Tensor v);
                 Assert.IsTrue(v.ToArray().ContentEquals(r));
                 v.Free();
@@ -651,7 +651,7 @@ namespace NeuralNetworkNET.Unit
             float[] r = { 150, 227 };
             fixed (float* pm = m)
             {
-                Tensor.Fix(pm, 2, 18, out Tensor mTensor);
+                Tensor.Reshape(pm, 2, 18, out Tensor mTensor);
                 mTensor.CompressVertically(2, out Tensor v);
                 Assert.IsTrue(v.ToArray().ContentEquals(r));
                 v.Free();
@@ -686,10 +686,11 @@ namespace NeuralNetworkNET.Unit
                     4.6f, 1.6f
                 }
             };
-            fixed (float* pl = l)
+            fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 9, out Tensor lTensor);
-                lTensor.ConvoluteForward(new TensorInfo(3, 3, 1), k, new TensorInfo(2, 2, 1), b, out Tensor result);
+                Tensor.Reshape(pl, 1, 9, out Tensor lTensor);
+                Tensor.Reshape(pk, 1, 4, out Tensor kTensor);
+                lTensor.ConvoluteForward(new TensorInfo(3, 3, 1), kTensor, new TensorInfo(2, 2, 1), b, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -731,10 +732,11 @@ namespace NeuralNetworkNET.Unit
                     4, 1
                 }
             };
-            fixed (float* pl = l)
+            fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 2, 9, out Tensor lTensor);
-                lTensor.ConvoluteForward(new TensorInfo(3, 3, 1), k, new TensorInfo(2, 2, 1), new float[1], out Tensor result);
+                Tensor.Reshape(pl, 2, 9, out Tensor lTensor);
+                Tensor.Reshape(pk, 1, 4, out Tensor kTensor);
+                lTensor.ConvoluteForward(new TensorInfo(3, 3, 1), kTensor, new TensorInfo(2, 2, 1), new float[1], out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -774,10 +776,11 @@ namespace NeuralNetworkNET.Unit
                     1.5f, 3.5f
                 }
             };
-            fixed (float* pl = l)
+            fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 9, out Tensor lTensor);
-                lTensor.ConvoluteForward(new TensorInfo(3, 3, 1), k, new TensorInfo(2, 2, 1), new[] { 1, 0.5f }, out Tensor result);
+                Tensor.Reshape(pl, 1, 9, out Tensor lTensor);
+                Tensor.Reshape(pk, 2, 4, out Tensor kTensor);
+                lTensor.ConvoluteForward(new TensorInfo(3, 3, 1), kTensor, new TensorInfo(2, 2, 1), new[] { 1, 0.5f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -817,10 +820,11 @@ namespace NeuralNetworkNET.Unit
                     6.1f, 3.1f
                 }
             };
-            fixed (float* pl = l)
+            fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 18, out Tensor lTensor);
-                lTensor.ConvoluteForward(new TensorInfo(3, 3, 2), k, new TensorInfo(2, 2, 2), new[] { 0.1f }, out Tensor result);
+                Tensor.Reshape(pl, 1, 18, out Tensor lTensor);
+                Tensor.Reshape(pk, 1, 8, out Tensor kTensor);
+                lTensor.ConvoluteForward(new TensorInfo(3, 3, 2), kTensor, new TensorInfo(2, 2, 2), new[] { 0.1f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -869,10 +873,11 @@ namespace NeuralNetworkNET.Unit
                     6.2f, 3.2f
                 }
             };
-            fixed (float* pl = l)
+            fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 18, out Tensor lTensor);
-                lTensor.ConvoluteForward(new TensorInfo(3, 3, 2), k, new TensorInfo(2, 2, 2), new[] { 0, 0.2f }, out Tensor result);
+                Tensor.Reshape(pl, 1, 18, out Tensor lTensor);
+                Tensor.Reshape(pk, 2, 8, out Tensor kTensor);
+                lTensor.ConvoluteForward(new TensorInfo(3, 3, 2), kTensor, new TensorInfo(2, 2, 2), new[] { 0, 0.2f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -902,10 +907,11 @@ namespace NeuralNetworkNET.Unit
                     2.9f, 2.9f
                 }
             };
-            fixed (float* pl = l)
+            fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 6, out Tensor lTensor);
-                lTensor.ConvoluteForward(new TensorInfo(2, 3, 1), k, new TensorInfo(2, 2, 1), new[] { 0.9f }, out Tensor result);
+                Tensor.Reshape(pl, 1, 6, out Tensor lTensor);
+                Tensor.Reshape(pk, 1, 4, out Tensor kTensor);
+                lTensor.ConvoluteForward(new TensorInfo(2, 3, 1), kTensor, new TensorInfo(2, 2, 1), new[] { 0.9f }, out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }
@@ -939,8 +945,8 @@ namespace NeuralNetworkNET.Unit
             };
             fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 4, out Tensor lTensor);
-                Tensor.Fix(pk, 1, 4, out Tensor kTensor);
+                Tensor.Reshape(pl, 1, 4, out Tensor lTensor);
+                Tensor.Reshape(pk, 1, 4, out Tensor kTensor);
                 lTensor.ConvoluteBackwards(new TensorInfo(2, 2, 1), kTensor, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
@@ -982,8 +988,8 @@ namespace NeuralNetworkNET.Unit
             };
             fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 8, out Tensor lTensor);
-                Tensor.Fix(pk, 2, 4, out Tensor kTensor);
+                Tensor.Reshape(pl, 1, 8, out Tensor lTensor);
+                Tensor.Reshape(pk, 2, 4, out Tensor kTensor);
                 lTensor.ConvoluteBackwards(new TensorInfo(2, 2, 2), kTensor, new TensorInfo(2, 2, 1), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
@@ -1025,8 +1031,8 @@ namespace NeuralNetworkNET.Unit
             };
             fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 1, 4, out Tensor lTensor);
-                Tensor.Fix(pk, 1, 8, out Tensor kTensor);
+                Tensor.Reshape(pl, 1, 4, out Tensor lTensor);
+                Tensor.Reshape(pk, 1, 8, out Tensor kTensor);
                 lTensor.ConvoluteBackwards(new TensorInfo(2, 2, 1), kTensor, new TensorInfo(2, 2, 2), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
@@ -1094,274 +1100,9 @@ namespace NeuralNetworkNET.Unit
             };
             fixed (float* pl = l, pk = k)
             {
-                Tensor.Fix(pl, 2, 8, out Tensor lTensor);
-                Tensor.Fix(pk, 2, 8, out Tensor kTensor);
+                Tensor.Reshape(pl, 2, 8, out Tensor lTensor);
+                Tensor.Reshape(pk, 2, 8, out Tensor kTensor);
                 lTensor.ConvoluteBackwards(new TensorInfo(2, 2, 2), kTensor, new TensorInfo(2, 2, 2), out Tensor result);
-                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
-                result.Free();
-            }
-        }
-
-        [TestMethod]
-        public unsafe void Convolution2DGradient1()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0
-                    }
-                },
-                k =
-                {
-                    {
-                        1, 1,
-                        0, 1
-                    }
-                };
-            float[,] expected =
-            {
-                {
-                    2, 2,
-                    4, 1
-                }
-            };
-            fixed (float* pl = l, pk = k)
-            {
-                Tensor.Fix(pl, 1, 9, out Tensor lTensor);
-                Tensor.Fix(pk, 1, 4, out Tensor kTensor);
-                lTensor.ConvoluteGradient(new TensorInfo(3, 3, 1), kTensor, new TensorInfo(2, 2, 1), out Tensor result);
-                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
-                result.Free();
-            }
-        }
-
-        [TestMethod]
-        public unsafe void Convolution2DGradient2()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0
-                    }
-                },
-                k =
-                {
-                    {
-                        1, 1,
-                        0, 1,
-
-                        1, 2,
-                        0, 1
-                    }
-                };
-            float[,] expected =
-            {
-                {
-                    2, 2,
-                    4, 1,
-
-                    4, 2,
-                    5, 2
-                }
-            };
-            fixed (float* pl = l, pk = k)
-            {
-                Tensor.Fix(pl, 1, 9, out Tensor lTensor);
-                Tensor.Fix(pk, 1, 8, out Tensor kTensor);
-                lTensor.ConvoluteGradient(new TensorInfo(3, 3, 1), kTensor, new TensorInfo(2, 2, 2), out Tensor result);
-                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
-                result.Free();
-            }
-        }
-
-        [TestMethod]
-        public unsafe void Convolution2DGradient3()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0,
-
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0
-                    }
-                },
-                k =
-                {
-                    {
-                        1, 1,
-                        0, 1
-                    }
-                };
-            float[,] expected =
-            {
-                {
-                    2, 2,
-                    4, 1,
-
-                    2, 2,
-                    4, 1
-                }
-            };
-            fixed (float* pl = l, pk = k)
-            {
-                Tensor.Fix(pl, 1, 18, out Tensor lTensor);
-                Tensor.Fix(pk, 1, 4, out Tensor kTensor);
-                lTensor.ConvoluteGradient(new TensorInfo(3, 3, 2), kTensor, new TensorInfo(2, 2, 1), out Tensor result);
-                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
-                result.Free();
-            }
-        }
-
-        [TestMethod]
-        public unsafe void Convolution2DGradient4()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0,
-
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0
-                    },
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0,
-
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0
-                    }
-                },
-                k =
-                {
-                    {
-                        1, 1,
-                        0, 1
-                    },
-                    {
-                        1, 2,
-                        0, 1
-                    }
-                };
-            float[,] expected =
-            {
-                {
-                    2, 2,
-                    4, 1,
-
-                    2, 2,
-                    4, 1
-                },
-                {
-                    4, 2,
-                    5, 2,
-
-                    4, 2,
-                    5, 2
-                }
-            };
-            fixed (float* pl = l, pk = k)
-            {
-                Tensor.Fix(pl, 2, 18, out Tensor lTensor);
-                Tensor.Fix(pk, 2, 4, out Tensor kTensor);
-                lTensor.ConvoluteGradient(new TensorInfo(3, 3, 2), kTensor, new TensorInfo(2, 2, 1), out Tensor result);
-                Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
-                result.Free();
-            }
-        }
-
-        [TestMethod]
-        public unsafe void Convolution2DGradient5()
-        {
-            float[,]
-                l =
-                {
-                    {
-                        0, 1, 0,
-                        2, 0, 1,
-                        1, 1, 0,
-
-                        1, 0, 1,
-                        0, 2, 1,
-                        0, 1, 1
-                    },
-                    {
-                        0, -1, 0,
-                        2, 0, 1,
-                        1, 1, 0,
-
-                        1, 0, 1,
-                        0, 2, 1,
-                        0, 1, 1
-                    }
-                },
-                k =
-                {
-                    {
-                        1, 1,
-                        0, 1,
-
-                        0, 1,
-                        1, 0
-                    },
-                    {
-                        1, 1,
-                        0, 1,
-
-                        0, -1,
-                        1, 0
-                    }
-                };
-            float[,] expected =
-            {
-                {
-                    2, 2,
-                    4, 1,
-
-                    3, 3,
-                    1, 4,
-
-                    3, 0,
-                    1, 2,
-
-                    0, 3,
-                    2, 2
-                },
-                {
-                    2, 0,
-                    4, 1,
-
-                    3, 3,
-                    1, 4,
-
-                    -3, 0,
-                    -1, 0,
-
-                    0, -1,
-                    2, 0
-                }
-            };
-            fixed (float* pl = l, pk = k)
-            {
-                Tensor.Fix(pl, 2, 18, out Tensor lTensor);
-                Tensor.Fix(pk, 2, 8, out Tensor kTensor);
-                lTensor.ConvoluteGradient(new TensorInfo(3, 3, 2), kTensor, new TensorInfo(2, 2, 2), out Tensor result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(expected));
                 result.Free();
             }

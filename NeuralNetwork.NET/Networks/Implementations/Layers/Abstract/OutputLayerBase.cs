@@ -32,15 +32,15 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         #endregion
 
-        protected OutputLayerBase(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
-            : base(input, neurons, activation, weightsMode, biasMode)
+        protected OutputLayerBase(in TensorInfo input, int outputs, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+            : base(input, outputs, activation, weightsMode, biasMode)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
         }
 
-        protected OutputLayerBase([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
-            : base(weights, biases, activation)
+        protected OutputLayerBase(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
+            : base(input, outputs, weights, biases, activation)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);

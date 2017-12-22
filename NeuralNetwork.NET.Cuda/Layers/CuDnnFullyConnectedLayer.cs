@@ -20,18 +20,18 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly Dnn DnnInstance = DnnService.Instance;
 
-        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
-            : base(input, outputs, activation, weightsMode, biasMode) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
+            : base(input, neurons, activation, weightsMode, biasMode) { }
 
-        public CuDnnFullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
-            : base(weights, biases, activation) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
+            : base(input, neurons, weights, biases, activation) { }
 
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float>
                     x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                     w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float>
                     delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
                     w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),

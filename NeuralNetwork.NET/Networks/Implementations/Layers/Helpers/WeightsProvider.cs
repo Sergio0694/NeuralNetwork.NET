@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.Helpers;
@@ -17,16 +18,16 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         /// <param name="outputs">The output neurons</param>
         /// <param name="mode">The initialization mode for the weights</param>
         [Pure, NotNull]
-        public static float[,] NewFullyConnectedWeights(int inputs, int outputs, WeightsInitializationMode mode)
+        public static float[] NewFullyConnectedWeights(int inputs, int outputs, WeightsInitializationMode mode)
         {
             if (inputs <= 0 || outputs <= 0) throw new ArgumentOutOfRangeException("The inputs and outputs must be positive numbers");
             switch (mode)
             {
-                case WeightsInitializationMode.LeCunUniform: return ThreadSafeRandom.NextLeCunUniformMatrix(inputs, outputs);
-                case WeightsInitializationMode.GlorotNormal: return ThreadSafeRandom.NextGlorotNormalMatrix(inputs, outputs);
-                case WeightsInitializationMode.GlorotUniform: return ThreadSafeRandom.NextGlorotUniformMatrix(inputs, outputs);
-                case WeightsInitializationMode.HeEtAlNormal: return ThreadSafeRandom.NextHeEtAlNormalMatrix(inputs, outputs);
-                case WeightsInitializationMode.HeEtAlUniform: return ThreadSafeRandom.NextHeEtAlUniformMatrix(inputs, outputs);
+                case WeightsInitializationMode.LeCunUniform: return ThreadSafeRandom.NextLeCunUniformMatrix(inputs, outputs).Cast<float>().ToArray();
+                case WeightsInitializationMode.GlorotNormal: return ThreadSafeRandom.NextGlorotNormalMatrix(inputs, outputs).Cast<float>().ToArray();
+                case WeightsInitializationMode.GlorotUniform: return ThreadSafeRandom.NextGlorotUniformMatrix(inputs, outputs).Cast<float>().ToArray();
+                case WeightsInitializationMode.HeEtAlNormal: return ThreadSafeRandom.NextHeEtAlNormalMatrix(inputs, outputs).Cast<float>().ToArray();
+                case WeightsInitializationMode.HeEtAlUniform: return ThreadSafeRandom.NextHeEtAlUniformMatrix(inputs, outputs).Cast<float>().ToArray();
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported weights initialization mode");
             }
         }
@@ -39,11 +40,11 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         /// <param name="kernelsWidth">The width of each kernel</param>
         /// <param name="kernels">The number of kernels in the layer</param>
         [Pure, NotNull]
-        public static float[,] NewConvolutionalKernels(int inputDepth, int kernelsHeight, int kernelsWidth, int kernels)
+        public static float[] NewConvolutionalKernels(int inputDepth, int kernelsHeight, int kernelsWidth, int kernels)
         {
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
             float scale = (float)Math.Sqrt(6f / (inputDepth * kernelsHeight * kernelsWidth));
-            return ThreadSafeRandom.NextUniformMatrix(kernels, kernelsHeight * kernelsWidth * inputDepth, scale);
+            return ThreadSafeRandom.NextUniformMatrix(kernels, kernelsHeight * kernelsWidth * inputDepth, scale).Cast<float>().ToArray();
         }
 
         /// <summary>

@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xt);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xt);
                 cpu.Forward(xt, out Tensor z_cpu, out Tensor a_cpu);
                 gpu.Forward(xt, out Tensor z_gpu, out Tensor a_gpu);
                 Assert.IsTrue(z_cpu.ContentEquals(z_gpu));
@@ -39,8 +39,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             fixed (float* pd_1 = delta_1, pz = z)
             {
-                Tensor.Fix(pd_1, delta_1.GetLength(0), delta_1.GetLength(1), out Tensor delta_1t);
-                Tensor.Fix(pz, z.GetLength(0), z.GetLength(1), out Tensor zt);
+                Tensor.Reshape(pd_1, delta_1.GetLength(0), delta_1.GetLength(1), out Tensor delta_1t);
+                Tensor.Reshape(pz, z.GetLength(0), z.GetLength(1), out Tensor zt);
                 zt.Duplicate(out Tensor zt2);
                 cpu.Backpropagate(delta_1t, zt, ActivationFunctions.LeCunTanhPrime);
                 gpu.Backpropagate(delta_1t, zt2, ActivationFunctions.LeCunTanhPrime);
@@ -52,8 +52,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             fixed (float* px = x, pdelta = delta)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xt);
-                Tensor.Fix(pdelta, delta.GetLength(0), delta.GetLength(1), out Tensor deltat);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xt);
+                Tensor.Reshape(pdelta, delta.GetLength(0), delta.GetLength(1), out Tensor deltat);
                 cpu.ComputeGradient(xt, deltat, out Tensor dJdw_cpu, out Tensor dJdb_cpu);
                 gpu.ComputeGradient(xt, deltat, out Tensor dJdw_gpu, out Tensor dJdb_gpu);
                 Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
@@ -75,7 +75,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             FullyConnectedLayer
                 cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnFullyConnectedLayer(cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
+                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
             TestForward(cpu, gpu, x);
         }
 
@@ -87,7 +87,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             FullyConnectedLayer
                 cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnFullyConnectedLayer(cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
+                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
             TestBackward(cpu, gpu, delta_1, z);
         }
 
@@ -99,7 +99,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta = ThreadSafeRandom.NextGlorotNormalMatrix(400, 127);
             FullyConnectedLayer
                 cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnFullyConnectedLayer(cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
+                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
             TestGradient(cpu, gpu, x, delta);
         }
 
@@ -113,7 +113,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             float[,] x = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
+                gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
             TestForward(cpu, gpu, x);
         }
 
@@ -125,7 +125,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 z = ThreadSafeRandom.NextGlorotNormalMatrix(400, 250);
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
+                gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
             TestBackward(cpu, gpu, delta_1, z);
         }
 
@@ -137,7 +137,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 delta = ThreadSafeRandom.NextGlorotNormalMatrix(400, 127);
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
+                gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
             TestGradient(cpu, gpu, a, delta);
         }
 
@@ -151,13 +151,13 @@ namespace NeuralNetworkNET.Cuda.Unit
                 y[i, ThreadSafeRandom.NextInt(max: 127)] = 1;
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnSoftmaxLayer(cpu.Weights, cpu.Biases);
+                gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xt);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xt);
                 cpu.Forward(xt, out Tensor z, out Tensor a);
                 a.Duplicate(out Tensor a2);
-                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor yt);
+                Tensor.Reshape(py, y.GetLength(0), y.GetLength(1), out Tensor yt);
                 cpu.Backpropagate(a, yt, z);
                 gpu.Backpropagate(a2, yt, z);
                 Assert.IsTrue(a.ContentEquals(a2));
@@ -192,7 +192,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
             fixed (float* pz = z)
             {
-                Tensor.Fix(pz, z.GetLength(0), z.GetLength(1), out Tensor zTensor);
+                Tensor.Reshape(pz, z.GetLength(0), z.GetLength(1), out Tensor zTensor);
                 gpu.Forward(zTensor, out Tensor z_gpu, out Tensor a_gpu);
                 z_gpu.Free();
                 a_gpu.Free();
@@ -212,7 +212,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 gpu.Forward(xTensor, out Tensor z_gpu, out Tensor a_gpu);
                 z_gpu.Free();
                 a_gpu.Free();

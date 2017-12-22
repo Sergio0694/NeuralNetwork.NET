@@ -59,7 +59,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// Gets the weights for the current network layer
         /// </summary>
         [NotNull]
-        public float[,] Weights { get; }
+        public float[] Weights { get; }
 
         /// <summary>
         /// Gets the biases for the current network layer
@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         [NotNull]
         public float[] Biases { get; }
 
-        protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[,] w, [NotNull] float[] b, ActivationFunctionType activation) 
+        protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[] w, [NotNull] float[] b, ActivationFunctionType activation) 
             : base(input, output, activation)
         {
             Weights = w;
@@ -159,7 +159,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         #endregion
 
         /// <inheritdoc/>
-        public override void Serialize([NotNull] Stream stream)
+        public override void Serialize(Stream stream)
         {
             base.Serialize(stream);
             stream.Write(Weights);
