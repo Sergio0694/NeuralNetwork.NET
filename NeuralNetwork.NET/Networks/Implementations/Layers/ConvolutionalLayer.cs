@@ -65,9 +65,13 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.ConvoluteForward(InputInfo, Weights, KernelInfo, Biases, out z);
-            if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
-            else z.Activation(ActivationFunctions.Activation, out a);
+            fixed (float* pw = Weights)
+            {
+                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                x.ConvoluteForward(InputInfo, wTensor, KernelInfo, Biases, out z);
+                if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
+                else z.Activation(ActivationFunctions.Activation, out a);
+            }
         }
 
         /// <inheritdoc/>
@@ -75,8 +79,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, Weights.GetLength(0), Weights.GetLength(1), out Tensor weights);
-                weights.Rotate180(KernelInfo.Channels, out Tensor w180);
+                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                wTensor.Rotate180(KernelInfo.Channels, out Tensor w180);
                 delta_1.ConvoluteBackwards(OutputInfo, w180, KernelInfo, out Tensor delta);
                 w180.Free();
                 z.InPlaceActivationAndHadamardProduct(delta, activationPrime);

@@ -34,18 +34,26 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         /// <inheritdoc/>
-        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.MultiplyWithSum(Weights, Biases, out z);
-            z.Activation(ActivationFunctions.Activation, out a);
+            fixed (float* pw = Weights)
+            {
+                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                x.MultiplyWithSum(wTensor, Biases, out z);
+                z.Activation(ActivationFunctions.Activation, out a);
+            }
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
-            Weights.Transpose(out Tensor wt);
-            z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
-            wt.Free();
+            fixed (float* pw = Weights)
+            {
+                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                wTensor.Transpose(out Tensor wt);
+                z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
+                wt.Free();
+            }
         }
 
         /// <inheritdoc/>

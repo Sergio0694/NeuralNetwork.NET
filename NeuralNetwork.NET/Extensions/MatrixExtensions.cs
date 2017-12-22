@@ -207,21 +207,21 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix</param>
         /// <param name="result">The resulting matrix</param>
-        internal static unsafe void MultiplyWithSum(in this Tensor m1, [NotNull] float[,] m2, [NotNull] float[] v, out Tensor result)
+        internal static unsafe void MultiplyWithSum(in this Tensor m1, in Tensor m2, [NotNull] float[] v, out Tensor result)
         {
             // Initialize the parameters and the result matrix
-            if (m1.Length != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (m1.Length != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
             int
                 h = m1.Entities,
-                w = m2.GetLength(1),
+                w = m2.Length,
                 l = m1.Length;
             Tensor.New(h, w, out result);
-            float* pm = result, pm1 = m1;
+            float* pm = result, pm1 = m1, pm2 = m2;
 
             // Execute the multiplication in parallel
             void Kernel(int i)
             {
-                fixed (float* pm2 = m2, pv = v)
+                fixed (float* pv = v)
                 {
                     int i1 = i * l;
                     for (int j = 0; j < w; j++)
@@ -334,29 +334,6 @@ namespace NeuralNetworkNET.Extensions
                 pv[j] = sum;
             }
             Parallel.For(0, w, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Transposes the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to transpose</param>
-        /// <param name="result">The resulting matrix</param>
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe void Transpose([NotNull] this float[,] m, out Tensor result)
-        {
-            // Setup
-            int h = m.GetLength(0), w = m.GetLength(1);
-            Tensor.New(w, h, out result);
-
-            // Execute the transposition in parallel
-            float* pr = result;
-            void Kernel(int i)
-            {
-                fixed (float* pm = m)
-                    for (int j = 0; j < w; j++)
-                        pr[j * h + i] = pm[i * w + j];
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
         }
 
         /// <summary>
