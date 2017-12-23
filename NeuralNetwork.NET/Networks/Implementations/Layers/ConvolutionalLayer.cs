@@ -10,6 +10,7 @@ using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using Newtonsoft.Json;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -24,17 +25,30 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Convolutional;
 
+        [JsonProperty(nameof(OperationInfo), Order = 6)]
+        private readonly ConvolutionInfo _OperationInfo;
+
         /// <summary>
         /// Gets the info on the convolution operation performed by the layer
-        /// </summary>
-        [JsonProperty(nameof(OperationInfo), Order = 6)]
-        public ConvolutionInfo OperationInfo { get; }
+        /// </summary>    
+        public ref readonly ConvolutionInfo OperationInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _OperationInfo;
+        }
+
+        [JsonProperty(nameof(KernelInfo), Order = 7)]
+        public readonly TensorInfo _KernelInfo;
 
         /// <summary>
         /// Gets the <see cref="TensorInfo"/> associated with each kernel in the layer
         /// </summary>
-        [JsonProperty(nameof(KernelInfo), Order = 7)]
-        public TensorInfo KernelInfo { get; }
+
+        public ref readonly TensorInfo KernelInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _KernelInfo;
+        }
 
         /// <summary>
         /// Gets the number of kernels in the current layer
@@ -49,8 +63,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
                   WeightsProvider.NewConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.NewBiases(kernels, biasMode), activation)
         {
-            OperationInfo = operation;
-            KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
+            _OperationInfo = operation;
+            _KernelInfo = new TensorInfo(kernelSize.X, kernelSize.Y, input.Channels);
         }
 
         public ConvolutionalLayer(
@@ -58,8 +72,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(input, output, weights, biases, activation)
         {
-            OperationInfo = operation;
-            KernelInfo = kernels;
+            _OperationInfo = operation;
+            _KernelInfo = kernels;
         }
 
         /// <inheritdoc/>

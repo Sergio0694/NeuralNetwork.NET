@@ -7,6 +7,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using Newtonsoft.Json;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -22,13 +23,25 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         [JsonProperty(nameof(LayerType), Order = 1)]
         public abstract LayerType LayerType { get; }
 
-        /// <inheritdoc/>
         [JsonProperty(nameof(InputInfo), Order = 2)]
-        public TensorInfo InputInfo { get; }
+        private readonly TensorInfo _InputInfo;
 
         /// <inheritdoc/>
+        public ref readonly TensorInfo InputInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _InputInfo;
+        }
+
         [JsonProperty(nameof(OutputInfo), Order = 3)]
-        public TensorInfo OutputInfo { get; }
+        public readonly TensorInfo _OutputInfo;
+
+        /// <inheritdoc/>
+        public ref readonly TensorInfo OutputInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _OutputInfo;
+        }
 
         /// <summary>
         /// Gets the activation type used in the current layer
@@ -45,8 +58,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         protected NetworkLayerBase(in TensorInfo input, in TensorInfo output, ActivationFunctionType activation)
         {
-            InputInfo = input;
-            OutputInfo = output;
+            _InputInfo = input;
+            _OutputInfo = output;
             ActivationFunctionType = activation;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(activation);
         }

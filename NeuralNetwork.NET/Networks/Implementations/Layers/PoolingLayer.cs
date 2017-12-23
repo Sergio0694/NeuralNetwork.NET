@@ -8,6 +8,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using Newtonsoft.Json;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -20,18 +21,24 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Pooling;
 
+        [JsonProperty(nameof(OperationInfo), Order = 5)]
+        private readonly PoolingInfo _OperationInfo;
+
         /// <summary>
         /// Gets the info on the pooling operation performed by the layer
         /// </summary>
-        [JsonProperty(nameof(OperationInfo), Order = 5)]
-        public PoolingInfo OperationInfo { get; }
+        public ref readonly PoolingInfo OperationInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _OperationInfo;
+        }
 
         public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation)
             : base(input, new TensorInfo(
                 input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
                 input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1),
                 input.Channels), activation)
-            => OperationInfo = operation;
+            => _OperationInfo = operation;
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
