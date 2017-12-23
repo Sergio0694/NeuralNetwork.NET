@@ -2,7 +2,7 @@
 
 ## What is it?
 `NeuralNetwork.NET` is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
-It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network in JSON/binary format and more.
+It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network and its metadata and more.
 
 There's also a secondary .NET Framework 4.7.1 library available, `NeuralNetwork.NET.Cuda` that leverages the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
@@ -10,8 +10,8 @@ There's also a secondary .NET Framework 4.7.1 library available, `NeuralNetwork.
 
 - [Quick start](#quick-start)
   - [Supervised learning](#supervised-learning) 
+  - [GPU acceleration](#gpu-acceleration)
   - [Serialization and deserialization](#serialization-and-deserialization)
-- [GPU acceleration](#gpu-acceleration)
 - [Requirements](#requirements)
 
 # Quick start
@@ -46,18 +46,32 @@ TrainingSessionResult result = NetworkManager.TrainNetwork(network,
 
 **Note:** the `NetworkManager` methods are also available as asynchronous APIs.
 
+### GPU acceleration
+
+When using the `NeuralNetwork.NET.Cuda` additional library, it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU. To do that, just create a network using the layers from the `CuDnnNetworkLayers` class to enable the GPU processing mode.
+
+Some of the cuDNN-powered layers support additional options than the default layers. Here's an example:
+
+```C#
+INetworkLayer convolutional = CuDnnNetworkLayers.Convolutional(
+    TensorInfo.CreateForRgbImage(32, 32),
+    ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 1, 1, 2, 2), // Custom mode, padding and stride
+    (10, 10), 20, ActivationFunctionType.ReLU);
+```
+
 ### Serialization and deserialization
 
-The `INeuralNetwork` interface exposes a `SerializeAsJson` method that can be used to serialize any network at any given time.
-In order to get a new network instance from a serialized JSON string, just use the `NeuralNetworkLoader.TryLoadJson` method: it will parse the input text and automatically return a neural network with the original parameters.
+The `INeuralNetwork` interface exposes a `Save` method that can be used to serialize any network at any given time.
+In order to get a new network instance from a saved file or stream, just use the `NeuralNetworkLoader.TryLoad` method.
 
-There's also an additional `Save` method to save a neural network to a binary file. This provides a small, easy to share file that contains all the info on the current network.
+As multiple layer types have different implementations across the available libraries, you can specify the layer providers to use when loading a saved network. For example, here's how to load a network using the cuDNN layers, when possible:
 
-# GPU acceleration
+```C#
+FileInfo file = new FileInfo(@"C:\...\MySavedNetwork.nnet");
+INeuralNetwork network = NeuralNetworkLoader.TryLoad(file, CuDnnNetworkLayersDeserializer.Deserializer);
+```
 
-When using the `NeuralNetwork.NET.Cuda` additional library, it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU.
-
-Just create a network using the layers from the `CuDnnNetworkLayers` class to enable the GPU processing mode.
+There's also an additional `SaveMetadataAsJson` method to export the metadata of an `INeuralNetwork` instance.
 
 # Requirements
 
