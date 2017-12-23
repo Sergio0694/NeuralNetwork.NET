@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -414,13 +415,16 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public void Save(FileInfo file)
         {
-            using (FileStream stream = file.OpenWrite()) Save(stream);
+            using (FileStream stream = file.OpenWrite()) 
+                Save(stream);
         }
 
         /// <inheritdoc/>
         public void Save(Stream stream)
         {
-            foreach (NetworkLayerBase layer in _Layers) layer.Serialize(stream);
+            using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal))
+                foreach (NetworkLayerBase layer in _Layers) 
+                    layer.Serialize(gzip);
         }
 
         /// <inheritdoc/>
