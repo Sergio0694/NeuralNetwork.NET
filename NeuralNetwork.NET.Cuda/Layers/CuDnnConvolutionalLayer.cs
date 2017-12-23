@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         public CuDnnConvolutionalLayer(
             in TensorInfo input, in ConvolutionInfo operation, TensorInfo kernels, TensorInfo output,
-            [NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
             : base(input, operation, kernels, output, weights, biases, activation)
             => SetupCuDnnInfo();
 
@@ -78,7 +78,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
                 {
                     // Tensors info setup
@@ -119,7 +119,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
                 DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
                 DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, algorithm, out IntPtr size);
                 using (DeviceMemory<float> delta_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
@@ -173,7 +173,30 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
+        #region Misc
+
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new CuDnnConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="CuDnnConvolutionalLayer"/> from the input <see cref="System.IO.Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="System.IO.Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public new static INetworkLayer Deserialize([NotNull] System.IO.Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            if (!stream.TryRead(out ConvolutionInfo operation)) return null;
+            if (!stream.TryRead(out TensorInfo kernels)) return null;
+            return new CuDnnConvolutionalLayer(input, operation, kernels, output, weights, biases, activation);
+        }
+
+        #endregion
     }
 }

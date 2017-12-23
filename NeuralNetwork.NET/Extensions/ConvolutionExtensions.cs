@@ -23,15 +23,15 @@ namespace NeuralNetworkNET.Extensions
         /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
         public static unsafe void ConvoluteForward(
             in this Tensor source, in TensorInfo sourceInfo,
-            [NotNull] float[,] kernels, in TensorInfo kernelsInfo,
+            in Tensor kernels, in TensorInfo kernelsInfo,
             [NotNull] float[] biases,
             out Tensor result)
         {
             // Checks and local parameters
             if (kernels.Length == 0) throw new ArgumentException(nameof(kernels), "The kernels can't be empty");
             int
-                nKernels = kernels.GetLength(0),
-                kw = kernels.GetLength(1),
+                nKernels = kernels.Entities,
+                kw = kernels.Length,
                 kSize = kw / kernelsInfo.Channels,
                 kHeight = kernelsInfo.Height,
                 kWidth = kernelsInfo.Width;
@@ -63,7 +63,7 @@ namespace NeuralNetworkNET.Extensions
 
             // Process the valid convolution
             Tensor.New(h, finalWidth, out result);
-            float* psource = source, presult = result;
+            float* psource = source, presult = result, pkernels = kernels;
             void ForwardKernel(int index)
             {
                 // Calculate the current indexes
@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.Extensions
                     targetBaseOffset = iSample * finalWidth + k * convolutionOutputSize,
                     sourceBaseOffset = iSample * w,
                     kernelBaseOffset = k * kw;
-                fixed (float* pkernels = kernels, pbiases = biases)
+                fixed (float* pbiases = biases)
                 {
                     for (int i = 0; i < hResult; i++)
                     {

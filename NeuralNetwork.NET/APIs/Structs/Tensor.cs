@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <param name="chw">The width of the final matrix</param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Fix(float* p, int n, int chw, out Tensor tensor)
+        public static unsafe void Reshape(float* p, int n, int chw, out Tensor tensor)
         {
             IntPtr ptr = new IntPtr(p);
             tensor = new Tensor(ptr, n, chw);
@@ -132,6 +132,8 @@ namespace NeuralNetworkNET.APIs.Structs
         }
 
         #endregion
+
+        #region Tools
 
         /// <summary>
         /// Overwrites the contents of the current matrix with the input matrix
@@ -182,6 +184,8 @@ namespace NeuralNetworkNET.APIs.Structs
             return result;
         }
 
+        #endregion
+
         /// <summary>
         /// Frees the memory associated with the current instance
         /// </summary>
@@ -191,6 +195,8 @@ namespace NeuralNetworkNET.APIs.Structs
         // Implicit pointer conversion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe implicit operator float*(in Tensor tensor) => (float*)tensor.Ptr.ToPointer();
+
+        #region Debug
 
         /// <summary>
         /// A proxy type to debug instances of the <see cref="Tensor"/> <see cref="struct"/>
@@ -207,10 +213,10 @@ namespace NeuralNetworkNET.APIs.Structs
 
             private const int MaximumRowsCount = 10;
 
-            private const int MaximumItemsCount = 50000;
+            private const int MaximumItemsCount = 40000;
 
             [SuppressMessage("ReSharper", "UnusedMember.Local")]
-            public unsafe _TensorProxy(Tensor obj)
+            public _TensorProxy(Tensor obj)
             {
                 IEnumerable<float[]> ExtractRows()
                 {
@@ -225,14 +231,16 @@ namespace NeuralNetworkNET.APIs.Structs
                     }
 
                     // Spawn the sequence
-                    int up;
-                    if (obj.Size <= MaximumItemsCount) up = MaximumRowsCount.Min(obj.Entities);
-                    else up = MaximumItemsCount / obj.Length;
+                    int
+                        max = MaximumItemsCount / obj.Length,
+                        up = max.Min(MaximumRowsCount).Max(1);
                     for (int i = 0; i < up; i++)
                         yield return ExtractRow(i);
                 }
                 RowsPreview = ExtractRows();
             }
         }
+
+        #endregion
     }
 }

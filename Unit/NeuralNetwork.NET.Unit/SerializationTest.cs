@@ -1,15 +1,14 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
-using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -21,74 +20,64 @@ namespace NeuralNetworkNET.Unit
     public class SerializationTest
     {
         [TestMethod]
+        public void StructSerialize()
+        {
+            PoolingInfo info = PoolingInfo.New(PoolingMode.AverageIncludingPadding, 3, 3, 1, 1, 2, 2);
+            using (MemoryStream stream = new MemoryStream())
+            {
+                stream.Write(info);
+                stream.Seek(0, SeekOrigin.Begin);
+                Assert.IsTrue(stream.TryRead(out PoolingInfo copy));
+                Assert.IsTrue(info.Equals(copy));
+            }
+        }
+
+        [TestMethod]
+        public void EnumSerialize()
+        {
+            PoolingMode mode = PoolingMode.AverageIncludingPadding;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                stream.Write(mode);
+                stream.Seek(0, SeekOrigin.Begin);
+                Assert.IsTrue(stream.TryRead(out PoolingMode copy));
+                Assert.IsTrue(mode == copy);
+            }
+        }
+
+        [TestMethod]
         public void StreamSerialize()
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                float[,] m = ThreadSafeRandom.NextGlorotNormalMatrix(784, 30);
-                stream.Write(m);
-                byte[] test = new byte[10];
-                stream.Seek(-10, SeekOrigin.Current);
-                stream.Read(test, 0, 10);
-                Assert.IsTrue(test.Any(b => b != 0));
-                Assert.IsTrue(stream.Position == sizeof(float) * m.Length);
+                float[] w = WeightsProvider.NewFullyConnectedWeights(784, 30, WeightsInitializationMode.GlorotNormal);
+                stream.WriteShuffled(w);
+                Assert.IsTrue(stream.Position == sizeof(float) * w.Length);
                 stream.Seek(0, SeekOrigin.Begin);
-                float[,] copy = stream.ReadFloatArray(784, 30);
-                Assert.IsTrue(m.ContentEquals(copy));
-            }
-            using (MemoryStream stream = new MemoryStream())
-            {
-                float[] v = ThreadSafeRandom.NextGaussianVector(723);
-                stream.Write(v);
-                byte[] test = new byte[10];
-                stream.Seek(-10, SeekOrigin.Current);
-                stream.Read(test, 0, 10);
-                Assert.IsTrue(test.Any(b => b != 0));
-                Assert.IsTrue(stream.Position == sizeof(float) * v.Length);
-                stream.Seek(0, SeekOrigin.Begin);
-                float[] copy = stream.ReadFloatArray(723);
-                Assert.IsTrue(v.ContentEquals(copy));
-            }
-            using (MemoryStream stream = new MemoryStream())
-            {
-                stream.Write(6);
-                stream.Write(677);
-                stream.Write(int.MaxValue);
-                stream.Seek(0, SeekOrigin.Begin);
-                Assert.IsTrue(stream.ReadInt32() == 6);
-                Assert.IsTrue(stream.ReadInt32() == 677);
-                Assert.IsTrue(stream.ReadInt32() == int.MaxValue);
+                float[] t = stream.ReadUnshuffled(w.Length);
+                Assert.IsTrue(w.ContentEquals(t));
             }
         }
 
         [TestMethod]
-        public void BinarySerialize1()
+        public void NetworkSerialization()
         {
-            INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(784), 30, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(30), 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            FileInfo file = new FileInfo(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"test1{NeuralNetworkLoader.NetworkFileExtension}"));
-            network.Save(file);
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(file);
-            Assert.IsTrue(copy != null);
-            Assert.IsTrue(copy.Equals(network));
-        }
-
-        [TestMethod]
-        public void BinarySerialize2()
-        {
-            INeuralNetwork network = new NeuralNetwork(
-                NetworkLayers.Convolutional(new TensorInfo(28, 28, 1), (5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new TensorInfo(24, 24, 20), ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional(new TensorInfo(12, 12, 20), (5, 5), 10, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(new TensorInfo(8, 8, 10), ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(160), 8, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(TensorInfo.CreateLinear(8), 4, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            FileInfo file = new FileInfo(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $"test2{NeuralNetworkLoader.NetworkFileExtension}"));
-            network.Save(file);
-            INeuralNetwork copy = NeuralNetworkLoader.TryLoad(file);
-            Assert.IsTrue(copy != null);
-            Assert.IsTrue(copy.Equals(network));
+            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForRgbImage(120, 120),
+                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
+                t => NetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.ELU),
+                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.Identity),
+                t => NetworkLayers.Pooling(t, ActivationFunctionType.ReLU),
+                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.Identity),
+                t => NetworkLayers.Pooling(t, ActivationFunctionType.ReLU),
+                t => NetworkLayers.FullyConnected(t, 125, ActivationFunctionType.Tanh),
+                t => NetworkLayers.Softmax(t, 133));
+            using (MemoryStream stream = new MemoryStream())
+            {
+                network.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                INeuralNetwork copy = NeuralNetworkLoader.TryLoad(stream);
+                Assert.IsTrue(network.Equals(copy));
+            }
         }
     }
 }

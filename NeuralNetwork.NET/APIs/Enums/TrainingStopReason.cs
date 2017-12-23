@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.APIs.Misc
+﻿namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
     /// Indicates the reason why a network training session has stopped

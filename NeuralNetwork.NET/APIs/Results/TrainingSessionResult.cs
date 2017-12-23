@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 

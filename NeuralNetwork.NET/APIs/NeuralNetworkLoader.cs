@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 
@@ -30,53 +32,67 @@ namespace NeuralNetworkNET.APIs
         [Pure, CanBeNull]
         public static INeuralNetwork TryLoad([NotNull] FileInfo file)
         {
+            using (FileStream stream = file.OpenRead())
+                return TryLoad(stream);
+        }
+
+        /// <summary>
+        /// Tries to deserialize a network from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The <see cref="Stream"/> instance for the network to load</param>
+        /// <param name="deserializers">The list of deserializers to use to load the input network</param>
+        /// <returns>The deserialized network, or null if the operation fails</returns>
+        [PublicAPI]
+        [Pure, CanBeNull]
+        public static INeuralNetwork TryLoad([NotNull] Stream stream, params LayerDeserializer[] deserializers)
+        {
+            if (deserializers.GroupBy(f => f).Any(g => g.Count() > 1)) throw new ArgumentException("The deserializers list can't contain duplicate entries", nameof(deserializers));
             try
             {
-                using (Stream stream = file.OpenRead())
+                List<INetworkLayer> layers = new List<INetworkLayer>();
+                using (GZipStream gzip = new GZipStream(stream, CompressionMode.Decompress))
                 {
-                    INetworkLayer[] layers = new INetworkLayer[stream.ReadInt32()];
-                    for (int i = 0; i < layers.Length; i++)
+                    while (gzip.TryRead(out LayerType type))
                     {
-                        LayerType type = (LayerType)stream.ReadByte();
-                        ActivationFunctionType activation = (ActivationFunctionType)stream.ReadByte();
-                        int
-                            inputs = stream.ReadInt32(),
-                            outputs = stream.ReadInt32();
-                        switch (type)
+                        // Process the deserializers in precedence order
+                        INetworkLayer layer = null;
+                        foreach (LayerDeserializer deserializer in deserializers)
                         {
-                            case LayerType.FullyConnected:
-                                layers[i] = new FullyConnectedLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation);
-                                break;
-                            case LayerType.Convolutional:
-                                throw new NotImplementedException("convolution deserialization not implemented yet");
-                            /*
-                            TensorInfo
-                                inVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
-                                outVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
-                                kVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
-                            layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
-                                stream.ReadFloatArray(outVolume.Channels, kVolume.Size),
-                                stream.ReadFloatArray(outVolume.Channels), activation); */
-                            case LayerType.Pooling:
-                                throw new NotImplementedException("Pooling deserialization not implemented yet");
-                            //layers[i] = new PoolingLayer(new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
-                            case LayerType.Output:
-                                layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());
-                                break;
-                            case LayerType.Softmax:
-                                layers[i] = new SoftmaxLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs));
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
+                            layer = deserializer(gzip, type);
+                            if (layer != null) break;
                         }
+
+                        // Fallback
+                        if (layer == null) layer = DefaultLayersDeserializer(gzip, type);
+                        if (layer == null) return null;
+
+                        // Add to the queue
+                        layers.Add(layer);
                     }
-                    return new NeuralNetwork(layers);
                 }
+
+                // Try to create the network to return
+                return new NeuralNetwork(layers.ToArray());
             }
             catch
             {
                 // Locked or invalid file
                 return null;
+            }
+        }
+
+        // Default layers deserializer
+        [MustUseReturnValue, CanBeNull]
+        private static INetworkLayer DefaultLayersDeserializer([NotNull] Stream stream, LayerType type)
+        {
+            switch (type)
+            {
+                case LayerType.FullyConnected: return FullyConnectedLayer.Deserialize(stream);
+                case LayerType.Convolutional: return ConvolutionalLayer.Deserialize(stream);
+                case LayerType.Pooling: return PoolingLayer.Deserialize(stream);
+                case LayerType.Output: return OutputLayer.Deserialize(stream);
+                case LayerType.Softmax: return SoftmaxLayer.Deserialize(stream);
+                default: throw new ArgumentOutOfRangeException(nameof(type), $"The {type} layer type is not supported by the default deserializer");
             }
         }
     }

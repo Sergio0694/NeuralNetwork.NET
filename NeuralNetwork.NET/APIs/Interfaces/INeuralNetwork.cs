@@ -98,7 +98,7 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// <summary>
         /// Saves the network to the target file
         /// </summary>
-        /// <param name="FileInfo">The <see cref="FileInfo"/> instance for the target file (it may not exist yet)</param>
+        /// <param name="target">The <see cref="FileInfo"/> instance for the target file (it may not exist yet)</param>
         void Save([NotNull] FileInfo target);
 
         /// <summary>

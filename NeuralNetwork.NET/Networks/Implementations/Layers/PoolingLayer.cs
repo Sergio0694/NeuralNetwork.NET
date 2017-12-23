@@ -1,11 +1,14 @@
-﻿using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using Newtonsoft.Json;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -18,18 +21,24 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Pooling;
 
+        [JsonProperty(nameof(OperationInfo), Order = 5)]
+        private readonly PoolingInfo _OperationInfo;
+
         /// <summary>
         /// Gets the info on the pooling operation performed by the layer
         /// </summary>
-        [JsonProperty(nameof(OperationInfo), Order = 5)]
-        public PoolingInfo OperationInfo { get; }
+        public ref readonly PoolingInfo OperationInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _OperationInfo;
+        }
 
         public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation)
             : base(input, new TensorInfo(
                 input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
                 input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1),
                 input.Channels), activation)
-            => OperationInfo = operation;
+            => _OperationInfo = operation;
 
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
@@ -43,5 +52,26 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
+
+        /// <inheritdoc/>
+        public override void Serialize([NotNull] Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(OperationInfo);
+        }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="PoolingLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INetworkLayer Deserialize([NotNull] Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo _)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out PoolingInfo operation) && operation.Equals(PoolingInfo.Default)) return null;
+            return new PoolingLayer(input, operation, activation);
+        }
     }
 }

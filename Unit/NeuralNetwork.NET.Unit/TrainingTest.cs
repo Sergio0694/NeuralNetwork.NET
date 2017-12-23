@@ -20,8 +20,8 @@ namespace NeuralNetworkNET.Unit
         {
             // Sequential
             float[,]
-                x = ThreadSafeRandom.NextUniformMatrix(20000, 784, 100),
-                y = ThreadSafeRandom.NextUniformMatrix(20000, 10, 100);
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
             HashSet<int>
                 set1 = new HashSet<int>();
@@ -59,8 +59,8 @@ namespace NeuralNetworkNET.Unit
         {
             // Sequential
             float[,]
-                x = ThreadSafeRandom.NextUniformMatrix(20000, 784, 100),
-                y = ThreadSafeRandom.NextUniformMatrix(20000, 10, 100);
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1547);
             HashSet<int>
                 set1 = new HashSet<int>();
@@ -97,8 +97,8 @@ namespace NeuralNetworkNET.Unit
         public void BatchInitializationTest()
         {
             float[,]
-                x = ThreadSafeRandom.NextUniformMatrix(250, 600, 1000),
-                y = ThreadSafeRandom.NextUniformMatrix(250, 10, 500);
+                x = Enumerable.Range(0, 250 * 600).Select(_ => ThreadSafeRandom.NextUniform(1000)).ToArray().AsMatrix(250, 600),
+                y = Enumerable.Range(0, 250 * 10).Select(_ => ThreadSafeRandom.NextUniform(500)).ToArray().AsMatrix(250, 10);
             (float[], float[])[] samples = Enumerable.Range(0, 250).Select(i =>
             {
                 float[]
