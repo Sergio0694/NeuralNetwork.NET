@@ -125,8 +125,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         public override void Serialize(Stream stream)
         {
             base.Serialize(stream);
-            stream.Write(Weights);
-            stream.Write(Biases);
+            //stream.Write(Weights);
+            //stream.Write(Biases);
         }
     }
 }

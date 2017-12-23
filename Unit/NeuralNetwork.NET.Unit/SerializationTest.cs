@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Enums;
@@ -46,29 +47,12 @@ namespace NeuralNetworkNET.Unit
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                float[,] m = WeightsProvider.NewFullyConnectedWeights(784, 30, WeightsInitializationMode.GlorotNormal).AsMatrix(784, 30);
-                stream.Write(m);
-                byte[] test = new byte[10];
-                stream.Seek(-10, SeekOrigin.Current);
-                stream.Read(test, 0, 10);
-                Assert.IsTrue(test.Any(b => b != 0));
-                Assert.IsTrue(stream.Position == sizeof(float) * m.Length);
+                float[] w = WeightsProvider.NewFullyConnectedWeights(784, 30, WeightsInitializationMode.GlorotNormal);
+                stream.WriteShuffled(w);
+                Assert.IsTrue(stream.Position == sizeof(float) * w.Length);
                 stream.Seek(0, SeekOrigin.Begin);
-                float[,] copy = stream.ReadFloatArray(784, 30);
-                Assert.IsTrue(m.ContentEquals(copy));
-            }
-            using (MemoryStream stream = new MemoryStream())
-            {
-                float[] v = WeightsProvider.NewBiases(723, BiasInitializationMode.Gaussian);
-                stream.Write(v);
-                byte[] test = new byte[10];
-                stream.Seek(-10, SeekOrigin.Current);
-                stream.Read(test, 0, 10);
-                Assert.IsTrue(test.Any(b => b != 0));
-                Assert.IsTrue(stream.Position == sizeof(float) * v.Length);
-                stream.Seek(0, SeekOrigin.Begin);
-                float[] copy = stream.ReadFloatArray(723);
-                Assert.IsTrue(v.ContentEquals(copy));
+                float[] t = stream.ReadUnshuffled(w.Length);
+                Assert.IsTrue(w.ContentEquals(t));
             }
         }
     }
