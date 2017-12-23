@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -30,13 +29,13 @@ namespace NeuralNetworkNET.Extensions
         /// <typeparam name="T">The <see cref="struct"/> type to read and return</typeparam>
         /// <param name="stream">The source <see cref="Stream"/> instance to use to read the data</param>
         [MustUseReturnValue]
-        public static unsafe T Read<T>([NotNull] this Stream stream) where T : struct
+        public static unsafe bool TryRead<T>([NotNull] this Stream stream, out T value) where T : struct
         {
             byte[] bytes = new byte[Unsafe.SizeOf<T>()];
-            stream.Read(bytes, 0, bytes.Length);
-            T value = new T();
+            value = default;
+            if (stream.Read(bytes, 0, bytes.Length) == 0) return false;            
             fixed (void* p = bytes) Unsafe.Copy(ref value, p);
-            return value;
+            return true;
         }
 
         /// <summary>

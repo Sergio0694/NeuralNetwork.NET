@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;

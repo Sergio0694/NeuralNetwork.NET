@@ -24,7 +24,7 @@ namespace NeuralNetworkNET.Unit
             {
                 stream.Write(info);
                 stream.Seek(0, SeekOrigin.Begin);
-                PoolingInfo copy = stream.Read<PoolingInfo>();
+                Assert.IsTrue(stream.TryRead(out PoolingInfo copy));
                 Assert.IsTrue(info.Equals(copy));
             }
         }
@@ -37,7 +37,7 @@ namespace NeuralNetworkNET.Unit
             {
                 stream.Write(mode);
                 stream.Seek(0, SeekOrigin.Begin);
-                PoolingMode copy = stream.Read<PoolingMode>();
+                Assert.IsTrue(stream.TryRead(out PoolingMode copy));
                 Assert.IsTrue(mode == copy);
             }
         }

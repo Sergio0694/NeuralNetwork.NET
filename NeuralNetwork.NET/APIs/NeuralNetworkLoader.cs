@@ -1,13 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Implementations.Layers;
 
 namespace NeuralNetworkNET.APIs
 {
@@ -30,12 +27,29 @@ namespace NeuralNetworkNET.APIs
         [Pure, CanBeNull]
         public static INeuralNetwork TryLoad([NotNull] FileInfo file)
         {
+            using (FileStream stream = file.OpenRead())
+                return TryLoad(stream);
+        }
+
+        /// <summary>
+        /// Tries to deserialize a network from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The <see cref="Stream"/> instance for the network to load</param>
+        /// <returns>The deserialized network, or null if the operation fails</returns>
+        [PublicAPI]
+        [Pure, CanBeNull]
+        public static INeuralNetwork TryLoad([NotNull] Stream stream)
+        {
             try
             {
-                using (Stream stream = file.OpenRead())
+                using (GZipStream gzip = new GZipStream(stream, CompressionMode.Decompress))
                 {
-                    throw new NotImplementedException();
+                    while (gzip.TryRead(out LayerType type))
+                    {
+
+                    }
                 }
+                throw new NotImplementedException();
             }
             catch
             {

@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.APIs.Misc
+﻿namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
     /// Indicates the type of a neural network layer (for serialization purposes only)

@@ -1,4 +1,4 @@
-﻿using NeuralNetworkNET.APIs.Misc;
+﻿using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using System;
 

@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.DependencyInjections;
