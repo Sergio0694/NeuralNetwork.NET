@@ -108,8 +108,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         #endregion
 
-        #region Equality check
-
         /// <inheritdoc/>
         public override bool Equals(INetworkLayer other)
         {
@@ -118,8 +116,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
                    Weights.ContentEquals(layer.Weights) &&
                    Biases.ContentEquals(layer.Biases);
         }
-
-        #endregion
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)

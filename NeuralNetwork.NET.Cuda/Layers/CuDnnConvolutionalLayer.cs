@@ -173,6 +173,8 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
+        #region Misc
+
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new CuDnnConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
 
@@ -194,5 +196,7 @@ namespace NeuralNetworkNET.Cuda.Layers
             if (!stream.TryRead(out TensorInfo kernels)) return null;
             return new CuDnnConvolutionalLayer(input, operation, kernels, output, weights, biases, activation);
         }
+
+        #endregion
     }
 }

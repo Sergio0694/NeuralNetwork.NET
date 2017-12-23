@@ -62,8 +62,12 @@ namespace NeuralNetworkNET.APIs
                             if (layer != null) break;
                         }
 
-                        // Process the layer
-                        layers.Add(layer ?? DefaultLayersDeserializer(gzip, type));
+                        // Fallback
+                        if (layer == null) layer = DefaultLayersDeserializer(gzip, type);
+                        if (layer == null) return null;
+
+                        // Add to the queue
+                        layers.Add(layer);
                     }
                 }
 
@@ -78,7 +82,7 @@ namespace NeuralNetworkNET.APIs
         }
 
         // Default layers deserializer
-        [MustUseReturnValue, NotNull]
+        [MustUseReturnValue, CanBeNull]
         private static INetworkLayer DefaultLayersDeserializer([NotNull] Stream stream, LayerType type)
         {
             switch (type)

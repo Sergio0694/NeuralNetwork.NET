@@ -105,8 +105,7 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// Saves the network to the target stream
         /// </summary>
         /// <param name="stream">The <see cref="Stream"/> to use to write the network data</param>
-        /// <param name="leaveOpen">Indicates whether or not to keep the output <see cref="Stream"/> open after the serialization</param>
-        void Save([NotNull] Stream stream, bool leaveOpen = false);
+        void Save([NotNull] Stream stream);
 
         #endregion
     }

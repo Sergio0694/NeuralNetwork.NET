@@ -2,9 +2,12 @@
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 
 namespace NeuralNetworkNET.Unit
@@ -53,6 +56,27 @@ namespace NeuralNetworkNET.Unit
                 stream.Seek(0, SeekOrigin.Begin);
                 float[] t = stream.ReadUnshuffled(w.Length);
                 Assert.IsTrue(w.ContentEquals(t));
+            }
+        }
+
+        [TestMethod]
+        public void NetworkSerialization()
+        {
+            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForRgbImage(120, 120),
+                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
+                t => NetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.ELU),
+                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.Identity),
+                t => NetworkLayers.Pooling(t, ActivationFunctionType.ReLU),
+                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.Identity),
+                t => NetworkLayers.Pooling(t, ActivationFunctionType.ReLU),
+                t => NetworkLayers.FullyConnected(t, 125, ActivationFunctionType.Tanh),
+                t => NetworkLayers.Softmax(t, 133));
+            using (MemoryStream stream = new MemoryStream())
+            {
+                network.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                INeuralNetwork copy = NeuralNetworkLoader.TryLoad(stream);
+                Assert.IsTrue(network.Equals(copy));
             }
         }
     }

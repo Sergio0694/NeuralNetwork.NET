@@ -27,6 +27,8 @@ namespace NeuralNetworkNET.Cuda.Layers
         public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
             : base(input, neurons, weights, biases, activation) { }
 
+        #region Implementation
+
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
@@ -77,6 +79,8 @@ namespace NeuralNetworkNET.Cuda.Layers
             }
             delta.CompressVertically(out dJdb); // Doing this on CPU is generally faster than launching the kernels
         }
+
+        #endregion
 
         /// <summary>
         /// Tries to deserialize a new <see cref="CuDnnFullyConnectedLayer"/> from the input <see cref="System.IO.Stream"/>

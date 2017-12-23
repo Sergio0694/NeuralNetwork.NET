@@ -44,9 +44,10 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo output)) return null;
             if (!stream.TryRead(out ActivationFunctionType activation) && activation == ActivationFunctionType.Softmax) return null;
-            float[]
-                weights = stream.ReadUnshuffled(input.Size * output.Size),
-                biases = stream.ReadUnshuffled(output.Size);
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
             if (!stream.TryRead(out CostFunctionType cost) && cost == CostFunctionType.LogLikelyhood) return null;
             return new SoftmaxLayer(input, output.Size, weights, biases);
         }

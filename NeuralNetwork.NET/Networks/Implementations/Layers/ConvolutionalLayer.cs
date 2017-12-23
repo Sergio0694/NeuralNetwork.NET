@@ -75,6 +75,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             _KernelInfo = kernels;
         }
 
+        #region Implementation
+
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
@@ -110,11 +112,23 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             delta.CompressVertically(OutputInfo.Channels, out dJdb);
         }
 
+        #endregion
+
+        #region Misc
+
+        /// <inheritdoc/>
+        public override bool Equals(INetworkLayer other)
+        {
+            if (!base.Equals(other)) return false;
+            if (!(other is ConvolutionalLayer convolutional)) return false;
+            return convolutional.OperationInfo.Equals(OperationInfo) && convolutional.KernelInfo.Equals(KernelInfo);
+        }
+
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
 
         /// <inheritdoc/>
-        public override void Serialize([NotNull] Stream stream)
+        public override void Serialize(Stream stream)
         {
             base.Serialize(stream);
             stream.Write(OperationInfo);
@@ -139,5 +153,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             if (!stream.TryRead(out TensorInfo kernels)) return null;
             return new ConvolutionalLayer(input, operation, kernels, output, weights, biases, activation);
         }
+
+        #endregion
     }
 }
