@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -32,5 +33,23 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new OutputLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType, CostFunctionType);
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="OutputLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public new static INetworkLayer Deserialize([NotNull] Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            if (!stream.TryRead(out CostFunctionType cost)) return null;
+            return new OutputLayer(input, output.Size, weights, biases, activation, cost);
+        }
     }
 }

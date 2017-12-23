@@ -59,5 +59,19 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             base.Serialize(stream);
             stream.Write(OperationInfo);
         }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="PoolingLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INetworkLayer Deserialize([NotNull] Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo _)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out PoolingInfo operation) && operation.Equals(PoolingInfo.Default)) return null;
+            return new PoolingLayer(input, operation, activation);
+        }
     }
 }

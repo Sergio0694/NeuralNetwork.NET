@@ -6,6 +6,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers
 {
@@ -32,5 +33,22 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new SoftmaxLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy());
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="SoftmaxLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public new static INetworkLayer Deserialize([NotNull] Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation) && activation == ActivationFunctionType.Softmax) return null;
+            float[]
+                weights = stream.ReadUnshuffled(input.Size * output.Size),
+                biases = stream.ReadUnshuffled(output.Size);
+            if (!stream.TryRead(out CostFunctionType cost) && cost == CostFunctionType.LogLikelyhood) return null;
+            return new SoftmaxLayer(input, output.Size, weights, biases);
+        }
     }
 }

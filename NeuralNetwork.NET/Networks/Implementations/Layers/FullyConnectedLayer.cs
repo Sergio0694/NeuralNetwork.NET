@@ -67,11 +67,21 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
 
-        /// <inheritdoc/>
-        public override void Serialize(Stream stream)
+        /// <summary>
+        /// Tries to deserialize a new <see cref="FullyConnectedLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INetworkLayer Deserialize([NotNull] Stream stream)
         {
-            stream.Write(InputInfo);
-            stream.Write(OutputInfo);            
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            return new FullyConnectedLayer(input, output.Size, weights, biases, activation);
         }
     }
 }

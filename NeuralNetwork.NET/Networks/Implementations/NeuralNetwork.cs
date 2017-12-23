@@ -420,9 +420,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public void Save(Stream stream)
+        public void Save(Stream stream, bool leaveOpen = false)
         {
-            using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal))
+            using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal, leaveOpen))
                 foreach (NetworkLayerBase layer in _Layers) 
                     layer.Serialize(gzip);
         }

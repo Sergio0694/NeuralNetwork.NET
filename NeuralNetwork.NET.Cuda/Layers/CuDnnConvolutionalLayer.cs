@@ -175,5 +175,24 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new CuDnnConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType);
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="CuDnnConvolutionalLayer"/> from the input <see cref="System.IO.Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="System.IO.Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public new static INetworkLayer Deserialize([NotNull] System.IO.Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            if (!stream.TryRead(out ConvolutionInfo operation)) return null;
+            if (!stream.TryRead(out TensorInfo kernels)) return null;
+            return new CuDnnConvolutionalLayer(input, operation, kernels, output, weights, biases, activation);
+        }
     }
 }

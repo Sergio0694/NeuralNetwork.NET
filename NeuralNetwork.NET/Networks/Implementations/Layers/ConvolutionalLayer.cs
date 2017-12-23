@@ -120,5 +120,24 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
             stream.Write(OperationInfo);
             stream.Write(KernelInfo);
         }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="ConvolutionalLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INetworkLayer Deserialize([NotNull] Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            if (!stream.TryRead(out ConvolutionInfo operation) && operation.Equals(ConvolutionInfo.Default)) return null;
+            if (!stream.TryRead(out TensorInfo kernels)) return null;
+            return new ConvolutionalLayer(input, operation, kernels, output, weights, biases, activation);
+        }
     }
 }
