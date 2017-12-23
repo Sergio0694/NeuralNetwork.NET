@@ -13,37 +13,37 @@ namespace NeuralNetworkNET.APIs.Structs
     public readonly struct PoolingInfo : IEquatable<PoolingInfo>
     {
         /// <summary>
-        /// Gets the current pooling mode for the layer
+        /// The current pooling mode for the layer
         /// </summary>
         public readonly PoolingMode Mode;
 
         /// <summary>
-        /// Gets the height of each input local receptive field
+        /// The height of each input local receptive field
         /// </summary>
         public readonly int WindowHeight;
 
         /// <summary>
-        /// Gets the width of each input local receptive field
+        /// The width of each input local receptive field
         /// </summary>
         public readonly int WindowWidth;
 
         /// <summary>
-        /// Gets the optional vertical padding for the pooling operation
+        /// The optional vertical padding for the pooling operation
         /// </summary>
         public readonly int VerticalPadding;
 
         /// <summary>
-        /// Gets the optional horizontal padding for the pooling operation
+        /// The optional horizontal padding for the pooling operation
         /// </summary>
         public readonly int HorizontalPadding;
 
         /// <summary>
-        /// Gets the vertical stride length while sliding the receptive window over the input
+        /// The vertical stride length while sliding the receptive window over the input
         /// </summary>
         public readonly int VerticalStride;
 
         /// <summary>
-        /// Gets the horizontal stride length while sliding the receptive window over the input
+        /// The horizontal stride length while sliding the receptive window over the input
         /// </summary>
         public readonly int HorizontalStride;
 
@@ -55,20 +55,13 @@ namespace NeuralNetworkNET.APIs.Structs
             int verticalPadding, int horizontalPadding,
             int verticalStride, int horizontalStride)
         {
-            if (windowHeight <= 0) throw new ArgumentOutOfRangeException(nameof(windowHeight), "The window height must be at least equal to 1");
-            if (windowWidth <= 0) throw new ArgumentOutOfRangeException(nameof(windowWidth), "The window width must be at least equal to 1");
-            if (verticalPadding < 0) throw new ArgumentOutOfRangeException(nameof(verticalPadding), "The vertical padding must be greater than or equal to 0");
-            if (horizontalPadding < 0) throw new ArgumentOutOfRangeException(nameof(horizontalPadding), "The horizontal padding must be greater than or equal to 0");
-            if (verticalStride < 1) throw new ArgumentOutOfRangeException(nameof(verticalStride), "The vertical stride must be at least equal to 1");
-            if (horizontalStride < 1) throw new ArgumentOutOfRangeException(nameof(horizontalStride), "The horizontal stride must be at least equal to 1");
-
+            WindowHeight = windowHeight > 0 ? windowHeight : throw new ArgumentOutOfRangeException(nameof(windowHeight), "The window height must be at least equal to 1");
+            WindowWidth = windowWidth > 0 ? windowWidth : throw new ArgumentOutOfRangeException(nameof(windowWidth), "The window width must be at least equal to 1");
+            VerticalPadding = verticalPadding >= 0 ? verticalPadding : throw new ArgumentOutOfRangeException(nameof(verticalPadding), "The vertical padding must be greater than or equal to 0");
+            HorizontalPadding = horizontalPadding >= 0 ? horizontalPadding : throw new ArgumentOutOfRangeException(nameof(horizontalPadding), "The horizontal padding must be greater than or equal to 0");
+            VerticalStride = verticalStride >= 1 ? verticalStride : throw new ArgumentOutOfRangeException(nameof(verticalStride), "The vertical stride must be at least equal to 1");
+            HorizontalStride = horizontalStride >= 1 ? horizontalStride : throw new ArgumentOutOfRangeException(nameof(horizontalStride), "The horizontal stride must be at least equal to 1");
             Mode = mode;
-            WindowHeight = windowHeight;
-            WindowWidth = windowWidth;
-            VerticalPadding = verticalPadding;
-            HorizontalPadding = horizontalPadding;
-            VerticalStride = verticalStride;
-            HorizontalStride = horizontalStride;
         }
 
         /// <summary>

@@ -14,19 +14,19 @@ namespace NeuralNetworkNET.APIs.Structs
     public readonly struct TensorInfo : IEquatable<TensorInfo>
     {
         /// <summary>
-        /// Gets the height of each 2D slice
+        /// The height of each 2D slice
         /// </summary>
         [JsonProperty(nameof(Height), Order = 1)]
         public readonly int Height;
 
         /// <summary>
-        /// Gets the width of each 2D slice
+        /// The width of each 2D slice
         /// </summary>
         [JsonProperty(nameof(Width), Order = 2)]
         public readonly int Width;
 
         /// <summary>
-        /// Gets the number of channels for the tensor description
+        /// The number of channels for the tensor description
         /// </summary>
         [JsonProperty(nameof(Channels), Order = 3)]
         public readonly int Channels;

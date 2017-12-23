@@ -17,22 +17,22 @@ namespace NeuralNetworkNET.APIs.Structs
     public readonly struct Tensor
     {
         /// <summary>
-        /// Gets the <see cref="IntPtr"/> value to the allocated memory
+        /// The <see cref="IntPtr"/> value to the allocated memory
         /// </summary>
         public readonly IntPtr Ptr;
 
         /// <summary>
-        /// Gets the number of entities (rows) in the current <see cref="Tensor"/>
+        /// The number of entities (rows) in the current <see cref="Tensor"/>
         /// </summary>
         public readonly int Entities;
 
         /// <summary>
-        /// Gets the size of each entity in the current <see cref="Tensor"/>
+        /// The size of each entity in the current <see cref="Tensor"/>
         /// </summary>
         public readonly int Length;
 
         /// <summary>
-        /// Gets the total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/>
+        /// The total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/>
         /// </summary>
         public int Size => Entities * Length;
 
