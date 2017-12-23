@@ -34,7 +34,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Gets the total number of entries in the data volume
         /// </summary>
-        [JsonProperty(nameof(Size), Order = 3)]
+        [JsonProperty(nameof(Size), Order = 4)]
         public int Size
         {
             [Pure]

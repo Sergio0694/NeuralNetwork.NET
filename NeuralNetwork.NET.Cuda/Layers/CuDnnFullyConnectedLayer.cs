@@ -9,6 +9,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces;
 
 namespace NeuralNetworkNET.Cuda.Layers
 {
@@ -20,18 +21,20 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly Dnn DnnInstance = DnnService.Instance;
 
-        public CuDnnFullyConnectedLayer(in TensorInfo input, int outputs, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
-            : base(input, outputs, activation, weightsMode, biasMode) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
+            : base(input, neurons, activation, weightsMode, biasMode) { }
 
-        public CuDnnFullyConnectedLayer([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
-            : base(weights, biases, activation) { }
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
+            : base(input, neurons, weights, biases, activation) { }
+
+        #region Implementation
 
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float>
                     x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                     w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
@@ -51,7 +54,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Fix(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 using (DeviceMemory<float>
                     delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
                     w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
@@ -75,6 +78,25 @@ namespace NeuralNetworkNET.Cuda.Layers
                 w_gpu.CopyToHost(a.Length, delta.Length, out dJdw);
             }
             delta.CompressVertically(out dJdb); // Doing this on CPU is generally faster than launching the kernels
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="CuDnnFullyConnectedLayer"/> from the input <see cref="System.IO.Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="System.IO.Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public new static INetworkLayer Deserialize([NotNull] System.IO.Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            return new CuDnnFullyConnectedLayer(input, output.Size, weights, biases, activation);
         }
     }
 }

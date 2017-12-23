@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Helpers.Imaging;
 
 namespace NeuralNetworkNET.APIs.Interfaces
 {
@@ -88,29 +87,25 @@ namespace NeuralNetworkNET.APIs.Interfaces
 
         #endregion
 
-        #region Tools
+        #region Serialization
 
         /// <summary>
-        /// Serializes the network as a JSON string
+        /// Serializes the network metadata as a JSON string
         /// </summary>
         [Pure, NotNull]
-        String SerializeAsJson();
+        String SerializeMetadataAsJson();
 
         /// <summary>
-        /// Saves the network in the target directory
+        /// Saves the network to the target file
         /// </summary>
-        /// <param name="directory">The directory to use to save the network</param>
-        /// <param name="name">The name for the network file to create</param>
-        /// <returns>The path to the file that was created with the saved network</returns>
-        [NotNull]
-        String Save([NotNull] DirectoryInfo directory, [NotNull] String name);
+        /// <param name="target">The <see cref="FileInfo"/> instance for the target file (it may not exist yet)</param>
+        void Save([NotNull] FileInfo target);
 
         /// <summary>
-        /// Exports the weights in the current network with a visual representation
+        /// Saves the network to the target stream
         /// </summary>
-        /// <param name="directory">The target directory</param>
-        /// <param name="scaling">The desired image scaling to use</param>
-        void ExportWeightsAsImages([NotNull] DirectoryInfo directory, ImageScaling scaling = ImageScaling.Native);
+        /// <param name="stream">The <see cref="Stream"/> to use to write the network data</param>
+        void Save([NotNull] Stream stream);
 
         #endregion
     }

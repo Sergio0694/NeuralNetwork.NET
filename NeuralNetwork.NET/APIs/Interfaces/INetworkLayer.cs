@@ -1,4 +1,4 @@
-﻿using NeuralNetworkNET.APIs.Misc;
+﻿using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using System;
 
@@ -17,11 +17,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// <summary>
         /// Gets the info on the layer inputs
         /// </summary>
-        TensorInfo InputInfo { get; }
+        ref readonly TensorInfo InputInfo { get; }
 
         /// <summary>
         /// Gets the info on the layer outputs
         /// </summary>
-        TensorInfo OutputInfo { get; }
+        ref readonly TensorInfo OutputInfo { get; }
     }
 }

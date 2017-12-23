@@ -24,5 +24,13 @@ namespace NeuralNetworkNET.Unit
             String result = builder.ToString();
             Assert.IsTrue(result.Equals(" 0 1 2 3 4 5 6\n 7 8 9 10 11 12 13\n 14 15 16 17 18 19 20\n 21 22 23 24\n"));
         }
+
+        [TestMethod]
+        public void Fill()
+        {
+            float[] v = new float[127];
+            v.Fill(() => 1.8f);
+            Assert.IsTrue(v.All(f => f.EqualsWithDelta(1.8f)));
+        }
     }
 }

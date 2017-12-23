@@ -10,6 +10,7 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.APIs
@@ -59,7 +60,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -72,6 +74,7 @@ namespace NeuralNetworkNET.APIs
             int epochs, int batchSize,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             float dropout = 0,
+            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
@@ -83,7 +86,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, trainingProgress, validationParameters, testParameters, token);
+            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
         /// <summary>
@@ -95,7 +98,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -108,6 +112,7 @@ namespace NeuralNetworkNET.APIs
             int epochs, int batchSize,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             float dropout = 0,
+            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
@@ -119,7 +124,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, trainingProgress, validationParameters, testParameters, token);
+            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
         /// <summary>
@@ -131,7 +136,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -144,6 +150,7 @@ namespace NeuralNetworkNET.APIs
             int epochs, int batchSize,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             float dropout = 0,
+            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
@@ -159,7 +166,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
-            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, trainingProgress, validationParameters, testParameters, token);
+            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
         #endregion
@@ -175,7 +182,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -188,12 +196,13 @@ namespace NeuralNetworkNET.APIs
             int epochs, int batchSize,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             float dropout = 0,
+            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, trainingProgress, validationParameters, testParameters, token), token);
+            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         /// <summary>
@@ -205,7 +214,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -218,12 +228,13 @@ namespace NeuralNetworkNET.APIs
             int epochs, int batchSize,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             float dropout = 0,
+            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, trainingProgress, validationParameters, testParameters, token), token);
+            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         /// <summary>
@@ -235,7 +246,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="trainingProgress">An optional callback to monitor the progress on the training data</param>
+        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -248,12 +260,13 @@ namespace NeuralNetworkNET.APIs
             int epochs, int batchSize,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             float dropout = 0,
+            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, trainingProgress, validationParameters, testParameters, token), token);
+            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         #endregion

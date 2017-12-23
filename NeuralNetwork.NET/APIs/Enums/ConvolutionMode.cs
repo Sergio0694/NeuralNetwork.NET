@@ -1,7 +1,7 @@
 ﻿namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
-    /// A simple wrapper over the <see cref="Alea.cuDNN.ConvolutionMode"/> <see cref="enum"/>
+    /// A simple <see cref="enum"/> indicating the type of convolution operation to perform
     /// </summary>
     public enum ConvolutionMode
     {

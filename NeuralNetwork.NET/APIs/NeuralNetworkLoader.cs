@@ -1,17 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
-using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace NeuralNetworkNET.APIs
 {
@@ -26,85 +24,55 @@ namespace NeuralNetworkNET.APIs
         public const String NetworkFileExtension = ".nnet";
 
         /// <summary>
-        /// Tries to deserialize a network from the input JSON text
+        /// Tries to deserialize a network from the input file
         /// </summary>
-        /// <param name="json">The source JSON data to parse</param>
+        /// <param name="file">The <see cref="FileInfo"/> instance for the file to load</param>
         /// <returns>The deserialized network, or null if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
-        public static INeuralNetwork TryLoadJson([NotNull] String json)
+        public static INeuralNetwork TryLoad([NotNull] FileInfo file)
         {
-            try
-            {
-                // Get the general parameters and the hidden layers info
-                JObject jObject = (JObject)JsonConvert.DeserializeObject(json);
-                INetworkLayer[] layers = jObject["Layers"].Select<JToken, INetworkLayer>(layer =>
-                {
-                    if (!Enum.TryParse(layer["LayerType"].ToString(), out LayerType type))
-                        throw new InvalidOperationException("Unsupported JSON network");
-                    switch (type)
-                    {
-                        case LayerType.FullyConnected:
-                            return new FullyConnectedLayer(
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
-                        case LayerType.Convolutional:
-                            return new ConvolutionalLayer(
-                                layer["InputInfo"].ToObject<TensorInfo>(),
-                                layer["KernelInfo"].ToObject<TensorInfo>(),
-                                layer["OutputInfo"].ToObject<TensorInfo>(),
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
-                        case LayerType.Pooling:
-                            return new PoolingLayer(
-                                layer["InputInfo"].ToObject<TensorInfo>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>());
-                        case LayerType.Output:
-                            return new OutputLayer(
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>(),
-                                layer["ActivationFunctionType"].ToObject<ActivationFunctionType>(),
-                                layer["CostFunctionType"].ToObject<CostFunctionType>());
-                        case LayerType.Softmax:
-                            return new SoftmaxLayer(
-                                layer["Weights"].ToObject<float[,]>(),
-                                layer["Biases"].ToObject<float[]>());
-                        default:
-                            throw new InvalidOperationException("Unsupported JSON network");
-                    }
-                }).ToArray();
-                INeuralNetwork network = new NeuralNetwork(layers);
-                return json.Equals(network.SerializeAsJson()) ? network : null;
-            }
-            catch
-            {
-                // Invalid JSON
-                return null;
-            }
+            using (FileStream stream = file.OpenRead())
+                return TryLoad(stream);
         }
 
         /// <summary>
-        /// Tries to deserialize a network from the input file
+        /// Tries to deserialize a network from the input <see cref="Stream"/>
         /// </summary>
-        /// <param name="path">The path to the file to load</param>
+        /// <param name="stream">The <see cref="Stream"/> instance for the network to load</param>
+        /// <param name="deserializers">The list of deserializers to use to load the input network</param>
         /// <returns>The deserialized network, or null if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
-        public static INeuralNetwork TryLoad(String path)
+        public static INeuralNetwork TryLoad([NotNull] Stream stream, params LayerDeserializer[] deserializers)
         {
-            // Json
-            if (!Path.GetExtension(path).Equals(NetworkFileExtension))
-                return Path.GetExtension(path).Equals(".json")
-                    ? TryLoadJson(File.ReadAllText(path))
-                    : null;
-
-            // Binary
+            if (deserializers.GroupBy(f => f).Any(g => g.Count() > 1)) throw new ArgumentException("The deserializers list can't contain duplicate entries", nameof(deserializers));
             try
             {
-                using (Stream stream = File.OpenRead(path))
-                    return TryLoad(stream);
+                List<INetworkLayer> layers = new List<INetworkLayer>();
+                using (GZipStream gzip = new GZipStream(stream, CompressionMode.Decompress))
+                {
+                    while (gzip.TryRead(out LayerType type))
+                    {
+                        // Process the deserializers in precedence order
+                        INetworkLayer layer = null;
+                        foreach (LayerDeserializer deserializer in deserializers)
+                        {
+                            layer = deserializer(gzip, type);
+                            if (layer != null) break;
+                        }
+
+                        // Fallback
+                        if (layer == null) layer = DefaultLayersDeserializer(gzip, type);
+                        if (layer == null) return null;
+
+                        // Add to the queue
+                        layers.Add(layer);
+                    }
+                }
+
+                // Try to create the network to return
+                return new NeuralNetwork(layers.ToArray());
             }
             catch
             {
@@ -113,45 +81,19 @@ namespace NeuralNetworkNET.APIs
             }
         }
 
-        // Private binary loader
-        private static INeuralNetwork TryLoad(Stream stream)
+        // Default layers deserializer
+        [MustUseReturnValue, CanBeNull]
+        private static INetworkLayer DefaultLayersDeserializer([NotNull] Stream stream, LayerType type)
         {
-            INetworkLayer[] layers = new INetworkLayer[stream.ReadInt32()];
-            for (int i = 0; i < layers.Length; i++)
+            switch (type)
             {
-                LayerType type = (LayerType)stream.ReadByte();
-                ActivationFunctionType activation = (ActivationFunctionType)stream.ReadByte();
-                int
-                    inputs = stream.ReadInt32(),
-                    outputs = stream.ReadInt32();
-                switch (type)
-                {
-                    case LayerType.FullyConnected:
-                        layers[i] = new FullyConnectedLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation);
-                        break;
-                    case LayerType.Convolutional:
-                        TensorInfo
-                            inVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
-                            outVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()),
-                            kVolume = new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32());
-                        layers[i] = new ConvolutionalLayer(inVolume, kVolume, outVolume,
-                            stream.ReadFloatArray(outVolume.Channels, kVolume.Size),
-                            stream.ReadFloatArray(outVolume.Channels), activation);
-                        break;
-                    case LayerType.Pooling:
-                        layers[i] = new PoolingLayer(new TensorInfo(stream.ReadInt32(), stream.ReadInt32(), stream.ReadInt32()), activation);
-                        break;
-                    case LayerType.Output:
-                        layers[i] = new OutputLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs), activation, (CostFunctionType)stream.ReadByte());
-                        break;
-                    case LayerType.Softmax:
-                        layers[i] = new SoftmaxLayer(stream.ReadFloatArray(inputs, outputs), stream.ReadFloatArray(outputs));
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                case LayerType.FullyConnected: return FullyConnectedLayer.Deserialize(stream);
+                case LayerType.Convolutional: return ConvolutionalLayer.Deserialize(stream);
+                case LayerType.Pooling: return PoolingLayer.Deserialize(stream);
+                case LayerType.Output: return OutputLayer.Deserialize(stream);
+                case LayerType.Softmax: return SoftmaxLayer.Deserialize(stream);
+                default: throw new ArgumentOutOfRangeException(nameof(type), $"The {type} layer type is not supported by the default deserializer");
             }
-            return new NeuralNetwork(layers);
         }
     }
 }

@@ -1,9 +1,13 @@
-﻿using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using Newtonsoft.Json;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -16,21 +20,33 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         #region Parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(LayerType), Required = Required.Always, Order = 1)]
+        [JsonProperty(nameof(LayerType), Order = 1)]
         public abstract LayerType LayerType { get; }
 
-        /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Required = Required.Always, Order = 2)]
-        public TensorInfo InputInfo { get; }
+        [JsonProperty(nameof(InputInfo), Order = 2)]
+        private readonly TensorInfo _InputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputInfo), Required = Required.Always, Order = 3)]
-        public TensorInfo OutputInfo { get; }
+        public ref readonly TensorInfo InputInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _InputInfo;
+        }
+
+        [JsonProperty(nameof(OutputInfo), Order = 3)]
+        public readonly TensorInfo _OutputInfo;
+
+        /// <inheritdoc/>
+        public ref readonly TensorInfo OutputInfo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _OutputInfo;
+        }
 
         /// <summary>
         /// Gets the activation type used in the current layer
         /// </summary>
-        [JsonProperty(nameof(ActivationFunctionType), Required = Required.Always, Order = 8)]
+        [JsonProperty(nameof(ActivationFunctionType), Order = 4)]
         public ActivationFunctionType ActivationFunctionType { get; }
 
         /// <summary>
@@ -42,8 +58,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         protected NetworkLayerBase(in TensorInfo input, in TensorInfo output, ActivationFunctionType activation)
         {
-            InputInfo = input;
-            OutputInfo = output;
+            _InputInfo = input;
+            _OutputInfo = output;
             ActivationFunctionType = activation;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(activation);
         }
@@ -82,5 +98,17 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         /// <inheritdoc/>
         public abstract INetworkLayer Clone();
+
+        /// <summary>
+        /// Writes the current layer to the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the layer data</param>
+        public virtual void Serialize([NotNull] Stream stream)
+        {
+            stream.Write(LayerType);
+            stream.Write(InputInfo);
+            stream.Write(OutputInfo);
+            stream.Write(ActivationFunctionType);
+        }
     }
 }

@@ -1,5 +1,6 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Extensions
@@ -10,106 +11,86 @@ namespace NeuralNetworkNET.Extensions
     internal static class StreamExtensions
     {
         /// <summary>
-        /// Writes a 32-bits int to the target <see cref="Stream"/>
+        /// Writes the input <see cref="struct"/> to the target <see cref="Stream"/> instance
         /// </summary>
-        /// <param name="stream">The target <see cref="Stream"/></param>
-        /// <param name="n">The value to write</param>
-        public static void Write([NotNull] this Stream stream, int n) => stream.Write(BitConverter.GetBytes(n), 0, sizeof(int));
-
-        /// <summary>
-        /// Reads a 32-bits int from the target <see cref="Stream"/>
-        /// </summary>
-        /// <param name="stream">The target <see cref="Stream"/></param>
-        public static int ReadInt32([NotNull] this Stream stream)
+        /// <typeparam name="T">The <see cref="struct"/> type to serialize</typeparam>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the data</param>
+        /// <param name="value">The <see cref="struct"/> to write to the <see cref="Stream"/> instance</param>
+        public static unsafe void Write<T>([NotNull] this Stream stream, T value) where T : struct
         {
-            byte[] bytes = new byte[sizeof(int)];
-            stream.Read(bytes, 0, sizeof(int));
-            return BitConverter.ToInt32(bytes, 0);
+            byte[] bytes = new byte[Unsafe.SizeOf<T>()];
+            fixed (void* p = bytes) Unsafe.Copy(p, ref value);
+            stream.Write(bytes, 0, bytes.Length);
         }
 
         /// <summary>
-        /// Writes a <see cref="float"/> matrix to the target <see cref="Stream"/>
+        /// Reads a value of the given <see cref="struct"/> type from the input <see cref="Stream"/> instance
+        /// </summary>
+        /// <typeparam name="T">The <see cref="struct"/> type to read and return</typeparam>
+        /// <param name="stream">The source <see cref="Stream"/> instance to use to read the data</param>
+        [MustUseReturnValue]
+        public static unsafe bool TryRead<T>([NotNull] this Stream stream, out T value) where T : struct
+        {
+            byte[] bytes = new byte[Unsafe.SizeOf<T>()];
+            value = default;
+            if (stream.Read(bytes, 0, bytes.Length) == 0) return false;            
+            fixed (void* p = bytes) Unsafe.Copy(ref value, p);
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a shuffled <see cref="float"/> vector to the target <see cref="Stream"/>
         /// </summary>
         /// <param name="stream">The target <see cref="Stream"/></param>
-        /// <param name="m">The source matrix</param>
-        public static unsafe void Write([NotNull] this Stream stream, [NotNull] float[,] m)
+        /// <param name="v">The source vector to shuffle and write to the <see cref="Stream"/> instance</param>
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static void WriteShuffled([NotNull] this Stream stream, [NotNull] float[] v)
         {
-            const int blockSize = 1024;
-            byte[] temp = new byte[sizeof(float) * blockSize];
-            int remaining = m.Length;
-            while (remaining > 0)
+            byte[] temp = new byte[v.Length * sizeof(float)];
+            unsafe void Kernel(int i)
             {
-                int chunkSize = blockSize >= remaining ? remaining : blockSize;
-                fixed (float* pm = m)
-                fixed (byte* ptemp = temp)
-                    Buffer.MemoryCopy(pm + (m.Length - remaining), ptemp, temp.Length, sizeof(float) * chunkSize);
-                remaining -= chunkSize;
-                stream.Write(temp, 0, sizeof(float) * chunkSize);
+                fixed (void* pv0 = v)
+                fixed (byte* pt0 = temp)
+                {
+                    byte* 
+                        pv = (byte*)pv0 + i,
+                        pt = pt0 + i * v.Length;
+                    for (int j = 0; j < v.Length; j++)
+                        pt[j] = pv[j * 4];
+                }
             }
+            Parallel.For(0, sizeof(float), Kernel).AssertCompleted();
+            stream.Write(temp, 0, temp.Length);            
         }
 
         /// <summary>
-        /// Reads a <see cref="float"/> matrix from the target <see cref="Stream"/>
+        /// Reads a shuffled <see cref="float"/> vector from the target <see cref="Stream"/>
         /// </summary>
         /// <param name="stream">The source <see cref="Stream"/></param>
-        /// <param name="height">The matrix height</param>
-        /// <param name="width">The matrix width</param>
-        public static float[,] ReadFloatArray([NotNull] this Stream stream, int height, int width)
+        /// <param name="n">The vector length</param>
+        [MustUseReturnValue, NotNull]
+        public static float[] ReadUnshuffled([NotNull] this Stream stream, int n)
         {
-            float[,] result = new float[height, width];
-            const int blockSize = 1024;
-            byte[] temp = new byte[sizeof(float) * blockSize];
-            int total = height * width, remaining = total;
-            while (remaining > 0)
-            {
-                int chunkSize = blockSize >= remaining ? remaining : blockSize;
-                stream.Read(temp, 0, sizeof(float) * chunkSize);
-                Buffer.BlockCopy(temp, 0, result, sizeof(float) * (total - remaining), sizeof(float) * chunkSize);
-                remaining -= chunkSize;
-            }
-            return result;
-        }
+            // Read the shuffled bytes
+            float[] v = new float[n];
+            byte[] temp = new byte[n * sizeof(float)];
+            stream.Read(temp, 0, temp.Length);
 
-        /// <summary>
-        /// Writes a <see cref="float"/> vector to the target <see cref="Stream"/>
-        /// </summary>
-        /// <param name="stream">The target <see cref="Stream"/></param>
-        /// <param name="v">The source vector</param>
-        public static unsafe void Write([NotNull] this Stream stream, [NotNull] float[] v)
-        {
-            const int blockSize = 1024;
-            byte[] temp = new byte[sizeof(float) * blockSize];
-            int remaining = v.Length;
-            while (remaining > 0)
+            // Unshuffle in parallel
+            unsafe void Kernel(int i)
             {
-                int chunkSize = blockSize >= remaining ? remaining : blockSize;
-                fixed (float* pv = v)
-                fixed (byte* ptemp = temp)
-                    Buffer.MemoryCopy(pv + (v.Length - remaining), ptemp, temp.Length, sizeof(float) * chunkSize);
-                remaining -= chunkSize;
-                stream.Write(temp, 0, sizeof(float) * chunkSize);
+                fixed (void* pv0 = v)
+                fixed (byte* pt0 = temp)
+                {
+                    byte* 
+                        pv = (byte*)pv0 + i,
+                        pt = pt0 + i * n;
+                    for (int j = 0; j < n; j++)
+                        pv[j * 4] = pt[j];
+                }
             }
-        }
-
-        /// <summary>
-        /// Reads a <see cref="float"/> vector from the target <see cref="Stream"/>
-        /// </summary>
-        /// <param name="stream">The source <see cref="Stream"/></param>
-        /// <param name="length">The vector length</param>
-        public static float[] ReadFloatArray([NotNull] this Stream stream, int length)
-        {
-            float[] result = new float[length];
-            const int blockSize = 1024;
-            byte[] temp = new byte[sizeof(float) * blockSize];
-            int remaining = length;
-            while (remaining > 0)
-            {
-                int chunkSize = blockSize >= remaining ? remaining : blockSize;
-                stream.Read(temp, 0, sizeof(float) * chunkSize);
-                Buffer.BlockCopy(temp, 0, result, sizeof(float) * (length - remaining), sizeof(float) * chunkSize);
-                remaining -= chunkSize;
-            }
-            return result;
+            Parallel.For(0, sizeof(float), Kernel).AssertCompleted();
+            return v;
         }
     }
 }

@@ -2,10 +2,12 @@
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 {
@@ -20,7 +22,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         /// <summary>
         /// Gets the cost function for the current layer
         /// </summary>
-        [JsonProperty(nameof(CostFunctionType), Required = Required.Always, Order = 9)]
+        [JsonProperty(nameof(CostFunctionType), Order = 6)]
         public CostFunctionType CostFunctionType { get; }
 
         /// <summary>
@@ -30,15 +32,15 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
 
         #endregion
 
-        protected OutputLayerBase(in TensorInfo input, int neurons, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
-            : base(input, neurons, activation, weightsMode, biasMode)
+        protected OutputLayerBase(in TensorInfo input, int outputs, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+            : base(input, outputs, activation, weightsMode, biasMode)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
         }
 
-        protected OutputLayerBase([NotNull] float[,] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
-            : base(weights, biases, activation)
+        protected OutputLayerBase(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
+            : base(input, outputs, weights, biases, activation)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
@@ -72,5 +74,12 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        public override void Serialize([NotNull] Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(CostFunctionType);
+        }
     }
 }

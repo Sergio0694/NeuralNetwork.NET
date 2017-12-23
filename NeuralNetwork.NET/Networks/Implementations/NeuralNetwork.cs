@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Misc;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Helpers.Imaging;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations.Layers;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
@@ -30,11 +30,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Required = Required.Always, Order = 1)]
+        [JsonProperty(nameof(InputInfo), Order = 1)]
         public TensorInfo InputInfo => Layers[0].InputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputInfo), Required = Required.Always, Order = 2)]
+        [JsonProperty(nameof(OutputInfo), Order = 2)]
         public TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
@@ -46,7 +46,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Required = Required.Always, Order = 3)]
+        [JsonProperty(nameof(Layers), Order = 3)]
         internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
                 Forward(xTensor, out Tensor yHatTensor);
                 float[] yHat = yHatTensor.ToArray();
                 yHatTensor.Free();
@@ -96,8 +96,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
-                Tensor.Fix(py, 1, y.Length, out Tensor yTensor);
+                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Reshape(py, 1, y.Length, out Tensor yTensor);
                 return CalculateCost(xTensor, yTensor);
             }
         }
@@ -107,7 +107,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, 1, x.Length, out Tensor xTensor);
+                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length];
@@ -131,7 +131,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 Forward(xTensor, out Tensor yHatTensor);
                 float[,] yHat = yHatTensor.ToArray2D();
                 yHatTensor.Free();
@@ -144,8 +144,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x, py = y)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
-                Tensor.Fix(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
                 return CalculateCost(xTensor, yTensor);
             }
         }
@@ -155,7 +155,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = x)
             {
-                Tensor.Fix(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length];
@@ -214,8 +214,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length],
                     dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
-                Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
-                Tensor.Fix(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
+                Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
+                Tensor.Reshape(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
                 Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
 
                 // Feedforward
@@ -344,8 +344,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the even batches
                 for (int i = 0; i < batches; i++)
                 {
-                    Tensor.Fix(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
-                    Tensor.Fix(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
+                    Tensor.Reshape(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
+                    Tensor.Reshape(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
                     (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
@@ -354,8 +354,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Process the remaining samples, if any
                 if (batchMod > 0)
                 {
-                    Tensor.Fix(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
-                    Tensor.Fix(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
+                    Tensor.Reshape(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
+                    Tensor.Reshape(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
                     (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
                     cost += pCost;
                     classified += pClassified;
@@ -380,8 +380,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                 ref readonly TrainingBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
-                    Tensor.Fix(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
-                    Tensor.Fix(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
+                    Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
+                    Tensor.Reshape(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
                     var partial = Evaluate(xTensor, yTensor);
                     cost += partial.Cost;
                     classified += partial.Classified;
@@ -392,10 +392,10 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        #region Tools
+        #region Serialization and misc
 
         /// <inheritdoc/>
-        public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
+        public String SerializeMetadataAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         /// <inheritdoc/>
         public bool Equals(INeuralNetwork other)
@@ -413,73 +413,18 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public String Save(DirectoryInfo directory, String name)
+        public void Save(FileInfo file)
         {
-            String path = $"{Path.Combine(directory.ToString(), name)}{NeuralNetworkLoader.NetworkFileExtension}";
-            using (FileStream stream = File.OpenWrite(path))
-            {
-                stream.Write(_Layers.Length);
-                foreach (NetworkLayerBase layer in _Layers)
-                {
-                    stream.WriteByte((byte)layer.LayerType);
-                    stream.WriteByte((byte)layer.ActivationFunctionType);
-                    stream.Write(layer.InputInfo.Size);
-                    stream.Write(layer.OutputInfo.Size);
-                    if (layer is PoolingLayer pooling)
-                    {
-                        stream.Write(pooling.InputInfo.Height);
-                        stream.Write(pooling.InputInfo.Width);
-                        stream.Write(pooling.InputInfo.Channels);
-                    }
-                    if (layer is ConvolutionalLayer convolutional)
-                    {
-                        stream.Write(convolutional.InputInfo.Height);
-                        stream.Write(convolutional.InputInfo.Width);
-                        stream.Write(convolutional.InputInfo.Channels);
-                        stream.Write(convolutional.OutputInfo.Height);
-                        stream.Write(convolutional.OutputInfo.Width);
-                        stream.Write(convolutional.OutputInfo.Channels);
-                        stream.Write(convolutional.KernelInfo.Height);
-                        stream.Write(convolutional.KernelInfo.Width);
-                        stream.Write(convolutional.KernelInfo.Channels);
-                    }
-                    if (layer is WeightedLayerBase weighted)
-                    {
-                        stream.Write(weighted.Weights);
-                        stream.Write(weighted.Biases);
-                    }
-                    if (layer is OutputLayerBase output)
-                    {
-                        stream.WriteByte((byte)output.CostFunctionType);
-                    }
-                }
-            }
-            return path;
+            using (FileStream stream = file.OpenWrite()) 
+                Save(stream);
         }
 
         /// <inheritdoc/>
-        public void ExportWeightsAsImages(DirectoryInfo directory, ImageScaling scaling)
+        public void Save(Stream stream)
         {
-            foreach ((INetworkLayer layer, int i) in Layers.Select((l, i) => (l, i)))
-            {
-                switch (layer)
-                {
-                    case ConvolutionalLayer convolutional when i == 0:
-                        ImageLoader.ExportGrayscaleKernels(Path.Combine(directory.ToString(), $"{i} - Convolutional"), convolutional.Weights, convolutional.KernelInfo, scaling);
-                        break;
-                    case ConvolutionalLayer _:
-                        throw new NotImplementedException();
-                    case OutputLayer output:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Output"), output.Weights, output.Biases, scaling);
-                        break;
-                    case SoftmaxLayer softmax:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Softmax"), softmax.Weights, softmax.Biases, scaling);
-                        break;
-                    case FullyConnectedLayer fullyConnected:
-                        ImageLoader.ExportFullyConnectedWeights(Path.Combine(directory.ToString(), $"{i} - Fully connected"), fullyConnected.Weights, fullyConnected.Biases, scaling);
-                        break;
-                }
-            }
+            using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal, true))
+                foreach (NetworkLayerBase layer in _Layers) 
+                    layer.Serialize(gzip);
         }
 
         /// <inheritdoc/>

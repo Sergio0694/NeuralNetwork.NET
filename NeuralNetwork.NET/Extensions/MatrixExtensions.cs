@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -207,21 +208,21 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m2">The second matrix to multiply</param>
         /// <param name="v">The array to add to the resulting matrix</param>
         /// <param name="result">The resulting matrix</param>
-        internal static unsafe void MultiplyWithSum(in this Tensor m1, [NotNull] float[,] m2, [NotNull] float[] v, out Tensor result)
+        internal static unsafe void MultiplyWithSum(in this Tensor m1, in Tensor m2, [NotNull] float[] v, out Tensor result)
         {
             // Initialize the parameters and the result matrix
-            if (m1.Length != m2.GetLength(0)) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (m1.Length != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
             int
                 h = m1.Entities,
-                w = m2.GetLength(1),
+                w = m2.Length,
                 l = m1.Length;
             Tensor.New(h, w, out result);
-            float* pm = result, pm1 = m1;
+            float* pm = result, pm1 = m1, pm2 = m2;
 
             // Execute the multiplication in parallel
             void Kernel(int i)
             {
-                fixed (float* pm2 = m2, pv = v)
+                fixed (float* pv = v)
                 {
                     int i1 = i * l;
                     for (int j = 0; j < w; j++)
@@ -334,29 +335,6 @@ namespace NeuralNetworkNET.Extensions
                 pv[j] = sum;
             }
             Parallel.For(0, w, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Transposes the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to transpose</param>
-        /// <param name="result">The resulting matrix</param>
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe void Transpose([NotNull] this float[,] m, out Tensor result)
-        {
-            // Setup
-            int h = m.GetLength(0), w = m.GetLength(1);
-            Tensor.New(w, h, out result);
-
-            // Execute the transposition in parallel
-            float* pr = result;
-            void Kernel(int i)
-            {
-                fixed (float* pm = m)
-                    for (int j = 0; j < w; j++)
-                        pr[j * h + i] = pm[i * w + j];
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
         }
 
         /// <summary>
@@ -474,6 +452,23 @@ namespace NeuralNetworkNET.Extensions
             // Copy the content
             Buffer.BlockCopy(m, 0, result, 0, sizeof(float) * length);
             return result;
+        }
+
+        /// <summary>
+        /// Returns a matrix with the reshaped content of the input vector
+        /// </summary>
+        /// <param name="v">The input vector</param>
+        /// <param name="h">The number of matrix rows</param>
+        /// <param name="w">The number of matrix columns</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static float[,] AsMatrix([NotNull] this float[] v, int h, int w)
+        {
+            if (h * w != v.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
+            float[,] m = new float[h, w];
+            Buffer.BlockCopy(v, 0, m, 0, sizeof(float) * v.Length);
+            return m;
         }
 
         /// <summary>
@@ -640,29 +635,57 @@ namespace NeuralNetworkNET.Extensions
 
         #endregion
 
-        #region Memory management
+        #region Fill
+
+        // Private fill method for arbitrary memory areas
+        private static unsafe void Fill(float* p, int n, [NotNull] Func<float> provider)
+        {
+            // Fill in parallel
+            int
+                cores = Environment.ProcessorCount,
+                batch = n / cores,
+                mod = n % cores;
+            Parallel.For(0, cores, i =>
+            {
+                int offset = i * batch;
+                for (int j = 0; j < batch; j++)
+                    p[offset + j] = provider();
+            }).AssertCompleted();
+
+            // Remaining values
+            if (mod > 1)
+                for (int i = n - mod; i < n; i++)
+                    p[i] = provider();
+        }
 
         /// <summary>
-        /// Returns a deep copy of the input matrix
+        /// Fills the target <see cref="Tensor"/> with the input values provider
         /// </summary>
-        /// <param name="m">The matrix to clone</param>
-        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.MemoryCopy"/></remarks>
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe float[,] BlockCopy([NotNull] this float[,] m)
+        /// <param name="tensor">The <see cref="Tensor"/> to fill up</param>
+        /// <param name="provider"></param>
+        internal static unsafe void Fill(in this Tensor tensor, [NotNull] Func<float> provider) => Fill(tensor, tensor.Size, provider);
+
+        /// <summary>
+        /// Fills the target <see cref="Array"/> with the input values provider
+        /// </summary>
+        /// <param name="array">The <see cref="Array"/> to fill up</param>
+        /// <param name="provider"></param>
+        internal static unsafe void Fill([NotNull] this Array array, [NotNull] Func<float> provider)
         {
-            int h = m.GetLength(0), w = m.GetLength(1);
-            float[,] result = new float[h, w];
-            int size = sizeof(float) * h * w;
-            fixed (float* pm = m, presult = result)
-                Buffer.MemoryCopy(pm, presult, size, size);
-            return result;
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            Fill((float*)handle.AddrOfPinnedObject().ToPointer(), array.Length, provider);
+            handle.Free();
         }
+
+        #endregion
+
+        #region Memory management
 
         /// <summary>
         /// Returns a deep copy of the input vector
         /// </summary>
         /// <param name="v">The vector to clone</param>
+        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.MemoryCopy"/></remarks>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static unsafe float[] BlockCopy([NotNull] this float[] v)

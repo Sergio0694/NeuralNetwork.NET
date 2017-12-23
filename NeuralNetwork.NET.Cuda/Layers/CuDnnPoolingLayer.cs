@@ -41,9 +41,9 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
-        public CuDnnPoolingLayer(TensorInfo input, ActivationFunctionType activation) : base(input, activation)
+        public CuDnnPoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation) : base(input, operation, activation)
         {
-            PoolingDescription.Set2D(PoolingMode.MAX, NanPropagation.PROPAGATE_NAN, 2, 2, 0, 0, 2, 2);
+            PoolingDescription.Set2D((PoolingMode)operation.Mode, NanPropagation.PROPAGATE_NAN, operation.WindowHeight, operation.WindowWidth, operation.VerticalPadding, operation.HorizontalPadding, operation.VerticalStride, operation.HorizontalStride);
         }
 
         /// <inheritdoc/>
@@ -69,6 +69,20 @@ namespace NeuralNetworkNET.Cuda.Layers
         public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputInfo.Channels);
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, ActivationFunctionType);
+        public override INetworkLayer Clone() => new CuDnnPoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="CuDnnPoolingLayer"/> from the input <see cref="System.IO.Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="System.IO.Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public new static INetworkLayer Deserialize([NotNull] System.IO.Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo _)) return null;
+            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out PoolingInfo operation)) return null;
+            return new CuDnnPoolingLayer(input, operation, activation);
+        }
     }
 }
