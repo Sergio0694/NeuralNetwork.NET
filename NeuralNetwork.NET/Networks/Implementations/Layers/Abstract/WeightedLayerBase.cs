@@ -87,43 +87,6 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
         #region Implementation
 
         /// <summary>
-        /// Tweaks the layer weights and biases according to the input gradient and parameters
-        /// </summary>
-        /// <param name="dJdw">The gradient with respect to the weights</param>
-        /// <param name="dJdb">The gradient with respect to the biases</param>
-        /// <param name="alpha">The learning rate to use when updating the weights</param>
-        /// <param name="l2Factor">The L2 regularization factor to resize the weights</param>
-        public unsafe void Minimize(in Tensor dJdw, in Tensor dJdb, float alpha, float l2Factor)
-        {
-            // Tweak the weights
-            fixed (float* pw = Weights)
-            {
-                float* pdj = dJdw;
-                int
-                    h = Weights.GetLength(0),
-                    w = Weights.GetLength(1);
-                for (int x = 0; x < h; x++)
-                {
-                    int offset = x * w;
-                    for (int y = 0; y < w; y++)
-                    {
-                        int target = offset + y;
-                        pw[target] -= l2Factor * pw[target] + alpha * pdj[target];
-                    }
-                }
-            }
-
-            // Tweak the biases of the lth layer
-            fixed (float* pb = Biases)
-            {
-                float* pdj = dJdb;
-                int w = Biases.Length;
-                for (int x = 0; x < w; x++)
-                    pb[x] -= alpha * pdj[x];
-            }
-        }
-
-        /// <summary>
         /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used
         /// </summary>
         [Pure]

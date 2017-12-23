@@ -40,7 +40,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         /// Gets the number of kernels in the current layer
         /// </summary>
         [JsonProperty(nameof(Kernels), Order = 8)]
-        public int Kernels => Weights.GetLength(0);
+        public int Kernels => OutputInfo.Channels;
 
         #endregion
 
