@@ -13,6 +13,8 @@ namespace NeuralNetworkNET.APIs.Structs
     [DebuggerDisplay("Height: {Height}, Width: {Width}, Channels: {Channels}, Size: {Size}")]
     public readonly struct TensorInfo : IEquatable<TensorInfo>
     {
+        #region Fields and parameters
+
         /// <summary>
         /// The height of each 2D slice
         /// </summary>
@@ -52,13 +54,16 @@ namespace NeuralNetworkNET.APIs.Structs
             get => Height * Width;
         }
 
+        #endregion
+
+        #region Constructors
+
         internal TensorInfo(int height, int width, int channels)
         {
             if (height * width <= 0) throw new ArgumentException("The height and width of the kernels must be positive values");
-            if (channels < 1) throw new ArgumentOutOfRangeException(nameof(channels), "The number of channels must be at least equal to 1");
             Height = height;
             Width = width;
-            Channels = channels;
+            Channels = channels >= 1 ? channels :  throw new ArgumentOutOfRangeException(nameof(channels), "The number of channels must be at least equal to 1");
         }
 
         /// <summary>
@@ -86,6 +91,8 @@ namespace NeuralNetworkNET.APIs.Structs
         [PublicAPI]
         [Pure]
         public static TensorInfo CreateLinear(int size) => new TensorInfo(1, 1, size);
+
+        #endregion
 
         #region Equality
 

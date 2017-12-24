@@ -7,6 +7,7 @@ using NeuralNetworkNET.Cuda.Services;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -164,8 +165,21 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
-        protected CuDnnInceptionLayer(in TensorInfo input, in TensorInfo output, [NotNull] float[] w, [NotNull] float[] b, ActivationFunctionType activation) : base(input, output, w, b, activation)
+        internal CuDnnInceptionLayer(in TensorInfo input, in InceptionInfo info, BiasInitializationMode biasMode = BiasInitializationMode.Zero)
+            : base(input, new TensorInfo(input.Height, input.Width, info.OutputChannels),
+                  WeightsProvider.NewInceptionWeights(input, info),
+                  WeightsProvider.NewBiases(info.OutputChannels, biasMode),
+                  ActivationFunctionType.ReLU)
         {
+            _OperationInfo = info;
+            SetupCuDnnInfo();
+        }
+
+        internal CuDnnInceptionLayer(in TensorInfo input, in InceptionInfo info, [NotNull] float[] w, [NotNull] float[] b) 
+            : base(input, new TensorInfo(input.Height, input.Width, info.OutputChannels), w, b, ActivationFunctionType.ReLU)
+        {
+            _OperationInfo = info;
+            SetupCuDnnInfo();
         }
 
         #region Implementation
@@ -187,9 +201,7 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
-        public override INetworkLayer Clone()
-        {
-            throw new NotImplementedException();
-        }
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnInceptionLayer(InputInfo, OperationInfo, Weights, Biases);
     }
 }

@@ -12,7 +12,7 @@ namespace NeuralNetworkNET.APIs.Structs
     [JsonObject(MemberSerialization.Fields)]
     public readonly struct InceptionInfo : IEquatable<InceptionInfo>
     {
-        #region Fields
+        #region Fields and properties
 
         /// <summary>
         /// The number of 1x1 convolution kernels used in the first step of the forward pass
@@ -38,6 +38,16 @@ namespace NeuralNetworkNET.APIs.Structs
         /// The number of 1x1 convolution kernels after the pooling operation
         /// </summary>
         public readonly int Chained1x1AfterPoolingConvolutionKernels;
+
+        /// <summary>
+        /// Gets the number of output channels after the depth concatenation
+        /// </summary>
+        public int OutputChannels
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Primary1x1ConvolutionKernels + Secondary3x3ConvolutionKernels + Secondary5x5ConvolutionKernels + Chained1x1AfterPoolingConvolutionKernels;
+        }
 
         #endregion
 
