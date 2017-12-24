@@ -66,8 +66,14 @@ namespace NeuralNetworkNET.Cuda.Extensions
             if (source.Length / length != destination.Entities) throw new ArgumentOutOfRangeException(nameof(length), "The input length doesn't match the given arguments");
             if (destination.Length - offset > length) throw new ArgumentOutOfRangeException(nameof(offset), "The input offset isn't valid");
             CUDAInterop.cudaError_enum result = CUDAInterop.cudaError_enum.CUDA_SUCCESS;
+            int 
+                bytes = sizeof(float) * length,                     // Bytes to copy for each row
+                lineBytes = sizeof(float) * destination.Length;     // Bytes to skip for each entry to jump to the line below at the same offset
+            IntPtr
+                start = destination.Ptr + sizeof(float) * offset,   // Initial destination offset
+                size = new IntPtr(bytes);
             for (int i = 0; i < destination.Entities; i++)
-                result |= CUDAInterop.cuMemcpy(new IntPtr((float*)destination + offset), source.Handle + i * destination.Length, new IntPtr(sizeof(float) * length));
+                result |= CUDAInterop.cuMemcpy(start + i * bytes, source.Handle + i * lineBytes, size);
             if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
                 throw new InvalidOperationException($"Failed to copy the source data on the given destination, [CUDA ERROR] {result}");
         }
