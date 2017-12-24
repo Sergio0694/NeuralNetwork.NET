@@ -54,6 +54,24 @@ namespace NeuralNetworkNET.Cuda.Extensions
             source.CopyTo(result);
         }
 
+        /// <summary>
+        /// Copies the source data into the target <see cref="Tensor"/>, splitting each individual entry into its own row
+        /// </summary>
+        /// <param name="source">The source memory area with the concatenated data for each entry</param>
+        /// <param name="destination">The destination <see cref="Tensor"/> that will store the data</param>
+        /// <param name="offset">The column offset for the data for each entry</param>
+        /// <param name="length">The number of values to copy for each entry</param>
+        public static unsafe void CopyToRows([NotNull] this DeviceMemory<float> source, in Tensor destination, int offset, int length)
+        {
+            if (source.Length / length != destination.Entities) throw new ArgumentOutOfRangeException(nameof(length), "The input length doesn't match the given arguments");
+            if (destination.Length - offset > length) throw new ArgumentOutOfRangeException(nameof(offset), "The input offset isn't valid");
+            CUDAInterop.cudaError_enum result = CUDAInterop.cudaError_enum.CUDA_SUCCESS;
+            for (int i = 0; i < destination.Entities; i++)
+                result |= CUDAInterop.cuMemcpy(new IntPtr((float*)destination + offset), source.Handle + i * destination.Length, new IntPtr(sizeof(float) * length));
+            if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
+                throw new InvalidOperationException($"Failed to copy the source data on the given destination, [CUDA ERROR] {result}");
+        }
+
         #endregion
 
         /// <summary>
