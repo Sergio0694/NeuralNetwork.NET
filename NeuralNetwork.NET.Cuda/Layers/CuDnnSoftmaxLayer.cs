@@ -42,17 +42,13 @@ namespace NeuralNetworkNET.Cuda.Layers
             using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
             {
                 // Linear pass
-                fixed (float* pw = Weights)
+                using (DeviceMemory<float>
+                    x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                    w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                    b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
                 {
-                    Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
-                    using (DeviceMemory<float>
-                        x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                        w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
-                        b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
-                    {
-                        DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, w_gpu.Ptr, b_gpu.Ptr, z_gpu.Ptr);
-                        z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
-                    }
+                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, w_gpu.Ptr, b_gpu.Ptr, z_gpu.Ptr);
+                    z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
                 }
 
                 // Activation
