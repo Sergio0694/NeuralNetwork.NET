@@ -30,39 +30,31 @@ namespace NeuralNetworkNET.Cuda.Layers
         #region Implementation
 
         /// <inheritdoc/>
-        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            fixed (float* pw = Weights)
+            using (DeviceMemory<float>
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size),
+                b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
             {
-                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
-                using (DeviceMemory<float>
-                    x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
-                    y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size),
-                    b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
-                {
-                    DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, w_gpu.Ptr, b_gpu.Ptr, y_gpu.Ptr);
-                    y_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
-                    DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
-                    y_gpu.CopyToHost(z.Entities, z.Length, out a);
-                }
+                DnnInstance.FullyConnectedForward(x.Entities, x.Length, OutputInfo.Size, x_gpu.Ptr, w_gpu.Ptr, b_gpu.Ptr, y_gpu.Ptr);
+                y_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
+                DnnInstance.ActivationForward(z.Entities, z.Length, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
+                y_gpu.CopyToHost(z.Entities, z.Length, out a);
             }
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
-            fixed (float* pw = Weights)
+            using (DeviceMemory<float>
+                delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                z_gpu = DnnInstance.Gpu.AllocateDevice(z))
             {
-                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
-                using (DeviceMemory<float>
-                    delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice(wTensor),
-                    z_gpu = DnnInstance.Gpu.AllocateDevice(z))
-                {
-                    DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, delta_1_gpu.Ptr, w_gpu.Ptr, activationPrime);
-                    z_gpu.CopyTo(z);
-                }
+                DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, delta_1_gpu.Ptr, w_gpu.Ptr, activationPrime);
+                z_gpu.CopyTo(z);
             }
         }
 
