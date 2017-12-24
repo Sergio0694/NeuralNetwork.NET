@@ -34,7 +34,22 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// The total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/>
         /// </summary>
-        public int Size => Entities * Length;
+        public int Size
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Entities * Length;
+        }
+
+        /// <summary>
+        /// Gets whether or not the current instance is linked to an allocated memory area
+        /// </summary>
+        public bool Null
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Ptr == IntPtr.Zero;
+        }
 
         #region Initialization
 
@@ -191,6 +206,16 @@ namespace NeuralNetworkNET.APIs.Structs
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Free() => Marshal.FreeHGlobal(Ptr);
+
+        /// <summary>
+        /// Frees the memory associated with the current instance, if needed
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TryFree()
+        {
+            if (Ptr != IntPtr.Zero)
+                Marshal.FreeHGlobal(Ptr);
+        }
 
         // Implicit pointer conversion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
