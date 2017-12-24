@@ -47,9 +47,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         [NotNull]
         private readonly Dnn DnnInstance = DnnService.Instance;
 
-        /// <summary>
-        /// Sets the cuDNN fields that will be used during future forward/backwards operations
-        /// </summary>
+        // cuDNN fields setup
         private void SetupCuDnnInfo()
         {
             ConvolutionDescription.Set2D(OperationInfo.VerticalPadding, OperationInfo.HorizontalPadding, OperationInfo.VerticalStride, OperationInfo.HorizontalStride, 1, 1, (Alea.cuDNN.ConvolutionMode)OperationInfo.Mode);

@@ -59,7 +59,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <param name="_1x1Kernels">The number of 1x1 primary convolution kernels</param>
         /// <param name="_3x3Kernels">The number of 3x3 convolution kernels</param>
         /// <param name="_5x5Kernels">The number of 5x5 convolution kernels</param>
-        /// <param name="poolingMode">The pooling mode for the pooling channel</param>
+        /// <param name="poolingMode">The pooling mode for the pooling pipeline</param>
         /// <param name="_1x1SecondaryKernels">The number of secondary 1x1 convolution kernels</param>
         [PublicAPI]
         [Pure]
