@@ -78,19 +78,25 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         {
             int
                 _1x1Length = input.Channels * info.Primary1x1ConvolutionKernels,
-                _3x3Length = 3 * 3 * info.Primary1x1ConvolutionKernels * info.Secondary3x3ConvolutionKernels,
-                _5x5Length = 5 * 5 * info.Primary1x1ConvolutionKernels * info.Secondary5x5ConvolutionKernels,
-                secondary1x1Length = input.Channels * info.Chained1x1AfterPoolingConvolutionKernels;
+                _3x3Reduce1x1Length = input.Channels * info.Primary3x3Reduce1x1ConvolutionKernels,
+                _3x3Length = 3 * 3 * info.Primary3x3Reduce1x1ConvolutionKernels * info.Secondary3x3ConvolutionKernels,
+                _5x5Reduce1x1Length = input.Channels * info.Primary5x5Reduce1x1ConvolutionKernels,
+                _5x5Length = 5 * 5 * info.Primary5x5Reduce1x1ConvolutionKernels * info.Secondary5x5ConvolutionKernels,
+                secondary1x1Length = input.Channels * info.Secondary1x1AfterPoolingConvolutionKernels;
             float[] weights = new float[_1x1Length + _3x3Length + _5x5Length + secondary1x1Length];
             fixed (float* pw = weights)
             {
                 Tensor.Reshape(pw, 1, _1x1Length, out Tensor wTensor);
                 KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
-                Tensor.Reshape(pw + _1x1Length, 1, _3x3Length, out wTensor);
-                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, 3 * 3 * info.Primary1x1ConvolutionKernels);
-                Tensor.Reshape(pw + _1x1Length + _3x3Length, 1, _5x5Length, out wTensor);
-                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, 5 * 5 * info.Primary1x1ConvolutionKernels);
-                Tensor.Reshape(pw + _1x1Length + _3x3Length + _5x5Length, 1, secondary1x1Length, out wTensor);
+                Tensor.Reshape(pw + _1x1Length, 1, _3x3Reduce1x1Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length, 1, _3x3Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, 3 * 3 * info.Primary3x3Reduce1x1ConvolutionKernels);
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length + _3x3Length, 1, _5x5Reduce1x1Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length + _3x3Length + _5x5Reduce1x1Length, 1, _5x5Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, 5 * 5 * info.Primary5x5Reduce1x1ConvolutionKernels);
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length + _3x3Length + _5x5Reduce1x1Length + _5x5Length, 1, secondary1x1Length, out wTensor);
                 KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
             }
             return weights;

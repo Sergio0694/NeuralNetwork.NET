@@ -64,6 +64,22 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
+        #region 3x3 reduce 1x1 convolution
+
+        // The NCHW info for the 3x3 reduce 1x1 convolution weights
+        [NotNull]
+        private readonly FilterDescriptor _3x3Reduce1x1FilterDescription = new FilterDescriptor();
+
+         // The info on the 3x3 reduce 1x1 convolution bias (one value per output channel)
+        [NotNull]
+        private readonly TensorDescriptor _3x3Reduce1x1BiasDescription = new TensorDescriptor();
+
+        // The NCHW tensor info for the outputs of the 3x3 reduce 1x1 convolution
+        [NotNull]
+        private readonly TensorDescriptor _3x3Reduce1x1OutputDescription = new TensorDescriptor();
+
+        #endregion
+
         #region 3x3 secondary convolution
 
         // The NCHW info for the 3x3 convolution weights
@@ -81,6 +97,22 @@ namespace NeuralNetworkNET.Cuda.Layers
         // The NCHW tensor info for the outputs of the 3x3 convolution
         [NotNull]
         private readonly TensorDescriptor _3x3OutputDescription = new TensorDescriptor();
+
+        #endregion
+
+        #region 3x3 reduce 1x1 convolution
+
+        // The NCHW info for the 5x5 reduce 1x1 convolution weights
+        [NotNull]
+        private readonly FilterDescriptor _5x5Reduce1x1FilterDescription = new FilterDescriptor();
+
+         // The info on the 5x5 reduce 1x1 convolution bias (one value per output channel)
+        [NotNull]
+        private readonly TensorDescriptor _5x5Reduce1x1BiasDescription = new TensorDescriptor();
+
+        // The NCHW tensor info for the outputs of the 5x5 reduce 1x1 convolution
+        [NotNull]
+        private readonly TensorDescriptor _5x5Reduce1x1OutputDescription = new TensorDescriptor();
 
         #endregion
 
@@ -142,26 +174,33 @@ namespace NeuralNetworkNET.Cuda.Layers
         private void SetupCuDnnInfo()
         {
             // First 1x1 convolution
-            _1x1ConvolutionDescription.Set2D(0, 0, 1, 1, 1, 1, Alea.cuDNN.ConvolutionMode.CROSS_CORRELATION);
             _1x1FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Primary1x1ConvolutionKernels, InputInfo.Channels, 1, 1);
             _1x1BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Primary1x1ConvolutionKernels, 1, 1);
 
+            // 3x3 reduce 1x1 convolution
+            _3x3Reduce1x1FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, InputInfo.Channels, 1, 1);
+            _3x3Reduce1x1BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, 1, 1);
+
             // 3x3 convolution
             _3x3ConvolutionDescription.Set2D(1, 1, 1, 1, 1, 1, Alea.cuDNN.ConvolutionMode.CROSS_CORRELATION); // 1-padding to keep size
-            _3x3FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Secondary3x3ConvolutionKernels, _OperationInfo.Primary1x1ConvolutionKernels, 3, 3);
+            _3x3FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Secondary3x3ConvolutionKernels, _OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, 3, 3);
             _3x3BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Secondary3x3ConvolutionKernels, 1, 1);
+
+            // 5x5 reduce 1x1 convolution
+            _5x5Reduce1x1FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, InputInfo.Channels, 1, 1);
+            _5x5Reduce1x1BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, 1, 1);
 
             // 5x5 convolution
             _5x5ConvolutionDescription.Set2D(2, 2, 1, 1, 1, 1, Alea.cuDNN.ConvolutionMode.CROSS_CORRELATION);
-            _5x5FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Secondary5x5ConvolutionKernels, _OperationInfo.Primary1x1ConvolutionKernels, 5, 5);
+            _5x5FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Secondary5x5ConvolutionKernels, _OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, 5, 5);
             _5x5BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Secondary5x5ConvolutionKernels, 1, 1);
 
             // Pooling
             PoolingDescription.Set2D(Alea.cuDNN.PoolingMode.AVERAGE_COUNT_EXCLUDE_PADDING, NanPropagation.PROPAGATE_NAN, 3, 3, 1, 1, 1, 1);
             
             // Secondary 1x1 convolution
-            Secondary1x1FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, InputInfo.Channels, _OperationInfo.Chained1x1AfterPoolingConvolutionKernels, 1, 1);
-            Secondary1x1BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Chained1x1AfterPoolingConvolutionKernels, 1, 1);
+            Secondary1x1FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, InputInfo.Channels, _OperationInfo.Secondary1x1AfterPoolingConvolutionKernels, 1, 1);
+            Secondary1x1BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Secondary1x1AfterPoolingConvolutionKernels, 1, 1);
 
             // Activation
             ActivationDescription.Set(ActivationMode.RELU, NanPropagation.PROPAGATE_NAN, 0);
@@ -172,7 +211,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         internal CuDnnInceptionLayer(in TensorInfo input, in InceptionInfo info, BiasInitializationMode biasMode = BiasInitializationMode.Zero)
             : base(input, new TensorInfo(input.Height, input.Width, info.OutputChannels),
                   WeightsProvider.NewInceptionWeights(input, info),
-                  WeightsProvider.NewBiases(info.OutputChannels, biasMode),
+                  WeightsProvider.NewBiases(info.ConvolutionKernels, biasMode),
                   ActivationFunctionType.ReLU)
         {
             _OperationInfo = info;
@@ -266,9 +305,9 @@ namespace NeuralNetworkNET.Cuda.Layers
                     }
 
                     // 1x1 convolution
-                    using (DeviceMemory<float> _1x1Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Chained1x1AfterPoolingConvolutionKernels))
+                    using (DeviceMemory<float> _1x1Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize)) // TODO
                     {
-                        _1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Chained1x1AfterPoolingConvolutionKernels, InputInfo.Height, InputInfo.Width);
+                        _1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, -1, InputInfo.Height, InputInfo.Width);
                         DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, Secondary1x1FilterDescription, _1x1ConvolutionDescription, Secondary1x1OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
                         DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, Secondary1x1FilterDescription, _1x1ConvolutionDescription, Secondary1x1OutputDescription, algorithm, out IntPtr size);
                         using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
@@ -276,11 +315,11 @@ namespace NeuralNetworkNET.Cuda.Layers
                             DnnInstance.ConvolutionForward(1, InputDescription, y_gpu.Ptr, Secondary1x1FilterDescription, w_gpu.Ptr + InputInfo.Channels * OperationInfo.Primary1x1ConvolutionKernels + 3 * 3 * OperationInfo.Primary1x1ConvolutionKernels * OperationInfo.Secondary3x3ConvolutionKernels + 5 * 5 * OperationInfo.Primary1x1ConvolutionKernels * OperationInfo.Secondary5x5ConvolutionKernels, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);                            
                         }
                         DnnInstance.AddTensor(1, Secondary1x1BiasDescription, b_gpu.Ptr + OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels, 1, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);
-                        _1x1Output_gpu.CopyToRows(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Chained1x1AfterPoolingConvolutionKernels);
+                        _1x1Output_gpu.CopyToRows(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize); // TODO
 
                         // 1x1 convolution activation
                         DnnInstance.ActivationForward(ActivationDescription, 1, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr, 0, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);
-                        _1x1Output_gpu.CopyToRows(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Chained1x1AfterPoolingConvolutionKernels);
+                        _1x1Output_gpu.CopyToRows(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize); // TODO
                     }
                 }
             }
