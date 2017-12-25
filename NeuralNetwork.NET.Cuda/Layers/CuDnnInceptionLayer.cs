@@ -38,6 +38,53 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
+        #region Weights info
+
+        // 1x1 convolution weights on first pipeline
+        private int _1x1Weights
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InputInfo.Channels * OperationInfo.Primary1x1ConvolutionKernels;
+        }
+
+        // 1x1 convolution weights on 3x3 pipeline
+        private int _3x3Reduce1x1Weights
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InputInfo.Channels * OperationInfo.Primary3x3Reduce1x1ConvolutionKernels;
+        }
+
+        // 3x3 convolution weights
+        private int _3x3Weights
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => 3 * 3 * OperationInfo.Primary3x3Reduce1x1ConvolutionKernels * OperationInfo.Secondary3x3ConvolutionKernels;
+        }
+
+        // 1x1 convolution weights on 5x5 pipeline
+        private int _5x5Reduce1x1Weights
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InputInfo.Channels * OperationInfo.Primary5x5Reduce1x1ConvolutionKernels;
+        }
+
+        // 5x5 convolution weights
+        private int _5x5Weights
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => 5 * 5 * OperationInfo.Primary5x5Reduce1x1ConvolutionKernels * OperationInfo.Secondary5x5ConvolutionKernels;
+        }
+
+        // 1x1 convolution weights on pooling pipeline
+        private int Secondary1x1Weights
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InputInfo.Channels * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels;
+        }
+
+
+        #endregion
+
         #region cuDNN fields
 
         // The NCHW tensor info for the layer inputs
@@ -227,6 +274,7 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #region Implementation
 
+        /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             Tensor.New(x.Entities, OutputInfo.Size, out z);
@@ -235,63 +283,94 @@ namespace NeuralNetworkNET.Cuda.Layers
                     w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
                     b_gpu = DnnInstance.Gpu.AllocateDevice(Biases))
             {
-                using (DeviceMemory<float> _1x1Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels))
-                {
-                    // First 1x1 convolution
-                    using (DeviceMemory<float> x_gpu = DnnInstance.Gpu.AllocateDevice(x))
-                    {
-                        // Descriptors setup and first 1x1 convolution
-                        InputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
-                        _1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Primary1x1ConvolutionKernels, InputInfo.Height, InputInfo.Width);
-                        DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, _1x1FilterDescription, _1x1ConvolutionDescription, _1x1OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
-                        DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, _1x1FilterDescription, _1x1ConvolutionDescription, _1x1OutputDescription, algorithm, out IntPtr size);
-                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                        {
-                            DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, _1x1FilterDescription, w_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _1x1OutputDescription, _1x1Output_gpu.Ptr);                            
-                        }
-                        DnnInstance.AddTensor(1, _1x1BiasDescription, b_gpu.Ptr, 1, _1x1OutputDescription, _1x1Output_gpu.Ptr);
-                        _1x1Output_gpu.CopyToRows(z, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels);
+                // Pointers
+                deviceptr<float> pw_gpu = w_gpu.Ptr, pb_gpu = b_gpu.Ptr;
 
-                        // 1x1 convolution activation
-                        DnnInstance.ActivationForward(ActivationDescription, 1, _1x1OutputDescription, _1x1Output_gpu.Ptr, 0, _1x1OutputDescription, _1x1Output_gpu.Ptr);
-                        _1x1Output_gpu.CopyToRows(a, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels);
+                // First 1x1 convolution
+                using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels))
+                {
+                    // Descriptors setup and first 1x1 convolution
+                    InputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
+                    _1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Primary1x1ConvolutionKernels, InputInfo.Height, InputInfo.Width);
+                    DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, _1x1FilterDescription, _1x1ConvolutionDescription, _1x1OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
+                    DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, _1x1FilterDescription, _1x1ConvolutionDescription, _1x1OutputDescription, algorithm, out IntPtr size);
+                    using (DeviceMemory<float> x_gpu = DnnInstance.Gpu.AllocateDevice(x))
+                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                    {
+                        DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, _1x1FilterDescription, pw_gpu, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _1x1OutputDescription, y_gpu.Ptr);                            
                     }
+                    DnnInstance.AddTensor(1, _1x1BiasDescription, pb_gpu, 1, _1x1OutputDescription, y_gpu.Ptr);
+                    y_gpu.CopyToRows(z, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels);
+
+                    // 1x1 convolution activation
+                    DnnInstance.ActivationForward(ActivationDescription, 1, _1x1OutputDescription, y_gpu.Ptr, 0, _1x1OutputDescription, y_gpu.Ptr);
+                    y_gpu.CopyToRows(a, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels);
+                }
+
+                // 1x1 + 3x3 convolution
+                using (DeviceMemory<float> 
+                    y1x1_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary3x3Reduce1x1ConvolutionKernels),
+                    y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels))
+                {
+                    // 1x1 convolution
+                    _3x3Reduce1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, InputInfo.Height, InputInfo.Width);
+                    DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, _3x3Reduce1x1FilterDescription, _1x1ConvolutionDescription, _3x3Reduce1x1OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
+                    DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, _3x3Reduce1x1FilterDescription, _1x1ConvolutionDescription, _3x3Reduce1x1OutputDescription, algorithm, out IntPtr size);
+                    using (DeviceMemory<float> x_gpu = DnnInstance.Gpu.AllocateDevice(x))
+                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                    {
+                        DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, _3x3Reduce1x1FilterDescription, pw_gpu += _1x1Weights, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _3x3Reduce1x1OutputDescription, y1x1_gpu.Ptr);                            
+                    }
+                    DnnInstance.AddTensor(1, _3x3Reduce1x1BiasDescription, pb_gpu += OperationInfo.Primary1x1ConvolutionKernels, 1, _3x3Reduce1x1OutputDescription, y1x1_gpu.Ptr);
+                    DnnInstance.ActivationForward(ActivationDescription, 1, _3x3Reduce1x1OutputDescription, y1x1_gpu.Ptr, 0, _3x3Reduce1x1OutputDescription, y1x1_gpu.Ptr);
 
                     // 3x3 convolution
-                    using (DeviceMemory<float> _3x3Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels))
+                    _3x3OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Secondary3x3ConvolutionKernels, InputInfo.Height, InputInfo.Width);
+                    DnnInstance.GetConvolutionForwardAlgorithm(_3x3Reduce1x1OutputDescription, _3x3FilterDescription, _3x3ConvolutionDescription, _3x3OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
+                    DnnInstance.GetConvolutionForwardWorkspaceSize(_3x3Reduce1x1OutputDescription, _3x3FilterDescription, _3x3ConvolutionDescription, _3x3OutputDescription, algorithm, out size);
+                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        _3x3OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Secondary3x3ConvolutionKernels, InputInfo.Height, InputInfo.Width);
-                        DnnInstance.GetConvolutionForwardAlgorithm(_1x1OutputDescription, _3x3FilterDescription, _3x3ConvolutionDescription, _3x3OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
-                        DnnInstance.GetConvolutionForwardWorkspaceSize(_1x1OutputDescription, _3x3FilterDescription, _3x3ConvolutionDescription, _3x3OutputDescription, algorithm, out IntPtr size);
-                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                        {
-                            DnnInstance.ConvolutionForward(1, _1x1OutputDescription, _1x1Output_gpu.Ptr, _3x3FilterDescription, w_gpu.Ptr + InputInfo.Channels * OperationInfo.Primary1x1ConvolutionKernels, _3x3ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _3x3OutputDescription, _3x3Output_gpu.Ptr);                            
-                        }
-                        DnnInstance.AddTensor(1, _3x3BiasDescription, b_gpu.Ptr + OperationInfo.Primary1x1ConvolutionKernels, 1, _3x3OutputDescription, _3x3Output_gpu.Ptr);
-                        _3x3Output_gpu.CopyToRows(z, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels);
-
-                        // 3x3 convolution activation
-                        DnnInstance.ActivationForward(ActivationDescription, 1, _3x3OutputDescription, _3x3Output_gpu.Ptr, 0, _3x3OutputDescription, _3x3Output_gpu.Ptr);
-                        _3x3Output_gpu.CopyToRows(a, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels);
+                        DnnInstance.ConvolutionForward(1, _3x3Reduce1x1OutputDescription, y1x1_gpu.Ptr, _3x3FilterDescription, pw_gpu += _3x3Reduce1x1Weights, _3x3ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _3x3OutputDescription, y_gpu.Ptr);      
                     }
+                    DnnInstance.AddTensor(1, _3x3BiasDescription, pb_gpu += OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, 1, _3x3OutputDescription, y_gpu.Ptr);
+                    y_gpu.CopyToRows(z, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels);
+
+                    // Activation
+                    DnnInstance.ActivationForward(ActivationDescription, 1, _3x3OutputDescription, y_gpu.Ptr, 0, _3x3OutputDescription, y_gpu.Ptr);
+                    y_gpu.CopyToRows(a, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels);
+                }
+
+                // 1x1 + 5x5 convolution
+                using (DeviceMemory<float> 
+                    y1x1_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary5x5Reduce1x1ConvolutionKernels),
+                    y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels))
+                {
+                    // 1x1 convolution
+                    _5x5Reduce1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, InputInfo.Height, InputInfo.Width);
+                    DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, _5x5Reduce1x1FilterDescription, _1x1ConvolutionDescription, _5x5Reduce1x1OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
+                    DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, _5x5Reduce1x1FilterDescription, _1x1ConvolutionDescription, _5x5Reduce1x1OutputDescription, algorithm, out IntPtr size);
+                    using (DeviceMemory<float> x_gpu = DnnInstance.Gpu.AllocateDevice(x))
+                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                    {
+                        DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, _5x5Reduce1x1FilterDescription, pw_gpu += _3x3Weights, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr);                            
+                    }
+                    DnnInstance.AddTensor(1, _5x5Reduce1x1BiasDescription, pb_gpu += OperationInfo.Secondary3x3ConvolutionKernels, 1, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr);
+                    DnnInstance.ActivationForward(ActivationDescription, 1, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr, 0, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr);
 
                     // 5x5 convolution
-                    using (DeviceMemory<float> _5x5Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels))
+                    _5x5OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Secondary5x5ConvolutionKernels, InputInfo.Height, InputInfo.Width);
+                    DnnInstance.GetConvolutionForwardAlgorithm(_5x5Reduce1x1OutputDescription, _5x5FilterDescription, _5x5ConvolutionDescription, _5x5OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
+                    DnnInstance.GetConvolutionForwardWorkspaceSize(_5x5Reduce1x1OutputDescription, _5x5FilterDescription, _5x5ConvolutionDescription, _5x5OutputDescription, algorithm, out size);
+                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        _5x5OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OperationInfo.Secondary5x5ConvolutionKernels, InputInfo.Height, InputInfo.Width);
-                        DnnInstance.GetConvolutionForwardAlgorithm(_1x1OutputDescription, _5x5FilterDescription, _5x5ConvolutionDescription, _5x5OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
-                        DnnInstance.GetConvolutionForwardWorkspaceSize(_1x1OutputDescription, _5x5FilterDescription, _5x5ConvolutionDescription, _5x5OutputDescription, algorithm, out IntPtr size);
-                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                        {
-                            DnnInstance.ConvolutionForward(1, _1x1OutputDescription, _1x1Output_gpu.Ptr, _5x5FilterDescription, w_gpu.Ptr + InputInfo.Channels * OperationInfo.Primary1x1ConvolutionKernels + 3 * 3 * OperationInfo.Primary1x1ConvolutionKernels * OperationInfo.Secondary3x3ConvolutionKernels, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5OutputDescription, _5x5Output_gpu.Ptr);                            
-                        }
-                        DnnInstance.AddTensor(1, _5x5BiasDescription, b_gpu.Ptr + OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels, 1, _5x5OutputDescription, _5x5Output_gpu.Ptr);
-                        _5x5Output_gpu.CopyToRows(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
-
-                        // 3x3 convolution activation
-                        DnnInstance.ActivationForward(ActivationDescription, 1, _5x5OutputDescription, _5x5Output_gpu.Ptr, 0, _5x5OutputDescription, _5x5Output_gpu.Ptr);
-                        _5x5Output_gpu.CopyToRows(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
+                        DnnInstance.ConvolutionForward(1, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr, _5x5FilterDescription, pw_gpu += _5x5Reduce1x1Weights, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5OutputDescription, y_gpu.Ptr);      
                     }
+                    DnnInstance.AddTensor(1, _5x5BiasDescription, pb_gpu += OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, 1, _5x5OutputDescription, y_gpu.Ptr);
+                    y_gpu.CopyToRows(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
+
+                    // Activation
+                    DnnInstance.ActivationForward(ActivationDescription, 1, _3x3OutputDescription, y_gpu.Ptr, 0, _3x3OutputDescription, y_gpu.Ptr);
+                    y_gpu.CopyToRows(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
                 }
                 
                 // Pooling pipeline
@@ -305,31 +384,33 @@ namespace NeuralNetworkNET.Cuda.Layers
                     }
 
                     // 1x1 convolution
-                    using (DeviceMemory<float> _1x1Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize)) // TODO
+                    using (DeviceMemory<float> _1x1Output_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels))
                     {
-                        _1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, -1, InputInfo.Height, InputInfo.Width);
+                        Secondary1x1OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                         DnnInstance.GetConvolutionForwardAlgorithm(InputDescription, Secondary1x1FilterDescription, _1x1ConvolutionDescription, Secondary1x1OutputDescription, ConvolutionFwdPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionFwdAlgo algorithm);
                         DnnInstance.GetConvolutionForwardWorkspaceSize(InputDescription, Secondary1x1FilterDescription, _1x1ConvolutionDescription, Secondary1x1OutputDescription, algorithm, out IntPtr size);
                         using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                         {
-                            DnnInstance.ConvolutionForward(1, InputDescription, y_gpu.Ptr, Secondary1x1FilterDescription, w_gpu.Ptr + InputInfo.Channels * OperationInfo.Primary1x1ConvolutionKernels + 3 * 3 * OperationInfo.Primary1x1ConvolutionKernels * OperationInfo.Secondary3x3ConvolutionKernels + 5 * 5 * OperationInfo.Primary1x1ConvolutionKernels * OperationInfo.Secondary5x5ConvolutionKernels, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);                            
+                            DnnInstance.ConvolutionForward(1, InputDescription, y_gpu.Ptr, Secondary1x1FilterDescription, pw_gpu += _5x5Weights, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);                            
                         }
-                        DnnInstance.AddTensor(1, Secondary1x1BiasDescription, b_gpu.Ptr + OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels, 1, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);
-                        _1x1Output_gpu.CopyToRows(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize); // TODO
+                        DnnInstance.AddTensor(1, Secondary1x1BiasDescription, pb_gpu += OperationInfo.Secondary5x5ConvolutionKernels, 1, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);
+                        _1x1Output_gpu.CopyToRows(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
 
                         // 1x1 convolution activation
                         DnnInstance.ActivationForward(ActivationDescription, 1, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr, 0, Secondary1x1OutputDescription, _1x1Output_gpu.Ptr);
-                        _1x1Output_gpu.CopyToRows(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize); // TODO
+                        _1x1Output_gpu.CopyToRows(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
                     }
                 }
             }
         }
 
+        /// <inheritdoc/>
         public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             throw new NotImplementedException();
