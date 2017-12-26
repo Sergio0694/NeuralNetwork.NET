@@ -241,7 +241,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// Gets the <see cref="Dnn"/> instance for the current layer
         /// </summary>
         [NotNull]
-        private readonly Dnn DnnInstance = null;
+        private readonly Dnn DnnInstance = DnnService.Instance;
 
         // cuDNN fields setup
         private void SetupCuDnnInfo()
