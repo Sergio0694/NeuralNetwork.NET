@@ -75,6 +75,21 @@ namespace NeuralNetworkNET.APIs.Structs
 
         #endregion
 
+        /// <summary>
+        /// Calculates the output size after applying a convolution operation to the input tensor
+        /// </summary>
+        /// <param name="input">The info on the input tensor</param>
+        /// <param name="field">The size of the convolution kernels</param>
+        /// <param name="kernels">The number of convolution kernels to be used</param>
+        [Pure]
+        internal TensorInfo GetForwardOutputTensorInfo(in TensorInfo input, (int X, int Y) field, int kernels)
+        {
+            int
+                h = (input.Height - field.X + 2 * VerticalPadding) / VerticalStride + 1,
+                w = (input.Width - field.Y + 2 * HorizontalPadding) / HorizontalStride + 1;
+            return new TensorInfo(h, w, kernels);
+        }
+
         #region Equality
 
         /// <inheritdoc/>

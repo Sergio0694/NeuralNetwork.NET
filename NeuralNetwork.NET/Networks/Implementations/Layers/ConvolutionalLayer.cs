@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #endregion
 
         public ConvolutionalLayer(in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation, BiasInitializationMode biasMode)
-            : base(input, new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels),
+            : base(input, operation.GetForwardOutputTensorInfo(input, kernelSize, kernels),
                   WeightsProvider.NewConvolutionalKernels(input, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.NewBiases(kernels, biasMode), activation)
         {
