@@ -6,6 +6,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Cuda.Services;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
@@ -686,8 +687,37 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
+        #region Misc
+
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new CuDnnInceptionLayer(InputInfo, OperationInfo, Weights, Biases);
+
+        /// <inheritdoc/>
+        public override void Serialize(System.IO.Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(OperationInfo);
+        }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="CuDnnInceptionLayer"/> from the input <see cref="System.IO.Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="System.IO.Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INetworkLayer Deserialize([NotNull] System.IO.Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead<TensorInfo>(out _)) return null;
+            if (!stream.TryRead<ActivationFunctionType>(out _)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            if (!stream.TryRead(out InceptionInfo info)) return null;
+            return new CuDnnInceptionLayer(input, info, weights, biases);
+        }
+
+        #endregion
 
         #region IDisposable
 

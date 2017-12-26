@@ -31,6 +31,7 @@ namespace NeuralNetworkNET.APIs
                 case LayerType.Convolutional: return CuDnnConvolutionalLayer.Deserialize(stream);
                 case LayerType.Pooling: return CuDnnPoolingLayer.Deserialize(stream);
                 case LayerType.Softmax: return CuDnnSoftmaxLayer.Deserialize(stream);
+                case LayerType.Inception: return CuDnnInceptionLayer.Deserialize(stream);
                 default: return null;
             }
         } 

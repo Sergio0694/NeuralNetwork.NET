@@ -67,5 +67,18 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static INetworkLayer Pooling(in TensorInfo input, in PoolingInfo info, ActivationFunctionType activation) => new CuDnnPoolingLayer(input, info, activation);
+
+        /// <summary>
+        /// Creates a new inception layer with the given input and features
+        /// </summary>
+        /// <param name="input">The input volume to process</param>
+        /// <param name="info">The info on the operations to execute inside the layer</param>
+        /// <param name="biasMode">Indicates the desired initialization mode to use for the layer bias values</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static INetworkLayer Inception(
+            in TensorInfo input, in InceptionInfo info,
+            BiasInitializationMode biasMode = BiasInitializationMode.Zero)
+            => new CuDnnInceptionLayer(input, info, biasMode);
     }
 }
