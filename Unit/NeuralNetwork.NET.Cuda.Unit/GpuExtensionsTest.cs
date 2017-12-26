@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Gpu gpu = Gpu.Default;
             using (DeviceMemory<float> m_gpu = gpu.AllocateDevice(test))
             {
-                m_gpu.CopyToRows(tensor, 5, 3);
+                m_gpu.CopyTo(tensor, 5, 3);
             }
             float[,] expected =
             {
