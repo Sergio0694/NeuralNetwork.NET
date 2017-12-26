@@ -516,7 +516,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 }
 
                 // Pooling
-                using (DeviceMemory<float> poolDy_gpu = DnnInstance.Gpu.AllocateDevice(PoolingZ))
+                using (DeviceMemory<float> pooldy_gpu = DnnInstance.Gpu.AllocateDevice(PoolingZ))
                 {
                     // 1x1 backward
                     DnnInstance.GetConvolutionBackwardDataAlgorithm(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
@@ -528,9 +528,9 @@ namespace NeuralNetworkNET.Cuda.Layers
                     {
                         deviceptr<float> p1x1PoolingWeights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights + _5x5Weights;
                         DnnInstance.ConvolutionBackwardData(1, Secondary1x1FilterDescription, p1x1PoolingWeights_gpu, Secondary1x1OutputDescription, dy_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, PoolingOutputDescription, poolDx_gpu.Ptr);
-                        DnnInstance.ActivationBackward(PoolingZ.Entities, PoolingZ.Length, poolDy_gpu.Ptr, poolDx_gpu.Ptr, ActivationFunctions.ActivationPrime);
+                        DnnInstance.ActivationBackward(PoolingZ.Entities, PoolingZ.Length, pooldy_gpu.Ptr, poolDx_gpu.Ptr, ActivationFunctions.ActivationPrime);
                         _PoolingDelta.TryFree();
-                        poolDy_gpu.CopyToHost(_PoolingDelta.Entities, _PoolingDelta.Length, out _PoolingDelta);
+                        pooldy_gpu.CopyToHost(PoolingZ.Entities, PoolingZ.Length, out _PoolingDelta);
                     }
 
                     // Pooling backward
@@ -538,7 +538,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                         x_gpu = DnnInstance.Gpu.AllocateDevice(_Inputs),
                         poolZ_gpu = DnnInstance.Gpu.AllocateDevice(PoolingZ))
                     {
-                        DnnInstance.PoolingBackward(PoolingDescription, 1, PoolingOutputDescription, poolZ_gpu.Ptr, PoolingOutputDescription, poolDy_gpu.Ptr, InputDescription, x_gpu.Ptr, 1, InputDescription, dx_gpu.Ptr); // TODO: finish pooling backward
+                        DnnInstance.PoolingBackward(PoolingDescription, 1, PoolingOutputDescription, poolZ_gpu.Ptr, PoolingOutputDescription, pooldy_gpu.Ptr, InputDescription, x_gpu.Ptr, 1, InputDescription, dx_gpu.Ptr); // TODO: finish pooling backward
                     }
                 }
 
@@ -680,7 +680,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 // Pooling 1x1 bias
                 using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary1x1AfterPoolingConvolutionKernels))
                 {
-                    DnnInstance.ConvolutionBackwardBias(1, PoolingOutputDescription, dy1x1Pool_gpu.Ptr, 0, Secondary1x1BiasDescription, db_gpu.Ptr);
+                    DnnInstance.ConvolutionBackwardBias(1, Secondary1x1OutputDescription, dy1x1Pool_gpu.Ptr, 0, Secondary1x1BiasDescription, db_gpu.Ptr);
                     db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Primary5x5Reduce1x1ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels, OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
                 }
             }
