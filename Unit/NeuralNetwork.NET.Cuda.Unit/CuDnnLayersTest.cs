@@ -363,6 +363,42 @@ namespace NeuralNetworkNET.Cuda.Unit
             }
         }
 
+        [TestMethod]
+        public unsafe void InceptionForwardPoolPipeline()
+        {
+            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(10), 12 * 12 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(10, 12 * 12 * 3);
+            CuDnnPoolingLayer pool = new CuDnnPoolingLayer(TensorInfo.CreateForRgbImage(12, 12), PoolingInfo.New(PoolingMode.Max, 3, 3, 1, 1, 1, 1), ActivationFunctionType.ReLU);
+            CuDnnConvolutionalLayer conv = new CuDnnConvolutionalLayer(pool.OutputInfo, ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
+            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateForRgbImage(12, 12), InceptionInfo.New(3, 2, 2, 2, 2, PoolingMode.Max, 10));
+            fixed (float* pw = inception.Weights)
+                Unsafe.InitBlock(pw, 0, (uint)(sizeof(float) * inception.Weights.Length));
+            Buffer.BlockCopy(conv.Weights, 0, inception.Weights, sizeof(float) * (3 * 3 + 3 * 2 + 3 * 3 * 2 * 2 + 3 * 2 + 5 * 5 * 2 * 2), sizeof(float) * conv.Weights.Length);
+            Buffer.BlockCopy(conv.Biases, 0, inception.Biases, sizeof(float) * (3 + 2 + 2 + 2 + 2), sizeof(float) * conv.Biases.Length);
+            fixed (float* px = x)
+            {
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                pool.Forward(xTensor, out Tensor zTemp, out Tensor aTemp);
+                conv.Forward(aTemp, out Tensor zConv, out Tensor aConv);
+                inception.Forward(xTensor, out Tensor zInc, out Tensor aInc);
+                Tensor.New(zConv.Entities, zConv.Length, out Tensor reshaped);
+                float* pzInc = (float*)zInc.Ptr.ToPointer() + 12 * 12 * (3 + 2 + 2), preshaped = (float*)reshaped.Ptr.ToPointer();
+                for (int i = 0; i < zConv.Entities; i++)
+                    Buffer.MemoryCopy(pzInc + i * zInc.Length, preshaped + i * zConv.Length, sizeof(float) * zConv.Length, sizeof(float) * zConv.Length);
+                Assert.IsTrue(reshaped.ContentEquals(zConv));
+                zTemp.Free();
+                aTemp.Free();
+                zConv.Free();
+                zInc.Free();
+                float* paInc = (float*)aInc.Ptr.ToPointer() + 12 * 12 * (3 + 2 + 2);
+                for (int i = 0; i < aConv.Entities; i++)
+                    Buffer.MemoryCopy(paInc + i * aInc.Length, preshaped + i * aConv.Length, sizeof(float) * aConv.Length, sizeof(float) * aConv.Length);
+                Assert.IsTrue(reshaped.ContentEquals(aConv));
+                aConv.Free();
+                aInc.Free();
+                reshaped.Free();
+            }
+        }
+
         #endregion
     }
 }

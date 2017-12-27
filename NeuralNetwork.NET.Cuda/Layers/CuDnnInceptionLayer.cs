@@ -105,7 +105,7 @@ namespace NeuralNetworkNET.Cuda.Layers
         private Tensor _5x5Reduce1x1Delta;
 
         // Pooling output activity
-        private Tensor PoolingZ;
+        private Tensor _PoolingZ;
 
         // Pooling output activation
         private Tensor _PoolingA;
@@ -270,8 +270,8 @@ namespace NeuralNetworkNET.Cuda.Layers
             _5x5BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Secondary5x5ConvolutionKernels, 1, 1);
 
             // Pooling
-            PoolingDescription.Set2D(Alea.cuDNN.PoolingMode.AVERAGE_COUNT_EXCLUDE_PADDING, NanPropagation.PROPAGATE_NAN, 3, 3, 1, 1, 1, 1);
-            
+            PoolingDescription.Set2D((Alea.cuDNN.PoolingMode)OperationInfo.Pooling, NanPropagation.PROPAGATE_NAN, 3, 3, 1, 1, 1, 1);
+
             // Secondary 1x1 convolution
             Secondary1x1FilterDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, _OperationInfo.Secondary1x1AfterPoolingConvolutionKernels, InputInfo.Channels, 1, 1);
             Secondary1x1BiasDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, _OperationInfo.Secondary1x1AfterPoolingConvolutionKernels, 1, 1);
@@ -406,7 +406,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     DnnInstance.ActivationForward(x.Entities, InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
                     y_gpu.CopyTo(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
                 }
-        
+
                 // Pooling pipeline
                 PoolingOutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                 using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size))
@@ -416,8 +416,8 @@ namespace NeuralNetworkNET.Cuda.Layers
                     {
                         DnnInstance.PoolingForward(PoolingDescription, 1, InputDescription, x_gpu.Ptr, 0, InputDescription, y_gpu.Ptr);
                     }
-                    PoolingZ.TryFree();
-                    y_gpu.CopyToHost(x.Entities, InputInfo.Size, out PoolingZ);
+                    _PoolingZ.TryFree();
+                    y_gpu.CopyToHost(x.Entities, InputInfo.Size, out _PoolingZ);
                     DnnInstance.ActivationForward(x.Entities, x.Length, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
                     _PoolingA.TryFree();
                     y_gpu.CopyToHost(x.Entities, InputInfo.Size, out _PoolingA);
@@ -516,27 +516,27 @@ namespace NeuralNetworkNET.Cuda.Layers
                 }
 
                 // Pooling
-                using (DeviceMemory<float> pooldy_gpu = DnnInstance.Gpu.AllocateDevice(PoolingZ))
+                using (DeviceMemory<float> pooldy_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
                 {
                     // 1x1 backward
                     DnnInstance.GetConvolutionBackwardDataAlgorithm(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
                     DnnInstance.GetConvolutionBackwardDataWorkspaceSize(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, algorithm, out size);
                     using (DeviceMemory<float> 
                         dy_gpu = DnnInstance.Gpu.AllocateDevice(delta_1, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels),
-                        poolDx_gpu = DnnInstance.Gpu.AllocateDevice<float>(PoolingZ.Size))
+                        poolDx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_PoolingZ.Size))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
                         deviceptr<float> p1x1PoolingWeights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights + _5x5Weights;
                         DnnInstance.ConvolutionBackwardData(1, Secondary1x1FilterDescription, p1x1PoolingWeights_gpu, Secondary1x1OutputDescription, dy_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, PoolingOutputDescription, poolDx_gpu.Ptr);
-                        DnnInstance.ActivationBackward(PoolingZ.Entities, PoolingZ.Length, pooldy_gpu.Ptr, poolDx_gpu.Ptr, ActivationFunctions.ActivationPrime);
+                        DnnInstance.ActivationBackward(_PoolingZ.Entities, _PoolingZ.Length, pooldy_gpu.Ptr, poolDx_gpu.Ptr, ActivationFunctions.ActivationPrime);
                         _PoolingDelta.TryFree();
-                        pooldy_gpu.CopyToHost(PoolingZ.Entities, PoolingZ.Length, out _PoolingDelta);
+                        pooldy_gpu.CopyToHost(_PoolingZ.Entities, _PoolingZ.Length, out _PoolingDelta);
                     }
 
                     // Pooling backward
                     using (DeviceMemory<float> 
                         x_gpu = DnnInstance.Gpu.AllocateDevice(_Inputs),
-                        poolZ_gpu = DnnInstance.Gpu.AllocateDevice(PoolingZ))
+                        poolZ_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
                     {
                         DnnInstance.PoolingBackward(PoolingDescription, 1, PoolingOutputDescription, poolZ_gpu.Ptr, PoolingOutputDescription, pooldy_gpu.Ptr, InputDescription, x_gpu.Ptr, 1, InputDescription, dx_gpu.Ptr); // TODO: finish pooling backward
                     }
@@ -741,7 +741,7 @@ namespace NeuralNetworkNET.Cuda.Layers
             _5x5Reduce1x1Z.TryFree();
             _5x5Reduce1x1A.TryFree();
             _5x5Reduce1x1Delta.TryFree();
-            PoolingZ.TryFree();
+            _PoolingZ.TryFree();
             _PoolingA.TryFree();
             _PoolingDelta.TryFree();
         }

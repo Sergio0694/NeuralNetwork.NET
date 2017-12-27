@@ -89,6 +89,19 @@ namespace NeuralNetworkNET.APIs.Structs
 
         #endregion
 
+        /// <summary>
+        /// Calculates the output size after applying a pooling operation to the input tensor
+        /// </summary>
+        /// <param name="input">The info on the input tensor</param>
+        [Pure]
+        internal TensorInfo GetForwardOutputTensorInfo(in TensorInfo input)
+        {
+            int
+                h = (input.Height - WindowHeight + 2 * VerticalPadding) / VerticalStride + 1,
+                w = (input.Width - WindowWidth + 2 * HorizontalPadding) / HorizontalStride + 1;
+            return new TensorInfo(h, w, input.Channels);
+        }
+
         #region Equality
 
         /// <inheritdoc/>

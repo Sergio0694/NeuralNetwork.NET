@@ -14,7 +14,7 @@ using NeuralNetworkNET.APIs.Structs;
 namespace NeuralNetworkNET.Cuda.Layers
 {
     /// <summary>
-    /// A pooling layer running on cuDNN, with a 2x2 window and a stride of 2
+    /// A pooling layer running on cuDNN, with a custom pooling mode
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     internal sealed class CuDnnPoolingLayer : PoolingLayer
