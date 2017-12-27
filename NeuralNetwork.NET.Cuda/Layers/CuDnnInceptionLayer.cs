@@ -382,7 +382,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     using (DeviceMemory<float> x_gpu = DnnInstance.Gpu.AllocateDevice(x))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, _5x5Reduce1x1FilterDescription, pw_gpu += _3x3Weights, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr);                            
+                        DnnInstance.ConvolutionForward(1, InputDescription, x_gpu.Ptr, _5x5Reduce1x1FilterDescription, pw_gpu += _3x3Weights, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr);                            
                     }
                     DnnInstance.AddTensor(1, _5x5Reduce1x1BiasDescription, pb_gpu += OperationInfo.Secondary3x3ConvolutionKernels, 1, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr);
                     _5x5Reduce1x1Z.TryFree();
@@ -397,7 +397,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     DnnInstance.GetConvolutionForwardWorkspaceSize(_5x5Reduce1x1OutputDescription, _5x5FilterDescription, _5x5ConvolutionDescription, _5x5OutputDescription, algorithm, out size);
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionForward(1, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr, _5x5FilterDescription, pw_gpu += _5x5Reduce1x1Weights, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5OutputDescription, y_gpu.Ptr);      
+                        DnnInstance.ConvolutionForward(1, _5x5Reduce1x1OutputDescription, y1x1_gpu.Ptr, _5x5FilterDescription, pw_gpu += _5x5Reduce1x1Weights, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5OutputDescription, y_gpu.Ptr);
                     }
                     DnnInstance.AddTensor(1, _5x5BiasDescription, pb_gpu += OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, 1, _5x5OutputDescription, y_gpu.Ptr);
                     y_gpu.CopyTo(z, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
@@ -406,7 +406,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     DnnInstance.ActivationForward(x.Entities, InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
                     y_gpu.CopyTo(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
                 }
-            
+        
                 // Pooling pipeline
                 PoolingOutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                 using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size))

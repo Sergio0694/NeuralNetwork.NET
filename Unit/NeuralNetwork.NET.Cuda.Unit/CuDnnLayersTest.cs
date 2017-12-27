@@ -324,6 +324,45 @@ namespace NeuralNetworkNET.Cuda.Unit
             }
         }
 
+        [TestMethod]
+        public unsafe void InceptionForward5x5Pipeline()
+        {
+            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(10), 12 * 12 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(10, 12 * 12 * 3);
+            CuDnnConvolutionalLayer
+                conv1 = new CuDnnConvolutionalLayer(TensorInfo.CreateForRgbImage(12, 12), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian),
+                conv2 = new CuDnnConvolutionalLayer(conv1.OutputInfo, ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 2, 2), (5, 5), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
+            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateForRgbImage(12, 12), InceptionInfo.New(3, 2, 2, 10, 10, PoolingMode.Max, 2));
+            fixed (float* pw = inception.Weights)
+                Unsafe.InitBlock(pw, 0, (uint)(sizeof(float) * inception.Weights.Length));
+            Buffer.BlockCopy(conv1.Weights, 0, inception.Weights, sizeof(float) * (3 * 3 + 3 * 2 + 3 * 3 * 2 * 2), sizeof(float) * conv1.Weights.Length);
+            Buffer.BlockCopy(conv2.Weights, 0, inception.Weights, sizeof(float) * (3 * 3 + 3 * 2 + 3 * 3 * 2 * 2 + conv1.Weights.Length), sizeof(float) * conv2.Weights.Length);
+            Buffer.BlockCopy(conv1.Biases, 0, inception.Biases, sizeof(float) * (3 + 2 + 2), sizeof(float) * conv1.Biases.Length);
+            Buffer.BlockCopy(conv2.Biases, 0, inception.Biases, sizeof(float) * (3 + 2 + 2 + 10), sizeof(float) * conv2.Biases.Length);
+            fixed (float* px = x)
+            {
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
+                conv1.Forward(xTensor, out Tensor zTemp, out Tensor aTemp);
+                zTemp.Free();
+                conv2.Forward(aTemp, out Tensor zConv, out Tensor aConv);
+                inception.Forward(xTensor, out Tensor zInc, out Tensor aInc);
+                Tensor.New(zConv.Entities, zConv.Length, out Tensor reshaped);
+                float* pzInc = (float*)zInc.Ptr.ToPointer() + 12 * 12 * (3 + 2), preshaped = (float*)reshaped.Ptr.ToPointer();
+                for (int i = 0; i < zConv.Entities; i++)
+                    Buffer.MemoryCopy(pzInc + i * zInc.Length, preshaped + i * zConv.Length, sizeof(float) * zConv.Length, sizeof(float) * zConv.Length);
+                Assert.IsTrue(reshaped.ContentEquals(zConv));
+                aTemp.Free();
+                zConv.Free();
+                zInc.Free();
+                float* paInc = (float*)aInc.Ptr.ToPointer() + 12 * 12 * (3 + 2);
+                for (int i = 0; i < aConv.Entities; i++)
+                    Buffer.MemoryCopy(paInc + i * aInc.Length, preshaped + i * aConv.Length, sizeof(float) * aConv.Length, sizeof(float) * aConv.Length);
+                Assert.IsTrue(reshaped.ContentEquals(aConv));
+                aConv.Free();
+                aInc.Free();
+                reshaped.Free();
+            }
+        }
+
         #endregion
     }
 }
