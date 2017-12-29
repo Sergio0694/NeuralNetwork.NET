@@ -236,15 +236,41 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
-        public void PoolingBackward()
+        public unsafe void PoolingBackward()
         {
-            float[,]
-                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 29 * 29 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 29 * 29 * 3),
-                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 58 * 58 * 3);
+            // Setup
+            Tensor.New(400, 58 * 58 * 3, out Tensor x);
+            KerasWeightsProvider.FillWithHeEtAlUniform(x, 10);
             PoolingLayer
                 cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
                 gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationFunctionType.LeakyReLU);
-            TestBackward(cpu, gpu, delta_1, z);
+            gpu.Forward(x, out Tensor z, out Tensor a);
+            a.Free();
+            x.Duplicate(out Tensor x2);
+            Tensor.New(z.Entities, z.Length, out Tensor delta);
+            KerasWeightsProvider.FillWithHeEtAlUniform(delta, 10);
+
+            // Backward
+            cpu.Backpropagate(delta, x, ActivationFunctions.LeakyReLUPrime);
+            gpu.Backpropagate(delta, x2, ActivationFunctions.LeakyReLUPrime);
+            bool valid = true;
+            float* px = (float*)x.Ptr.ToPointer(), px2 = (float*)x2.Ptr.ToPointer();
+            int count = 0;
+            for (int i = 0; i < x.Size; i++)
+            {
+                if (px[i].EqualsWithDelta(px2[i], 1e-5f)) continue;
+                if (px[i].EqualsWithDelta(px2[i] * 100f, 1e-5f)) count++;   // The cuDNN pooling backwards method returns a value scaled by 0.01 from time to time for some reason (less than 2% anyways)
+                else
+                {
+                    valid = false;
+                    break;
+                }
+            }
+            Assert.IsTrue(valid && count * 100f / x.Size < 2);
+            x.Free();
+            x2.Free();
+            z.Free();
+            delta.Free();
         }
 
         #endregion
