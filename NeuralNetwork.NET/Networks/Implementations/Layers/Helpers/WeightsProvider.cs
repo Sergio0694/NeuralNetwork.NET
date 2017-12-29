@@ -13,35 +13,34 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
     internal static class WeightsProvider
     {
         /// <summary>
-        /// Creates a weight matrix for a fully connected layer
+        /// Creates a weights vector for a fully connected layer
         /// </summary>
-        /// <param name="inputs">The input neurons</param>
+        /// <param name="inputs">The layer inputs</param>
         /// <param name="outputs">The output neurons</param>
         /// <param name="mode">The initialization mode for the weights</param>
         [Pure, NotNull]
-        public static unsafe float[] NewFullyConnectedWeights(int inputs, int outputs, WeightsInitializationMode mode)
+        public static unsafe float[] NewFullyConnectedWeights(in TensorInfo input, int outputs, WeightsInitializationMode mode)
         {
-            if (inputs <= 0 || outputs <= 0) throw new ArgumentOutOfRangeException("The inputs and outputs must be positive numbers");
-            float[] weights = new float[inputs * outputs];
+            float[] weights = new float[input.Size * outputs];
             fixed (float* pw = weights)
             {
-                Tensor.Reshape(pw, inputs, outputs, out Tensor wTensor);
+                Tensor.Reshape(pw, input.Size, outputs, out Tensor wTensor);
                 switch (mode)
                 {
                     case WeightsInitializationMode.LeCunUniform:
-                        KerasWeightsProvider.FillWithLeCunUniform(wTensor, inputs);
+                        KerasWeightsProvider.FillWithLeCunUniform(wTensor, input.Size);
                         break;
                     case WeightsInitializationMode.GlorotNormal:
-                        KerasWeightsProvider.FillWithGlorotNormal(wTensor, inputs, outputs);
+                        KerasWeightsProvider.FillWithGlorotNormal(wTensor, input.Size, outputs);
                         break;
                     case WeightsInitializationMode.GlorotUniform:
-                        KerasWeightsProvider.FillWithGlorotUniform(wTensor, inputs, outputs);
+                        KerasWeightsProvider.FillWithGlorotUniform(wTensor, input.Size, outputs);
                         break;
                     case WeightsInitializationMode.HeEtAlNormal:
-                        KerasWeightsProvider.FillWithHeEtAlNormal(wTensor, inputs);
+                        KerasWeightsProvider.FillWithHeEtAlNormal(wTensor, input.Size);
                         break;
                     case WeightsInitializationMode.HeEtAlUniform:
-                        KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, inputs);
+                        KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Size);
                         break;
                     default: throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported weights initialization mode");
                 }
@@ -50,21 +49,67 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
         }
 
         /// <summary>
-        /// Creates a weight matrix for a convolutional layer
+        /// Creates a weights vector for a convolutional layer
         /// </summary>
-        /// <param name="inputDepth">The depth of the input volume</param>
+        /// <param name="input">The layer inputs</param>
         /// <param name="kernelsHeight">The height of each kernel</param>
         /// <param name="kernelsWidth">The width of each kernel</param>
         /// <param name="kernels">The number of kernels in the layer</param>
         [Pure, NotNull]
-        public static unsafe float[] NewConvolutionalKernels(int inputDepth, int kernelsHeight, int kernelsWidth, int kernels)
+        public static unsafe float[] NewConvolutionalKernels(in TensorInfo input, int kernelsHeight, int kernelsWidth, int kernels)
         {
             if (kernels <= 0) throw new ArgumentOutOfRangeException(nameof(kernels), "The number of kernels must be positive");
-            float[] weights = new float[kernels * kernelsHeight * kernelsWidth * inputDepth];
+            float[] weights = new float[kernels * kernelsHeight * kernelsWidth * input.Channels];
             fixed (float* pw = weights)
             {
                 Tensor.Reshape(pw, 1, weights.Length, out Tensor wTensor);
-                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, inputDepth * kernelsHeight * kernelsWidth);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels * kernelsHeight * kernelsWidth);
+            }
+            return weights;
+        }
+
+        /// <summary>
+        /// Creates a new mixed weights vector for an inception layer
+        /// </summary>
+        /// <param name="input">The layer inputs</param>
+        /// <param name="info">The info on the target inception layer</param>
+        [Pure, NotNull]
+        public static unsafe float[] NewInceptionWeights(in TensorInfo input, in InceptionInfo info)
+        {
+            // Setup
+            int
+                _1x1Length = input.Channels * info.Primary1x1ConvolutionKernels,
+                _3x3Reduce1x1Length = input.Channels * info.Primary3x3Reduce1x1ConvolutionKernels,
+                _3x3Length = 3 * 3 * info.Primary3x3Reduce1x1ConvolutionKernels * info.Secondary3x3ConvolutionKernels,
+                _5x5Reduce1x1Length = input.Channels * info.Primary5x5Reduce1x1ConvolutionKernels,
+                _5x5Length = 5 * 5 * info.Primary5x5Reduce1x1ConvolutionKernels * info.Secondary5x5ConvolutionKernels,
+                secondary1x1Length = input.Channels * info.Secondary1x1AfterPoolingConvolutionKernels;
+            float[] weights = new float[_1x1Length + _3x3Reduce1x1Length + _3x3Length + _5x5Reduce1x1Length + _5x5Length + secondary1x1Length];
+            fixed (float* pw = weights)
+            {
+                // 1x1
+                Tensor.Reshape(pw, 1, _1x1Length, out Tensor wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
+
+                // 3x3 reduce 1x1
+                Tensor.Reshape(pw + _1x1Length, 1, _3x3Reduce1x1Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
+
+                // 3x3
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length, 1, _3x3Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, 3 * 3 * info.Primary3x3Reduce1x1ConvolutionKernels);
+
+                // 5x5 reduce 1x1
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length + _3x3Length, 1, _5x5Reduce1x1Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
+
+                // 5x5
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length + _3x3Length + _5x5Reduce1x1Length, 1, _5x5Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, 5 * 5 * info.Primary5x5Reduce1x1ConvolutionKernels);
+
+                // Pool 1x1
+                Tensor.Reshape(pw + _1x1Length + _3x3Reduce1x1Length + _3x3Length + _5x5Reduce1x1Length + _5x5Length, 1, secondary1x1Length, out wTensor);
+                KerasWeightsProvider.FillWithHeEtAlUniform(wTensor, input.Channels);
             }
             return weights;
         }

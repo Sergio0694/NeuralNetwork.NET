@@ -33,6 +33,15 @@ namespace NeuralNetworkNET.Extensions
         public static int Max(this int a, int b) => a >= b ? a : b;
 
         /// <summary>
+        /// Returns the maximum value between two numbers
+        /// </summary>
+        /// <param name="a">The first number</param>
+        /// <param name="b">The second number</param>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Max(this float a, float b) => a >= b ? a : b;
+
+        /// <summary>
         /// Returns the minimum value between two numbers
         /// </summary>
         /// <param name="a">The first number</param>
@@ -54,16 +63,19 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="value">The first value</param>
         /// <param name="other">The second value</param>
-        /// <param name="delta">The comparison threshold</param>
+        /// <param name="absolute">The relative comparison threshold</param>
+        /// <param name="relative">The relative comparison threshold</param>
         [Pure]
-        public static bool EqualsWithDelta(this float value, float other, float delta = 1e-6f)
+        public static bool EqualsWithDelta(this float value, float other, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (float.IsNaN(value) ^ float.IsNaN(other)) return false;
             if (float.IsNaN(value) && float.IsNaN(other)) return true;
             if (float.IsInfinity(value) ^ float.IsInfinity(other)) return false;
             if (float.IsPositiveInfinity(value) && float.IsPositiveInfinity(other)) return true;
             if (float.IsNegativeInfinity(value) && float.IsNegativeInfinity(other)) return true;
-            return (value - other).Abs() < delta;
+            float abs = (value - other).Abs();
+            if (abs < absolute) return true;
+            return abs <= absolute.Max(relative * value.Abs().Max(other.Abs()));
         }
 
         /// <summary>

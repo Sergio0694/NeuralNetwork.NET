@@ -58,8 +58,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         #endregion
 
         public ConvolutionalLayer(in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation, BiasInitializationMode biasMode)
-            : base(input, new TensorInfo(input.Height - kernelSize.X + 1, input.Width - kernelSize.Y + 1, kernels),
-                  WeightsProvider.NewConvolutionalKernels(input.Channels, kernelSize.X, kernelSize.Y, kernels),
+            : base(input, operation.GetForwardOutputTensorInfo(input, kernelSize, kernels),
+                  WeightsProvider.NewConvolutionalKernels(input, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.NewBiases(kernels, biasMode), activation)
         {
             _OperationInfo = operation;
@@ -107,7 +107,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Rotate180(InputInfo.Channels, out Tensor a180);
-            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out dJdw);
+            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out Tensor dJdwM);
+            dJdwM.Reshape(1, Weights.Length, out dJdw);
             a180.Free();
             delta.CompressVertically(OutputInfo.Channels, out dJdb);
         }

@@ -1,4 +1,5 @@
-﻿using Alea;
+﻿using System;
+using Alea;
 using Alea.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Cuda.Extensions;
@@ -14,10 +15,10 @@ using NeuralNetworkNET.APIs.Structs;
 namespace NeuralNetworkNET.Cuda.Layers
 {
     /// <summary>
-    /// A pooling layer running on cuDNN, with a 2x2 window and a stride of 2
+    /// A pooling layer running on cuDNN, with a custom pooling mode
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class CuDnnPoolingLayer : PoolingLayer
+    internal sealed class CuDnnPoolingLayer : PoolingLayer, IDisposable
     {
         #region cuDNN fields
 
@@ -41,6 +42,16 @@ namespace NeuralNetworkNET.Cuda.Layers
 
         #endregion
 
+        #region Fields
+
+        // A copy of the layer inputs
+        private Tensor _X;
+
+        // A copy of the layer output activity
+        private Tensor _Z;
+
+        #endregion
+
         public CuDnnPoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation) : base(input, operation, activation)
         {
             PoolingDescription.Set2D((PoolingMode)operation.Mode, NanPropagation.PROPAGATE_NAN, operation.WindowHeight, operation.WindowWidth, operation.VerticalPadding, operation.HorizontalPadding, operation.VerticalStride, operation.HorizontalStride);
@@ -49,6 +60,8 @@ namespace NeuralNetworkNET.Cuda.Layers
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
+            _X.TryFree();
+            x.Duplicate(out _X);
             using (DeviceMemory<float>
                 x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                 z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
@@ -58,6 +71,8 @@ namespace NeuralNetworkNET.Cuda.Layers
                 OutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, OutputInfo.Channels, OutputInfo.Height, OutputInfo.Width);
                 DnnInstance.PoolingForward(PoolingDescription, 1, InputDescription, x_gpu.Ptr, 0, OutputDescription, z_gpu.Ptr);
                 z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
+                _Z.TryFree();
+                z.Duplicate(out _Z);
 
                 // Activation
                 DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z_gpu.Ptr, ActivationFunctions.Activation);
@@ -66,7 +81,24 @@ namespace NeuralNetworkNET.Cuda.Layers
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputInfo.Channels);
+        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        {
+            using (DeviceMemory<float> dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
+            {
+                using (DeviceMemory<float>
+                    x_gpu = DnnInstance.Gpu.AllocateDevice(_X),
+                    y_gpu = DnnInstance.Gpu.AllocateDevice(_Z),
+                    dy_gpu = DnnInstance.Gpu.AllocateDevice(delta_1))
+                {
+                    DnnInstance.PoolingBackward(PoolingDescription, 1, OutputDescription, y_gpu.Ptr, OutputDescription, dy_gpu.Ptr, InputDescription, x_gpu.Ptr, 0, InputDescription, dx_gpu.Ptr);
+                }
+                using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice(z))
+                {
+                    DnnInstance.ActivationBackward(z.Entities, z.Length, z_gpu.Ptr, dx_gpu.Ptr, activationPrime);
+                    z_gpu.CopyTo(z);
+                }
+            }
+        }
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new CuDnnPoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
@@ -84,5 +116,25 @@ namespace NeuralNetworkNET.Cuda.Layers
             if (!stream.TryRead(out PoolingInfo operation)) return null;
             return new CuDnnPoolingLayer(input, operation, activation);
         }
+
+        #region IDisposable
+
+        ~CuDnnPoolingLayer() => Dispose();
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Dispose();
+        }
+
+        // Private Dispose method
+        private void Dispose()
+        {
+            _X.TryFree();
+            _Z.TryFree();
+        }
+
+        #endregion
     }
 }

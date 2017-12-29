@@ -34,10 +34,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         }
 
         public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation)
-            : base(input, new TensorInfo(
-                input.Height / 2 + (input.Height % 2 == 0 ? 0 : 1),
-                input.Width / 2 + (input.Width % 2 == 0 ? 0 : 1),
-                input.Channels), activation)
+            : base(input, operation.GetForwardOutputTensorInfo(input), activation)
             => _OperationInfo = operation;
 
         /// <inheritdoc/>

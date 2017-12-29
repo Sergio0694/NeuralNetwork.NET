@@ -13,27 +13,27 @@ namespace NeuralNetworkNET.APIs.Structs
     public readonly struct ConvolutionInfo : IEquatable<ConvolutionInfo>
     {
         /// <summary>
-        /// Gets the current convolution mode for the layer
+        /// The current convolution mode for the layer
         /// </summary>
         public readonly ConvolutionMode Mode;
 
         /// <summary>
-        /// Gets the optional vertical padding for the convolution operation
+        /// The optional vertical padding for the convolution operation
         /// </summary>
         public readonly int VerticalPadding;
 
         /// <summary>
-        /// Gets the optional horizontal padding for the convolution operation
+        /// The optional horizontal padding for the convolution operation
         /// </summary>
         public readonly int HorizontalPadding;
 
         /// <summary>
-        /// Gets the vertical stride length while sliding the receptive window over the input
+        /// The vertical stride length while sliding the receptive window over the input
         /// </summary>
         public readonly int VerticalStride;
 
         /// <summary>
-        /// Gets the horizontal stride length while sliding the receptive window over the input
+        /// The horizontal stride length while sliding the receptive window over the input
         /// </summary>
         public readonly int HorizontalStride;
 
@@ -45,16 +45,11 @@ namespace NeuralNetworkNET.APIs.Structs
             int verticalPadding, int horizontalPadding,
             int verticalStride, int horizontalStride)
         {
-            if (verticalPadding < 0) throw new ArgumentOutOfRangeException(nameof(verticalPadding), "The vertical padding must be greater than or equal to 0");
-            if (horizontalPadding < 0) throw new ArgumentOutOfRangeException(nameof(horizontalPadding), "The horizontal padding must be greater than or equal to 0");
-            if (verticalStride < 1) throw new ArgumentOutOfRangeException(nameof(verticalStride), "The vertical stride must be at least equal to 1");
-            if (horizontalStride < 1) throw new ArgumentOutOfRangeException(nameof(horizontalStride), "The horizontal stride must be at least equal to 1");
-
+            VerticalPadding = verticalPadding >= 0 ? verticalPadding : throw new ArgumentOutOfRangeException(nameof(verticalPadding), "The vertical padding must be greater than or equal to 0");
+            HorizontalPadding = horizontalPadding >= 0 ? horizontalPadding : throw new ArgumentOutOfRangeException(nameof(horizontalPadding), "The horizontal padding must be greater than or equal to 0");
+            VerticalStride = verticalStride >= 1 ? verticalStride : throw new ArgumentOutOfRangeException(nameof(verticalStride), "The vertical stride must be at least equal to 1");
+            HorizontalStride = horizontalStride >= 1 ? horizontalStride : throw new ArgumentOutOfRangeException(nameof(horizontalStride), "The horizontal stride must be at least equal to 1");
             Mode = mode;
-            VerticalPadding = verticalPadding;
-            HorizontalPadding = horizontalPadding;
-            VerticalStride = verticalStride;
-            HorizontalStride = horizontalStride;
         }
 
         /// <summary>
@@ -79,6 +74,21 @@ namespace NeuralNetworkNET.APIs.Structs
             => new ConvolutionInfo(mode, verticalPadding, horizontalPadding, verticalStride, horizontalStride);
 
         #endregion
+
+        /// <summary>
+        /// Calculates the output size after applying a convolution operation to the input tensor
+        /// </summary>
+        /// <param name="input">The info on the input tensor</param>
+        /// <param name="field">The size of the convolution kernels</param>
+        /// <param name="kernels">The number of convolution kernels to be used</param>
+        [Pure]
+        internal TensorInfo GetForwardOutputTensorInfo(in TensorInfo input, (int X, int Y) field, int kernels)
+        {
+            int
+                h = (input.Height - field.X + 2 * VerticalPadding) / VerticalStride + 1,
+                w = (input.Width - field.Y + 2 * HorizontalPadding) / HorizontalStride + 1;
+            return new TensorInfo(h, w, kernels);
+        }
 
         #region Equality
 
