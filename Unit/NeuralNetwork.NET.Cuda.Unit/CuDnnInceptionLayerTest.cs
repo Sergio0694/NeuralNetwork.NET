@@ -232,6 +232,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Buffer.BlockCopy(conv.Biases, 0, inception.Biases, sizeof(float) * (3 + 2 + 2 + 2 + 2), sizeof(float) * conv.Biases.Length);
             fixed (float* px = x)
             {
+                // Forward + Z
                 Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
                 pool.Forward(xTensor, out Tensor zTemp, out Tensor aTemp);
                 conv.Forward(aTemp, out Tensor zConv, out Tensor aConv);
@@ -241,14 +242,35 @@ namespace NeuralNetworkNET.Cuda.Unit
                 for (int i = 0; i < zConv.Entities; i++)
                     Buffer.MemoryCopy(pzInc + i * zInc.Length, preshaped + i * zConv.Length, sizeof(float) * zConv.Length, sizeof(float) * zConv.Length);
                 Assert.IsTrue(reshaped.ContentEquals(zConv));
-                zTemp.Free();
-                aTemp.Free();
-                zConv.Free();
-                zInc.Free();
+               
+                // A
                 float* paInc = (float*)aInc.Ptr.ToPointer() + 12 * 12 * (3 + 2 + 2);
                 for (int i = 0; i < aConv.Entities; i++)
                     Buffer.MemoryCopy(paInc + i * aInc.Length, preshaped + i * aConv.Length, sizeof(float) * aConv.Length, sizeof(float) * aConv.Length);
                 Assert.IsTrue(reshaped.ContentEquals(aConv));
+
+                // Backpropagation
+                Tensor.New(xTensor.Entities, xTensor.Length, out Tensor z1);
+                KerasWeightsProvider.FillWithHeEtAlUniform(z1, 10);
+                z1.Duplicate(out Tensor z2);
+                conv.Backpropagate(aConv, zTemp, pool.ActivationFunctions.ActivationPrime);
+                pool.Backpropagate(zTemp, z1, ActivationFunctions.ReLUPrime);
+                inception.Backpropagate(aInc, z2, ActivationFunctions.ReLUPrime);
+                Assert.IsTrue(z1.ContentEquals(z2));
+
+                // Gradient
+                conv.ComputeGradient(aTemp, aConv, out Tensor dJdwConv, out Tensor dJdbConv);
+                inception.ComputeGradient(xTensor, aInc, out Tensor dJdwInc, out Tensor dJdbInc);
+                Tensor.Reshape((float*)dJdwInc.Ptr.ToPointer() + (3 * 3 + 3 * 2 + 3 * 3 * 2 * 2 + 3 * 2 + 5 * 5 * 2 * 2), 1, dJdwConv.Size, out Tensor dJdwInc0);
+                Tensor.Reshape((float*)dJdbInc.Ptr.ToPointer() + 11, 1, dJdbConv.Size, out Tensor dJdbInc0);
+                Assert.IsTrue(dJdwConv.ContentEquals(dJdwInc0, 1e-5f));
+                Assert.IsTrue(dJdbConv.ContentEquals(dJdbInc0, 1e-5f));
+
+                // Cleanup
+                zTemp.Free();
+                aTemp.Free();
+                zConv.Free();
+                zInc.Free();
                 aConv.Free();
                 aInc.Free();
                 reshaped.Free();
