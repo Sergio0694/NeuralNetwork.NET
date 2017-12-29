@@ -17,24 +17,39 @@ namespace NeuralNetworkNET.APIs.Structs
     public readonly struct Tensor
     {
         /// <summary>
-        /// Gets the <see cref="IntPtr"/> value to the allocated memory
+        /// The <see cref="IntPtr"/> value to the allocated memory
         /// </summary>
         public readonly IntPtr Ptr;
 
         /// <summary>
-        /// Gets the number of entities (rows) in the current <see cref="Tensor"/>
+        /// The number of entities (rows) in the current <see cref="Tensor"/>
         /// </summary>
         public readonly int Entities;
 
         /// <summary>
-        /// Gets the size of each entity in the current <see cref="Tensor"/>
+        /// The size of each entity in the current <see cref="Tensor"/>
         /// </summary>
         public readonly int Length;
 
         /// <summary>
-        /// Gets the total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/>
+        /// The total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/>
         /// </summary>
-        public int Size => Entities * Length;
+        public int Size
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Entities * Length;
+        }
+
+        /// <summary>
+        /// Gets whether or not the current instance is linked to an allocated memory area
+        /// </summary>
+        public bool Null
+        {
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Ptr == IntPtr.Zero;
+        }
 
         #region Initialization
 
@@ -187,10 +202,33 @@ namespace NeuralNetworkNET.APIs.Structs
         #endregion
 
         /// <summary>
+        /// Creates a new instance by wrapping the current memory area
+        /// </summary>
+        /// <param name="n">The height of the final matrix</param>
+        /// <param name="chw">The width of the final matrix</param>
+        /// <param name="tensor">The resulting instance</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reshape(int n, int chw, out Tensor tensor)
+        {
+            if (n * chw != Size) throw new ArgumentException("Invalid input resized shape");
+            tensor = new Tensor(Ptr, n, chw);
+        }
+
+        /// <summary>
         /// Frees the memory associated with the current instance
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Free() => Marshal.FreeHGlobal(Ptr);
+
+        /// <summary>
+        /// Frees the memory associated with the current instance, if needed
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TryFree()
+        {
+            if (Ptr != IntPtr.Zero)
+                Marshal.FreeHGlobal(Ptr);
+        }
 
         // Implicit pointer conversion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -233,7 +271,7 @@ namespace NeuralNetworkNET.APIs.Structs
                     // Spawn the sequence
                     int
                         max = MaximumItemsCount / obj.Length,
-                        up = max.Min(MaximumRowsCount).Max(1);
+                        up = max.Min(MaximumRowsCount).Max(1).Min(obj.Entities);
                     for (int i = 0; i < up; i++)
                         yield return ExtractRow(i);
                 }

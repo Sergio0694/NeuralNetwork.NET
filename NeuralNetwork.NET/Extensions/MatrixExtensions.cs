@@ -706,8 +706,9 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m">The first <see cref="Tensor"/> to test</param>
         /// <param name="o">The second <see cref="Tensor"/> to test</param>
-        /// <param name="delta">The comparison threshold</param>
-        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o, float delta = 1e-6f)
+        /// <param name="absolute">The relative comparison threshold</param>
+        /// <param name="relative">The relative comparison threshold</param>
+        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o,float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (m.Ptr == IntPtr.Zero && o.Ptr == IntPtr.Zero) return true;
             if (m.Ptr == IntPtr.Zero || o.Ptr == IntPtr.Zero) return false;
@@ -715,7 +716,7 @@ namespace NeuralNetworkNET.Extensions
             float* pm = m, po = o;
             int items = m.Size;
             for (int i = 0; i < items; i++)
-                if (!pm[i].EqualsWithDelta(po[i], delta)) return false;
+                if (!pm[i].EqualsWithDelta(po[i], absolute, relative)) return false;
             return true;
         }
 
@@ -724,8 +725,9 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m">The first matrix to test</param>
         /// <param name="o">The second matrix to test</param>
-        /// <param name="delta">The comparison threshold</param>
-        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o, float delta = 1e-6f)
+        /// <param name="absolute">The relative comparison threshold</param>
+        /// <param name="relative">The relative comparison threshold</param>
+        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (m == null && o == null) return true;
             if (m == null || o == null) return false;
@@ -733,7 +735,7 @@ namespace NeuralNetworkNET.Extensions
                 m.GetLength(1) != o.GetLength(1)) return false;
             for (int i = 0; i < m.GetLength(0); i++)
                 for (int j = 0; j < m.GetLength(1); j++)
-                    if (!m[i, j].EqualsWithDelta(o[i, j], delta)) return false;
+                    if (!m[i, j].EqualsWithDelta(o[i, j], absolute, relative)) return false;
             return true;
         }
 
@@ -742,14 +744,15 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="v">The first vector to test</param>
         /// <param name="o">The second vector to test</param>
-        /// <param name="delta">The comparison threshold</param>
-        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o, float delta = 1e-6f)
+        /// <param name="absolute">The relative comparison threshold</param>
+        /// <param name="relative">The relative comparison threshold</param>
+        public static bool ContentEquals([CanBeNull] this float[] v, [CanBeNull] float[] o, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (v == null && o == null) return true;
             if (v == null || o == null) return false;
             if (v.Length != o.Length) return false;
             for (int i = 0; i < v.Length; i++)
-                if (!v[i].EqualsWithDelta(o[i], delta)) return false;
+                if (!v[i].EqualsWithDelta(o[i], absolute, relative)) return false;
             return true;
         }
 

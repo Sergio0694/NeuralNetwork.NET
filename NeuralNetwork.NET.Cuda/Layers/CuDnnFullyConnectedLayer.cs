@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                 w_gpu = DnnInstance.Gpu.AllocateDevice<float>(a.Length * delta.Length))
             {
                 DnnInstance.FullyConnectedBackwardFilter(a.Entities, a.Length, delta.Length, a_gpu.Ptr, delta_gpu.Ptr, w_gpu.Ptr);
-                w_gpu.CopyToHost(a.Length, delta.Length, out dJdw);
+                w_gpu.CopyToHost(1, Weights.Length, out dJdw);
             }
             delta.CompressVertically(out dJdb); // Doing this on CPU is generally faster than launching the kernels
         }

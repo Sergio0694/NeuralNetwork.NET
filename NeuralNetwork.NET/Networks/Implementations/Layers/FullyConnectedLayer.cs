@@ -22,7 +22,7 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
 
         public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
             : base(input, TensorInfo.CreateLinear(neurons),
-                  WeightsProvider.NewFullyConnectedWeights(input.Size, neurons, weightsMode),
+                  WeightsProvider.NewFullyConnectedWeights(input, neurons, weightsMode),
                   WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
         public FullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
@@ -59,7 +59,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Transpose(out Tensor at);
-            at.Multiply(delta, out dJdw);
+            at.Multiply(delta, out Tensor dJdwM);
+            dJdwM.Reshape(1, Weights.Length, out dJdw);
             at.Free();
             delta.CompressVertically(out dJdb);
         }
