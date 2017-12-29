@@ -202,6 +202,19 @@ namespace NeuralNetworkNET.APIs.Structs
         #endregion
 
         /// <summary>
+        /// Creates a new instance by wrapping the current memory area
+        /// </summary>
+        /// <param name="n">The height of the final matrix</param>
+        /// <param name="chw">The width of the final matrix</param>
+        /// <param name="tensor">The resulting instance</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reshape(int n, int chw, out Tensor tensor)
+        {
+            if (n * chw != Size) throw new ArgumentException("Invalid input resized shape");
+            tensor = new Tensor(Ptr, n, chw);
+        }
+
+        /// <summary>
         /// Frees the memory associated with the current instance
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -258,7 +271,7 @@ namespace NeuralNetworkNET.APIs.Structs
                     // Spawn the sequence
                     int
                         max = MaximumItemsCount / obj.Length,
-                        up = max.Min(MaximumRowsCount).Max(1);
+                        up = max.Min(MaximumRowsCount).Max(1).Min(obj.Entities);
                     for (int i = 0; i < up; i++)
                         yield return ExtractRow(i);
                 }

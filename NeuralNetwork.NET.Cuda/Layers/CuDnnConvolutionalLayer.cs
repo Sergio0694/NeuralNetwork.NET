@@ -149,7 +149,7 @@ namespace NeuralNetworkNET.Cuda.Layers
                     {
                         DnnInstance.ConvolutionBackwardFilter(1, InputDescription, a_gpu.Ptr, OutputDescription, delta_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, FilterDescription, w_gpu.Ptr);
                     }
-                    w_gpu.CopyToHost(Kernels, KernelInfo.Size, out dJdw);
+                    w_gpu.CopyToHost(1, Weights.Length, out dJdw);
                 }
 
                 // Bias

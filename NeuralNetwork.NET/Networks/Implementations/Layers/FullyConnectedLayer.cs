@@ -59,7 +59,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Transpose(out Tensor at);
-            at.Multiply(delta, out dJdw);
+            at.Multiply(delta, out Tensor dJdwM);
+            dJdwM.Reshape(1, Weights.Length, out dJdw);
             at.Free();
             delta.CompressVertically(out dJdb);
         }

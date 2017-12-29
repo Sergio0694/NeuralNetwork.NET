@@ -107,7 +107,8 @@ namespace NeuralNetworkNET.Networks.Implementations.Layers
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Rotate180(InputInfo.Channels, out Tensor a180);
-            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out dJdw);
+            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out Tensor dJdwM);
+            dJdwM.Reshape(1, Weights.Length, out dJdw);
             a180.Free();
             delta.CompressVertically(OutputInfo.Channels, out dJdb);
         }
