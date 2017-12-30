@@ -60,15 +60,15 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void NetworkSerialization()
         {
-            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForRgbImage(120, 120),
-                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
-                t => NetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.ELU),
-                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.Identity),
-                t => NetworkLayers.Pooling(t, ActivationFunctionType.ReLU),
-                t => NetworkLayers.Convolutional(t, (10, 10), 20, ActivationFunctionType.Identity),
-                t => NetworkLayers.Pooling(t, ActivationFunctionType.ReLU),
-                t => NetworkLayers.FullyConnected(t, 125, ActivationFunctionType.Tanh),
-                t => NetworkLayers.Softmax(t, 133));
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForRgbImage(120, 120),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.AbsoluteReLU),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ELU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
+                NetworkLayers.FullyConnected(125, ActivationFunctionType.Tanh),
+                NetworkLayers.Softmax(133));
             using (MemoryStream stream = new MemoryStream())
             {
                 network.Save(stream);

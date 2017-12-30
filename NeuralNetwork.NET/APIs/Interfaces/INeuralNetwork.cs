@@ -29,6 +29,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         [NotNull, ItemNotNull]
         IReadOnlyList<INetworkLayer> Layers { get; }
 
+        /// <summary>
+        /// Gets the total number of parameters in the current network layer
+        /// </summary>
+        int Parameters { get; }
+
         #endregion
 
         #region Methods
