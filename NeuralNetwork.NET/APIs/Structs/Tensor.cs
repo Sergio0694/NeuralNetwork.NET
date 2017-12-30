@@ -227,6 +227,14 @@ namespace NeuralNetworkNET.APIs.Structs
         public bool MatchShape(in Tensor tensor) => Entities == tensor.Entities && Length == tensor.Length;
 
         /// <summary>
+        /// Checks whether or not the current instance has the same shape as the input arguments
+        /// </summary>
+        /// <param name="entities">The expected number of entities</param>
+        /// <param name="length">The expected length of each entity</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MatchShape(int entities, int length) => Entities == entities && Length == length;
+
+        /// <summary>
         /// Frees the memory associated with the current instance
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
