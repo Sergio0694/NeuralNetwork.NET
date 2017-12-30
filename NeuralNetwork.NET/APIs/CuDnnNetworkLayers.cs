@@ -111,18 +111,16 @@ namespace NeuralNetworkNET.APIs
                 try
                 {
                     // CUDA test
-                    using (Alea.Gpu gpu = Alea.Gpu.Default)
+                    Alea.Gpu gpu = Alea.Gpu.Default;
+                    if (gpu == null) return false;
+                    if (!Alea.cuDNN.Dnn.IsAvailable) return false; // cuDNN
+                    using (Alea.DeviceMemory<float> sample_gpu = gpu.AllocateDevice<float>(1024))
                     {
-                        if (gpu == null) return false;
-                        if (!Alea.cuDNN.Dnn.IsAvailable) return false; // cuDNN
-                        using (Alea.DeviceMemory<float> sample_gpu = gpu.AllocateDevice<float>(1024))
-                        {
-                            Alea.deviceptr<float> ptr = sample_gpu.Ptr;
-                            void Kernel(int i) => ptr[i] = i;
-                            Alea.Parallel.GpuExtension.For(gpu, 0, 1024, Kernel); // JIT test
-                            float[] sample = Alea.Gpu.CopyToHost(sample_gpu);
-                            return Enumerable.Range(0, 1024).Select<int, float>(i => i).ToArray().ContentEquals(sample);
-                        }
+                        Alea.deviceptr<float> ptr = sample_gpu.Ptr;
+                        void Kernel(int i) => ptr[i] = i;
+                        Alea.Parallel.GpuExtension.For(gpu, 0, 1024, Kernel); // JIT test
+                        float[] sample = Alea.Gpu.CopyToHost(sample_gpu);
+                        return Enumerable.Range(0, 1024).Select<int, float>(i => i).ToArray().ContentEquals(sample);
                     }
                 }
                 catch
