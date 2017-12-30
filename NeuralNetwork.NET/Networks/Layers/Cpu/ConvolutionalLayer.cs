@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -80,12 +81,15 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            fixed (float* pw = Weights)
+            fixed (float* pw = Weights, pb = Biases)
             {
-                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                x.ConvoluteForward(InputInfo, wTensor, KernelInfo, Biases, out z);
-                if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
-                else z.Activation(ActivationFunctions.Activation, out a);
+                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor w);
+                Tensor.Reshape(pb, 1, Biases.Length, out Tensor b);
+                Tensor.New(x.Entities, OutputInfo.Size, out z);
+                CpuDnn.ConvolutionForward(x, InputInfo, w, KernelInfo, b, z);
+                Tensor.New(z.Entities, z.Length, out a);
+                if (ActivationFunctionType == ActivationFunctionType.Identity) a.Overwrite(z);
+                else CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
             }
         }
 
@@ -107,10 +111,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             a.Rotate180(InputInfo.Channels, out Tensor a180);
-            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out Tensor dJdwM);
+            ConvolutionExtensions.ConvoluteGradient(a180, InputInfo, delta, OutputInfo, out Tensor dJdwM);
             dJdwM.Reshape(1, Weights.Length, out dJdw);
             a180.Free();
-            delta.CompressVertically(OutputInfo.Channels, out dJdb);
+            ConvolutionExtensions.CompressVertically(delta, OutputInfo.Channels, out dJdb);
         }
 
         #endregion

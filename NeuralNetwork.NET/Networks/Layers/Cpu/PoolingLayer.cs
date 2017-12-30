@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -40,18 +41,20 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            x.Pool2x2(InputInfo.Channels, out z);
-            z.Activation(ActivationFunctions.Activation, out a);
+            Tensor.New(x.Entities, OutputInfo.Size, out z);
+            CpuDnn.PoolingForward(x, InputInfo, z);
+            Tensor.New(z.Entities, z.Length, out a);
+            CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(dy, InputInfo.Channels);
+        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime) => CpuDnn.PoolingBackward(z, InputInfo, dy, z);
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
 
         /// <inheritdoc/>
-        public override void Serialize([NotNull] Stream stream)
+        public override void Serialize(Stream stream)
         {
             base.Serialize(stream);
             stream.Write(OperationInfo);
