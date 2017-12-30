@@ -17,9 +17,9 @@ namespace DigitsTest
         static async Task Main()
         {
             (var training, var test) = DataParser.LoadDatasets();
-            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
-                t => NetworkLayers.FullyConnected(t, 100, ActivationFunctionType.Sigmoid),
-                t => NetworkLayers.FullyConnected(t, 10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+                NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
+                NetworkLayers.FullyConnected(10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 10,
                 TrainingAlgorithmsInfo.CreateForStochasticGradientDescent(), 0.5f,
                 testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
