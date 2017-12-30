@@ -40,13 +40,17 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public IReadOnlyList<INetworkLayer> Layers => _Layers;
 
+        /// <inheritdoc/>
+        [JsonProperty(nameof(Parameters), Order = 3)]
+        public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
+
         #endregion
 
         /// <summary>
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Order = 3)]
+        [JsonProperty(nameof(Layers), Order = 4)]
         internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
