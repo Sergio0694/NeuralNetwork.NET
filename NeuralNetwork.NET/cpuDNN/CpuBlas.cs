@@ -12,7 +12,7 @@ namespace NeuralNetworkNET.cpuDNN
         /// </summary>
         /// <param name="x">The <see cref="Tensor"/> to transpose</param>
         /// <param name="y">The output <see cref="Tensor"/></param>
-        public static unsafe void Transpose(in this Tensor x, in Tensor y)
+        public static unsafe void Transpose(in Tensor x, in Tensor y)
         {
             // Setup
             if (!y.MatchShape(x.Length, x.Entities)) throw new ArgumentException("The output tensor doesn't have the right shape");
@@ -32,10 +32,10 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Performs the multiplication between two matrices
         /// </summary>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
-        /// <param name="result">The resulting matrix</param>
-        public static unsafe void Multiply(in this Tensor x1, in Tensor x2, in Tensor y)
+        /// <param name="x1">The first matrix to multiply</param>
+        /// <param name="x2">The second matrix to multiply</param>
+        /// <param name="y">The resulting matrix</param>
+        public static unsafe void Multiply(in Tensor x1, in Tensor x2, in Tensor y)
         {
             // Initialize the parameters and the result matrix
             if (x1.Length != x2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
@@ -63,6 +63,31 @@ namespace NeuralNetworkNET.cpuDNN
                 }
             }
             Parallel.For(0, n, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Compresses a <see cref="Tensor"/> into a row by summing the components column by column
+        /// </summary>
+        /// <param name="x">The <see cref="Tensor"/> to compress</param>
+        /// <param name="y">The resulting <see cref="Tensor"/></param>
+        public static unsafe void CompressVertically(in Tensor x, in Tensor y)
+        {
+            // Preliminary checks and declarations
+            int
+                n = x.Entities,
+                l = x.Length;
+            if (!y.MatchShape(1, x.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(y));
+            float* px = x, py = y;
+
+            // Compress the tensor
+            void Kernel(int j)
+            {
+                float sum = 0;
+                for (int i = 0; i < n; i++)
+                    sum += px[i * l + j];
+                py[j] = sum;
+            }
+            Parallel.For(0, l, Kernel).AssertCompleted();
         }
     }
 }

@@ -99,11 +99,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                wTensor.Rotate180(KernelInfo.Channels, out Tensor w180);
-                dy.ConvoluteBackwards(OutputInfo, w180, KernelInfo, out Tensor delta);
-                w180.Free();
-                z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
-                delta.Free();
+                Tensor.New(z.Entities, InputInfo.Size, out Tensor dx);
+                CpuDnn.ConvolutionBackwardData(dy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
+                CpuDnn.ActivationBackward(z, dx, activationPrime, z);
+                dx.Free();
             }
         }
 
@@ -114,7 +113,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             ConvolutionExtensions.ConvoluteGradient(a180, InputInfo, delta, OutputInfo, out Tensor dJdwM);
             dJdwM.Reshape(1, Weights.Length, out dJdw);
             a180.Free();
-            ConvolutionExtensions.CompressVertically(delta, OutputInfo.Channels, out dJdb);
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.ConvolutionBackwardBias(delta, OutputInfo, dJdb);
         }
 
         #endregion

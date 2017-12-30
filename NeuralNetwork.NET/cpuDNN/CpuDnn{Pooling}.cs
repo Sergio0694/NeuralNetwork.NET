@@ -5,9 +5,7 @@ using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.cpuDNN
 {
-    /// <summary>
-    /// A static class with a collection of pooling extension methods
-    /// </summary>
+    /// <inheritdoc cref="CpuDnn"/>
     public static partial class CpuDnn
     {
         /// <summary>
