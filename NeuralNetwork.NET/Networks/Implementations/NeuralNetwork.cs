@@ -252,7 +252,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * Perform the sigmoid prime of z(l), the activity on the previous layer
                      * Multiply the previous delta with the transposed weights of the following layer
                      * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                    _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
+                    _Layers[l + 1].Backpropagate(aList[l], *deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
                     if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(zList[l], dropoutMasks[l], zList[l]);
                     deltas[l] = zList + l;
                 }

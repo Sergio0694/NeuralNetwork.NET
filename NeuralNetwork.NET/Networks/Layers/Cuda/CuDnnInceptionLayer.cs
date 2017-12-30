@@ -82,9 +82,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             get => InputInfo.Channels * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels;
         }
 
-        // A copy of the forward layer inputs
-        private Tensor _Inputs;
-
         // 3x3 reduction 1x1 convolution activity
         private Tensor _3x3Reduce1x1Z;
 
@@ -300,8 +297,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            _Inputs.TryFree();
-            x.Duplicate(out _Inputs);
             Tensor.New(x.Entities, OutputInfo.Size, out z);
             Tensor.New(x.Entities, OutputInfo.Size, out a);
             using (DeviceMemory<float>
@@ -443,7 +438,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
         {
             using (DeviceMemory<float> 
                 dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size),
@@ -534,7 +529,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
 
                     // Pooling backward
                     using (DeviceMemory<float> 
-                        x_gpu = DnnInstance.Gpu.AllocateDevice(_Inputs),
+                        x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                         poolZ_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
                     {
                         DnnInstance.PoolingBackward(PoolingDescription, 1, PoolingOutputDescription, poolZ_gpu.Ptr, PoolingOutputDescription, pooldy_gpu.Ptr, InputDescription, x_gpu.Ptr, 1, InputDescription, dx_gpu.Ptr); // TODO: finish pooling backward
@@ -733,7 +728,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         // Private Dispose method
         private void Dispose()
         {
-            _Inputs.TryFree();
             _3x3Reduce1x1Z.TryFree();
             _3x3Reduce1x1A.TryFree();
             _3x3Reduce1x1Delta.TryFree();

@@ -48,7 +48,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime) => CpuDnn.PoolingBackward(z, InputInfo, dy, z);
+        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime) => CpuDnn.PoolingBackward(x, InputInfo, dy, z);
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);

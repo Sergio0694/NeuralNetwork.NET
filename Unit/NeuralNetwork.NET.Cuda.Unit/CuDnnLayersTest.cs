@@ -43,8 +43,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Reshape(pd_1, delta_1.GetLength(0), delta_1.GetLength(1), out Tensor delta_1t);
                 Tensor.Reshape(pz, z.GetLength(0), z.GetLength(1), out Tensor zt);
                 zt.Duplicate(out Tensor zt2);
-                cpu.Backpropagate(delta_1t, zt, ActivationFunctions.LeCunTanhPrime);
-                gpu.Backpropagate(delta_1t, zt2, ActivationFunctions.LeCunTanhPrime);
+                cpu.Backpropagate(Tensor.Null, delta_1t, zt, ActivationFunctions.LeCunTanhPrime);
+                gpu.Backpropagate(Tensor.Null, delta_1t, zt2, ActivationFunctions.LeCunTanhPrime);
                 Assert.IsTrue(zt.ContentEquals(zt2));
             }
         }
@@ -246,17 +246,18 @@ namespace NeuralNetworkNET.Cuda.Unit
                 gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationFunctionType.LeakyReLU);
             gpu.Forward(x, out Tensor z, out Tensor a);
             a.Free();
+            x.Duplicate(out Tensor x1);
             x.Duplicate(out Tensor x2);
             Tensor.New(z.Entities, z.Length, out Tensor delta);
             KerasWeightsProvider.FillWithHeEtAlUniform(delta, 10);
 
             // Backward
-            cpu.Backpropagate(delta, x, ActivationFunctions.LeakyReLUPrime);
-            gpu.Backpropagate(delta, x2, ActivationFunctions.LeakyReLUPrime);
+            cpu.Backpropagate(x, delta, x1, ActivationFunctions.LeakyReLUPrime);
+            gpu.Backpropagate(x, delta, x2, ActivationFunctions.LeakyReLUPrime);
             bool valid = true;
-            float* px = (float*)x.Ptr.ToPointer(), px2 = (float*)x2.Ptr.ToPointer();
+            float* px = (float*)x1.Ptr.ToPointer(), px2 = (float*)x2.Ptr.ToPointer();
             int count = 0;
-            for (int i = 0; i < x.Size; i++)
+            for (int i = 0; i < x1.Size; i++)
             {
                 if (px[i].EqualsWithDelta(px2[i], 1e-5f)) continue;
                 if (px[i].EqualsWithDelta(px2[i] * 100f, 1e-5f)) count++;   // The cuDNN pooling backwards method returns a value scaled by 0.01 from time to time for some reason (less than 2% anyways)
@@ -266,8 +267,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                     break;
                 }
             }
-            Assert.IsTrue(valid && count * 100f / x.Size < 2);
+            Assert.IsTrue(valid && count * 100f / x1.Size < 2);
             x.Free();
+            x1.Free();
             x2.Free();
             z.Free();
             delta.Free();

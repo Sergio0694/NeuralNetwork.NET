@@ -49,8 +49,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.New(xTensor.Entities, xTensor.Length, out Tensor z1);
                 KerasWeightsProvider.FillWithHeEtAlUniform(z1, 10);
                 z1.Duplicate(out Tensor z2);
-                conv.Backpropagate(aConv, z1, ActivationFunctions.ReLUPrime);
-                inception.Backpropagate(aInc, z2, ActivationFunctions.ReLUPrime);
+                conv.Backpropagate(Tensor.Null, aConv, z1, ActivationFunctions.ReLUPrime);
+                inception.Backpropagate(xTensor, aInc, z2, ActivationFunctions.ReLUPrime);
                 Assert.IsTrue(z1.ContentEquals(z2));
 
                 // Gradient
@@ -119,9 +119,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.New(xTensor.Entities, xTensor.Length, out Tensor z1);
                 KerasWeightsProvider.FillWithHeEtAlUniform(z1, 10);
                 z1.Duplicate(out Tensor z2);
-                conv2.Backpropagate(aConv, zTemp, conv1.ActivationFunctions.ActivationPrime);
-                conv1.Backpropagate(zTemp, z1, ActivationFunctions.ReLUPrime);
-                inception.Backpropagate(aInc, z2, ActivationFunctions.ReLUPrime);
+                conv2.Backpropagate(Tensor.Null, aConv, zTemp, conv1.ActivationFunctions.ActivationPrime);
+                conv1.Backpropagate(Tensor.Null, zTemp, z1, ActivationFunctions.ReLUPrime);
+                inception.Backpropagate(xTensor, aInc, z2, ActivationFunctions.ReLUPrime);
                 Assert.IsTrue(z1.ContentEquals(z2));
 
                 // Gradient
@@ -188,9 +188,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.New(xTensor.Entities, xTensor.Length, out Tensor z1);
                 KerasWeightsProvider.FillWithHeEtAlUniform(z1, 10);
                 z1.Duplicate(out Tensor z2);
-                conv2.Backpropagate(aConv, zTemp, conv1.ActivationFunctions.ActivationPrime);
-                conv1.Backpropagate(zTemp, z1, ActivationFunctions.ReLUPrime);
-                inception.Backpropagate(aInc, z2, ActivationFunctions.ReLUPrime);
+                conv2.Backpropagate(Tensor.Null, aConv, zTemp, conv1.ActivationFunctions.ActivationPrime);
+                conv1.Backpropagate(Tensor.Null, zTemp, z1, ActivationFunctions.ReLUPrime);
+                inception.Backpropagate(xTensor, aInc, z2, ActivationFunctions.ReLUPrime);
                 Assert.IsTrue(z1.ContentEquals(z2));
 
                 // Gradient
@@ -253,9 +253,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.New(xTensor.Entities, xTensor.Length, out Tensor z1);
                 KerasWeightsProvider.FillWithHeEtAlUniform(z1, 10);
                 z1.Duplicate(out Tensor z2);
-                conv.Backpropagate(aConv, zTemp, pool.ActivationFunctions.ActivationPrime);
-                pool.Backpropagate(zTemp, z1, ActivationFunctions.ReLUPrime);
-                inception.Backpropagate(aInc, z2, ActivationFunctions.ReLUPrime);
+                conv.Backpropagate(Tensor.Null, aConv, zTemp, pool.ActivationFunctions.ActivationPrime);
+                pool.Backpropagate(xTensor, zTemp, z1, ActivationFunctions.ReLUPrime);
+                inception.Backpropagate(xTensor, aInc, z2, ActivationFunctions.ReLUPrime);
                 Assert.IsTrue(z1.ContentEquals(z2));
 
                 // Gradient

@@ -94,7 +94,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
         {
             fixed (float* pw = Weights)
             {

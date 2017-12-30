@@ -43,9 +43,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
 
         #region Fields
 
-        // A copy of the layer inputs
-        private Tensor _X;
-
         // A copy of the layer output activity
         private Tensor _Z;
 
@@ -59,8 +56,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            _X.TryFree();
-            x.Duplicate(out _X);
             using (DeviceMemory<float>
                 x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                 z_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * OutputInfo.Size))
@@ -80,12 +75,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
         {
             using (DeviceMemory<float> dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
             {
                 using (DeviceMemory<float>
-                    x_gpu = DnnInstance.Gpu.AllocateDevice(_X),
+                    x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                     y_gpu = DnnInstance.Gpu.AllocateDevice(_Z),
                     dy_gpu = DnnInstance.Gpu.AllocateDevice(dy))
                 {
@@ -130,7 +125,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         // Private Dispose method
         private void Dispose()
         {
-            _X.TryFree();
             _Z.TryFree();
         }
 
