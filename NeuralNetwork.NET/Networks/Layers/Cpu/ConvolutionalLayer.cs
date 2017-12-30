@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -80,12 +81,15 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            fixed (float* pw = Weights)
+            fixed (float* pw = Weights, pb = Biases)
             {
-                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                x.ConvoluteForward(InputInfo, wTensor, KernelInfo, Biases, out z);
-                if (ActivationFunctionType == ActivationFunctionType.Identity) Tensor.From(z, z.Entities, z.Length, out a);
-                else z.Activation(ActivationFunctions.Activation, out a);
+                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor w);
+                Tensor.Reshape(pb, 1, Biases.Length, out Tensor b);
+                Tensor.New(x.Entities, OutputInfo.Size, out z);
+                CpuDnn.ConvolutionForward(x, InputInfo, w, KernelInfo, b, z);
+                Tensor.New(z.Entities, z.Length, out a);
+                if (ActivationFunctionType == ActivationFunctionType.Identity) a.Overwrite(z);
+                else CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
             }
         }
 
@@ -95,22 +99,21 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                wTensor.Rotate180(KernelInfo.Channels, out Tensor w180);
-                dy.ConvoluteBackwards(OutputInfo, w180, KernelInfo, out Tensor delta);
-                w180.Free();
-                z.InPlaceActivationAndHadamardProduct(delta, activationPrime);
-                delta.Free();
+                Tensor.New(z.Entities, InputInfo.Size, out Tensor dx);
+                CpuDnn.ConvolutionBackwardData(dy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
+                CpuDnn.ActivationBackward(z, dx, activationPrime, z);
+                dx.Free();
             }
         }
 
         /// <inheritdoc/>
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
-            a.Rotate180(InputInfo.Channels, out Tensor a180);
-            a180.ConvoluteGradient(InputInfo, delta, OutputInfo, out Tensor dJdwM);
-            dJdwM.Reshape(1, Weights.Length, out dJdw);
-            a180.Free();
-            delta.CompressVertically(OutputInfo.Channels, out dJdb);
+            Tensor.New(OutputInfo.Channels, KernelInfo.Size, out Tensor dw);
+            CpuDnn.ConvolutionBackwardFilter(a, InputInfo, delta, OutputInfo, dw);
+            dw.Reshape(1, Weights.Length, out dJdw);
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.ConvolutionBackwardBias(delta, OutputInfo, dJdb);
         }
 
         #endregion

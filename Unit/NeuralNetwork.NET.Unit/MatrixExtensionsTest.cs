@@ -1,16 +1,17 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="MatrixExtensions"/> class
+    /// Test class for the <see cref="CpuBlas"/> class
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(MatrixExtensionsTest))]
-    public class MatrixExtensionsTest
+    [TestCategory(nameof(CpuBlasTest))]
+    public class CpuBlasTest
     {
         /// <summary>
         /// Vector-matrix multiplication test
@@ -33,7 +34,8 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 4, 4, out Tensor mTensor);
                 Tensor.Reshape(pv, 1, 4, out Tensor vTensor);
-                vTensor.Multiply(mTensor, out Tensor rTensor);
+                Tensor.New(1, 4, out Tensor rTensor);
+                CpuBlas.Multiply(vTensor, mTensor, rTensor);
                 Assert.IsTrue(rTensor.ToArray().ContentEquals(r));
                 rTensor.Free();
             }
@@ -67,7 +69,8 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm1, 2, 3, out Tensor m1Tensor);
                 Tensor.Reshape(pm2, 3, 4, out Tensor m2Tensor);
-                m1Tensor.Multiply(m2Tensor, out Tensor result);
+                Tensor.New(2, 4, out Tensor result);
+                CpuBlas.Multiply(m1Tensor, m2Tensor, result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
@@ -103,8 +106,10 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm1, 3, 3, out Tensor m1Tensor);
                 Tensor.Reshape(pm2, 3, 3, out Tensor m2Tensor);
-                m1Tensor.InPlaceHadamardProduct(m2Tensor);
-                Assert.IsTrue(m1Tensor.ToArray2D().ContentEquals(r));
+                Tensor.New(3, 3, out Tensor result);
+                CpuBlas.MultiplyElementwise(m1Tensor, m2Tensor, result);
+                Assert.IsTrue(result.ToArray2D().ContentEquals(r));
+                result.Free();
             }
         }
 
@@ -131,41 +136,11 @@ namespace NeuralNetworkNET.Unit
             fixed (float* pm = m)
             {
                 Tensor.Reshape(pm, 2, 4, out Tensor mTensor);
-                mTensor.Transpose(out Tensor result);
+                Tensor.New(4, 2, out Tensor result);
+                CpuBlas.Transpose(mTensor, result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
-        }
-
-        /// <summary>
-        /// Matrix array flattening
-        /// </summary>
-        [TestMethod]
-        public void Flattening()
-        {
-            // Test values
-            float[][,] mv =
-            {
-                new[,]
-                {
-                    { 1.0f, 2.0f },
-                    { 3.0f, 4.0f }
-                },
-                new[,]
-                {
-                    { 0.1f, 0.2f },
-                    { 0.3f, 0.4f }
-                },
-                new[,]
-                {
-                    { -1.0f, -2.0f },
-                    { -3.0f, -4.0f }
-                }
-            };
-            float[]
-                r = { 1.0f, 2.0f, 3.0f, 4.0f, 0.1f, 0.2f, 0.3f, 0.4f, -1.0f, -2.0f, -3.0f, -4.0f },
-                t = mv.Flatten();
-            Assert.IsTrue(t.ContentEquals(r));
         }
 
         [TestMethod]

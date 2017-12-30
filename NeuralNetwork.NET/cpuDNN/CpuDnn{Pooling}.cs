@@ -1,39 +1,38 @@
 ﻿using NeuralNetworkNET.APIs.Structs;
 using System;
 using System.Threading.Tasks;
+using NeuralNetworkNET.Extensions;
 
-namespace NeuralNetworkNET.Extensions
+namespace NeuralNetworkNET.cpuDNN
 {
-    /// <summary>
-    /// A static class with a collection of pooling extension methods
-    /// </summary>
-    internal static class PoolingExtensions
+    /// <inheritdoc cref="CpuDnn"/>
+    public static partial class CpuDnn
     {
         /// <summary>
-        /// Pools the input matrix with a window of 2 and a stride of 2
+        /// Executes the forward pass on a max pooling layer with a 2x2 window and a stride of 2
         /// </summary>
-        /// <param name="source">The input matrix to pool</param>
-        /// <param name="depth">The number of images for each matrix row</param>
-        /// <param name="result">The resulting pooled matrix</param>
-        public static unsafe void Pool2x2(in this Tensor source, int depth, out Tensor result)
+        /// <param name="x">The input <see cref="Tensor"/> to pool</param>
+        /// <param name="xInfo">The info on the input <see cref="Tensor"/></param>
+        /// <param name="y">The resulting pooled <see cref="Tensor"/></param>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
+        public static unsafe void PoolingForward(in Tensor x, in TensorInfo xInfo, in Tensor y)
         {
-            // Prepare the result matrix
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
-            int h = source.Entities, w = source.Length;
-            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
+            int h = x.Entities, w = x.Length;
+            if (h < 1 || w < 1) throw new ArgumentException("The input tensor isn't valid");
             int
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                depth = xInfo.Channels,
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x)),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentException("The size of the input tensor isn't valid", nameof(x));
             int
                 poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
                 poolSize = poolAxis * poolAxis,
                 poolFinalWidth = depth * poolSize,
                 edge = imgAxis - 1;
-            Tensor.New(h, poolFinalWidth, out result);
+            if (!y.MatchShape(h, poolFinalWidth)) throw new ArgumentException("The output tensor shape isn't valid", nameof(y));
 
             // Pooling kernel
-            float* psource = source, presult = result;
+            float* px = x, py = y;
             void Kernel(int sample)
             {
                 int
@@ -44,28 +43,28 @@ namespace NeuralNetworkNET.Extensions
                     int
                         sourceZOffset = sourceBaseOffset + z * imgSize,
                         resultZOffset = resultBaseOffset + z * poolSize,
-                        x = 0;
+                        c = 0;
                     for (int i = 0; i < imgAxis; i += 2)
                     {
                         int
                             sourceIOffset = sourceZOffset + i * imgAxis,
-                            resultXOffset = resultZOffset + x * poolAxis,
-                            y = 0;
+                            resultXOffset = resultZOffset + c * poolAxis,
+                            r = 0;
                         if (i == edge)
                         {
                             // Last row
                             for (int j = 0; j < imgAxis; j += 2)
                             {
                                 float max;
-                                if (j == w - 1) max = psource[sourceIOffset + j]; // Last column
+                                if (j == w - 1) max = px[sourceIOffset + j]; // Last column
                                 else
                                 {
                                     float
-                                        left = psource[sourceIOffset + j],
-                                        right = psource[sourceIOffset + j + 1];
+                                        left = px[sourceIOffset + j],
+                                        right = px[sourceIOffset + j + 1];
                                     max = left > right ? left : right;
                                 }
-                                presult[resultXOffset + y++] = max;
+                                py[resultXOffset + r++] = max;
                             }
                         }
                         else
@@ -78,25 +77,25 @@ namespace NeuralNetworkNET.Extensions
                                 {
                                     // Last column
                                     float
-                                        up = psource[sourceIOffset + j],
-                                        down = psource[sourceI_1Offset + j];
+                                        up = px[sourceIOffset + j],
+                                        down = px[sourceI_1Offset + j];
                                     max = up > down ? up : down;
                                 }
                                 else
                                 {
                                     float
-                                        upLeft = psource[sourceIOffset + j],
-                                        upRight = psource[sourceIOffset + j + 1],
-                                        downLeft = psource[sourceI_1Offset + j],
-                                        downRight = psource[sourceI_1Offset + j + 1],
+                                        upLeft = px[sourceIOffset + j],
+                                        upRight = px[sourceIOffset + j + 1],
+                                        downLeft = px[sourceI_1Offset + j],
+                                        downRight = px[sourceI_1Offset + j + 1],
                                         maxUp = upLeft > upRight ? upLeft : upRight,
                                         maxDown = downLeft > downRight ? downLeft : downRight;
                                     max = maxUp > maxDown ? maxUp : maxDown;
                                 }
-                                presult[resultXOffset + y++] = max;
+                                py[resultXOffset + r++] = max;
                             }
                         }
-                        x++;
+                        c++;
                     }
                 }
             }
@@ -104,73 +103,76 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Pools the input matrix with a window of 2 and a stride of 2
+        /// Executes the backward pass on a max pooling layer with a 2x2 window and a stride of 2
         /// </summary>
-        /// <param name="source">The activation matrix that will also hold the final result</param>
-        /// <param name="pooled">The matrix to upscale according to the source values</param>
-        /// <param name="depth">The number of images for each matrix row</param>
-        public static unsafe void UpscalePool2x2(in this Tensor source, in Tensor pooled, int depth)
+        /// <param name="x">The original input <see cref="Tensor"/> used during the forward pass</param>
+        /// <param name="xInfo">The info on the input <see cref="Tensor"/></param>
+        /// <param name="dy">The output error for the current layer</param>
+        /// <param name="dx">The resulting backpropagated error</param>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
+        public static unsafe void PoolingBackward(in Tensor x, in TensorInfo xInfo, in Tensor dy, in Tensor dx)
         {
-            // Prepare the result matrix
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per sample must be at least equal to 1");
-            int h = source.Entities, w = source.Length;
-            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
+            // Prepare the result tensor
+            if (!dx.MatchShape(x)) throw new ArgumentException("The result tensor must have the same shape as the input", nameof(dx));
+            int n = x.Entities, l = x.Length;
+            if (n < 1 || l < 1) throw new ArgumentException("The input tensor isn't valid");
             int
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(source), "Invalid depth parameter for the input matrix"),
+                depth = xInfo.Channels,
+                imgSize = l % depth == 0 ? l / depth : throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x)),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(source), "The size of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentException("The size of the input tensor isn't valid", nameof(x));
             int
                 poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
                 poolSize = poolAxis * poolAxis,
                 poolFinalWidth = depth * poolSize,
                 edge = imgAxis - 1;
             int
-                ph = pooled.Entities,
-                pw = pooled.Length;
-            if (ph != h || pw != poolFinalWidth) throw new ArgumentException("Invalid pooled matrix", nameof(pooled));
+                pn = dy.Entities,
+                pl = dy.Length;
+            if (pn != n || pl != poolFinalWidth) throw new ArgumentException("Invalid pooled tensor", nameof(dy));
 
             // Pooling kernel
-            float* psource = source, ppooled = pooled;
+            float* px = x, pdy = dy, pdx = dx;
             void Kernel(int sample)
             {
                 int
-                    sourceBaseOffset = sample * w,
+                    sourceBaseOffset = sample * l,
                     resultBaseOffset = sample * poolFinalWidth;
                 for (int z = 0; z < depth; z++)
                 {
                     int
                         sourceZOffset = sourceBaseOffset + z * imgSize,
                         resultZOffset = resultBaseOffset + z * poolSize,
-                        x = 0;
+                        c = 0;
                     for (int i = 0; i < imgAxis; i += 2)
                     {
                         int
                             sourceIOffset = sourceZOffset + i * imgAxis,
-                            resultXOffset = resultZOffset + x * poolAxis,
-                            y = 0;
+                            resultXOffset = resultZOffset + c * poolAxis,
+                            r = 0;
                         if (i == edge)
                         {
                             // Last row
                             for (int j = 0; j < imgAxis; j += 2)
                             {
-                                if (j == w - 1)
+                                if (j == l - 1)
                                 {
-                                    psource[sourceIOffset + j] = ppooled[resultXOffset + y++];
+                                    pdx[sourceIOffset + j] = pdy[resultXOffset + r++];
                                 }
                                 else
                                 {
                                     float
-                                        left = psource[sourceIOffset + j],
-                                        right = psource[sourceIOffset + j + 1];
+                                        left = px[sourceIOffset + j],
+                                        right = px[sourceIOffset + j + 1];
                                     if (left > right)
                                     {
-                                        psource[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                        psource[sourceIOffset + j + 1] = 0;
+                                        pdx[sourceIOffset + j] = pdy[resultXOffset + r++];
+                                        pdx[sourceIOffset + j + 1] = 0;
                                     }
                                     else
                                     {
-                                        psource[sourceIOffset + j + 1] = ppooled[resultXOffset + y++];
-                                        psource[sourceIOffset + j] = 0;
+                                        pdx[sourceIOffset + j + 1] = pdy[resultXOffset + r++];
+                                        pdx[sourceIOffset + j] = 0;
                                     }
                                 }
                             }
@@ -184,56 +186,56 @@ namespace NeuralNetworkNET.Extensions
                                 {
                                     // Last column
                                     float
-                                        up = psource[sourceIOffset + j],
-                                        down = psource[sourceI_1Offset + j];
+                                        up = px[sourceIOffset + j],
+                                        down = px[sourceI_1Offset + j];
                                     if (up > down)
                                     {
-                                        psource[sourceIOffset + j] = ppooled[resultXOffset + y++];
-                                        psource[sourceI_1Offset + j] = 0;
+                                        pdx[sourceIOffset + j] = pdy[resultXOffset + r++];
+                                        pdx[sourceI_1Offset + j] = 0;
                                     }
                                     else
                                     {
-                                        psource[sourceI_1Offset + j] = ppooled[resultXOffset + y++];
-                                        psource[sourceIOffset + j] = 0;
+                                        pdx[sourceI_1Offset + j] = pdy[resultXOffset + r++];
+                                        pdx[sourceIOffset + j] = 0;
                                     }
                                 }
                                 else
                                 {
                                     int offset = sourceIOffset + j;
                                     float
-                                        max = psource[offset],
-                                        next = psource[sourceIOffset + j + 1];
+                                        max = px[offset],
+                                        next = px[sourceIOffset + j + 1];
                                     if (next > max)
                                     {
                                         max = next;
-                                        psource[offset] = 0;
+                                        pdx[offset] = 0;
                                         offset = sourceIOffset + j + 1;
                                     }
-                                    else psource[sourceIOffset + j + 1] = 0;
-                                    next = psource[sourceI_1Offset + j];
+                                    else pdx[sourceIOffset + j + 1] = 0;
+                                    next = px[sourceI_1Offset + j];
                                     if (next > max)
                                     {
                                         max = next;
-                                        psource[offset] = 0;
+                                        pdx[offset] = 0;
                                         offset = sourceI_1Offset + j;
                                     }
-                                    else psource[sourceI_1Offset + j] = 0;
-                                    next = psource[sourceI_1Offset + j + 1];
+                                    else pdx[sourceI_1Offset + j] = 0;
+                                    next = px[sourceI_1Offset + j + 1];
                                     if (next > max)
                                     {
-                                        psource[offset] = 0;
+                                        pdx[offset] = 0;
                                         offset = sourceI_1Offset + j + 1;
                                     }
-                                    else psource[sourceI_1Offset + j + 1] = 0;
-                                    psource[offset] = ppooled[resultXOffset + y++];
+                                    else pdx[sourceI_1Offset + j + 1] = 0;
+                                    pdx[offset] = pdy[resultXOffset + r++];
                                 }
                             }
                         }
-                        x++;
+                        c++;
                     }
                 }
             }
-            Parallel.For(0, h, Kernel).AssertCompleted();
+            Parallel.For(0, n, Kernel).AssertCompleted();
         }
     }
 }

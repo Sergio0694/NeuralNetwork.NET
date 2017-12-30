@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -35,11 +36,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            fixed (float* pw = Weights)
+            fixed (float* pw = Weights, pb = Biases)
             {
-                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
-                x.MultiplyWithSum(wTensor, Biases, out z);
-                z.Activation(ActivationFunctions.Activation, out a);
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
+                Tensor.Reshape(pb, 1, Biases.Length, out Tensor b);
+                Tensor.New(x.Entities, OutputInfo.Size, out z);
+                CpuDnn.FullyConnectedForward(x, w, b, z);
+                Tensor.New(z.Entities, z.Length, out a);
+                CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
             }
         }
 
@@ -48,21 +52,19 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         {
             fixed (float* pw = Weights)
             {
-                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
-                wTensor.Transpose(out Tensor wt);
-                z.InPlaceMultiplyAndHadamardProductWithActivationPrime(dy, wt, activationPrime);
-                wt.Free();
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
+                CpuDnn.FullyConnectedBackwardData(z, w, dy, activationPrime, z);
             }
         }
 
         /// <inheritdoc/>
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
-            a.Transpose(out Tensor at);
-            at.Multiply(delta, out Tensor dJdwM);
-            dJdwM.Reshape(1, Weights.Length, out dJdw);
-            at.Free();
-            delta.CompressVertically(out dJdb);
+            Tensor.New(InputInfo.Size, OutputInfo.Size, out Tensor dw);
+            CpuDnn.FullyConnectedBackwardFilter(a, delta, dw);
+            dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.FullyConnectedBackwardBias(delta, dJdb);
         }
 
         /// <inheritdoc/>
