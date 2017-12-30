@@ -45,7 +45,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(delta_1, InputInfo.Channels);
+        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime) => z.UpscalePool2x2(dy, InputInfo.Channels);
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);

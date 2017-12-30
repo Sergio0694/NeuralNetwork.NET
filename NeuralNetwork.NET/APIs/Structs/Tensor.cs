@@ -44,12 +44,17 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Gets whether or not the current instance is linked to an allocated memory area
         /// </summary>
-        public bool Null
+        public bool IsNull
         {
             [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Ptr == IntPtr.Zero;
         }
+
+        /// <summary>
+        /// Gets a null instance
+        /// </summary>
+        public static readonly Tensor Null = new Tensor(IntPtr.Zero, 0, 0);
 
         #region Initialization
 

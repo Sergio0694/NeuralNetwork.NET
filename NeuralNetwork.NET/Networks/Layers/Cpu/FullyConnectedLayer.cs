@@ -44,13 +44,13 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime)
         {
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor wTensor);
                 wTensor.Transpose(out Tensor wt);
-                z.InPlaceMultiplyAndHadamardProductWithActivationPrime(delta_1, wt, activationPrime);
+                z.InPlaceMultiplyAndHadamardProductWithActivationPrime(dy, wt, activationPrime);
                 wt.Free();
             }
         }

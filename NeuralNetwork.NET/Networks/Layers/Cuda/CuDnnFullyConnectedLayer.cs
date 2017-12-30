@@ -45,10 +45,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime)
         {
             using (DeviceMemory<float>
-                delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
+                delta_1_gpu = DnnInstance.Gpu.AllocateDevice(dy),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
                 z_gpu = DnnInstance.Gpu.AllocateDevice(z))
             {

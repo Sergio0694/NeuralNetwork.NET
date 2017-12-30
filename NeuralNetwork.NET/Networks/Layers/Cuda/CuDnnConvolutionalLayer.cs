@@ -108,7 +108,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor delta_1, in Tensor z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor dy, in Tensor z, ActivationFunction activationPrime)
         {
             using (DeviceMemory<float> delta_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
             {
@@ -116,7 +116,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
                 DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, algorithm, out IntPtr size);
                 using (DeviceMemory<float>
-                    delta_1_gpu = DnnInstance.Gpu.AllocateDevice(delta_1),
+                    delta_1_gpu = DnnInstance.Gpu.AllocateDevice(dy),
                     w_gpu = DnnInstance.Gpu.AllocateDevice(Weights))
                 using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                 {
