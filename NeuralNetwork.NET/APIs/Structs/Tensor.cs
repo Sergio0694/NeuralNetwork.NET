@@ -220,6 +220,13 @@ namespace NeuralNetworkNET.APIs.Structs
         }
 
         /// <summary>
+        /// Checks whether or not the current instance has the same shape of the input <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="tensor">The instance to compare</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MatchShape(in Tensor tensor) => Entities == tensor.Entities && Length == tensor.Length;
+
+        /// <summary>
         /// Frees the memory associated with the current instance
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
