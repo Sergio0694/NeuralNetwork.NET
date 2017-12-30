@@ -1,5 +1,6 @@
 ﻿using Alea;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Extensions;
@@ -13,6 +14,12 @@ namespace NeuralNetworkNET.Cuda.Unit
     [TestCategory(nameof(GpuExtensionsTest))]
     public class GpuExtensionsTest
     {
+        [TestMethod]
+        public void CudaSupport()
+        {
+            Assert.IsTrue(CuDnnNetworkLayers.IsCudaSupportAvailable);
+        }
+
         [TestMethod]
         public void CopyToRows()
         {
