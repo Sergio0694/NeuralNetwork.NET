@@ -716,7 +716,14 @@ namespace NeuralNetworkNET.Extensions
             float* pm = m, po = o;
             int items = m.Size;
             for (int i = 0; i < items; i++)
-                if (!pm[i].EqualsWithDelta(po[i], absolute, relative)) return false;
+                if (!pm[i].EqualsWithDelta(po[i], absolute, relative))
+                {
+                    #if DEBUG
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debug.WriteLine($"[DEBUG] {pm[i]} | {po[i]} | Threshold exceeded");
+                    #endif
+                    return false;
+                }
             return true;
         }
 

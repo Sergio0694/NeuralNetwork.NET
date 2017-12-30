@@ -7,10 +7,19 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.cpuDNN
 {
+    /// <summary>
+    /// A static class that contains primitives to implement a CNN running on CPU
+    /// </summary>
     public static partial class CpuDnn
     {
         #region Activation
 
+        /// <summary>
+        /// Executes the input activation function on the target <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="x">The layer input <see cref="Tensor"/></param>
+        /// <param name="f">The activation function to apply to the input</param>
+        /// <param name="y">The output <see cref="Tensor"/> - it can be the same as the input</param>
         public static unsafe void ActivationForward(in Tensor x, [NotNull] ActivationFunction f, in Tensor y)
         {
             // Setup
@@ -31,15 +40,22 @@ namespace NeuralNetworkNET.cpuDNN
             Parallel.For(0, n, Kernel).AssertCompleted();
         }
 
-        public static unsafe void ActivationBackward(in Tensor x, in Tensor y, [NotNull] ActivationFunction f_, in Tensor dx)
+        /// <summary>
+        /// Executes the backward activation function on the target <see cref="Tensor"/>, with the given error delta
+        /// </summary>
+        /// <param name="x">The activity on the input layer</param>
+        /// <param name="dy">The current error delta to backpropagate</param>
+        /// <param name="f_">The derivative of the activation function used in the forward pass</param>
+        /// <param name="dx">The resulting input error delta - it can be the same as the input <see cref="Tensor"/></param>
+        public static unsafe void ActivationBackward(in Tensor x, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
         {
             // Check
-            if (!y.MatchShape(x)) throw new ArgumentException("The input tensors must have the same shape", nameof(y));
-            if (!dx.MatchShape(x)) throw new ArgumentException("The output tensor must have the same shape as the input", nameof(y));
+            if (!dy.MatchShape(x)) throw new ArgumentException("The input tensors must have the same shape", nameof(dy));
+            if (!dx.MatchShape(x)) throw new ArgumentException("The output tensor must have the same shape as the input", nameof(dy));
             int
                 n = x.Entities,
                 l = x.Length;
-            float* px = x, py = y, pdx = dx;
+            float* px = x, pdy = dy, pdx = dx;
 
             // Loop in parallel
             void Kernel(int i)
@@ -48,7 +64,7 @@ namespace NeuralNetworkNET.cpuDNN
                 for (int j = 0; j < l; j++)
                 {
                     int target = offset + j;
-                    pdx[target] = f_(px[target]) * py[target];
+                    pdx[target] = f_(px[target]) * pdy[target];
                 }
             }
             Parallel.For(0, n, Kernel).AssertCompleted();
@@ -58,6 +74,13 @@ namespace NeuralNetworkNET.cpuDNN
 
         #region Fully connected
 
+        /// <summary>
+        /// Executes the forward pass on a fully connected layer
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/> to process</param>
+        /// <param name="w">The layer weights</param>
+        /// <param name="b">The layer biases</param>
+        /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
         public static unsafe void FullyConnectedForward(in Tensor x, in Tensor w, in Tensor b, in Tensor y)
         {
             // Initialize the parameters and the result matrix
@@ -89,6 +112,14 @@ namespace NeuralNetworkNET.cpuDNN
             Parallel.For(0, h, Kernel).AssertCompleted();
         }
 
+        /// <summary>
+        /// Executes the backward pass on a fully connected layer
+        /// </summary>
+        /// <param name="x">The activity on the layer inputs</param>
+        /// <param name="w">The layer weights</param>
+        /// <param name="dy">The output error delta</param>
+        /// <param name="f_">The derivative of the activation function used in the forward pass</param>
+        /// <param name="dx">The resulting input error delta</param>
         public static unsafe void FullyConnectedBackwardData(in Tensor x, in Tensor w, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
         {
             if (w.Entities != x.Length) throw new ArgumentException("The weights tensor doesn't have a valid shape", nameof(w));
@@ -127,6 +158,12 @@ namespace NeuralNetworkNET.cpuDNN
             wt.Free();
         }
 
+        /// <summary>
+        /// Executes the backward pass on a fully connected layer to calculate the gradient with respect to the weights
+        /// </summary>
+        /// <param name="x">The layer inputs</param>
+        /// <param name="dy">The layer output error delta</param>
+        /// <param name="dw">The resulting weights gradient <see cref="Tensor"/></param>
         public static void FullyConnectedBackwardFilter(in Tensor x, in Tensor dy, in Tensor dw)
         {
             if (x.Entities != dy.Entities) throw new ArgumentException("The input tensor doesn't match the number of samples from the delta", nameof(x));
@@ -136,10 +173,15 @@ namespace NeuralNetworkNET.cpuDNN
             xt.Free();
         }
 
+        /// <summary>
+        /// Executes the backward pass on a fully connected layer to calculate the gradient with respect to the biases
+        /// </summary>
+        /// <param name="dy">The layer output error delta</param>
+        /// <param name="db">The resulting biases gradient <see cref="Tensor"/></param>
         public static unsafe void FullyConnectedBackwardBias(in Tensor dy, in Tensor db)
         {
             // Preliminary checks and declarations
-            if (!db.MatchShape(1, dy.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(db));
+            if (!db.MatchShape(1, dy.Length)) throw new ArgumentException("Invalid result tensor shape", nameof(db));
             int
                 n = dy.Entities,
                 l = dy.Length;
@@ -150,8 +192,8 @@ namespace NeuralNetworkNET.cpuDNN
             {
                 float sum = 0;
                 for (int i = 0; i < n; i++)
-                    sum += pdb[i * l + j];
-                pdy[j] = sum;
+                    sum += pdy[i * l + j];
+                pdb[j] = sum;
             }
             Parallel.For(0, l, Kernel).AssertCompleted();
         }
