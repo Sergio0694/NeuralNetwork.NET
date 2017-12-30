@@ -5,10 +5,10 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Layers.Cpu;
+using NeuralNetworkNET.Services;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {

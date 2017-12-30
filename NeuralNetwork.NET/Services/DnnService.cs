@@ -3,9 +3,8 @@ using System.Threading;
 using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
-using NeuralNetworkNET.DependencyInjections;
 
-namespace NeuralNetworkNET.Helpers
+namespace NeuralNetworkNET.Services
 {
     /// <summary>
     /// A static class that handles a shared, disposable instance of the <see cref="Dnn"/> class
@@ -53,7 +52,7 @@ namespace NeuralNetworkNET.Helpers
                     if (DnnReference.TryGetTarget(out Dnn dnn) && dnn != null) return dnn;
                     dnn = Dnn.Get(Gpu.Default);
                     DnnReference.SetTarget(dnn);
-                    LibraryRuntimeHelper.SynchronizeContext = SynchronizeDnnContext;
+                    SharedEventsService.TrainingStarting.Add(SynchronizeDnnContext);
                     return dnn;
                 }
             }

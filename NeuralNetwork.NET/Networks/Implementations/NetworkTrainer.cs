@@ -3,7 +3,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.DependencyInjections;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -15,6 +14,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NeuralNetworkNET.Networks.Layers.Abstract;
+using NeuralNetworkNET.Services;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
@@ -47,7 +47,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             [CanBeNull] TestParameters testParameters,
             CancellationToken token)
         {
-            LibraryRuntimeHelper.SynchronizeContext?.Invoke();
+            SharedEventsService.TrainingStarting.Raise();
             switch (algorithm)
             {
                 case StochasticGradientDescentInfo sgd:
