@@ -7,7 +7,7 @@ using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.cpuDNN
 {
-    public static class CpuDnn
+    public static partial class CpuDnn
     {
         #region Activation
 
