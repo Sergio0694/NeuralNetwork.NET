@@ -18,8 +18,7 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="wInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <param name="b">The bias <see cref="Tensor"/> to sum to the resulting images</param>
         /// <param name="y">The resulting convolution <see cref="Tensor"/></param>
-        /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static unsafe void ConvolutionForward(
             in Tensor x, in TensorInfo xInfo,
             in Tensor w, in TensorInfo wInfo,
@@ -42,9 +41,9 @@ namespace NeuralNetworkNET.cpuDNN
                 imgSize = xInfo.SliceSize,
                 imgHeight = xInfo.Height,
                 imgWidth = xInfo.Width;  // Size of an edge of one of the inner images per sample
-            if (imgSize * xInfo.Channels != l) throw new ArgumentException("Invalid depth parameter for the input matrix", nameof(x));
-            if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
-            if (xInfo.Channels != wInfo.Channels) throw new InvalidOperationException("The depth of each kernel must be equal to the depth of each input volume");
+            if (imgSize * xInfo.Channels != l) throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x));
+            if (imgSize < kSize) throw new ArgumentException("Each subdivided tensor must at least have the size of the kernels");
+            if (xInfo.Channels != wInfo.Channels) throw new ArgumentException("The depth of each kernel must be equal to the depth of each input volume");
             if (b.Length != nKernels) throw new ArgumentException("The sum vector must be as long as the depth of the input volume");
 
             /* ============================
@@ -115,8 +114,7 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="wInfo">The kernels volume info (depth and 2D slices size)</param>
         /// <param name="dx">The resulting backpropagated error <see cref="Tensor"/></param>
         /// <param name="dxInfo">The info on the layer inputs</param>
-        /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static unsafe void ConvolutionBackwardData(
             in Tensor dy, in TensorInfo dyInfo,
             in Tensor w, in TensorInfo wInfo,
@@ -137,8 +135,8 @@ namespace NeuralNetworkNET.cpuDNN
                 imgSize = dyInfo.SliceSize,
                 imgHeight = dyInfo.Height,
                 imgWidth = dyInfo.Width;
-            if (imgSize * dyInfo.Channels != l) throw new ArgumentException("Invalid depth parameter for the input matrix", nameof(dy));
-            if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
+            if (imgSize * dyInfo.Channels != l) throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(dy));
+            if (imgSize < kSize) throw new ArgumentException("Each subdivided tensor must at least have the size of the kernels");
             if (dyInfo.Channels != nKernels) throw new ArgumentException("The source depth must be equal to the number of kernels");
 
             // Traanspose the layer kernels
@@ -209,17 +207,16 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Performs a the backward convolution operation for a network layer and computes the gradient with respect to the layer weights
         /// </summary>
-        /// <param name="x">The source matrix, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
+        /// <param name="x">The source <see cref="Tensor"/>, where each row is a sample in the dataset and each one contains a series of images in row-first order</param>
         /// <param name="xInfo">The source volume info (depth and 2D slices size)</param>
-        /// <param name="dy">The list of convolution kernels to apply to each image</param>
-        /// <param name="dyInfo">The kernels volume info (depth and 2D slices size)</param>
-        /// <param name="result">The resulting convolution volume</param>
-        /// <exception cref="ArgumentException">The size of the matrix isn't valid, or the kernels list isn't valid</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The size of the matrix doesn't match the expected values</exception>
-        public static unsafe void ConvoluteGradient(
+        /// <param name="dy">The output error <see cref="Tensor"/></param>
+        /// <param name="dyInfo">The output error volume info (depth and 2D slices size)</param>
+        /// <param name="dw">The resulting weights gradient</param>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
+        public static unsafe void ConvolutionBackwardFilter(
             in Tensor x, in TensorInfo xInfo,
             in Tensor dy, in TensorInfo dyInfo,
-            out Tensor result)
+            in Tensor dw)
         {
             // Checks and local parameters
             int
@@ -236,8 +233,8 @@ namespace NeuralNetworkNET.cpuDNN
                 imgSize = xInfo.SliceSize,
                 imgHeight = xInfo.Height,
                 imgWidth = xInfo.Width;
-            if (imgSize * xInfo.Channels != l) throw new ArgumentException(nameof(x), "Invalid depth parameter for the input matrix");
-            if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided matrix must at least have the size of the kernels");
+            if (imgSize * xInfo.Channels != l) throw new ArgumentException(nameof(x), "Invalid depth parameter for the input tensor");
+            if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided tensor must at least have the size of the kernels");
             if (nKernels != n) throw new ArgumentException(nameof(dy), "There must be a delta volume for each activation sample");
 
             /* ============================
@@ -255,8 +252,7 @@ namespace NeuralNetworkNET.cpuDNN
                 iterationsPerSample = xInfo.Channels * kDepth;             // Each sample has its own list of 3D gradients, one for each kernel
 
             // Process the valid convolution
-            Tensor.New(n, finalWidth, out result);
-            float* psource = x, pkernels = dy, presult = result;
+            float* px = x, pdy = dy, pdw = dw;
             void GradientKernel(int index)
             {
                 // Calculate the current indexes
@@ -287,16 +283,14 @@ namespace NeuralNetworkNET.cpuDNN
                                 kernelRowOffset = kernelBaseOffset + (xEnd - r) * kWidth + highY;
                             for (int c = j; c <= highY; c++)
                             {
-                                temp += psource[sourceRowOffset + c] * pkernels[kernelRowOffset - c];
+                                temp += px[sourceRowOffset + c] * pdy[kernelRowOffset - c];
                             }
                         }
-                        presult[targetRowOffset + j] = temp;
+                        pdw[targetRowOffset + j] = temp;
                     }
                 }
             }
             Parallel.For(0, n * iterationsPerSample, GradientKernel).AssertCompleted();
-
-            // TODO: correct gradient implementation
             throw new NotImplementedException("The CPU gradient convolution isn't implemented correctly yet");
         }
 
@@ -306,6 +300,7 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="dy">The output error <see cref="Tensor"/></param>
         /// <param name="dyInfo">The info on the output <see cref="Tensor"/></param>
         /// <param name="db">The resulting gradient</param>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         [PublicAPI]
         public static unsafe void ConvolutionBackwardBias(in Tensor dy, in TensorInfo dyInfo, in Tensor db)
         {
@@ -314,9 +309,9 @@ namespace NeuralNetworkNET.cpuDNN
                 depth = dyInfo.Channels,
                 h = dy.Entities,
                 w = dy.Length,
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(dy), "Invalid depth parameter for the input matrix"),
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(dy)),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(dy), "The size of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentException("The size of the input tensor isn't valid", nameof(dy));
             Tensor.New(h, depth, out Tensor temp);
 
             // Kernel to sum each slice
@@ -328,7 +323,7 @@ namespace NeuralNetworkNET.cpuDNN
                     iSample = index / depth,    // Sample index
                     z = index % depth;          // 2D slice index
 
-                // Reverse the input matrix sequentially
+                // Reverse the input tensor sequentially
                 int baseOffset = iSample * w + z * imgSize;
                 float sum = 0;
                 for (int i = 0; i < imgSize; i++)
@@ -347,19 +342,19 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Rotates the input volume by 180 degrees
         /// </summary>
-        /// <param name="x">The input matrix to rotate</param>
+        /// <param name="x">The input <see cref="Tensor"/> to rotate</param>
         /// <param name="depth">The number of images per row</param>
-        /// <param name="y">The rotated input matrix</param>
+        /// <param name="y">The rotated input <see cref="Tensor"/></param>
         private static unsafe void Rotate180(in Tensor x, int depth, out Tensor y)
         {
             // Checks and local parameters
-            if (depth < 1) throw new ArgumentOutOfRangeException(nameof(depth), "The number of images per row can't be lower than 1");
+            if (depth < 1) throw new ArgumentException("The number of images per row can't be lower than 1", nameof(depth));
             int
                 n = x.Entities,
                 l = x.Length,
-                imgSize = l % depth == 0 ? l / depth : throw new ArgumentException(nameof(x), "Invalid depth parameter for the input matrix"),
+                imgSize = l % depth == 0 ? l / depth : throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x)),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(x), "The size of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentException("The size of the input tensor isn't valid", nameof(x));
             int
                 threshold = imgSize / 2,
                 edge = imgSize - 1;
@@ -375,7 +370,7 @@ namespace NeuralNetworkNET.cpuDNN
                     iSample = index / depth,    // Sample index
                     z = index % depth;          // 2D slice index
 
-                // Reverse the input matrix sequentially
+                // Reverse the input tensor sequentially
                 int baseOffset = iSample * l + z * imgSize;
                 for (int i = 0; i < threshold; i++)
                 {

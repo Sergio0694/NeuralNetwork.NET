@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.cpuDNN
@@ -38,6 +39,47 @@ namespace NeuralNetworkNET.cpuDNN
                 }
             }
             Parallel.For(0, n, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Performs the softmax activation on the input <see cref="Tensor"/> and applies the output normalization
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/></param>
+        /// <param name="y">The output <see cref="Tensor"/></param>
+        public static unsafe void SoftmaxForward(in Tensor x, in Tensor y)
+        {
+            // Setup
+            if (!x.MatchShape(y)) throw new ArgumentException("The input tensor doesn't have the same shape as the output tensor");
+            int n = x.Entities, l = x.Length;
+            Tensor.New(1, n, out Tensor partials);
+            float* pp = partials, px = x, py = y;
+
+            // Activation
+            void ActivationWithAggregate(int i)
+            {
+                int offset = i * l;
+                float sum = 0;
+                for (int j = 0; j < l; j++)
+                {
+                    int target = offset + j;
+                    float value = ActivationFunctions.Softmax(px[target]);
+                    py[target] = value;
+                    sum += value;
+                }
+                pp[i] = sum;
+            }
+            Parallel.For(0, n, ActivationWithAggregate).AssertCompleted();
+
+            // Normalization of the tensor values
+            void NormalizationKernel(int i)
+            {
+                int offset = i * l;
+                float factor = pp[i];
+                for (int j = 0; j < l; j++)
+                    py[offset + j] /= factor;
+            }
+            Parallel.For(0, n, NormalizationKernel).AssertCompleted();
+            partials.Free();
         }
 
         /// <summary>
@@ -83,7 +125,7 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
         public static unsafe void FullyConnectedForward(in Tensor x, in Tensor w, in Tensor b, in Tensor y)
         {
-            // Initialize the parameters and the result matrix
+            // Initialize the parameters and the result tensor
             if (x.Length != w.Entities) throw new ArgumentOutOfRangeException("Invalid tensors shapes");
             if (!b.MatchShape(1, w.Length)) throw new ArgumentException("Invalid biases shape", nameof(b));
             if (!y.MatchShape(x.Entities, w.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(y));
@@ -128,7 +170,7 @@ namespace NeuralNetworkNET.cpuDNN
             Tensor.New(w.Length, w.Entities, out Tensor wt);
             CpuBlas.Transpose(w, wt);
 
-            // Initialize the parameters and the result matrix
+            // Initialize the parameters and the result tensor
             int 
                 h = dy.Entities,
                 l = dy.Length,
@@ -149,7 +191,7 @@ namespace NeuralNetworkNET.cpuDNN
                         res += pdy[i1 + q] * pwt[i2];
                     }
 
-                    // res has now the matrix multiplication result for position [i, j]
+                    // res has now the tensor multiplication result for position [i, j]
                     int zIndex = i * k + j;
                     pdx[zIndex] = f_(px[zIndex]) * res;
                 }
@@ -187,7 +229,7 @@ namespace NeuralNetworkNET.cpuDNN
                 l = dy.Length;
             float* pdy = dy, pdb = db;
 
-            // Compress the matrix
+            // Compress the tensor
             void Kernel(int j)
             {
                 float sum = 0;

@@ -14,15 +14,16 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="x">The input <see cref="Tensor"/> to pool</param>
         /// <param name="xInfo">The info on the input <see cref="Tensor"/></param>
         /// <param name="y">The resulting pooled <see cref="Tensor"/></param>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static unsafe void PoolingForward(in Tensor x, in TensorInfo xInfo, in Tensor y)
         {
             int h = x.Entities, w = x.Length;
-            if (h < 1 || w < 1) throw new ArgumentException("The input matrix isn't valid");
+            if (h < 1 || w < 1) throw new ArgumentException("The input tensor isn't valid");
             int
                 depth = xInfo.Channels,
-                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException(nameof(x), "Invalid depth parameter for the input matrix"),
+                imgSize = w % depth == 0 ? w / depth : throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x)),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(x), "The size of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentException("The size of the input tensor isn't valid", nameof(x));
             int
                 poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
                 poolSize = poolAxis * poolAxis,
@@ -108,17 +109,18 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="xInfo">The info on the input <see cref="Tensor"/></param>
         /// <param name="dy">The output error for the current layer</param>
         /// <param name="dx">The resulting backpropagated error</param>
+        /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static unsafe void PoolingBackward(in Tensor x, in TensorInfo xInfo, in Tensor dy, in Tensor dx)
         {
-            // Prepare the result matrix
+            // Prepare the result tensor
             if (!dx.MatchShape(x)) throw new ArgumentException("The result tensor must have the same shape as the input", nameof(dx));
             int n = x.Entities, l = x.Length;
-            if (n < 1 || l < 1) throw new ArgumentException("The input matrix isn't valid");
+            if (n < 1 || l < 1) throw new ArgumentException("The input tensor isn't valid");
             int
                 depth = xInfo.Channels,
-                imgSize = l % depth == 0 ? l / depth : throw new ArgumentException(nameof(x), "Invalid depth parameter for the input matrix"),
+                imgSize = l % depth == 0 ? l / depth : throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x)),
                 imgAxis = imgSize.IntegerSquare();  // Size of an edge of one of the inner images per sample
-            if (imgAxis * imgAxis != imgSize) throw new ArgumentOutOfRangeException(nameof(x), "The size of the input matrix isn't valid");
+            if (imgAxis * imgAxis != imgSize) throw new ArgumentException("The size of the input tensor isn't valid", nameof(x));
             int
                 poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
                 poolSize = poolAxis * poolAxis,
@@ -127,7 +129,7 @@ namespace NeuralNetworkNET.cpuDNN
             int
                 pn = dy.Entities,
                 pl = dy.Length;
-            if (pn != n || pl != poolFinalWidth) throw new ArgumentException("Invalid pooled matrix", nameof(dy));
+            if (pn != n || pl != poolFinalWidth) throw new ArgumentException("Invalid pooled tensor", nameof(dy));
 
             // Pooling kernel
             float* px = x, pdy = dy, pdx = dx;
