@@ -234,7 +234,7 @@ namespace NeuralNetworkNET.APIs.Structs
             if (Ptr == IntPtr.Zero) return new float[0];
             float[] result = new float[Size];
             Marshal.Copy(Ptr, result, 0, Size);
-            if (keepAlive) Free();
+            if (!keepAlive) Free();
             return result;
         }
 
@@ -250,7 +250,7 @@ namespace NeuralNetworkNET.APIs.Structs
             int size = sizeof(float) * Size;
             fixed (float* presult = result)
                 Buffer.MemoryCopy(this, presult, size, size);
-            if (keepAlive) Free();
+            if (!keepAlive) Free();
             return result;
         }
 
