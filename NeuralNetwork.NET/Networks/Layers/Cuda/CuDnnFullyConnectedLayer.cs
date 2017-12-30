@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
@@ -68,7 +69,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 DnnInstance.FullyConnectedBackwardFilter(a.Entities, a.Length, delta.Length, a_gpu.Ptr, delta_gpu.Ptr, w_gpu.Ptr);
                 w_gpu.CopyToHost(1, Weights.Length, out dJdw);
             }
-            delta.CompressVertically(out dJdb); // Doing this on CPU is generally faster than launching the kernels
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.FullyConnectedBackwardBias(delta, dJdb); // Doing this on CPU is generally faster than launching the kernels
         }
 
         #endregion

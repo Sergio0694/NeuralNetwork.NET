@@ -66,6 +66,35 @@ namespace NeuralNetworkNET.cpuDNN
         }
 
         /// <summary>
+        /// Performs the in place multiplication (Hadamard product) product between two <see cref="Tensor"/> instances
+        /// </summary>
+        /// <param name="x1">The first <see cref="Tensor"/></param>
+        /// <param name="x2">The second <see cref="Tensor"/></param>
+        /// <param name="y">The resulting <see cref="Tensor"/></param>
+        public static unsafe void MultiplyElementwise(in Tensor x1, in Tensor x2, in Tensor y)
+        {
+            // Check
+            int
+                n = x1.Entities,
+                l = x1.Length;
+            if (!x1.MatchShape(x2)) throw new ArgumentException("The two input tensors must be of equal shape");
+            if (!x1.MatchShape(y)) throw new ArgumentException("The output tensor must have the same shape as the input tensors", nameof(y));
+            float* px1 = x1, px2 = x2, py = y;
+
+            // Loop in parallel
+            void Kernel(int i)
+            {
+                int offset = i * l;
+                for (int j = 0; j < l; j++)
+                {
+                    int position = offset + j;
+                    py[position] = px1[position] * px2[position];
+                }
+            }
+            Parallel.For(0, n, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
         /// Subtracts two <see cref="Tensor"/> instances, element wise
         /// </summary>
         /// <param name="x1">The first <see cref="Tensor"/></param>
@@ -92,7 +121,6 @@ namespace NeuralNetworkNET.cpuDNN
             }
             Parallel.For(0, n, Kernel).AssertCompleted();
         }
-
 
         /// <summary>
         /// Compresses a <see cref="Tensor"/> into a row by summing the components column by column

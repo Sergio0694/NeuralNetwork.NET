@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 
 namespace NeuralNetworkNET.Extensions
 {
@@ -15,154 +14,7 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     public static class MatrixExtensions
     {
-        #region Subtraction
-
-        /// <summary>
-        /// Subtracts two matrices, element wise
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second</param>
-        internal static unsafe void Subtract(in this Tensor m1, in Tensor m2)
-        {
-            int
-                h = m1.Entities,
-                w = m1.Length;
-            if (h != m2.Entities || w != m2.Length) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
-
-            // Subtract in parallel
-            float* pm1 = m1, pm2 = m2;
-            void Kernel(int i)
-            {
-                int offset = i * w;
-                for (int j = 0; j < w; j++)
-                {
-                    int position = offset + j;
-                    pm1[position] -= pm2[position];
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        #endregion
-
-        #region Multiplication
-
-        /// <summary>
-        /// Performs the in place Hadamard product between two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second matrix</param>
-        internal static unsafe void InPlaceHadamardProduct(in this Tensor m1, in Tensor m2)
-        {
-            // Check
-            int
-                h = m1.Entities,
-                w = m1.Length;
-            if (h != m2.Entities || w != m2.Length) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
-            float* pm1 = m1, pm2 = m2;
-
-            // Loop in parallel
-            void Kernel(int i)
-            {
-                int offset = i * w;
-                for (int j = 0; j < w; j++)
-                {
-                    int position = offset + j;
-                    pm1[position] *= pm2[position];
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Performs the in place Hadamard product between the activation of the first matrix and the second matrix
-        /// </summary>
-        /// <param name="m1">The first matrix</param>
-        /// <param name="m2">The second matrix</param>
-        /// <param name="activation">The activation function to use</param>
-        internal static unsafe void InPlaceActivationAndHadamardProduct(in this Tensor m1, in Tensor m2, [NotNull] ActivationFunction activation)
-        {
-            // Check
-            int
-                h = m1.Entities,
-                w = m1.Length;
-            if (h != m2.Entities || w != m2.Length) throw new ArgumentException(nameof(m2), "The two matrices must be of equal size");
-            float* pm1 = m1, pm2 = m2;
-
-            // Loop in parallel
-            void Kernel(int i)
-            {
-                int offset = i * w;
-                for (int j = 0; j < w; j++)
-                {
-                    int position = offset + j;
-                    pm1[position] = activation(pm1[position]) * pm2[position];
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Performs the multiplication between two matrices
-        /// </summary>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
-        /// <param name="result">The resulting matrix</param>
-        internal static unsafe void Multiply(in this Tensor m1, in Tensor m2, out Tensor result)
-        {
-            // Initialize the parameters and the result matrix
-            if (m1.Length != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
-            int
-                h = m1.Entities,
-                w = m2.Length,
-                l = m1.Length;
-            Tensor.New(h, w, out result);
-            float* pm = result, pm1 = m1, pm2 = m2;
-
-            // Execute the multiplication in parallel
-            void Kernel(int i)
-            {
-                int i1 = i * l;
-                for (int j = 0; j < w; j++)
-                {
-                    // Perform the multiplication
-                    int i2 = j;
-                    float res = 0;
-                    for (int k = 0; k < l; k++, i2 += w)
-                    {
-                        res += pm1[i1 + k] * pm2[i2];
-                    }
-                    pm[i * w + j] = res;
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        #endregion
-
         #region Activation
-
-        /// <summary>
-        /// Returns the result of the input after the activation function has been applied
-        /// </summary>
-        /// <param name="m">The input to process</param>
-        /// <param name="activation">The activation function to use</param>
-        /// <param name="result">The resulting matrix</param>
-        internal static unsafe void Activation(in this Tensor m, [NotNull] ActivationFunction activation, out Tensor result)
-        {
-            // Setup
-            int h = m.Entities, w = m.Length;
-            Tensor.New(h, w, out result);
-            float* pr = result, pm = m;
-
-            // Execute the activation in parallel
-            void Kernel(int i)
-            {
-                for (int j = 0; j < w; j++)
-                    pr[i * w + j] = activation(pm[i * w + j]);
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
 
         /// <summary>
         /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
@@ -176,7 +28,7 @@ namespace NeuralNetworkNET.Extensions
             float* pp = partials, pm = m;
 
             // Partial sum
-            unsafe void PartialSum(int i)
+            void PartialSum(int i)
             {
                 int offset = i * w;
                 float sum = 0;
@@ -187,7 +39,7 @@ namespace NeuralNetworkNET.Extensions
             Parallel.For(0, h, PartialSum).AssertCompleted();
 
             // Normalization of the matrix values
-            unsafe void NormalizationKernel(int i)
+            void NormalizationKernel(int i)
             {
                 int offset = i * w;
                 for (int j = 0; j < w; j++)
@@ -199,143 +51,7 @@ namespace NeuralNetworkNET.Extensions
 
         #endregion
 
-        #region Combined
-
-        /// <summary>
-        /// Performs the multiplication between two matrices and sums another vector to the result
-        /// </summary>
-        /// <param name="m1">The first matrix to multiply</param>
-        /// <param name="m2">The second matrix to multiply</param>
-        /// <param name="v">The array to add to the resulting matrix</param>
-        /// <param name="result">The resulting matrix</param>
-        internal static unsafe void MultiplyWithSum(in this Tensor m1, in Tensor m2, [NotNull] float[] v, out Tensor result)
-        {
-            // Initialize the parameters and the result matrix
-            if (m1.Length != m2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
-            int
-                h = m1.Entities,
-                w = m2.Length,
-                l = m1.Length;
-            Tensor.New(h, w, out result);
-            float* pm = result, pm1 = m1, pm2 = m2;
-
-            // Execute the multiplication in parallel
-            void Kernel(int i)
-            {
-                fixed (float* pv = v)
-                {
-                    int i1 = i * l;
-                    for (int j = 0; j < w; j++)
-                    {
-                        // Perform the multiplication
-                        int i2 = j;
-                        float res = 0;
-                        for (int k = 0; k < l; k++, i2 += w)
-                        {
-                            res += pm1[i1 + k] * pm2[i2];
-                        }
-                        pm[i * w + j] = res + pv[j]; // Sum the input vector to each component
-                    }
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Calculates d(l) by applying the Hadamard product of d(l + 1) and W(l)T and the activation prime of z
-        /// </summary>
-        /// <param name="z">The activity on the previous layer</param>
-        /// <param name="delta">The first matrix to multiply</param>
-        /// <param name="wt">The second matrix to multiply</param>
-        /// <param name="prime">The activation prime function to use</param>
-        internal static unsafe void InPlaceMultiplyAndHadamardProductWithActivationPrime(
-            in this Tensor z, in Tensor delta, in Tensor wt, [NotNull] ActivationFunction prime)
-        {
-            // Initialize the parameters and the result matrix
-            int h = delta.Entities;
-            int w = wt.Length;
-            int l = delta.Length;
-
-            // Checks
-            if (l != wt.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
-            if (h != z.Entities || w != z.Length) throw new ArgumentException("The matrices must be of equal size");
-            float* pz = z, pm1 = delta, pm2 = wt;
-
-            // Execute the multiplication in parallel
-            void Kernel(int i)
-            {
-                int i1 = i * l;
-                for (int j = 0; j < w; j++)
-                {
-                    // Perform the multiplication
-                    int i2 = j;
-                    float res = 0;
-                    for (int k = 0; k < l; k++, i2 += w)
-                    {
-                        res += pm1[i1 + k] * pm2[i2];
-                    }
-
-                    // res has now the matrix multiplication result for position [i, j]
-                    int zIndex = i * w + j;
-                    pz[zIndex] = prime(pz[zIndex]) * res;
-                }
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        #endregion
-
         #region Misc
-
-        /// <summary>
-        /// Transposes the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to transpose</param>
-        /// <param name="result">The resulting matrix</param>
-        internal static unsafe void Transpose(in this Tensor m, out Tensor result)
-        {
-            // Setup
-            int h = m.Entities, w = m.Length;
-            Tensor.New(w, h, out result);
-            float* pr = result;
-
-            // Execute the transposition in parallel
-            float* pm = m;
-            void Kernel(int i)
-            {
-                for (int j = 0; j < w; j++)
-                    pr[j * h + i] = pm[i * w + j];
-            }
-            Parallel.For(0, h, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Compresses a matrix into a row vector by summing the components column by column
-        /// </summary>
-        /// <param name="m">The matrix to compress</param>
-        /// <param name="result">The resulting vector</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe void CompressVertically(in this Tensor m, out Tensor result)
-        {
-            // Preliminary checks and declarations
-            if (m.Entities == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
-            int
-                h = m.Entities,
-                w = m.Length;
-            Tensor.New(1, w, out result);
-            float* pm = m, pv = result;
-
-            // Compress the matrix
-            void Kernel(int j)
-            {
-                float sum = 0;
-                for (int i = 0; i < h; i++)
-                    sum += pm[i * w + j];
-                pv[j] = sum;
-            }
-            Parallel.For(0, w, Kernel).AssertCompleted();
-        }
 
         /// <summary>
         /// Calculates the position and the value of the biggest item in a matrix
@@ -380,78 +96,6 @@ namespace NeuralNetworkNET.Extensions
                 if (value > max) max = value;
             }
             return (min, max);
-        }
-
-        /// <summary>
-        /// Normalizes the values in a matrix in the [0..1] range
-        /// </summary>
-        /// <param name="m">The input matrix to normalize</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        public static float[,] Normalize([NotNull] this float[,] m)
-        {
-            // Setup
-            if (m.Length == 0) return new float[0, 0];
-            int h = m.GetLength(0), w = m.GetLength(1);
-            (_, _, float max) = m.Max();
-            float[,] normalized = new float[h, w];
-
-            // Populate the normalized matrix
-            bool result = Parallel.For(0, h, i =>
-            {
-                unsafe
-                {
-                    // Fix the pointers and iterate on the current row
-                    fixed (float* pn = normalized, pm = m)
-                    {
-                        for (int j = 0; j < w; j++)
-                        {
-                            int index = i * w + j;
-                            pn[index] = pm[index] / max;
-                        }
-                    }
-                }
-            }).IsCompleted;
-            if (!result) throw new Exception("Error while runnig the parallel loop");
-            return normalized;
-        }
-
-        /// <summary>
-        /// Copies the input array into a matrix with a single row
-        /// </summary>
-        /// <param name="v">The array to copy</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] ToMatrix([NotNull] this float[] v)
-        {
-            // Preliminary checks and declarations
-            if (v.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
-            int length = v.Length;
-            float[,] result = new float[1, length];
-
-            // Copy the content
-            Buffer.BlockCopy(v, 0, result, 0, sizeof(float) * length);
-            return result;
-        }
-
-        /// <summary>
-        /// Flattens the input matrix into a linear array
-        /// </summary>
-        /// <param name="m">The matrix to flatten</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[] Flatten([NotNull] this float[,] m)
-        {
-            // Preliminary checks and declarations
-            if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
-            int length = m.Length;
-            float[] result = new float[length];
-
-            // Copy the content
-            Buffer.BlockCopy(m, 0, result, 0, sizeof(float) * length);
-            return result;
         }
 
         /// <summary>
@@ -551,40 +195,6 @@ namespace NeuralNetworkNET.Extensions
                 position += rows;
             }
             return result;
-        }
-
-        /// <summary>
-        /// Compresses a matrix into a row vector by summing the components column by column
-        /// </summary>
-        /// <param name="m">The matrix to compress</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal static float[] CompressVertically([NotNull] this float[,] m)
-        {
-            // Preliminary checks and declarations
-            if (m.Length == 0) throw new ArgumentOutOfRangeException("The input array can't be empty");
-            int
-                h = m.GetLength(0),
-                w = m.GetLength(1);
-            float[] vector = new float[w];
-
-            // Compress the matrix
-            Parallel.For(0, w, j =>
-            {
-                unsafe
-                {
-                    // Fix the pointers and add the current values
-                    fixed (float* pm = m, pv = vector)
-                    {
-                        float sum = 0;
-                        for (int i = 0; i < h; i++)
-                            sum += pm[i * w + j];
-                        pv[j] = sum;
-                    }
-                }
-            }).AssertCompleted();
-            return vector;
         }
 
         #endregion
@@ -721,6 +331,7 @@ namespace NeuralNetworkNET.Extensions
                     #if DEBUG
                     if (System.Diagnostics.Debugger.IsAttached)
                         System.Diagnostics.Debug.WriteLine($"[DEBUG] {pm[i]} | {po[i]} | Threshold exceeded");
+                    else Console.WriteLine($"[DEBUG] {pm[i]} | {po[i]} | Threshold exceeded");
                     #endif
                     return false;
                 }

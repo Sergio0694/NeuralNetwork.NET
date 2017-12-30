@@ -10,6 +10,7 @@ using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
@@ -229,7 +230,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
                     {
                         ThreadSafeRandom.NextDropoutMask(aList[i].Entities, aList[i].Length, dropout, out dropoutMasks[i]);
-                        aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                        CpuBlas.MultiplyElementwise(aList[i], dropoutMasks[i], aList[i]);
                     }
                 }
 
@@ -252,7 +253,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * Multiply the previous delta with the transposed weights of the following layer
                      * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
                     _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
-                    if (!dropoutMasks[l].IsNull) zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
+                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(zList[l], dropoutMasks[l], zList[l]);
                     deltas[l] = zList + l;
                 }
 

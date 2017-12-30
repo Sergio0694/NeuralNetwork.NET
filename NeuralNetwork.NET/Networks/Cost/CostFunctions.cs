@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 
@@ -161,7 +162,7 @@ namespace NeuralNetworkNET.Networks.Cost
 
             // Calculate (yHat - y) * activation'(z)
             float* pyHat = yHat, py = y, pz = z;
-            unsafe void Kernel(int i)
+            void Kernel(int i)
             {
                 // Save the index and iterate for each column
                 int offset = i * w;
@@ -192,7 +193,7 @@ namespace NeuralNetworkNET.Networks.Cost
             if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
 
             // Calculate (yHat - y)
-            yHat.Subtract(y);
+            CpuBlas.Subtract(yHat, y, yHat);
         }
 
         #endregion
