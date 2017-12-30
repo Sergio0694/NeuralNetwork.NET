@@ -7,9 +7,9 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Abstract;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cpu
 {
     /// <summary>
     /// An output layer with a variable cost function

@@ -3,9 +3,9 @@ using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Layers.Cuda;
 
 namespace NeuralNetworkNET.APIs
 {

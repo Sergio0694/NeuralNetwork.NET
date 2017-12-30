@@ -5,17 +5,16 @@ using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.DependencyInjections;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
-using NeuralNetworkNET.SupervisedLearning.Progress;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using NeuralNetworkNET.Networks.Layers.Abstract;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {

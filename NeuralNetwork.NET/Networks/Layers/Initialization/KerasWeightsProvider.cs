@@ -3,7 +3,7 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
+namespace NeuralNetworkNET.Networks.Layers.Initialization
 {
     /// <summary>
     /// A static class with some weights initialization methods ported over the Keras library

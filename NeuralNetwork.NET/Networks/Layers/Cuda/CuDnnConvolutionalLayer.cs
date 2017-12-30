@@ -2,17 +2,16 @@
 using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Cuda.Services;
-using NeuralNetworkNET.Cuda.Extensions;
+using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 
-namespace NeuralNetworkNET.Cuda.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
     /// A 2D convolutional layer based on the cuDNN back-end

@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.IO;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
@@ -6,10 +7,10 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 using Newtonsoft.Json;
-using System.IO;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
+namespace NeuralNetworkNET.Networks.Layers.Abstract
 {
     /// <summary>
     /// The base class for all the output network layers

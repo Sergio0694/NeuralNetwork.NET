@@ -1,17 +1,16 @@
 ﻿using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Cuda.Services;
-using NeuralNetworkNET.Cuda.Extensions;
-using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 
-namespace NeuralNetworkNET.Cuda.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
     /// A softmax output layer based on the cuDNN back-end

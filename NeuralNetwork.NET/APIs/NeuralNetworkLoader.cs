@@ -5,10 +5,10 @@ using System.IO.Compression;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Implementations.Layers;
+using NeuralNetworkNET.Networks.Layers.Cpu;
+using NeuralNetworkNET.Networks.Layers.Cuda;
 
 namespace NeuralNetworkNET.APIs
 {

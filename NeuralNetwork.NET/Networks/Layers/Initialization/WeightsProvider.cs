@@ -5,7 +5,7 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.Helpers
+namespace NeuralNetworkNET.Networks.Layers.Initialization
 {
     /// <summary>
     /// A simple class that provides some helper methods to quickly initialize the weights of a neural network layer

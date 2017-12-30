@@ -1,15 +1,15 @@
-﻿using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Interfaces;
+﻿using System.IO;
+using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using Newtonsoft.Json;
-using System.IO;
-using System.Runtime.CompilerServices;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
+namespace NeuralNetworkNET.Networks.Layers.Abstract
 {
     /// <summary>
     /// The base class for all the neural network layer implementations

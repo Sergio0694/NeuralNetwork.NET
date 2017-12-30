@@ -1,14 +1,14 @@
-﻿using JetBrains.Annotations;
+﻿using System.IO;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using System.IO;
+using NeuralNetworkNET.Networks.Layers.Abstract;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cpu
 {
     /// <summary>
     /// An output layer with the softmax activation function and log-likelyhood cost function

@@ -4,7 +4,7 @@ using Alea.Parallel;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 
-namespace NeuralNetworkNET.Cuda.Extensions
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// A static class with some extensions for the <see cref="Dnn"/> class

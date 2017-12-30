@@ -1,18 +1,17 @@
 ﻿using System;
 using Alea;
 using Alea.cuDNN;
-using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Cuda.Extensions;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 using Newtonsoft.Json;
-using JetBrains.Annotations;
-using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.Cuda.Services;
-using NeuralNetworkNET.APIs.Structs;
 
-namespace NeuralNetworkNET.Cuda.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
     /// A pooling layer running on cuDNN, with a custom pooling mode

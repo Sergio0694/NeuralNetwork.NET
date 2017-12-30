@@ -1,17 +1,17 @@
-﻿using JetBrains.Annotations;
+﻿using System.IO;
+using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
+using NeuralNetworkNET.Networks.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Initialization;
 using Newtonsoft.Json;
-using System.IO;
-using System.Runtime.CompilerServices;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cpu
 {
     /// <summary>
     /// A convolutional layer, used in a CNN network

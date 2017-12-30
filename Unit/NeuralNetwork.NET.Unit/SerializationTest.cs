@@ -6,7 +6,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
+using NeuralNetworkNET.Networks.Layers.Initialization;
 
 namespace NeuralNetworkNET.Unit
 {

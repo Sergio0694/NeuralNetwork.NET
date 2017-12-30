@@ -3,7 +3,7 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
-using NeuralNetworkNET.Networks.Implementations.Layers;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.APIs
 {

@@ -2,7 +2,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Cuda.Extensions;
 using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Cuda.Unit

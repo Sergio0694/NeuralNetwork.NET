@@ -1,12 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
 using System;
 using System.Runtime.CompilerServices;
+using NeuralNetworkNET.Networks.Layers.Cuda;
+using NeuralNetworkNET.Networks.Layers.Initialization;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {

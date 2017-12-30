@@ -3,7 +3,7 @@ using Alea;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
 
-namespace NeuralNetworkNET.Cuda.Extensions
+namespace NeuralNetworkNET.Extensions
 {
     /// <summary>
     /// An extension class with some additions to the <see cref="Gpu"/> class

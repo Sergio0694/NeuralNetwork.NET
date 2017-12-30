@@ -1,20 +1,19 @@
-﻿using Alea;
+﻿using System;
+using System.Runtime.CompilerServices;
+using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Cuda.Extensions;
-using NeuralNetworkNET.Cuda.Services;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
-using System;
-using System.Runtime.CompilerServices;
+using NeuralNetworkNET.Networks.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Initialization;
 
-namespace NeuralNetworkNET.Cuda.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
     /// A simplified inception module, with 4 pipelines combining 1x1 convolution, 1x1 + 3x3, 1x1 + 5x5 and pooling + 1x1

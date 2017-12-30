@@ -1,14 +1,14 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.IO;
+using System.Security.Cryptography;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using Newtonsoft.Json;
-using System;
-using System.IO;
-using System.Security.Cryptography;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers.Abstract
+namespace NeuralNetworkNET.Networks.Layers.Abstract
 {
     /// <summary>
     /// The base class for all the network layers that have weights and biases as parameters

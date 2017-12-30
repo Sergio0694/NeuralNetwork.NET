@@ -12,7 +12,6 @@ using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
-using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace DigitsCudaTest
 {

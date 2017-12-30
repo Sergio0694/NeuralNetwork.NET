@@ -1,16 +1,16 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.IO;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
-using System;
-using System.IO;
+using NeuralNetworkNET.Networks.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Initialization;
 
-namespace NeuralNetworkNET.Networks.Implementations.Layers
+namespace NeuralNetworkNET.Networks.Layers.Cpu
 {
     /// <summary>
     /// A fully connected (dense) network layer

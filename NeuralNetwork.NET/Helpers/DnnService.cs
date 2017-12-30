@@ -1,11 +1,11 @@
-﻿using Alea;
+﻿using System;
+using System.Threading;
+using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.DependencyInjections;
-using System;
-using System.Threading;
 
-namespace NeuralNetworkNET.Cuda.Services
+namespace NeuralNetworkNET.Helpers
 {
     /// <summary>
     /// A static class that handles a shared, disposable instance of the <see cref="Dnn"/> class

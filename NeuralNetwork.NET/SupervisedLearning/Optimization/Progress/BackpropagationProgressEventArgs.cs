@@ -1,7 +1,7 @@
-﻿using NeuralNetworkNET.APIs.Results;
-using System;
+﻿using System;
+using NeuralNetworkNET.APIs.Results;
 
-namespace NeuralNetworkNET.SupervisedLearning.Progress
+namespace NeuralNetworkNET.SupervisedLearning.Optimization.Progress
 {
     /// <summary>
     /// A structure that contains the base progress data while optimizing a network

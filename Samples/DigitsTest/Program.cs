@@ -8,7 +8,7 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Progress;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace DigitsTest
 {
