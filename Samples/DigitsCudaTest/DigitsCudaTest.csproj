@@ -13,7 +13,6 @@
     <PackageReference Include="Alea" Version="3.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\NeuralNetwork.NET.Cuda\NeuralNetwork.NET.Cuda.csproj" />
     <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
     <ProjectReference Include="..\MnistDatasetToolkit\MnistDatasetToolkit.csproj" />
   </ItemGroup>

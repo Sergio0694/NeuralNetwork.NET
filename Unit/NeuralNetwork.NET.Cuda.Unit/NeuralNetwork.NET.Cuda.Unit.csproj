@@ -18,7 +18,6 @@
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\NeuralNetwork.NET.Cuda\NeuralNetwork.NET.Cuda.csproj" />
     <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
   </ItemGroup>
 </Project>
