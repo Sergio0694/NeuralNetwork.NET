@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,33 +53,6 @@ namespace NeuralNetworkNET.Extensions
         #region Misc
 
         /// <summary>
-        /// Calculates the position and the value of the biggest item in a matrix
-        /// </summary>
-        /// <param name="m">The input matrix</param>
-        internal static (int x, int y, float value) Max([NotNull] this float[,] m)
-        {
-            // Checks and local variables setup
-            if (m.Length == 0) throw new ArgumentOutOfRangeException("The input matrix can't be empty");
-            if (m.Length == 1) return (0, 0, m[0, 0]);
-            int
-                h = m.GetLength(0),
-                w = m.GetLength(1),
-                x = 0, y = 0;
-            float max = float.MinValue;
-
-            // Find the maximum value and its position
-            for (int i = 0; i < h; i++)
-                for (int j = 0; j < w; j++)
-                {
-                    if (!(m[i, j] > max)) continue;
-                    max = m[i, j];
-                    x = i;
-                    y = j;
-                }
-            return (x, y, max);
-        }
-
-        /// <summary>
         /// Finds the minimum and maximum value in the input memory area
         /// </summary>
         /// <param name="p">A pointer to the memory area to scan</param>
@@ -116,33 +88,6 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Flattens the input volume in a linear array
-        /// </summary>
-        /// <param name="volume">The volume to flatten</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[] Flatten([NotNull, ItemNotNull] this IReadOnlyList<float[,]> volume)
-        {
-            // Preliminary checks and declarations
-            if (volume.Count == 0) throw new ArgumentOutOfRangeException("The input volume can't be empty");
-            int
-                depth = volume.Count,
-                length = volume[0].Length,
-                bytes = sizeof(float) * length;
-            float[] result = new float[depth * length];
-
-            // Execute the copy in parallel
-            bool loopResult = Parallel.For(0, depth, i =>
-            {
-                // Copy the volume data
-                Buffer.BlockCopy(volume[i], 0, result, bytes * i, bytes);
-            }).IsCompleted;
-            if (!loopResult) throw new Exception("Error while runnig the parallel loop");
-            return result;
-        }
-
-        /// <summary>
         /// Merges the input samples into a matrix dataset
         /// </summary>
         /// <param name="samples">The vectors to merge</param>
@@ -167,42 +112,12 @@ namespace NeuralNetworkNET.Extensions
             return (x, y);
         }
 
-        /// <summary>
-        /// Merges the rows of the input matrices into a single matrix
-        /// </summary>
-        /// <param name="blocks">The matrices to merge</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] MergeRows([NotNull, ItemNotNull] this IReadOnlyList<float[,]> blocks)
-        {
-            // Preliminary checks and declarations
-            if (blocks.Count == 0) throw new ArgumentOutOfRangeException("The blocks list can't be empty");
-            int
-                h = blocks.Sum(b => b.GetLength(0)),
-                w = blocks[0].GetLength(1),
-                rowBytes = sizeof(float) * w;
-            float[,] result = new float[h, w];
-
-            // Execute the copy in parallel
-            int position = 0;
-            for (int i = 0; i < blocks.Count; i++)
-            {
-                float[,] next = blocks[i];
-                if (next.GetLength(1) != w) throw new ArgumentOutOfRangeException("The blocks must all have the same width");
-                int rows = next.GetLength(0);
-                Buffer.BlockCopy(next, 0, result, rowBytes * position, rowBytes * rows);
-                position += rows;
-            }
-            return result;
-        }
-
         #endregion
 
         #region Argmax
 
         /// <summary>
-        /// Returns the index of the maximum value in the input vector
+        /// Returns the index of the maximum value in the input memory area
         /// </summary>
         /// <param name="p">A pointer to the buffer to read</param>
         /// <param name="length">The length of the buffer to consider</param>
@@ -224,9 +139,18 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
+        /// Returns the index of the maximum value in the input tensor
+        /// </summary>
+        /// <param name="tensor">The input <see cref="Tensor"/> to read from</param>
+        [PublicAPI]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe int Argmax(in this Tensor tensor) => Argmax(tensor, tensor.Size);
+
+        /// <summary>
         /// Returns the index of the maximum value in the input vector
         /// </summary>
         /// <param name="v">The input vector to read from</param>
+        [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static unsafe int Argmax([NotNull] this float[] v)
         {
@@ -237,6 +161,7 @@ namespace NeuralNetworkNET.Extensions
         /// Returns the index of the maximum value in the input matrix
         /// </summary>
         /// <param name="m">The input matrix to read from</param>
+        [PublicAPI]
         [CollectionAccess(CollectionAccessType.Read)]
         public static unsafe int Argmax([NotNull] this float[,] m)
         {
@@ -295,7 +220,7 @@ namespace NeuralNetworkNET.Extensions
         /// Returns a deep copy of the input vector
         /// </summary>
         /// <param name="v">The vector to clone</param>
-        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to <see cref="Buffer.MemoryCopy"/></remarks>
+        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to the use of the methods in the <see cref="Buffer"/> class</remarks>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static unsafe float[] BlockCopy([NotNull] this float[] v)
@@ -309,7 +234,7 @@ namespace NeuralNetworkNET.Extensions
 
         #endregion
 
-        #region Content check
+        #region Content equals
 
         /// <summary>
         /// Checks if two matrices have the same size and content
@@ -318,7 +243,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="o">The second <see cref="Tensor"/> to test</param>
         /// <param name="absolute">The relative comparison threshold</param>
         /// <param name="relative">The relative comparison threshold</param>
-        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o,float absolute = 1e-6f, float relative = 1e-6f)
+        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (m.Ptr == IntPtr.Zero && o.Ptr == IntPtr.Zero) return true;
             if (m.Ptr == IntPtr.Zero || o.Ptr == IntPtr.Zero) return false;
@@ -372,53 +297,6 @@ namespace NeuralNetworkNET.Extensions
             for (int i = 0; i < v.Length; i++)
                 if (!v[i].EqualsWithDelta(o[i], absolute, relative)) return false;
             return true;
-        }
-
-        // GetUid helper method
-        private static unsafe int GetUid(float* p, int n)
-        {
-            int hash = 17;
-            unchecked
-            {
-                for (int i = 0; i < n; i++)
-                    hash = hash * 23 + p[i].GetHashCode();
-                return hash;
-            }
-        }
-
-        /// <summary>
-        /// Calculates a unique hash code for the target row of the input matrix
-        /// </summary>
-        [Pure]
-        public static unsafe int GetUid([NotNull] this float[,] m, int row)
-        {
-            int
-                w = m.GetLength(1),
-                offset = row * w;
-            fixed (float* pm = m)
-                return GetUid(pm + offset, w);
-        }
-
-        /// <summary>
-        /// Calculates a unique hash code for the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to analyze</param>
-        [Pure]
-        public static unsafe int GetUid([NotNull] this float[,] m)
-        {
-            fixed (float* pm = m)
-                return GetUid(pm, m.Length);
-        }
-
-        /// <summary>
-        /// Calculates a unique hash code for the input vector
-        /// </summary>
-        /// <param name="v">The vector to analyze</param>
-        [Pure]
-        public static unsafe int GetUid([NotNull] this float[] v)
-        {
-            fixed (float* pv = v)
-                return GetUid(pv, v.Length);
         }
 
         #endregion

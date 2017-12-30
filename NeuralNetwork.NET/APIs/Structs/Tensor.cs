@@ -16,6 +16,8 @@ namespace NeuralNetworkNET.APIs.Structs
     [DebuggerDisplay("Entities: {Entities}, Length: {Length}, Ptr: {Ptr}")]
     public readonly struct Tensor
     {
+        #region Fields and parameters
+
         /// <summary>
         /// The <see cref="IntPtr"/> value to the allocated memory
         /// </summary>
@@ -50,6 +52,8 @@ namespace NeuralNetworkNET.APIs.Structs
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Ptr == IntPtr.Zero;
         }
+
+        #endregion
 
         /// <summary>
         /// Gets a null instance
@@ -110,6 +114,20 @@ namespace NeuralNetworkNET.APIs.Structs
         }
 
         /// <summary>
+        /// Creates a new instance with the same shape as the input <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="mask">The <see cref="Tensor"/> to use to copy the shape</param>
+        /// <param name="tensor">The output <see cref="Tensor"/></param>
+        public static void Like(in Tensor mask, out Tensor tensor) => New(mask.Entities, mask.Length, out tensor);
+
+        /// <summary>
+        /// Creates a new instance with the same shape as the input <see cref="Tensor"/> and all the values initializes to 0
+        /// </summary>
+        /// <param name="mask">The <see cref="Tensor"/> to use to copy the shape</param>
+        /// <param name="tensor">The output <see cref="Tensor"/></param>
+        public static void LikeZeroed(in Tensor mask, out Tensor tensor) => NewZeroed(mask.Entities, mask.Length, out tensor);
+
+        /// <summary>
         /// Creates a new instance by copying the contents at the given memory location and reshaping it to the desired size
         /// </summary>
         /// <param name="p">The target memory area to copy</param>
@@ -156,57 +174,6 @@ namespace NeuralNetworkNET.APIs.Structs
         #region Tools
 
         /// <summary>
-        /// Overwrites the contents of the current matrix with the input matrix
-        /// </summary>
-        /// <param name="source">The input tensor to copy</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void Overwrite(in Tensor tensor)
-        {
-            if (tensor.Entities != Entities || tensor.Length != Length) throw new ArgumentException("The input matrix doesn't have the same size as the target");
-            int bytes = sizeof(float) * Size;
-            Buffer.MemoryCopy(tensor, this, bytes, bytes);
-        }
-
-        /// <summary>
-        /// Duplicates the current instance to an output <see cref="Tensor"/> matrix
-        /// </summary>
-        /// <param name="tensor">The output tensor</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Duplicate(out Tensor tensor)
-        {
-            New(Entities, Length, out tensor);
-            tensor.Overwrite(this);
-        }
-
-        /// <summary>
-        /// Copies the contents of the unmanaged array to a managed <see cref="Array"/>
-        /// </summary>
-        [Pure, NotNull]
-        public float[] ToArray()
-        {
-            if (Ptr == IntPtr.Zero) return new float[0];
-            float[] result = new float[Size];
-            Marshal.Copy(Ptr, result, 0, Size);
-            return result;
-        }
-
-        /// <summary>
-        /// Copies the contents of the unmanaged array to a managed 2D <see cref="Array"/>
-        /// </summary>
-        [Pure, NotNull]
-        public unsafe float[,] ToArray2D()
-        {
-            if (Ptr == IntPtr.Zero) return new float[0, 0];
-            float[,] result = new float[Entities, Length];
-            int size = sizeof(float) * Size;
-            fixed (float* presult = result)
-                Buffer.MemoryCopy(this, presult, size, size);
-            return result;
-        }
-
-        #endregion
-
-        /// <summary>
         /// Creates a new instance by wrapping the current memory area
         /// </summary>
         /// <param name="n">The height of the final matrix</param>
@@ -235,6 +202,63 @@ namespace NeuralNetworkNET.APIs.Structs
         public bool MatchShape(int entities, int length) => Entities == entities && Length == length;
 
         /// <summary>
+        /// Overwrites the contents of the current matrix with the input matrix
+        /// </summary>
+        /// <param name="source">The input tensor to copy</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void Overwrite(in Tensor tensor)
+        {
+            if (tensor.Entities != Entities || tensor.Length != Length) throw new ArgumentException("The input matrix doesn't have the same size as the target");
+            int bytes = sizeof(float) * Size;
+            Buffer.MemoryCopy(tensor, this, bytes, bytes);
+        }
+
+        /// <summary>
+        /// Duplicates the current instance to an output <see cref="Tensor"/> matrix
+        /// </summary>
+        /// <param name="tensor">The output tensor</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void Duplicate(out Tensor tensor)
+        {
+            New(Entities, Length, out tensor);
+            tensor.Overwrite(this);
+        }
+
+        /// <summary>
+        /// Copies the contents of the unmanaged array to a managed <see cref="Array"/>
+        /// </summary>
+        /// <param name="keepAlive">Indicates whether or not to automatically dispose the current instance</param>
+        [Pure, NotNull]
+        public float[] ToArray(bool keepAlive = true)
+        {
+            if (Ptr == IntPtr.Zero) return new float[0];
+            float[] result = new float[Size];
+            Marshal.Copy(Ptr, result, 0, Size);
+            if (keepAlive) Free();
+            return result;
+        }
+
+        /// <summary>
+        /// Copies the contents of the unmanaged array to a managed 2D <see cref="Array"/>
+        /// </summary>
+        /// <param name="keepAlive">Indicates whether or not to automatically dispose the current instance</param>
+        [Pure, NotNull]
+        public unsafe float[,] ToArray2D(bool keepAlive = true)
+        {
+            if (Ptr == IntPtr.Zero) return new float[0, 0];
+            float[,] result = new float[Entities, Length];
+            int size = sizeof(float) * Size;
+            fixed (float* presult = result)
+                Buffer.MemoryCopy(this, presult, size, size);
+            if (keepAlive) Free();
+            return result;
+        }
+
+        #endregion
+
+        #region Memory management
+
+        /// <summary>
         /// Frees the memory associated with the current instance
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -252,7 +276,10 @@ namespace NeuralNetworkNET.APIs.Structs
 
         // Implicit pointer conversion
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
         public static unsafe implicit operator float*(in Tensor tensor) => (float*)tensor.Ptr.ToPointer();
+
+        #endregion
 
         #region Debug
 
