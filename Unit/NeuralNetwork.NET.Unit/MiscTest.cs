@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Unit
@@ -31,6 +32,12 @@ namespace NeuralNetworkNET.Unit
             float[] v = new float[127];
             v.Fill(() => 1.8f);
             Assert.IsTrue(v.All(f => f.EqualsWithDelta(1.8f)));
+        }
+
+        [TestMethod]
+        public void CudaSupport()
+        {
+            Assert.IsFalse(CuDnnNetworkLayers.IsCudaSupportAvailable);
         }
     }
 }

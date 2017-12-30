@@ -1,8 +1,11 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.Linq;
+using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Cuda.Layers;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.APIs
@@ -12,6 +15,27 @@ namespace NeuralNetworkNET.APIs
     /// </summary>
     public static class CuDnnNetworkLayers
     {
+        /// <summary>
+        /// Gets whether or not the Cuda acceleration is supported on the current system
+        /// </summary>
+        public static bool IsCudaSupportAvailable
+        {
+            [Pure]
+            get
+            {
+                try
+                {
+                    // Calling this directly would could a crash in the <Module> loader due to the missing .dll files
+                    return CuDnnSupportHelper.IsGpuAccelerationSupported();
+                }
+                catch (TypeInitializationException)
+                {
+                    // Missing .dll file
+                    return false;
+                }
+            }
+        }
+
         /// <summary>
         /// Creates a new fully connected layer with the specified number of input and output neurons, and the given activation function
         /// </summary>
@@ -80,5 +104,44 @@ namespace NeuralNetworkNET.APIs
             in TensorInfo input, in InceptionInfo info,
             BiasInitializationMode biasMode = BiasInitializationMode.Zero)
             => new CuDnnInceptionLayer(input, info, biasMode);
+
+        #region Feature helper
+
+        /// <summary>
+        /// A private class that is used to create a new standalone type that contains the actual test method (decoupling is needed to &lt;Module&gt; loading crashes)
+        /// </summary>
+        private static class CuDnnSupportHelper
+        {
+            /// <summary>
+            /// Checks whether or not the Cuda features are currently supported
+            /// </summary>
+            public static bool IsGpuAccelerationSupported()
+            {
+                try
+                {
+                    // CUDA test
+                    using (Alea.Gpu gpu = Alea.Gpu.Default)
+                    {
+                        if (gpu == null) return false;
+                        if (!Alea.cuDNN.Dnn.IsAvailable) return false; // cuDNN
+                        using (Alea.DeviceMemory<float> sample_gpu = gpu.AllocateDevice<float>(1024))
+                        {
+                            Alea.deviceptr<float> ptr = sample_gpu.Ptr;
+                            void Kernel(int i) => ptr[i] = i;
+                            Alea.Parallel.GpuExtension.For(gpu, 0, 1024, Kernel); // JIT test
+                            float[] sample = Alea.Gpu.CopyToHost(sample_gpu);
+                            return Enumerable.Range(0, 1024).Select<int, float>(i => i).ToArray().ContentEquals(sample);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Missing .dll or other errors
+                    return false;
+                }
+            }
+        }
+
+        #endregion
     }
 }
