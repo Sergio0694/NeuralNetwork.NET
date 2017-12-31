@@ -5,6 +5,9 @@ using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.cpuDNN
 {
+    /// <summary>
+    /// A class that exposes static BLAS (Basic Linear Algebra Subprograms) methods working on <see cref="Tensor"/> instances
+    /// </summary>
     public static class CpuBlas
     {
         /// <summary>
@@ -66,7 +69,7 @@ namespace NeuralNetworkNET.cpuDNN
         }
 
         /// <summary>
-        /// Performs the in place multiplication (Hadamard product) product between two <see cref="Tensor"/> instances
+        /// Performs the elementwise multiplication (Hadamard product) product between two <see cref="Tensor"/> instances
         /// </summary>
         /// <param name="x1">The first <see cref="Tensor"/></param>
         /// <param name="x2">The second <see cref="Tensor"/></param>

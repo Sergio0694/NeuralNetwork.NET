@@ -139,7 +139,7 @@ namespace NeuralNetworkNET.cpuDNN
             if (imgSize < kSize) throw new ArgumentException("Each subdivided tensor must at least have the size of the kernels");
             if (dyInfo.Channels != nKernels) throw new ArgumentException("The source depth must be equal to the number of kernels");
 
-            // Traanspose the layer kernels
+            // Rotate the layer kernels
             Rotate180(w, wInfo.Channels, out Tensor w180);
 
             /* ============================
@@ -212,11 +212,12 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="dy">The output error <see cref="Tensor"/></param>
         /// <param name="dyInfo">The output error volume info (depth and 2D slices size)</param>
         /// <param name="dw">The resulting weights gradient</param>
+        /// <param name="wInfo">The info on the layer kernels</param>
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static unsafe void ConvolutionBackwardFilter(
             in Tensor x, in TensorInfo xInfo,
             in Tensor dy, in TensorInfo dyInfo,
-            in Tensor dw)
+            in Tensor dw, in TensorInfo wInfo)
         {
             // Checks and local parameters
             int
@@ -244,15 +245,19 @@ namespace NeuralNetworkNET.cpuDNN
              * Kernels:         HK*WK*sourceDepth*kernelsDepth (delta(l + 1) used to calculate the 3D gradient for each kernel)
              * Output:          sourceDepth*kernelsDepth slices, where each stack of sourceDepth slices is the gradient for the i-th kernel */
             int
-                hResult = imgHeight - kHeight + 1,                              // Size of each image edge after the convolution
+                hResult = imgHeight - kHeight + 1,                          // Size of each image edge after the convolution
                 wResult = imgWidth - kWidth + 1,
-                convolutionOutputSize = hResult * wResult,                      // Size of each processed image
-                gradientSize = convolutionOutputSize * xInfo.Channels,     // Size of each calculated gradient (one for each original kernel, so for each input delta)
-                finalWidth = gradientSize * dyInfo.Channels,               // Final size of each sample row
-                iterationsPerSample = xInfo.Channels * kDepth;             // Each sample has its own list of 3D gradients, one for each kernel
+                convolutionOutputSize = hResult * wResult,                  // Size of each processed image
+                gradientSize = convolutionOutputSize * xInfo.Channels,      // Size of each calculated gradient (one for each original kernel, so for each input delta)
+                finalWidth = gradientSize * dyInfo.Channels,                // Final size of each sample row
+                iterationsPerSample = xInfo.Channels * kDepth;              // Each sample has its own list of 3D gradients, one for each kernel
+
+            // Rotate the inputs and prepare the temporary tensor
+            Rotate180(x, xInfo.Channels, out Tensor xt);
+            Tensor.New(x.Entities, finalWidth, out Tensor dwTemp);
 
             // Process the valid convolution
-            float* px = x, pdy = dy, pdw = dw;
+            float* px = xt, pdy = dy, pdw = dwTemp;
             void GradientKernel(int index)
             {
                 // Calculate the current indexes
@@ -291,7 +296,17 @@ namespace NeuralNetworkNET.cpuDNN
                 }
             }
             Parallel.For(0, n * iterationsPerSample, GradientKernel).AssertCompleted();
-            throw new NotImplementedException("The CPU gradient convolution isn't implemented correctly yet");
+            xt.Free();
+
+            /* ==========================
+             * Gradient compression
+             * ==========================
+             * At this point, the temporary tensor has the series of (p,q) gradients for all the layer
+             * kernels, where p is the input depth and q is the kernel index.
+             * The final weights gradient is the sum for all the samples in the current training batch */
+            dw.Reshape(1, dw.Size, out Tensor wPlane);  // The gradient is [q,p]-shaped, flatten to the size of each sample before compressing
+            CpuBlas.CompressVertically(dwTemp, wPlane);
+            dwTemp.Free();
         }
 
         /// <summary>

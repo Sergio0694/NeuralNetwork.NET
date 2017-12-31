@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 cpu.ComputeGradient(xt, deltat, out Tensor dJdw_cpu, out Tensor dJdb_cpu);
                 gpu.ComputeGradient(xt, deltat, out Tensor dJdw_gpu, out Tensor dJdb_gpu);
                 Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
-                Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu));
+                Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f)); // The cuDNN ConvolutionBackwardBias is not always as precise as the CPU version
                 dJdw_cpu.Free();
                 dJdw_gpu.Free();
                 dJdb_cpu.Free();
@@ -202,14 +202,13 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
-        public void ConvolutionGradient()
+        public unsafe void ConvolutionGradient()
         {
-            // TODO: CPU gradient not implemented yet
-            /* float[,]
-                x = WeightsProvider.NewFullyConnectedWeights(127, 58 * 58 * 3),
-                delta = WeightsProvider.NewFullyConnectedWeights(127, 54 * 54 * 20);
+            float[,]
+                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 58 * 58 * 3),
+                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 54 * 54 * 5, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 54 * 54 * 5);
             ConvolutionalLayer
-                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
+                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 5, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
             fixed (float* px = x)
             {
@@ -218,7 +217,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 z_gpu.Free();
                 a_gpu.Free();
             }
-            TestGradient(cpu, gpu, x, delta); */
+            TestGradient(cpu, gpu, x, delta);
         }
 
         #endregion

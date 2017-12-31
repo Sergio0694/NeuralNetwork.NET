@@ -110,7 +110,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             Tensor.New(OutputInfo.Channels, KernelInfo.Size, out Tensor dw);
-            CpuDnn.ConvolutionBackwardFilter(a, InputInfo, delta, OutputInfo, dw);
+            CpuDnn.ConvolutionBackwardFilter(a, InputInfo, delta, OutputInfo, dw, KernelInfo);
             dw.Reshape(1, Weights.Length, out dJdw);
             Tensor.New(1, Biases.Length, out dJdb);
             CpuDnn.ConvolutionBackwardBias(delta, OutputInfo, dJdb);

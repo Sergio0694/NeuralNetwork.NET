@@ -6,7 +6,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
@@ -18,10 +17,20 @@ namespace DigitsTest
         {
             (var training, var test) = DataParser.LoadDatasets();
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
-                NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
-                NetworkLayers.FullyConnected(10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 10,
-                TrainingAlgorithmsInfo.StochasticGradientDescent(), 0.5f,
+                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
+                NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),
+                NetworkLayers.Softmax(10));
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 100,
+                TrainingAlgorithmsInfo.Adadelta(), 0.5f,
+                new Progress<BatchProgress>(p =>
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop);
+                    int n = (int)(p.Percentage * 32 / 100);
+                    char[] c = new char[32];
+                    for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
+                    Console.Write($"[{new String(c)}] ");
+                }),
                 testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
