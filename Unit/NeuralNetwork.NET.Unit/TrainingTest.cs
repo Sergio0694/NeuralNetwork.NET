@@ -15,6 +15,25 @@ namespace NeuralNetworkNET.Unit
     [TestCategory(nameof(TrainingTest))]
     public class TrainingTest
     {
+        // Calculates a unique hash code for the target row of the input matrix
+        private static unsafe int GetUid(float[,] m, int row)
+        {
+            int
+                w = m.GetLength(1),
+                offset = row * w;
+            fixed (float* pm = m)
+            {
+                float* p = pm + offset;
+                int hash = 17;
+                unchecked
+                {
+                    for (int i = 0; i < w; i++)
+                        hash = hash * 23 + p[i].GetHashCode();
+                    return hash;
+                }
+            }
+        }
+
         [TestMethod]
         public void BatchDivisionTest1()
         {
@@ -27,7 +46,7 @@ namespace NeuralNetworkNET.Unit
                 set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
             {
-                set1.Add(x.GetUid(i) ^ y.GetUid(i));
+                set1.Add(GetUid(x, i) ^ GetUid(y, i));
             }
             HashSet<int>
                 set2 = new HashSet<int>();
@@ -36,7 +55,7 @@ namespace NeuralNetworkNET.Unit
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
                 {
-                    set2.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                    set2.Add(GetUid(batches.Batches[i].X, j) ^ GetUid(batches.Batches[i].Y, j));
                 }
             }
             Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
@@ -48,7 +67,7 @@ namespace NeuralNetworkNET.Unit
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
                 {
-                    set3.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                    set3.Add(GetUid(batches.Batches[i].X, j) ^ GetUid(batches.Batches[i].Y, j));
                 }
             }
             Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set3.OrderBy(h => h)));
@@ -66,7 +85,7 @@ namespace NeuralNetworkNET.Unit
                 set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
             {
-                set1.Add(x.GetUid(i) ^ y.GetUid(i));
+                set1.Add(GetUid(x, i) ^ GetUid(y, i));
             }
             HashSet<int>
                 set2 = new HashSet<int>();
@@ -75,7 +94,7 @@ namespace NeuralNetworkNET.Unit
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
                 {
-                    set2.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                    set2.Add(GetUid(batches.Batches[i].X, j) ^ GetUid(batches.Batches[i].Y, j));
                 }
             }
             Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
@@ -87,7 +106,7 @@ namespace NeuralNetworkNET.Unit
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
                 {
-                    set3.Add(batches.Batches[i].X.GetUid(j) ^ batches.Batches[i].Y.GetUid(j));
+                    set3.Add(GetUid(batches.Batches[i].X, j) ^ GetUid(batches.Batches[i].Y, j));
                 }
             }
             Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set3.OrderBy(h => h)));

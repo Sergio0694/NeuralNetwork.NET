@@ -1,6 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkNET.SupervisedLearning.Progress;
+using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
 {

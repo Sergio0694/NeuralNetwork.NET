@@ -10,11 +10,12 @@ using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -40,13 +41,17 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public IReadOnlyList<INetworkLayer> Layers => _Layers;
 
+        /// <inheritdoc/>
+        [JsonProperty(nameof(Parameters), Order = 3)]
+        public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
+
         #endregion
 
         /// <summary>
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Order = 3)]
+        [JsonProperty(nameof(Layers), Order = 4)]
         internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
@@ -225,7 +230,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     if (_Layers[i].LayerType == LayerType.FullyConnected && dropout > 0)
                     {
                         ThreadSafeRandom.NextDropoutMask(aList[i].Entities, aList[i].Length, dropout, out dropoutMasks[i]);
-                        aList[i].InPlaceHadamardProduct(dropoutMasks[i]);
+                        CpuBlas.MultiplyElementwise(aList[i], dropoutMasks[i], aList[i]);
                     }
                 }
 
@@ -247,8 +252,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * Perform the sigmoid prime of z(l), the activity on the previous layer
                      * Multiply the previous delta with the transposed weights of the following layer
                      * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                    _Layers[l + 1].Backpropagate(*deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
-                    if (!dropoutMasks[l].Null) zList[l].InPlaceHadamardProduct(dropoutMasks[l]);
+                    _Layers[l + 1].Backpropagate(aList[l], *deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
+                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(zList[l], dropoutMasks[l], zList[l]);
                     deltas[l] = zList + l;
                 }
 

@@ -22,9 +22,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Alea" Version="3.0.4" />
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0002" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Alea">
+      <HintPath>$(NuGetPackageRoot)\alea\3.0.4\lib\net45\Alea.dll</HintPath>
+    </Reference>
+    <Reference Include="Alea.IL">
+      <HintPath>$(NuGetPackageRoot)\alea\3.0.4\lib\net45\Alea.IL.dll</HintPath>
+    </Reference>
+    <Reference Include="Alea.Parallel">
+      <HintPath>$(NuGetPackageRoot)\alea\3.0.4\lib\net45\Alea.Parallel.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

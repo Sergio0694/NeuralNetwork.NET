@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Abstract;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {

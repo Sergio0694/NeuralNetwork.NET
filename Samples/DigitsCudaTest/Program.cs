@@ -12,7 +12,6 @@ using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
-using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace DigitsCudaTest
 {
@@ -22,22 +21,22 @@ namespace DigitsCudaTest
         {
             // Parse the dataset and create the network
             (var training, var test) = DataParser.LoadDatasets();
-            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeakyReLU),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
-                t => CuDnnNetworkLayers.Pooling(t, PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.LeakyReLU),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),
-                t => CuDnnNetworkLayers.Pooling(t, PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeCunTanh),
-                t => CuDnnNetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeCunTanh),
-                t => CuDnnNetworkLayers.Softmax(t, 10));
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
+                CuDnnNetworkLayers.FullyConnected(64, ActivationFunctionType.LeCunTanh),
+                CuDnnNetworkLayers.Softmax(10));
 
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 20, 400,
-                TrainingAlgorithmsInfo.CreateForAdadelta(), 0.5f,
+                TrainingAlgorithmsInfo.Adadelta(), 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
                     Console.SetCursorPosition(0, Console.CursorTop);

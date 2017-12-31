@@ -18,21 +18,21 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void NetworkSerialization()
         {
-            INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForRgbImage(120, 120),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.New(ConvolutionMode.Convolution, 2, 2), (5, 5), 20, ActivationFunctionType.ELU),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.Default, (10, 10), 20, ActivationFunctionType.Identity),
-                t => CuDnnNetworkLayers.Pooling(t, PoolingInfo.New(PoolingMode.AverageIncludingPadding, 2, 2, 1, 1), ActivationFunctionType.ReLU),
-                t => CuDnnNetworkLayers.Convolutional(t, ConvolutionInfo.Default, (10, 10), 20, ActivationFunctionType.Identity),
-                t => CuDnnNetworkLayers.Pooling(t, PoolingInfo.Default, ActivationFunctionType.ReLU),
-                t => CuDnnNetworkLayers.FullyConnected(t, 125, ActivationFunctionType.Tanh),
-                t => CuDnnNetworkLayers.FullyConnected(t, 27, ActivationFunctionType.Tanh),
-                t => CuDnnNetworkLayers.Softmax(t, 133));
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForRgbImage(120, 120),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.New(ConvolutionMode.Convolution, 2, 2), (5, 5), 20, ActivationFunctionType.ELU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (10, 10), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(PoolingInfo.New(PoolingMode.AverageIncludingPadding, 2, 2, 1, 1), ActivationFunctionType.ReLU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (10, 10), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.ReLU),
+                CuDnnNetworkLayers.FullyConnected(125, ActivationFunctionType.Tanh),
+                CuDnnNetworkLayers.FullyConnected(27, ActivationFunctionType.Tanh),
+                CuDnnNetworkLayers.Softmax(133));
             using (MemoryStream stream = new MemoryStream())
             {
                 network.Save(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                INeuralNetwork copy = NeuralNetworkLoader.TryLoad(stream, CuDnnNetworkLayersDeserializer.Deserializer);
+                INeuralNetwork copy = NeuralNetworkLoader.TryLoad(stream, LayersLoadingPreference.Cuda);
                 Assert.IsTrue(network.Equals(copy));
             }
         }

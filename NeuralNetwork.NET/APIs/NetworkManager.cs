@@ -11,35 +11,36 @@ using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
-using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.APIs
 {
+    /// <summary>
+    /// A <see cref="delegate"/> that represents a factory that produces instances of a specific layer type, with user-defined parameters.
+    /// This wrapper acts as an intemediary to streamline the user-side C# sintax when building up a new network structure, as all the input
+    /// details for each layer will be automatically computed during the network setup.
+    /// </summary>
+    /// <param name="info">The tensor info for the inputs of the upcoming network layer</param>
+    /// <remarks>It is also possible to invoke a <see cref="LayerFactory"/> instance just like any other <see cref="delegate"/> to immediately get an <see cref="INetworkLayer"/> value</remarks>
+    [NotNull]
+    public delegate INetworkLayer LayerFactory(TensorInfo info);
+
     /// <summary>
     /// A static class that create and trains a neural network for the input data and expected results
     /// </summary>
     public static class NetworkManager
     {
         /// <summary>
-        /// Creates a new network with the specified parameters
-        /// </summary>
-        /// <param name="layers">The network layers to use</param>
-        [PublicAPI]
-        [Pure, NotNull]
-        public static INeuralNetwork NewNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers) => new NeuralNetwork(layers);
-
-        /// <summary>
-        /// Creates a new network with the specified parameters
+        /// Creates a new network with a linear structure and the specified parameters
         /// </summary>
         /// <param name="input">The input <see cref="TensorInfo"/> description</param>
         /// <param name="factories">A list of factories to create the different layers in the new network</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static INeuralNetwork NewNetwork(TensorInfo input, [NotNull, ItemNotNull] params Func<TensorInfo, INetworkLayer>[] factories)
+        public static INeuralNetwork NewSequential(TensorInfo input, [NotNull, ItemNotNull] params LayerFactory[] factories)
         {
             IEnumerable<INetworkLayer> BuildLayers()
             {
-                foreach (Func<TensorInfo, INetworkLayer> f in factories)
+                foreach (LayerFactory f in factories)
                 {
                     INetworkLayer layer = f(input);
                     yield return layer;

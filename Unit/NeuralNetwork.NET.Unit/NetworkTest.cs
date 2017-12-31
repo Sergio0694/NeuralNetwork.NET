@@ -88,10 +88,10 @@ namespace NeuralNetworkNET.Unit
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
             BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, 100);
-            NeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
-                t => NetworkLayers.FullyConnected(t, 100, ActivationFunctionType.Sigmoid),
-                t => NetworkLayers.Softmax(t, 10)).To<INeuralNetwork, NeuralNetwork>();
-            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 4, 0, TrainingAlgorithmsInfo.CreateForStochasticGradientDescent(), null, null, null, null, default);
+            NeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+                NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
+                NetworkLayers.Softmax(10)).To<INeuralNetwork, NeuralNetwork>();
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 4, 0, TrainingAlgorithmsInfo.StochasticGradientDescent(), null, null, null, null, default);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
             (_, _, float accuracy) = network.Evaluate(testSet);
             Assert.IsTrue(accuracy > 80);

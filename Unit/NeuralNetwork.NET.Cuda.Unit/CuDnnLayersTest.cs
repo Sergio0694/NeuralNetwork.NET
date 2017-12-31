@@ -1,13 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Cuda.Layers;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Implementations.Layers;
-using NeuralNetworkNET.Networks.Implementations.Layers.Abstract;
-using NeuralNetworkNET.Networks.Implementations.Layers.Helpers;
+using NeuralNetworkNET.Networks.Layers.Abstract;
+using NeuralNetworkNET.Networks.Layers.Cpu;
+using NeuralNetworkNET.Networks.Layers.Cuda;
+using NeuralNetworkNET.Networks.Layers.Initialization;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {
@@ -43,8 +43,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Reshape(pd_1, delta_1.GetLength(0), delta_1.GetLength(1), out Tensor delta_1t);
                 Tensor.Reshape(pz, z.GetLength(0), z.GetLength(1), out Tensor zt);
                 zt.Duplicate(out Tensor zt2);
-                cpu.Backpropagate(delta_1t, zt, ActivationFunctions.LeCunTanhPrime);
-                gpu.Backpropagate(delta_1t, zt2, ActivationFunctions.LeCunTanhPrime);
+                cpu.Backpropagate(Tensor.Null, delta_1t, zt, ActivationFunctions.LeCunTanhPrime);
+                gpu.Backpropagate(Tensor.Null, delta_1t, zt2, ActivationFunctions.LeCunTanhPrime);
                 Assert.IsTrue(zt.ContentEquals(zt2));
             }
         }
@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 cpu.ComputeGradient(xt, deltat, out Tensor dJdw_cpu, out Tensor dJdb_cpu);
                 gpu.ComputeGradient(xt, deltat, out Tensor dJdw_gpu, out Tensor dJdb_gpu);
                 Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
-                Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu));
+                Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f)); // The cuDNN ConvolutionBackwardBias is not always as precise as the CPU version
                 dJdw_cpu.Free();
                 dJdw_gpu.Free();
                 dJdb_cpu.Free();
@@ -202,14 +202,13 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         [TestMethod]
-        public void ConvolutionGradient()
+        public unsafe void ConvolutionGradient()
         {
-            // TODO: CPU gradient not implemented yet
-            /* float[,]
-                x = WeightsProvider.NewFullyConnectedWeights(127, 58 * 58 * 3),
-                delta = WeightsProvider.NewFullyConnectedWeights(127, 54 * 54 * 20);
+            float[,]
+                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 58 * 58 * 3),
+                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 54 * 54 * 5, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 54 * 54 * 5);
             ConvolutionalLayer
-                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
+                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 5, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
             fixed (float* px = x)
             {
@@ -218,7 +217,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 z_gpu.Free();
                 a_gpu.Free();
             }
-            TestGradient(cpu, gpu, x, delta); */
+            TestGradient(cpu, gpu, x, delta);
         }
 
         #endregion
@@ -246,17 +245,18 @@ namespace NeuralNetworkNET.Cuda.Unit
                 gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationFunctionType.LeakyReLU);
             gpu.Forward(x, out Tensor z, out Tensor a);
             a.Free();
+            x.Duplicate(out Tensor x1);
             x.Duplicate(out Tensor x2);
             Tensor.New(z.Entities, z.Length, out Tensor delta);
             KerasWeightsProvider.FillWithHeEtAlUniform(delta, 10);
 
             // Backward
-            cpu.Backpropagate(delta, x, ActivationFunctions.LeakyReLUPrime);
-            gpu.Backpropagate(delta, x2, ActivationFunctions.LeakyReLUPrime);
+            cpu.Backpropagate(x, delta, x1, ActivationFunctions.LeakyReLUPrime);
+            gpu.Backpropagate(x, delta, x2, ActivationFunctions.LeakyReLUPrime);
             bool valid = true;
-            float* px = (float*)x.Ptr.ToPointer(), px2 = (float*)x2.Ptr.ToPointer();
+            float* px = (float*)x1.Ptr.ToPointer(), px2 = (float*)x2.Ptr.ToPointer();
             int count = 0;
-            for (int i = 0; i < x.Size; i++)
+            for (int i = 0; i < x1.Size; i++)
             {
                 if (px[i].EqualsWithDelta(px2[i], 1e-5f)) continue;
                 if (px[i].EqualsWithDelta(px2[i] * 100f, 1e-5f)) count++;   // The cuDNN pooling backwards method returns a value scaled by 0.01 from time to time for some reason (less than 2% anyways)
@@ -266,8 +266,9 @@ namespace NeuralNetworkNET.Cuda.Unit
                     break;
                 }
             }
-            Assert.IsTrue(valid && count * 100f / x.Size < 2);
+            Assert.IsTrue(valid && count * 100f / x1.Size < 2);
             x.Free();
+            x1.Free();
             x2.Free();
             z.Free();
             delta.Free();
