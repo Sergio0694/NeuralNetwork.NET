@@ -21,7 +21,7 @@ namespace DigitsTest
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.FullyConnected(10, ActivationFunctionType.Sigmoid, CostFunctionType.CrossEntropy));
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 10,
-                TrainingAlgorithmsInfo.CreateForStochasticGradientDescent(), 0.5f,
+                TrainingAlgorithmsInfo.StochasticGradientDescent(), 0.5f,
                 testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");

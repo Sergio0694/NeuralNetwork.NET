@@ -13,43 +13,6 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     public static class MatrixExtensions
     {
-        #region Activation
-
-        /// <summary>
-        /// Performs the softmax normalization on the input matrix, dividing every value by the sum of all the values
-        /// </summary>
-        /// <param name="m">The matrix to normalize</param>
-        internal static unsafe void InPlaceSoftmaxNormalization(in this Tensor m)
-        {
-            // Setup
-            int h = m.Entities, w = m.Length;
-            Tensor.New(1, h, out Tensor partials);
-            float* pp = partials, pm = m;
-
-            // Partial sum
-            void PartialSum(int i)
-            {
-                int offset = i * w;
-                float sum = 0;
-                for (int j = 0; j < w; j++)
-                    sum += pm[offset + j];
-                pp[i] = sum;
-            }
-            Parallel.For(0, h, PartialSum).AssertCompleted();
-
-            // Normalization of the matrix values
-            void NormalizationKernel(int i)
-            {
-                int offset = i * w;
-                for (int j = 0; j < w; j++)
-                    pm[offset + j] /= pp[i];
-            }
-            Parallel.For(0, h, NormalizationKernel).AssertCompleted();
-            partials.Free();
-        }
-
-        #endregion
-
         #region Misc
 
         /// <summary>
