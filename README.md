@@ -4,7 +4,7 @@
 `NeuralNetwork.NET` is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
 It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network and its metadata and more.
 
-There's also a secondary .NET Framework 4.7.1 library available, `NeuralNetwork.NET.Cuda` that leverages the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
+The library also exposes Cuda-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
 # Table of Contents
 
@@ -22,21 +22,21 @@ Training a neural network is pretty straightforward - just use the methods in th
 
 ```C#
 // A convolutional neural network to use with the MNIST dataset
-INeuralNetwork network = NetworkManager.NewNetwork(TensorInfo.CreateForGrayscaleImage(28, 28),
-    t => NetworkLayers.Convolutional(t, (5, 5), 20, ActivationFunctionType.Identity),
-    t => NetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
-    t => NetworkLayers.Convolutional(t, (3, 3), 40, ActivationFunctionType.Identity),
-    t => NetworkLayers.Pooling(t, ActivationFunctionType.LeakyReLU),
-    t => NetworkLayers.FullyConnected(t, 125, ActivationFunctionType.LeakyReLU),
-    t => NetworkLayers.FullyConnected(t, 64, ActivationFunctionType.LeakyReLU),
-    t => NetworkLayers.Softmax(t, 10));
+INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+    NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
+    NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
+    NetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
+    NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
+    NetworkLayers.FullyConnected(125, ActivationFunctionType.LeakyReLU),
+    NetworkLayers.FullyConnected(64, ActivationFunctionType.LeakyReLU),
+    NetworkLayers.Softmax(10));
     
 // Train the network using Adadelta and 0.5 dropout probability
 TrainingSessionResult result = NetworkManager.TrainNetwork(network, 
     dataset, // A (float[,], float[,]) tuple with the training samples and labels
     60, // The expected number of training epochs to run
     100, // The size of each training mini-batch
-    TrainingAlgorithmsInfo.CreateForAdadelta(), // The training algorithm to use
+    TrainingAlgorithmsInfo.Adadelta(), // The training algorithm to use
     0.5f, // Dropout probability
     new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
     {
@@ -48,16 +48,25 @@ TrainingSessionResult result = NetworkManager.TrainNetwork(network,
 
 ### GPU acceleration
 
-When using the `NeuralNetwork.NET.Cuda` additional library, it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU. To do that, just create a network using the layers from the `CuDnnNetworkLayers` class to enable the GPU processing mode.
+When running on a supported framework (.NET Framework, Xamarin or Mono), it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU. To do that, just create a network using the layers from the `CuDnnNetworkLayers` class to enable the GPU processing mode.
 
 Some of the cuDNN-powered layers support additional options than the default layers. Here's an example:
 
 ```C#
-INetworkLayer convolutional = CuDnnNetworkLayers.Convolutional(
-    TensorInfo.CreateForRgbImage(32, 32),
-    ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 1, 1, 2, 2), // Custom mode, padding and stride
-    (10, 10), 20, ActivationFunctionType.ReLU);
+// A cuDNN convolutional layer, with custom mode, padding and stride
+LayerFactory convolutional = CuDnnNetworkLayers.Convolutional(
+    ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 2, 2),
+    (5, 5), 20, ActivationFunctionType.ReLU);
+    
+// An inception module, from the design of the GoogLeNet network
+LayerFactory inception = CuDnnNetworkLayers.Inception(InceptionInfo.New(
+    10,     // 1x1 convolution kernels
+    20, 10, // 1x1 + 3x3 convolution pipeline kernels
+    20, 10, // 1x1 + 5x5 convolution pipeline kernels
+    PoolingMode.AverageExcludingPadding, 10)); // Pooling mode and 1x1 convolution kernels
 ```
+
+These `LayerFactory` instances can be used to create a new network just like in the CPU example.
 
 ### Serialization and deserialization
 
@@ -82,4 +91,4 @@ The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is ava
 
 In addition to the frameworks above, you need an IDE with C# 7.2 support to compile the library on your PC.
 
-The `NeuralNetwork.NET.Cuda` library requires .NET Framework >= 4.7.1 and a CUDA enabled GPU.
+The cuDNN layers require .NET Framework, Xamarin or Mono and a CUDA enabled GPU.
