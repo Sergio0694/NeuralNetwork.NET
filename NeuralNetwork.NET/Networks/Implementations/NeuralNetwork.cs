@@ -210,7 +210,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="batch">The input training batch</param>
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
-        internal unsafe void Backpropagate(in TrainingBatch batch, float dropout, [NotNull] WeightsUpdater updater)
+        internal unsafe void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
@@ -382,7 +382,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             float cost = 0;
             for (int i = 0; i < batches.Count; i++)
             {
-                ref readonly TrainingBatch batch = ref batches.Batches[i];
+                ref readonly SamplesBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
                     Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);

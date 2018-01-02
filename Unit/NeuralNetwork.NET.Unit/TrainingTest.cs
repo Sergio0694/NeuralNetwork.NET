@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.Unit
             float[,]
                 x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 784),
                 y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 10);
-            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
+            BatchesCollection batches = BatchesCollection.From((x, y), 1000);
             HashSet<int>
                 set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.Unit
             float[,]
                 x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 784),
                 y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 10);
-            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1547);
+            BatchesCollection batches = BatchesCollection.From((x, y), 1547);
             HashSet<int>
                 set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
@@ -128,8 +128,8 @@ namespace NeuralNetworkNET.Unit
                 return (xv, yv);
             }).ToArray();
             BatchesCollection
-                batch1 = BatchesCollection.FromDataset((x, y), 100),
-                batch2 = BatchesCollection.FromDataset(samples, 100);
+                batch1 = BatchesCollection.From((x, y), 100),
+                batch2 = BatchesCollection.From(samples, 100);
             Assert.IsTrue(batch1.Batches.Zip(batch2.Batches, (b1, b2) => b1.X.ContentEquals(b2.X) && b1.Y.ContentEquals(b2.Y)).All(b => b));
         }
     }

@@ -10,15 +10,15 @@ using NeuralNetworkNET.Helpers;
 namespace NeuralNetworkNET.SupervisedLearning.Data
 {
     /// <summary>
-    /// A class that represents a set of training batches to be used in circular order
+    /// A class that represents a set of samples batches to be used in circular order
     /// </summary>
     internal sealed class BatchesCollection
     {
         /// <summary>
-        /// Gets the collection of training batches to use
+        /// Gets the collection of samples batches to use
         /// </summary>
         [NotNull]
-        public TrainingBatch[] Batches { get; }
+        public SamplesBatch[] Batches { get; }
 
         /// <summary>
         /// Gets the number of training batches in the current collection
@@ -30,14 +30,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         }
 
         /// <summary>
-        /// Gets the total number of training samples in the current collection
+        /// Gets the total number of samples in the current collection
         /// </summary>
         public int Samples { get; }
 
         #region Initialization
 
         // Private constructor from a given collection
-        private BatchesCollection([NotNull] TrainingBatch[] batches)
+        private BatchesCollection([NotNull] SamplesBatch[] batches)
         {
             Batches = batches;
             Samples = batches.Sum(b => b.X.GetLength(0));
@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset((float[,] X, float[,] Y) dataset, int size)
+        public static BatchesCollection From((float[,] X, float[,] Y) dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
@@ -66,7 +66,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 nBatches = samples / size,
                 nBatchMod = samples % size;
             bool oddBatchPresent = nBatchMod > 0;
-            TrainingBatch[] batches = new TrainingBatch[nBatches + (oddBatchPresent ? 1 : 0)];
+            SamplesBatch[] batches = new SamplesBatch[nBatches + (oddBatchPresent ? 1 : 0)];
             for (int i = 0; i < batches.Length; i++)
             {
                 if (oddBatchPresent && i == batches.Length - 1)
@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                         batchY = new float[nBatchMod, wy];
                     Buffer.BlockCopy(dataset.X, sizeof(float) * (dataset.X.Length - batch.Length), batch, 0, sizeof(float) * batch.Length);
                     Buffer.BlockCopy(dataset.Y, sizeof(float) * (dataset.Y.Length - batchY.Length), batchY, 0, sizeof(float) * batchY.Length);
-                    batches[batches.Length - 1] = new TrainingBatch(batch, batchY);
+                    batches[batches.Length - 1] = new SamplesBatch(batch, batchY);
                 }
                 else
                 {
@@ -85,7 +85,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                         batchY = new float[size, wy];
                     Buffer.BlockCopy(dataset.X, sizeof(float) * i * batch.Length, batch, 0, sizeof(float) * batch.Length);
                     Buffer.BlockCopy(dataset.Y, sizeof(float) * i * batchY.Length, batchY, 0, sizeof(float) * batchY.Length);
-                    batches[i] = new TrainingBatch(batch, batchY);
+                    batches[i] = new SamplesBatch(batch, batchY);
                 }
             }
             return new BatchesCollection(batches);
@@ -99,11 +99,11 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset([NotNull] IEnumerable<Func<(float[] X, float[] Y)>> dataset, int size)
+        public static BatchesCollection From([NotNull] IEnumerable<Func<(float[] X, float[] Y)>> dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
-            return new BatchesCollection(dataset.AsParallel().Select(f => f()).Partition(size).Select(TrainingBatch.From).ToArray());
+            return new BatchesCollection(dataset.AsParallel().Select(f => f()).Partition(size).Select(SamplesBatch.From).ToArray());
         }
 
         /// <summary>
@@ -114,14 +114,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection FromDataset([NotNull] IEnumerable<(float[] X, float[] Y)> dataset, int size)
+        public static BatchesCollection From([NotNull] IEnumerable<(float[] X, float[] Y)> dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
-            return new BatchesCollection(dataset.ToArray().AsParallel().Partition(size).Select(TrainingBatch.From).ToArray());
+            return new BatchesCollection(dataset.ToArray().AsParallel().Partition(size).Select(SamplesBatch.From).ToArray());
         }
 
         #endregion
+
+        #region Shuffling
 
         /// <summary>
         /// Cross-shuffles the current dataset (shuffles samples in each batch, then shuffles the batches list)
@@ -145,7 +147,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             void Kernel(int i)
             {
                 int a = indexes[i * 2], b = indexes[i * 2 + 1];
-                TrainingBatch setA = Batches[a], setB = Batches[b];
+                SamplesBatch setA = Batches[a], setB = Batches[b];
                 int
                     hA = setA.X.GetLength(0),
                     wx = setA.X.GetLength(1),
@@ -159,7 +161,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 {
                     int k = ThreadSafeRandom.NextInt(max: bound);
                     bound--;
-                    TrainingBatch
+                    SamplesBatch
                         targetA = ThreadSafeRandom.NextBool() ? setA : setB,
                         targetB = ThreadSafeRandom.NextBool() ? setA : setB;
 
@@ -184,10 +186,12 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             {
                 int k = ThreadSafeRandom.NextInt(max: n);
                 n--;
-                TrainingBatch value = Batches[k];
+                SamplesBatch value = Batches[k];
                 Batches[k] = Batches[n];
                 Batches[n] = value;
             }
         }
+
+        #endregion
     }
 }

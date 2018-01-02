@@ -86,7 +86,7 @@ namespace NeuralNetworkNET.APIs
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
 
             // Start the training
-            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
+            BatchesCollection batches = BatchesCollection.From(trainingSet, batchSize);
             return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
@@ -124,7 +124,7 @@ namespace NeuralNetworkNET.APIs
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
 
             // Start the training
-            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
+            BatchesCollection batches = BatchesCollection.From(trainingSet, batchSize);
             return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
@@ -166,7 +166,7 @@ namespace NeuralNetworkNET.APIs
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
 
             // Start the training
-            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, batchSize);
+            BatchesCollection batches = BatchesCollection.From(trainingSet, batchSize);
             return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 

@@ -9,7 +9,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
     /// A simple struct that keeps a reference of a training set and its expected results
     /// </summary>
     [DebuggerDisplay("Samples: {X.GetLength(0)}, inputs: {X.GetLength(1)}, outputs: {Y.GetLength(1)}")]
-    public readonly struct TrainingBatch
+    internal readonly struct SamplesBatch
     {
         /// <summary>
         /// Gets the current dataset
@@ -28,7 +28,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// </summary>
         /// <param name="x">The batch data</param>
         /// <param name="y">The batch expected results</param>
-        internal TrainingBatch([NotNull] float[,] x, [NotNull] float[,] y)
+        public SamplesBatch([NotNull] float[,] x, [NotNull] float[,] y)
         {
             if (x.GetLength(0) != y.GetLength(0)) throw new ArgumentException("The number of samples in the data and results must be the same");
             X = x;
@@ -39,7 +39,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// Creates a new instance from the input partition
         /// </summary>
         /// <param name="batch">The source batch</param>
-        internal  static TrainingBatch From([NotNull] IReadOnlyList<(float[] X, float[] Y)> batch)
+        public  static SamplesBatch From([NotNull] IReadOnlyList<(float[] X, float[] Y)> batch)
         {
             int
                 wx = batch[0].X.Length,
@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 Buffer.BlockCopy(batch[i].X, 0, xBatch, sizeof(float) * i * wx, sizeof(float) * wx);
                 Buffer.BlockCopy(batch[i].Y, 0, yBatch, sizeof(float) * i * wy, sizeof(float) * wy);
             }
-            return new TrainingBatch(xBatch, yBatch);
+            return new SamplesBatch(xBatch, yBatch);
         }
     }
 }
