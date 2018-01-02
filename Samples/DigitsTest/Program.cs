@@ -22,7 +22,7 @@ namespace DigitsTest
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),
                 NetworkLayers.Softmax(10));
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 100,
-                TrainingAlgorithmsInfo.Adadelta(), 0.5f,
+                TrainingAlgorithms.Adadelta(), 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
                     Console.SetCursorPosition(0, Console.CursorTop);

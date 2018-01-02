@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
@@ -98,7 +98,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
@@ -136,7 +136,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
@@ -182,7 +182,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
@@ -214,7 +214,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
@@ -246,7 +246,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
+        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>

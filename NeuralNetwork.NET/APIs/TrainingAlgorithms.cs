@@ -6,7 +6,7 @@ namespace NeuralNetworkNET.APIs
     /// <summary>
     /// A static class that produces info for different available training algorithms
     /// </summary>
-    public static class TrainingAlgorithmsInfo
+    public static class TrainingAlgorithms
     {
         /// <summary>
         /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.StochasticGradientDescent"/> algorithm
