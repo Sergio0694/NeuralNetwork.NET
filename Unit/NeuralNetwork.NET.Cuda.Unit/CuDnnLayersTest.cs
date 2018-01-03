@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
@@ -73,7 +74,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void FullyConnectedForward()
         {
-            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250);
+            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250);
             FullyConnectedLayer
                 cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
@@ -84,8 +85,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void FullyConnectedBackward()
         {
             float[,]
-                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 127),
-                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250);
+                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 127),
+                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250);
             FullyConnectedLayer
                 cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
@@ -96,8 +97,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void FullyConnectedGradient()
         {
             float[,]
-                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250),
-                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 127);
+                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250),
+                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 127);
             FullyConnectedLayer
                 cpu = new FullyConnectedLayer(TensorInfo.CreateLinear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
@@ -111,7 +112,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void SoftmaxForward()
         {
-            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250);
+            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250);
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
@@ -122,8 +123,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void SoftmaxBackward()
         {
             float[,]
-                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 127),
-                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250);
+                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 127),
+                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250);
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
@@ -134,8 +135,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void SoftmaxGradient()
         {
             float[,]
-                a = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250),
-                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 127);
+                a = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250),
+                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 127, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 127);
             SoftmaxLayer
                 cpu = new SoftmaxLayer(TensorInfo.CreateLinear(250), 127, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnSoftmaxLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases);
@@ -146,7 +147,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public unsafe void SoftmaxBackwardOutput()
         {
             float[,]
-                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 250),
+                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 250, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 250),
                 y = new float[400, 127];
             for (int i = 0; i < 400; i++)
                 y[i, ThreadSafeRandom.NextInt(max: 127)] = 1;
@@ -175,7 +176,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void ConvolutionForward()
         {
-            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 58 * 58 * 3);
+            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(127, 58 * 58 * 3);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeakyReLU, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
@@ -186,8 +187,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public unsafe void ConvolutionBackward()
         {
             float[,]
-                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 54 * 54 * 20, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 54 * 54 * 20),
-                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 58 * 58 * 3);
+                delta_1 = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 54 * 54 * 20, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(127, 54 * 54 * 20),
+                z = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(127, 58 * 58 * 3);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
@@ -205,8 +206,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public unsafe void ConvolutionGradient()
         {
             float[,]
-                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 58 * 58 * 3),
-                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 54 * 54 * 5, WeightsInitializationMode.GlorotNormal).AsMatrix(127, 54 * 54 * 5);
+                x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(127, 58 * 58 * 3),
+                delta = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(127), 54 * 54 * 5, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(127, 54 * 54 * 5);
             ConvolutionalLayer
                 cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 5, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
                 gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
@@ -227,7 +228,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void PoolingForward()
         {
-            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsMatrix(400, 58 * 58 * 3);
+            float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(400), 58 * 58 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(400, 58 * 58 * 3);
             PoolingLayer
                 cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
                 gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationFunctionType.LeakyReLU);

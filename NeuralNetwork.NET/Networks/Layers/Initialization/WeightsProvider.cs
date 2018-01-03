@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         /// <summary>
         /// Creates a weights vector for a fully connected layer
         /// </summary>
-        /// <param name="inputs">The layer inputs</param>
+        /// <param name="input">The layer inputs</param>
         /// <param name="outputs">The output neurons</param>
         /// <param name="mode">The initialization mode for the weights</param>
         [Pure, NotNull]

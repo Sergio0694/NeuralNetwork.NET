@@ -30,35 +30,39 @@ namespace NeuralNetworkNET.Extensions
         /// <summary>
         /// Finds the minimum and maximum value in the input memory area
         /// </summary>
-        /// <param name="p">A pointer to the memory area to scan</param>
-        /// <param name="length">The number of items to scan</param>
-        internal static unsafe (float Min, float Max) MinMax(float* p, int length)
+        /// <param name="span">The memory area to scan</param>
+        internal static unsafe (float Min, float Max) MinMax(in this ReadOnlySpan<float> span)
         {
-            if (length == 0) return (0, 0);
+            if (span.IsEmpty) return (0, 0);
             float min = float.MaxValue, max = float.MinValue;
-            for (int i = 0; i < length; i++)
+            fixed (float* p = &span.DangerousGetPinnableReference())
             {
-                float value = p[i];
-                if (value < min) min = value;
-                if (value > max) max = value;
+                for (int i = 0; i < span.Length; i++)
+                {
+                    float value = p[i];
+                    if (value < min) min = value;
+                    if (value > max) max = value;
+                }
+                return (min, max);
             }
-            return (min, max);
         }
 
         /// <summary>
-        /// Returns a matrix with the reshaped content of the input vector
+        /// Returns a matrix with the reshaped content of the input <see cref="Span{T}"/>
         /// </summary>
-        /// <param name="v">The input vector</param>
+        /// <param name="span">The input <see cref="Span{T}"/></param>
         /// <param name="h">The number of matrix rows</param>
         /// <param name="w">The number of matrix columns</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static float[,] AsMatrix([NotNull] this float[] v, int h, int w)
+        public static unsafe float[,] AsMatrix(in this Span<float> span, int h, int w)
         {
-            if (h * w != v.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
+            if (h * w != span.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
             float[,] m = new float[h, w];
-            Buffer.BlockCopy(v, 0, m, 0, sizeof(float) * v.Length);
+            int size = sizeof(float) * span.Length;
+            fixed (float* ps = &span.DangerousGetPinnableReference(), pm = m)
+                Buffer.MemoryCopy(ps, pm, size, size);
             return m;
         }
 
@@ -67,55 +71,27 @@ namespace NeuralNetworkNET.Extensions
         #region Argmax
 
         /// <summary>
-        /// Returns the index of the maximum value in the input memory area
+        /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
         /// </summary>
-        /// <param name="p">A pointer to the buffer to read</param>
-        /// <param name="length">The length of the buffer to consider</param>
+        /// <param name="span">The source <see cref="Span{T}"/> instance</param>
         [CollectionAccess(CollectionAccessType.Read)]
-        internal static unsafe int Argmax(float* p, int length)
+        public static unsafe int Argmax(in this ReadOnlySpan<float> span)
         {
-            if (length < 2) return 0;
+            if (span.Length < 2) return 0;
             int index = 0;
             float max = float.MinValue;
-            for (int j = 0; j < length; j++)
+            fixed (float* p = &span.DangerousGetPinnableReference())
             {
-                if (p[j] > max)
+                for (int j = 0; j < span.Length; j++)
                 {
-                    max = p[j];
-                    index = j;
+                    if (p[j] > max)
+                    {
+                        max = p[j];
+                        index = j;
+                    }
                 }
             }
             return index;
-        }
-
-        /// <summary>
-        /// Returns the index of the maximum value in the input tensor
-        /// </summary>
-        /// <param name="tensor">The input <see cref="Tensor"/> to read from</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe int Argmax(in this Tensor tensor) => Argmax(tensor, tensor.Size);
-
-        /// <summary>
-        /// Returns the index of the maximum value in the input vector
-        /// </summary>
-        /// <param name="v">The input vector to read from</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe int Argmax([NotNull] this float[] v)
-        {
-            fixed (float* p = v) return Argmax(p, v.Length);
-        }
-
-        /// <summary>
-        /// Returns the index of the maximum value in the input matrix
-        /// </summary>
-        /// <param name="m">The input matrix to read from</param>
-        [PublicAPI]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe int Argmax([NotNull] this float[,] m)
-        {
-            fixed (float* p = m) return Argmax(p, m.Length);
         }
 
         #endregion
