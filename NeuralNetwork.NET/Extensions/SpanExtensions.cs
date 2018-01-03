@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Structs;
@@ -10,8 +9,10 @@ namespace NeuralNetworkNET.Extensions
     /// <summary>
     /// An helper class with methods to process fixed-size matrices
     /// </summary>
-    public static class MatrixExtensions
+    public static class SpanExtensions
     {
+        #region Generic extensions
+
         /// <summary>
         /// Extracts a single row from a given matrix
         /// </summary>
@@ -86,7 +87,32 @@ namespace NeuralNetworkNET.Extensions
             return index;
         }
 
-        #region Fill
+        /// <summary>
+        /// Returns a deep copy of the input vector
+        /// </summary>
+        /// <param name="v">The vector to clone</param>
+        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to the use of the methods in the <see cref="Buffer"/> class</remarks>
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static T[] BlockCopy<T>([NotNull] this T[] v) where T : struct
+        {
+            T[] result = new T[v.Length];
+            Buffer.BlockCopy(v, 0, result, 0, Unsafe.SizeOf<T>() * result.Length);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a new <see cref="Span{T}"/> instance from the input matrix
+        /// </summary>
+        /// <typeparam name="T">The type of the input matrix</typeparam>
+        /// <param name="m">The input matrix</param>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>([NotNull] this T[,] m) where T : struct => Span<T>.DangerousCreate(m, ref m[0, 0], m.Length);
+
+        #endregion
+
+        #region Float
 
         /// <summary>
         /// Fills the target <see cref="Span{T}"/> with the input values provider
@@ -117,53 +143,37 @@ namespace NeuralNetworkNET.Extensions
             }
         }
 
-        #endregion
-
-        #region Memory management
-
         /// <summary>
-        /// Returns a deep copy of the input vector
+        /// Checks if two <see cref="Span{T}"/> instances have the same size and content
         /// </summary>
-        /// <param name="v">The vector to clone</param>
-        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to the use of the methods in the <see cref="Buffer"/> class</remarks>
-        [Pure, NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static T[] BlockCopy<T>([NotNull] this T[] v) where T : struct
+        /// <param name="x1">The first <see cref="Span{T}"/> to test</param>
+        /// <param name="x2">The second <see cref="Span{T}"/> to test</param>
+        /// <param name="absolute">The relative comparison threshold</param>
+        /// <param name="relative">The relative comparison threshold</param>
+        public static unsafe bool ContentEquals(this Span<float> x1, Span<float> x2, float absolute = 1e-6f, float relative = 1e-6f)
         {
-            T[] result = new T[v.Length];
-            Buffer.BlockCopy(v, 0, result, 0, Unsafe.SizeOf<T>() * result.Length);
-            return result;
+            if (x1.Length != x2.Length) return false;
+            fixed (float* p1 = &x1.DangerousGetPinnableReference(), p2 = &x2.DangerousGetPinnableReference())
+            {
+                for (int i = 0; i < x1.Length; i++)
+                    if (!p1[i].EqualsWithDelta(p2[i], absolute, relative)) return false;
+            }
+            return true;
         }
 
-        #endregion
-
-        #region Content equals
-
         /// <summary>
-        /// Checks if two matrices have the same size and content
+        /// Checks if two <see cref="Tensor"/> instances have the same size and content
         /// </summary>
         /// <param name="m">The first <see cref="Tensor"/> to test</param>
         /// <param name="o">The second <see cref="Tensor"/> to test</param>
         /// <param name="absolute">The relative comparison threshold</param>
         /// <param name="relative">The relative comparison threshold</param>
-        public static unsafe bool ContentEquals(in this Tensor m, in Tensor o, float absolute = 1e-6f, float relative = 1e-6f)
+        public static bool ContentEquals(in this Tensor m, in Tensor o, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (m.Ptr == IntPtr.Zero && o.Ptr == IntPtr.Zero) return true;
             if (m.Ptr == IntPtr.Zero || o.Ptr == IntPtr.Zero) return false;
             if (m.Entities != o.Entities || m.Length != o.Length) return false;
-            float* pm = m, po = o;
-            int items = m.Size;
-            for (int i = 0; i < items; i++)
-                if (!pm[i].EqualsWithDelta(po[i], absolute, relative))
-                {
-                    #if DEBUG
-                    if (System.Diagnostics.Debugger.IsAttached)
-                        System.Diagnostics.Debug.WriteLine($"[DEBUG] {pm[i]} | {po[i]} | Threshold exceeded");
-                    else Console.WriteLine($"[DEBUG] {pm[i]} | {po[i]} | Threshold exceeded");
-                    #endif
-                    return false;
-                }
-            return true;
+            return m.AsSpan().ContentEquals(o.AsSpan(), absolute, relative);
         }
 
         /// <summary>
@@ -179,10 +189,7 @@ namespace NeuralNetworkNET.Extensions
             if (m == null || o == null) return false;
             if (m.GetLength(0) != o.GetLength(0) ||
                 m.GetLength(1) != o.GetLength(1)) return false;
-            for (int i = 0; i < m.GetLength(0); i++)
-                for (int j = 0; j < m.GetLength(1); j++)
-                    if (!m[i, j].EqualsWithDelta(o[i, j], absolute, relative)) return false;
-            return true;
+            return m.AsSpan().ContentEquals(o.AsSpan(), absolute, relative);
         }
 
         /// <summary>
@@ -196,60 +203,8 @@ namespace NeuralNetworkNET.Extensions
         {
             if (v == null && o == null) return true;
             if (v == null || o == null) return false;
-            if (v.Length != o.Length) return false;
-            for (int i = 0; i < v.Length; i++)
-                if (!v[i].EqualsWithDelta(o[i], absolute, relative)) return false;
-            return true;
+            return v.AsSpan().ContentEquals(o, absolute, relative);
         }
-
-        #endregion
-
-        #region String display
-
-        // Local helper
-        [PublicAPI]
-        [Pure, NotNull]
-        private static unsafe String ToFormattedString(float* p, int height, int width)
-        {
-            if (height * width == 0) return "{ { } }";
-            StringBuilder builder = new StringBuilder();
-            builder.Append("{ ");
-            for (int i = 0; i < height; i++)
-            {
-                if (width > 0)
-                {
-                    builder.Append("{ ");
-                    for (int j = 0; j < width; j++)
-                    {
-                        builder.Append($"{p[i * width + j]}");
-                        if (j < width - 1) builder.Append(", ");
-                    }
-                    builder.Append(" }");
-                }
-                builder.Append(i < height - 1 ? ",\n  " : " }");
-            }
-            return builder.ToString();
-        }
-
-        /// <summary>
-        /// Returns a formatted representation of the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to convert to <see cref="String"/></param>
-        [PublicAPI]
-        [Pure, NotNull]
-        public static unsafe String ToFormattedString([NotNull] this float[,] m)
-        {
-            fixed (float* p = m)
-                return ToFormattedString(p, m.GetLength(0), m.GetLength(1));
-        }
-
-        /// <summary>
-        /// Returns a formatted representation of the input matrix
-        /// </summary>
-        /// <param name="m">The matrix to convert to <see cref="String"/></param>
-        [PublicAPI]
-        [Pure, NotNull]
-        public static unsafe String ToFormattedString(in this Tensor m) => ToFormattedString(m, m.Entities, m.Length);
 
         #endregion
     }

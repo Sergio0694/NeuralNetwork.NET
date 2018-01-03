@@ -166,21 +166,5 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(v3.Argmax(float.MinValue) == 0);
             Assert.IsTrue(v4.Argmax(float.MinValue) == 4);
         }
-
-        [TestMethod]
-        public void ToFormattedString()
-        {
-            float[,]
-                empty = { { } },
-                oneLine = { { 1.0f, 2.0f, 3.0f } },
-                complete = { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } };
-            String
-                emptyString = "{ { } }",
-                oneLineString = "{ { 1, 2, 3 } }",
-                completeString = "{ { 1, 2, 3 },\n  { 4, 5, 6 } }";
-            Assert.IsTrue(empty.ToFormattedString().Equals(emptyString));
-            Assert.IsTrue(oneLine.ToFormattedString().Equals(oneLineString));
-            Assert.IsTrue(complete.ToFormattedString().Equals(completeString));
-        }
     }
 }
