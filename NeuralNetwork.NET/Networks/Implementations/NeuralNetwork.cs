@@ -314,8 +314,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 int
                     offset = i * wy,
-                    maxHat = MatrixExtensions.Argmax(new Span<float>(pyHat + offset, wy)),
-                    max = MatrixExtensions.Argmax(new Span<float>(pY + offset, wy));
+                    maxHat = MatrixExtensions.Argmax(new Span<float>(pyHat + offset, wy), float.MinValue),
+                    max = MatrixExtensions.Argmax(new Span<float>(pY + offset, wy), float.MinValue);
                 if (max == maxHat) Interlocked.Increment(ref total);
             }
 

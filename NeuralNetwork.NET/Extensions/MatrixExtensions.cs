@@ -12,39 +12,38 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     public static class MatrixExtensions
     {
-        #region Misc
-
         /// <summary>
         /// Extracts a single row from a given matrix
         /// </summary>
         /// <param name="m">The source matrix</param>
         /// <param name="row">The target row to return</param>
-        [PublicAPI]
         [Pure]
-        public static Span<float> Slice([NotNull] this float[,] m, int row)
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static Span<T> Slice<T>([NotNull] this T[,] m, int row) where T : struct
         {
             if (row < 0 || row > m.GetLength(0) - 1) throw new ArgumentOutOfRangeException(nameof(row), "The row index isn't valid");
-            return Span<float>.DangerousCreate(m, ref m[row, 0], m.GetLength(1));
+            return Span<T>.DangerousCreate(m, ref m[row, 0], m.GetLength(1));
         }
 
         /// <summary>
-        /// Finds the minimum and maximum value in the input memory area
+        /// Finds the minimum and maximum value in the input <see cref="Span{T}"/>
         /// </summary>
-        /// <param name="span">The memory area to scan</param>
-        internal static unsafe (float Min, float Max) MinMax(in this ReadOnlySpan<float> span)
+        /// <param name="span">The source <see cref="Span{T}"/> to scan</param>
+        /// <param name="min">The minimum possible value for a <see cref="T"/> value</param>
+        /// <param name="max">The maaximum possible value for a <see cref="T"/> value</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static (T Min, T Max) MinMax<T>(in this Span<T> span, T min, T max) where T : struct, IComparable<T>
         {
-            if (span.IsEmpty) return (0, 0);
-            float min = float.MaxValue, max = float.MinValue;
-            fixed (float* p = &span.DangerousGetPinnableReference())
+            if (span.IsEmpty) return (default, default);
+            T low = max, high = min;
+            for (int i = 0; i < span.Length; i++)
             {
-                for (int i = 0; i < span.Length; i++)
-                {
-                    float value = p[i];
-                    if (value < min) min = value;
-                    if (value > max) max = value;
-                }
-                return (min, max);
+                T value = span[i];
+                if (value.CompareTo(low) < 0) low = value;
+                if (value.CompareTo(high) > 0) high = value;
             }
+            return (low, high);
         }
 
         /// <summary>
@@ -53,48 +52,39 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="span">The input <see cref="Span{T}"/></param>
         /// <param name="h">The number of matrix rows</param>
         /// <param name="w">The number of matrix columns</param>
-        [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe float[,] AsMatrix(in this Span<float> span, int h, int w)
+        public static T[,] AsMatrix<T>(in this Span<T> span, int h, int w) where T : struct
         {
             if (h * w != span.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
-            float[,] m = new float[h, w];
-            int size = sizeof(float) * span.Length;
-            fixed (float* ps = &span.DangerousGetPinnableReference(), pm = m)
-                Buffer.MemoryCopy(ps, pm, size, size);
+            T[,] m = new T[h, w];
+            span.CopyTo(Span<T>.DangerousCreate(m, ref m[0, 0], m.Length));
             return m;
         }
-
-        #endregion
-
-        #region Argmax
 
         /// <summary>
         /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The source <see cref="Span{T}"/> instance</param>
+        /// <param name="min">The minimum possible value for a <see cref="T"/> value</param>
+        [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe int Argmax(in this ReadOnlySpan<float> span)
+        public static int Argmax<T>(in this Span<T> span, T min) where T : struct, IComparable<T>
         {
-            if (span.Length < 2) return 0;
+            if (span.Length < 2) return default;
             int index = 0;
-            float max = float.MinValue;
-            fixed (float* p = &span.DangerousGetPinnableReference())
+            T max = min;
+            for (int j = 0; j < span.Length; j++)
             {
-                for (int j = 0; j < span.Length; j++)
+                T value = span[j];
+                if (value.CompareTo(max) > 0)
                 {
-                    if (p[j] > max)
-                    {
-                        max = p[j];
-                        index = j;
-                    }
+                    max = value;
+                    index = j;
                 }
             }
             return index;
         }
-
-        #endregion
 
         #region Fill
 
