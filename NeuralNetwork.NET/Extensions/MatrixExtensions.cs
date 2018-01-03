@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="max">The maaximum possible value for a <see cref="T"/> value</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static (T Min, T Max) MinMax<T>(in this Span<T> span, T min, T max) where T : struct, IComparable<T>
+        public static (T Min, T Max) MinMax<T>(this Span<T> span, T min, T max) where T : struct, IComparable<T>
         {
             if (span.IsEmpty) return (default, default);
             T low = max, high = min;
@@ -54,7 +54,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="w">The number of matrix columns</param>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static T[,] AsMatrix<T>(in this Span<T> span, int h, int w) where T : struct
+        public static T[,] AsMatrix<T>(this Span<T> span, int h, int w) where T : struct
         {
             if (h * w != span.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
             T[,] m = new T[h, w];
@@ -69,7 +69,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="min">The minimum possible value for a <see cref="T"/> value</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static int Argmax<T>(in this Span<T> span, T min) where T : struct, IComparable<T>
+        public static int Argmax<T>(this Span<T> span, T min) where T : struct, IComparable<T>
         {
             if (span.Length < 2) return default;
             int index = 0;
@@ -88,44 +88,33 @@ namespace NeuralNetworkNET.Extensions
 
         #region Fill
 
-        // Private fill method for arbitrary memory areas
-        private static unsafe void Fill(float* p, int n, [NotNull] Func<float> provider)
+        /// <summary>
+        /// Fills the target <see cref="Span{T}"/> with the input values provider
+        /// </summary>
+        /// <param name="span">The <see cref="Span{T}"/> to fill up</param>
+        /// <param name="provider">The values provider to use</param>
+        public static unsafe void Fill(this Span<float> span, [NotNull] Func<float> provider)
         {
             // Fill in parallel
             int
                 cores = Environment.ProcessorCount,
-                batch = n / cores,
-                mod = n % cores;
-            Parallel.For(0, cores, i =>
+                batch = span.Length / cores,
+                mod = span.Length % cores;
+            fixed (float* p = &span.DangerousGetPinnableReference())
             {
-                int offset = i * batch;
-                for (int j = 0; j < batch; j++)
-                    p[offset + j] = provider();
-            }).AssertCompleted();
+                float* p0 = p;
+                Parallel.For(0, cores, i =>
+                {
+                    int offset = i * batch;
+                    for (int j = 0; j < batch; j++)
+                        p0[offset + j] = provider();
+                }).AssertCompleted();
 
-            // Remaining values
-            if (mod > 1)
-                for (int i = n - mod; i < n; i++)
-                    p[i] = provider();
-        }
-
-        /// <summary>
-        /// Fills the target <see cref="Tensor"/> with the input values provider
-        /// </summary>
-        /// <param name="tensor">The <see cref="Tensor"/> to fill up</param>
-        /// <param name="provider"></param>
-        internal static unsafe void Fill(in this Tensor tensor, [NotNull] Func<float> provider) => Fill(tensor, tensor.Size, provider);
-
-        /// <summary>
-        /// Fills the target <see cref="Array"/> with the input values provider
-        /// </summary>
-        /// <param name="array">The <see cref="Array"/> to fill up</param>
-        /// <param name="provider"></param>
-        internal static unsafe void Fill([NotNull] this Array array, [NotNull] Func<float> provider)
-        {
-            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
-            Fill((float*)handle.AddrOfPinnedObject().ToPointer(), array.Length, provider);
-            handle.Free();
+                // Remaining values
+                if (mod > 1)
+                    for (int i = span.Length - mod; i < span.Length; i++)
+                        p[i] = provider();
+            }
         }
 
         #endregion
@@ -139,12 +128,10 @@ namespace NeuralNetworkNET.Extensions
         /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to the use of the methods in the <see cref="Buffer"/> class</remarks>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe float[] BlockCopy([NotNull] this float[] v)
+        public static T[] BlockCopy<T>([NotNull] this T[] v) where T : struct
         {
-            float[] result = new float[v.Length];
-            int size = sizeof(float) * v.Length;
-            fixed (float* pv = v, presult = result)
-                Buffer.MemoryCopy(pv, presult, size, size);
+            T[] result = new T[v.Length];
+            Buffer.BlockCopy(v, 0, result, 0, Unsafe.SizeOf<T>() * result.Length);
             return result;
         }
 

@@ -120,7 +120,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         /// <param name="length">The length of the vector</param>
         /// <param name="mode">The initialization mode for the bias values</param>
         [Pure, NotNull]
-        public static unsafe float[] NewBiases(int length, BiasInitializationMode mode)
+        public static float[] NewBiases(int length, BiasInitializationMode mode)
         {
             if (length <= 0) throw new ArgumentException(nameof(length), "The biases vector must have a positive number of items");
             float[] biases = new float[length];
@@ -128,12 +128,8 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
             {
                 case BiasInitializationMode.Zero: return biases;
                 case BiasInitializationMode.Gaussian:
-                    fixed (float* pb = biases)
-                    {
-                        Tensor.Reshape(pb, 1, length, out Tensor bTensor);
-                        bTensor.Fill(() => ThreadSafeRandom.NextGaussian());
-                        return biases;
-                    }
+                    biases.AsSpan().Fill(() => ThreadSafeRandom.NextGaussian());
+                    return biases;
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported biases initialization mode");
             }
         }

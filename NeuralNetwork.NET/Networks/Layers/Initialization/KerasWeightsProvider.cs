@@ -19,7 +19,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         {
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             float scale = (float)Math.Sqrt(3f / fanIn);
-            tensor.Fill(() => ThreadSafeRandom.NextUniform(scale));
+            tensor.AsSpan().Fill(() => ThreadSafeRandom.NextUniform(scale));
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             if (fanOut < 0) throw new ArgumentOutOfRangeException(nameof(fanOut), "The fan out must be a positive number");
             float scale = (float)Math.Sqrt(2f / (fanIn + fanOut));
-            tensor.Fill(() => ThreadSafeRandom.NextGaussian(scale));
+            tensor.AsSpan().Fill(() => ThreadSafeRandom.NextGaussian(scale));
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             if (fanOut < 0) throw new ArgumentOutOfRangeException(nameof(fanOut), "The fan out must be a positive number");
             float scale = (float)Math.Sqrt(6f / (fanIn + fanOut));
-            tensor.Fill(() => ThreadSafeRandom.NextUniform(scale));
+            tensor.AsSpan().Fill(() => ThreadSafeRandom.NextUniform(scale));
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         {
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             float scale = (float)Math.Sqrt(2f / fanIn);
-            tensor.Fill(() => ThreadSafeRandom.NextGaussian(scale));
+            tensor.AsSpan().Fill(() => ThreadSafeRandom.NextGaussian(scale));
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         {
             if (fanIn < 0) throw new ArgumentOutOfRangeException(nameof(fanIn), "The fan in must be a positive number");
             float scale = (float)Math.Sqrt(6f / fanIn);
-            tensor.Fill(() => ThreadSafeRandom.NextUniform(scale));
+            tensor.AsSpan().Fill(() => ThreadSafeRandom.NextUniform(scale));
         }
     }
 }
