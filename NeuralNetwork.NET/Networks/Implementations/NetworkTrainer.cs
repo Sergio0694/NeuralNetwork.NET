@@ -226,7 +226,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
 
             // Optional batch monitor
-            BatchProgressMonitor batchMonitor = batchProgress == null ? null : new BatchProgressMonitor(miniBatches.Samples, batchProgress);
+            BatchProgressMonitor batchMonitor = batchProgress == null ? null : new BatchProgressMonitor(miniBatches.SamplesCount, batchProgress);
 
             // Create the training batches
             for (int i = 0; i < epochs; i++)

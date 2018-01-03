@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
@@ -12,7 +13,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
     /// <summary>
     /// A class that represents a set of samples batches to be used in circular order
     /// </summary>
-    internal sealed class BatchesCollection
+    internal sealed class BatchesCollection : IDataset
     {
         /// <summary>
         /// Gets the collection of samples batches to use
@@ -29,10 +30,23 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             get => Batches.Length;
         }
 
-        /// <summary>
-        /// Gets the total number of samples in the current collection
-        /// </summary>
-        public int Samples { get; }
+        #region Interface
+
+        /// <inheritdoc/>
+        public int SamplesCount { get; }
+
+        /// <inheritdoc/>
+        public (Span<float> X, Span<float> Y) this[int i]
+        {
+            get
+            {
+                if (i < 0 || i > SamplesCount - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
+                ref readonly SamplesBatch batch = ref Batches[i / Count];
+                return (batch.X.Slice(i), batch.Y.Slice(i));
+            }
+        }
+
+        #endregion
 
         #region Initialization
 
@@ -40,7 +54,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         private BatchesCollection([NotNull] SamplesBatch[] batches)
         {
             Batches = batches;
-            Samples = batches.Sum(b => b.X.GetLength(0));
+            SamplesCount = batches.Sum(b => b.X.GetLength(0));
         }
 
         /// <summary>

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +13,19 @@ namespace NeuralNetworkNET.Extensions
     public static class MatrixExtensions
     {
         #region Misc
+
+        /// <summary>
+        /// Extracts a single row from a given matrix
+        /// </summary>
+        /// <param name="m">The source matrix</param>
+        /// <param name="row">The target row to return</param>
+        [PublicAPI]
+        [Pure]
+        public static Span<float> Slice([NotNull] this float[,] m, int row)
+        {
+            if (row < 0 || row > m.GetLength(0) - 1) throw new ArgumentOutOfRangeException(nameof(row), "The row index isn't valid");
+            return Span<float>.DangerousCreate(m, ref m[row, 0], m.GetLength(1));
+        }
 
         /// <summary>
         /// Finds the minimum and maximum value in the input memory area
@@ -48,31 +60,6 @@ namespace NeuralNetworkNET.Extensions
             float[,] m = new float[h, w];
             Buffer.BlockCopy(v, 0, m, 0, sizeof(float) * v.Length);
             return m;
-        }
-
-        /// <summary>
-        /// Merges the input samples into a matrix dataset
-        /// </summary>
-        /// <param name="samples">The vectors to merge</param>
-        [PublicAPI]
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static (float[,], float[,]) MergeRows([NotNull] this IReadOnlyList<(float[] X, float[] Y)> samples)
-        {
-            // Preliminary checks and declarations
-            if (samples.Count == 0) throw new ArgumentOutOfRangeException("The samples list can't be empty");
-            int
-                xLength = samples[0].X.Length,
-                yLength = samples[0].Y.Length;
-            float[,]
-                x = new float[samples.Count, xLength],
-                y = new float[samples.Count, yLength];
-            for (int i = 0; i < samples.Count; i++)
-            {
-                Buffer.BlockCopy(samples[i].X, 0, x, sizeof(float) * xLength * i, sizeof(float) * xLength);
-                Buffer.BlockCopy(samples[i].Y, 0, y, sizeof(float) * yLength * i, sizeof(float) * yLength);
-            }
-            return (x, y);
         }
 
         #endregion

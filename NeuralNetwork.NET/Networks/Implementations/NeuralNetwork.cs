@@ -392,7 +392,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     classified += partial.Classified;
                 }
             }
-            return (cost, classified, (float)classified / batches.Samples * 100);
+            return (cost, classified, (float)classified / batches.SamplesCount * 100);
         }
 
         #endregion
