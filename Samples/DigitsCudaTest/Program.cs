@@ -58,7 +58,7 @@ namespace DigitsCudaTest
             Directory.CreateDirectory(path);
             File.WriteAllText(Path.Combine(path, $"{timestamp}_cost.py"), result.TestReports.AsPythonMatplotlibChart(TrainingReportType.Cost));
             File.WriteAllText(Path.Combine(path, $"{timestamp}_accuracy.py"), result.TestReports.AsPythonMatplotlibChart(TrainingReportType.Accuracy));
-            network.Save(new FileInfo(Path.Combine(path, $"{timestamp}{NeuralNetworkLoader.NetworkFileExtension}")));
+            network.Save(new FileInfo(Path.Combine(path, $"{timestamp}{NetworkLoader.NetworkFileExtension}")));
             File.WriteAllText(Path.Combine(path, $"{timestamp}.json"), network.SerializeMetadataAsJson());
             File.WriteAllText(Path.Combine(path, $"{timestamp}_report.json"), result.SerializeAsJson());
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
