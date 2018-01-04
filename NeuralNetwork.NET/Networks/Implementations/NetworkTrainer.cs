@@ -226,7 +226,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
 
             // Optional batch monitor
-            BatchProgressMonitor batchMonitor = batchProgress == null ? null : new BatchProgressMonitor(miniBatches.SamplesCount, batchProgress);
+            BatchProgressMonitor batchMonitor = batchProgress == null ? null : new BatchProgressMonitor(miniBatches.Count, batchProgress);
 
             // Create the training batches
             for (int i = 0; i < epochs; i++)
@@ -235,7 +235,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 miniBatches.CrossShuffle();
 
                 // Gradient descent over the current batches
-                for (int j = 0; j < miniBatches.Count; j++)
+                for (int j = 0; j < miniBatches.Batches.Length; j++)
                 {
                     if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
                     network.Backpropagate(miniBatches.Batches[j], dropout, updater);

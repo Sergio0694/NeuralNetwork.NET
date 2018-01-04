@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -21,30 +21,34 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         [NotNull]
         public SamplesBatch[] Batches { get; }
 
-        /// <summary>
-        /// Gets the number of training batches in the current collection
-        /// </summary>
-        public int Count
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Batches.Length;
-        }
-
         #region Interface
 
         /// <inheritdoc/>
-        public int SamplesCount { get; }
+        public int Count { get; }
 
         /// <inheritdoc/>
         public (Span<float> X, Span<float> Y) this[int i]
         {
             get
             {
-                if (i < 0 || i > SamplesCount - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
-                ref readonly SamplesBatch batch = ref Batches[i / Count];
+                if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
+                ref readonly SamplesBatch batch = ref Batches[i / Batches.Length];
                 return (batch.X.Slice(i), batch.Y.Slice(i));
             }
         }
+
+        /// <inheritdoc/>
+        public IEnumerator<(Span<float> X, Span<float> Y)> GetEnumerator()
+        {
+            for (int i = 0; i < Count; i++)
+                yield return this[i];
+        }
+
+        /// <inheritdoc/>
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        /// <inheritdoc/>
+        public long ByteSize => sizeof(float) * Count * (this[0].X.Length + this[0].Y.Length);
 
         #endregion
 
@@ -54,7 +58,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         private BatchesCollection([NotNull] SamplesBatch[] batches)
         {
             Batches = batches;
-            SamplesCount = batches.Sum(b => b.X.GetLength(0));
+            Count = batches.Sum(b => b.X.GetLength(0));
         }
 
         /// <summary>
@@ -145,9 +149,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public unsafe void CrossShuffle()
         {
             // Select the couples to cross-shuffle
-            int* indexes = stackalloc int[Count];
-            for (int i = 0; i < Count; i++) indexes[i] = i;
-            int n = Count;
+            int* indexes = stackalloc int[Batches.Length];
+            for (int i = 0; i < Batches.Length; i++) indexes[i] = i;
+            int n = Batches.Length;
             while (n > 1)
             {
                 int k = ThreadSafeRandom.NextInt(max: n);
@@ -192,10 +196,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                     Buffer.BlockCopy(tempY, 0, targetB.Y, sizeof(float) * wy * bound, sizeof(float) * wy);
                 }
             }
-            Parallel.For(0, Count / 2, Kernel).AssertCompleted();
+            Parallel.For(0, Batches.Length / 2, Kernel).AssertCompleted();
 
             // Shuffle the main list
-            n = Count;
+            n = Batches.Length;
             while (n > 1)
             {
                 int k = ThreadSafeRandom.NextInt(max: n);

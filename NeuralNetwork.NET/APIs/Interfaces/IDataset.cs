@@ -1,21 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace NeuralNetworkNET.APIs.Interfaces
 {
     /// <summary>
     /// An interface for a dataset used to train or test a network
     /// </summary>
-    public interface IDataset
+    public interface IDataset : IReadOnlyList<(Span<float> X, Span<float> Y)>
     {
         /// <summary>
-        /// Gets the total number of samples in the current dataset
+        /// Gets the total raw size in bytes for the current dataset
         /// </summary>
-        int SamplesCount { get; }
-
-        /// <summary>
-        /// Gets the i-th sample in the dataset
-        /// </summary>
-        /// <param name="i">The index of the sample to retrieve</param>
-        (Span<float> X, Span<float> Y) this[int i] { get; }
+        long ByteSize { get; }
     }
 }

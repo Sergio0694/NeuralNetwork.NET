@@ -380,7 +380,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 batchSize = NetworkManager.MaximumBatchSize,
                 classified = 0;
             float cost = 0;
-            for (int i = 0; i < batches.Count; i++)
+            for (int i = 0; i < batches.Batches.Length; i++)
             {
                 ref readonly SamplesBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
@@ -392,7 +392,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     classified += partial.Classified;
                 }
             }
-            return (cost, classified, (float)classified / batches.SamplesCount * 100);
+            return (cost, classified, (float)classified / batches.Count * 100);
         }
 
         #endregion
