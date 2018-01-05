@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -40,7 +41,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             : base(input, outputs, weights, biases, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood) { }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new SoftmaxLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy());
+        public override INetworkLayer Clone() => new SoftmaxLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy());
 
         /// <summary>
         /// Tries to deserialize a new <see cref="SoftmaxLayer"/> from the input <see cref="Stream"/>
