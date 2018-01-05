@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 
@@ -27,25 +28,15 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public int Count { get; }
 
         /// <inheritdoc/>
-        public (Span<float> X, Span<float> Y) this[int i]
+        public DatasetSample this[int i]
         {
             get
             {
                 if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
                 ref readonly SamplesBatch batch = ref Batches[i / Batches.Length];
-                return (batch.X.Slice(i), batch.Y.Slice(i));
+                return new DatasetSample(batch.X.Slice(i), batch.Y.Slice(i));
             }
         }
-
-        /// <inheritdoc/>
-        public IEnumerator<(Span<float> X, Span<float> Y)> GetEnumerator()
-        {
-            for (int i = 0; i < Count; i++)
-                yield return this[i];
-        }
-
-        /// <inheritdoc/>
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc/>
         public long ByteSize => sizeof(float) * Count * (this[0].X.Length + this[0].Y.Length);
