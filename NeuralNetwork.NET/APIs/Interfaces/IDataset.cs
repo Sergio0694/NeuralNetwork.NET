@@ -11,16 +11,21 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// Gets the number of samples in the current dataset
         /// </summary>
         int Count { get; }
+        
+        /// <summary>
+        /// Gets or sets the number of samples in each samples batch in the current dataset
+        /// </summary>
+        int BatchSize { get; set; }
+
+        /// <summary>
+        /// Gets the total raw size in bytes for the current dataset
+        /// </summary>
+        long ByteSize { get; }
 
         /// <summary>
         /// Gets the dataset sample at the input position. Note that the dataset is shuffled during training.
         /// </summary>
         /// <param name="i">The index of the sample to retrieve</param>
         DatasetSample this[int i] { get; }
-
-        /// <summary>
-        /// Gets the total raw size in bytes for the current dataset
-        /// </summary>
-        long ByteSize { get; }
     }
 }

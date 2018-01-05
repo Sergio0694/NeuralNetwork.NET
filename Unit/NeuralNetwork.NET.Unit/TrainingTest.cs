@@ -50,7 +50,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches.Batches.Length; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -62,7 +62,7 @@ namespace NeuralNetworkNET.Unit
             batches.CrossShuffle();
             HashSet<int>
                 set3 = new HashSet<int>();
-            for (int i = 0; i < batches.Batches.Length; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches.Batches.Length; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -101,7 +101,7 @@ namespace NeuralNetworkNET.Unit
             batches.CrossShuffle();
             HashSet<int>
                 set3 = new HashSet<int>();
-            for (int i = 0; i < batches.Batches.Length; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)

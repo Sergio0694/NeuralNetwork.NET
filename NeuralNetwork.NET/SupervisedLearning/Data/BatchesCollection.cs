@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -34,6 +35,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
                 ref readonly SamplesBatch batch = ref Batches[i / Batches.Length];
                 return new DatasetSample(batch.X.Slice(i), batch.Y.Slice(i));
+            }
+        }
+
+        /// <inheritdoc/>
+        public int BatchSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Batches.Length;
+            set
+            {
+                if (value < 10) throw new ArgumentOutOfRangeException(nameof(BatchSize), "The batch size must be greater than or equal to 10");
+                throw new NotImplementedException();
             }
         }
 

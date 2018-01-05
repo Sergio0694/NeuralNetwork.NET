@@ -235,7 +235,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 miniBatches.CrossShuffle();
 
                 // Gradient descent over the current batches
-                for (int j = 0; j < miniBatches.Batches.Length; j++)
+                for (int j = 0; j < miniBatches.BatchSize; j++)
                 {
                     if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
                     network.Backpropagate(miniBatches.Batches[j], dropout, updater);
