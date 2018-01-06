@@ -33,8 +33,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="algorithm">The info on the training algorithm to use</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">The optional <see cref="ValidationParameters"/> instance (used for early-stopping)</param>
-        /// <param name="testParameters">The optional <see cref="TestParameters"/> instance (used to monitor the training progress)</param>
+        /// <param name="validationDataset">The optional <see cref="ValidationDataset"/> instance (used for early-stopping)</param>
+        /// <param name="testDataset">The optional <see cref="TestDataset"/> instance (used to monitor the training progress)</param>
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         public static TrainingSessionResult TrainNetwork(
@@ -42,18 +42,18 @@ namespace NeuralNetworkNET.Networks.Implementations
             int epochs, float dropout,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
-            [CanBeNull] ValidationParameters validationParameters,
-            [CanBeNull] TestParameters testParameters,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
+            [CanBeNull] ValidationDataset validationDataset,
+            [CanBeNull] TestDataset testDataset,
             CancellationToken token)
         {
             SharedEventsService.TrainingStarting.Raise();
             switch (algorithm)
             {
                 case StochasticGradientDescentInfo sgd:
-                    return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationParameters, testParameters, token);
+                    return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdadeltaInfo adadelta:
-                    return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationParameters, testParameters, token);
+                    return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }
@@ -70,9 +70,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             BatchesCollection miniBatches,
             int epochs, float dropout, float eta, float lambda,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
-            [CanBeNull] ValidationParameters validationParameters,
-            [CanBeNull] TestParameters testParameters,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
+            [CanBeNull] ValidationDataset validationDataset,
+            [CanBeNull] TestDataset testDataset,
             CancellationToken token)
         {
             // Plain SGD weights update
@@ -100,7 +100,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
 
-            return Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationParameters, testParameters, token);
+            return Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationDataset, testDataset, token);
         }
 
         /// <summary>
@@ -112,9 +112,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             BatchesCollection miniBatches,
             int epochs, float dropout, float rho, float epsilon, float l2Factor,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
-            [CanBeNull] ValidationParameters validationParameters,
-            [CanBeNull] TestParameters testParameters,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
+            [CanBeNull] ValidationDataset validationDataset,
+            [CanBeNull] TestDataset testDataset,
             CancellationToken token)
         {
             // Initialize Adadelta parameters
@@ -177,7 +177,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
 
-            TrainingSessionResult result = Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationParameters, testParameters, token);
+            TrainingSessionResult result = Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationDataset, testDataset, token);
 
             // Cleanup
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
@@ -205,9 +205,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             int epochs, float dropout,
             [NotNull] WeightsUpdater updater,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress,
-            [CanBeNull] ValidationParameters validationParameters,
-            [CanBeNull] TestParameters testParameters,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
+            [CanBeNull] ValidationDataset validationDataset,
+            [CanBeNull] TestDataset testDataset,
             CancellationToken token)
         {
             // Setup
@@ -221,9 +221,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
 
             // Convergence manager for the validation dataset
-            RelativeConvergence convergence = validationParameters == null
+            RelativeConvergence convergence = validationDataset == null
                 ? null
-                : new RelativeConvergence(validationParameters.Tolerance, validationParameters.EpochsInterval);
+                : new RelativeConvergence(validationDataset.Tolerance, validationDataset.EpochsInterval);
 
             // Optional batch monitor
             BatchProgressMonitor batchMonitor = batchProgress == null ? null : new BatchProgressMonitor(miniBatches.Count, batchProgress);
@@ -253,24 +253,24 @@ namespace NeuralNetworkNET.Networks.Implementations
                 if (trainingProgress != null)
                 {
                     (float cost, _, float accuracy) = network.Evaluate(miniBatches);
-                    trainingProgress.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
+                    trainingProgress.Report(new TrainingProgressEventArgs(i + 1, cost, accuracy));
                 }
 
                 // Check the validation dataset
                 if (convergence != null)
                 {
-                    (float cost, _, float accuracy) = network.Evaluate(validationParameters.Dataset);
+                    (float cost, _, float accuracy) = network.Evaluate(validationDataset.Dataset);
                     validationReports.Add(new DatasetEvaluationResult(cost, accuracy));
                     convergence.Value = accuracy;
                     if (convergence.HasConverged) return PrepareResult(TrainingStopReason.EarlyStopping, i);
                 }
 
                 // Report progress if necessary
-                if (testParameters != null)
+                if (testDataset != null)
                 {
-                    (float cost, _, float accuracy) = network.Evaluate(testParameters.Dataset);
+                    (float cost, _, float accuracy) = network.Evaluate(testDataset.Dataset);
                     testReports.Add(new DatasetEvaluationResult(cost, accuracy));
-                    testParameters.ProgressCallback.Report(new BackpropagationProgressEventArgs(i + 1, cost, accuracy));
+                    testDataset.ProgressCallback?.Report(new TrainingProgressEventArgs(i + 1, cost, accuracy));
                 }
             }
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);

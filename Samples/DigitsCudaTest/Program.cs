@@ -10,7 +10,6 @@ using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace DigitsCudaTest
@@ -47,7 +46,7 @@ namespace DigitsCudaTest
                     for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
                     Console.Write($"[{new String(c)}] ");
                 }),
-                testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
+                testDataset: DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
                 })), token: cts.Token);

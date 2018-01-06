@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
     /// <summary>
     /// A class that represents a set of samples batches to be used in circular order
     /// </summary>
-    internal sealed class BatchesCollection : IDataset
+    internal sealed class BatchesCollection : ITrainingDataset
     {
         /// <summary>
         /// Gets the collection of samples batches to use
@@ -37,6 +37,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <inheritdoc/>
         public DatasetSample this[int i]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
@@ -59,7 +60,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         }
 
         /// <inheritdoc/>
-        public long ByteSize => sizeof(float) * Count * (this[0].X.Length + this[0].Y.Length);
+        public long ByteSize => sizeof(float) * Count * (InputFeatures + OutputFeatures);
 
         #endregion
 

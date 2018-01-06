@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Implementations;
@@ -56,27 +57,27 @@ namespace NeuralNetworkNET.APIs
         /// Trains a neural network with the given parameters
         /// </summary>
         /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="dataset">The <see cref="IDataset"/> instance to use to train the network</param>
+        /// <param name="dataset">The <see cref="ITrainingDataset"/> instance to use to train the network</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
+        /// <param name="validationDataset">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testDataset">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [PublicAPI]
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static TrainingSessionResult TrainNetwork(
             [NotNull] INeuralNetwork network,
-            [NotNull] IDataset dataset,
+            [NotNull] ITrainingDataset dataset,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             int epochs, float dropout = 0,
             [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationDataset validationDataset = null,
+            [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {
             // Preliminary checks
@@ -86,37 +87,39 @@ namespace NeuralNetworkNET.APIs
             return NetworkTrainer.TrainNetwork(
                 network as NeuralNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
-                epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
+                epochs, dropout, algorithm, batchProgress, trainingProgress, validationDataset, 
+                testDataset as TestDataset ?? throw new ArgumentException("The input test dataset instance isn't valid", nameof(testDataset)),
+                token);
         }
 
         /// <summary>
         /// Trains a neural network with the given parameters
         /// </summary>
         /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="dataset">The <see cref="IDataset"/> instance to use to train the network</param>
+        /// <param name="dataset">The <see cref="ITrainingDataset"/> instance to use to train the network</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
+        /// <param name="validationDataset">An optional dataset used to check for convergence and avoid overfitting</param>
+        /// <param name="testDataset">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [PublicAPI]
         [NotNull, ItemNotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<TrainingSessionResult> TrainNetworkAsync(
             [NotNull] INeuralNetwork network,
-            [NotNull] IDataset dataset,
+            [NotNull] ITrainingDataset dataset,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             int epochs, float dropout = 0,
             [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress = null,
+            [CanBeNull] ValidationDataset validationDataset = null,
+            [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
+            return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
         }
 
         #endregion
