@@ -132,5 +132,46 @@ namespace NeuralNetworkNET.Unit
                 batch2 = BatchesCollection.From(samples, 100);
             Assert.IsTrue(batch1.Batches.Zip(batch2.Batches, (b1, b2) => b1.X.ContentEquals(b2.X) && b1.Y.ContentEquals(b2.Y)).All(b => b));
         }
+
+        [TestMethod]
+        public void ReshapeTest()
+        {
+            // Setup
+            float[,]
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            BatchesCollection 
+                batches1 = BatchesCollection.From((x, y), 1000),
+                batches2 = BatchesCollection.From((x, y), 1000);
+            HashSet<int>
+                set = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
+            {
+                set.Add(GetUid(x, i) ^ GetUid(y, i));
+            }
+            HashSet<int>
+                set1 = new HashSet<int>();
+            for (int i = 0; i < batches1.BatchSize; i++)
+            {
+                int h = batches1.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set1.Add(GetUid(batches1.Batches[i].X, j) ^ GetUid(batches1.Batches[i].Y, j));
+                }
+            }
+            Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set1.OrderBy(h => h)));
+            batches2.BatchSize = 1437;
+            HashSet<int>
+                set2 = new HashSet<int>();
+            for (int i = 0; i < batches2.BatchSize; i++)
+            {
+                int h = batches2.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set2.Add(GetUid(batches2.Batches[i].X, j) ^ GetUid(batches2.Batches[i].Y, j));
+                }
+            }
+            Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
+        }
     }
 }

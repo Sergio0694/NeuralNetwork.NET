@@ -11,6 +11,16 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// Gets the number of samples in the current dataset
         /// </summary>
         int Count { get; }
+
+        /// <summary>
+        /// Gets the number of features in each dataset sample
+        /// </summary>
+        int InputFeatures { get; }
+
+        /// <summary>
+        /// Gets the number of features in each output sample in the dataset
+        /// </summary>
+        int OutputFeatures { get; }
         
         /// <summary>
         /// Gets or sets the number of samples in each samples batch in the current dataset

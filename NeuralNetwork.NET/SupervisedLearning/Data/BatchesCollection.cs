@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -20,12 +21,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// Gets the collection of samples batches to use
         /// </summary>
         [NotNull]
-        public SamplesBatch[] Batches { get; }
+        public SamplesBatch[] Batches { get; private set; }
 
         #region Interface
 
         /// <inheritdoc/>
         public int Count { get; }
+
+        /// <inheritdoc/>
+        public int InputFeatures => Batches[0].X.GetLength(1);
+
+        /// <inheritdoc/>
+        public int OutputFeatures => Batches[0].Y.GetLength(1);
 
         /// <inheritdoc/>
         public DatasetSample this[int i]
@@ -45,8 +52,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             get => Batches.Length;
             set
             {
+                // Setup
                 if (value < 10) throw new ArgumentOutOfRangeException(nameof(BatchSize), "The batch size must be greater than or equal to 10");
-                throw new NotImplementedException();
+                Reshape(value);
             }
         }
 
@@ -136,6 +144,39 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
             return new BatchesCollection(dataset.ToArray().AsParallel().Partition(size).Select(SamplesBatch.From).ToArray());
+        }
+
+        #endregion
+
+        #region Misc
+
+        // Reshapes the current dataset with the given batch size
+        private unsafe void Reshape(int size)
+        {
+            // Pin the dataset
+            GCHandle*
+                xhandles = stackalloc GCHandle[Batches.Length],
+                yhandles = stackalloc GCHandle[Batches.Length];
+            for (int i = 0; i < Batches.Length; i++)
+            {
+                xhandles[i] = GCHandle.Alloc(Batches[i].X, GCHandleType.Pinned);
+                yhandles[i] = GCHandle.Alloc(Batches[i].Y, GCHandleType.Pinned);
+            }
+
+            // Re-partition the current samples
+            IEnumerable<SamplesBatch> query =
+                from seq in Batches.AsParallel().SelectMany(batch =>
+                    from i in Enumerable.Range(0, batch.X.GetLength(0))
+                    select (Pin<float>.From(ref batch.X[i, 0]), Pin<float>.From(ref batch.Y[i, 0]))).Partition(size)
+                select SamplesBatch.From(seq, InputFeatures, OutputFeatures);
+            Batches = query.ToArray();
+
+            // Cleanup
+            for (int i = 0; i < Batches.Length; i++)
+            {
+                xhandles[i].Free();
+                yhandles[i].Free();
+            }
         }
 
         #endregion

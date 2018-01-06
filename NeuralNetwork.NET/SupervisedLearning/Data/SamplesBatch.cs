@@ -69,5 +69,31 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             }
             return new SamplesBatch(xBatch, yBatch);
         }
+
+        /// <summary>
+        /// Creates a new instance from the input partition
+        /// </summary>
+        /// <param name="batch">The source batch</param>
+        /// <param name="inputs">The number of input features</param>
+        /// <param name="outputs">The number of output features</param>
+        public static unsafe SamplesBatch From([NotNull] IReadOnlyList<(Pin<float>, Pin<float>)> batch, int inputs, int outputs)
+        {
+            float[,]
+                xBatch = new float[batch.Count, inputs],
+                yBatch = new float[batch.Count, outputs];
+            uint
+                wx = (uint)(sizeof(float) * inputs),
+                wy = (uint)(sizeof(float) * outputs);
+            fixed (float* px = xBatch, py = yBatch)
+            {
+                for (int i = 0; i < batch.Count; i++)
+                {
+                    var (x, y) = batch[i];
+                    Buffer.MemoryCopy(x.Ptr, px + i * inputs, wx, wx);
+                    Buffer.MemoryCopy(y.Ptr, py + i * outputs, wy, wy);
+                }
+            }
+            return new SamplesBatch(xBatch, yBatch);
+        }
     }
 }
