@@ -88,7 +88,7 @@ namespace NeuralNetworkNET.Helpers.Imaging
                     // Weights
                     fixed (float* pw = weights)
                     {
-                        (float min, float max) = MatrixExtensions.MinMax(pw, h * w);
+                        (float min, float max) = new Span<float>(pw, h * w).MinMax(float.MinValue, float.MaxValue);
                         for (int i = 0; i < h; i++)
                         {
                             int offset = i * w;
@@ -106,7 +106,7 @@ namespace NeuralNetworkNET.Helpers.Imaging
                     // Biases
                     fixed (float* pb = biases)
                     {
-                        (float min, float max) = MatrixExtensions.MinMax(pb, w);
+                        (float min, float max) = new Span<float>(pb, w).MinMax(float.MinValue, float.MaxValue);
                         for (int i = 0; i < w; i++)
                         {
                             float
@@ -149,7 +149,7 @@ namespace NeuralNetworkNET.Helpers.Imaging
                     fixed (float* pw = kernels)
                     {
                         float* pwoffset = pw + k * w;
-                        (float min, float max) = MatrixExtensions.MinMax(pwoffset, kernelsInfo.SliceSize);
+                        (float min, float max) = new Span<float>(pwoffset, kernelsInfo.SliceSize).MinMax(float.MinValue, float.MaxValue);
                         for (int i = 0; i < kernelsInfo.Height; i++)
                         {
                             int offset = i * kernelsInfo.Width;

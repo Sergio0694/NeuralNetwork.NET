@@ -10,7 +10,6 @@ using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace DigitsCudaTest
@@ -35,8 +34,10 @@ namespace DigitsCudaTest
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 20, 400,
-                TrainingAlgorithmsInfo.Adadelta(), 0.5f,
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, 
+                DatasetLoader.Training(training, 400), 
+                TrainingAlgorithms.Adadelta(),
+                20, 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
                     Console.SetCursorPosition(0, Console.CursorTop);
@@ -45,7 +46,7 @@ namespace DigitsCudaTest
                     for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
                     Console.Write($"[{new String(c)}] ");
                 }),
-                testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
+                testDataset: DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
                 })), token: cts.Token);
@@ -58,7 +59,7 @@ namespace DigitsCudaTest
             Directory.CreateDirectory(path);
             File.WriteAllText(Path.Combine(path, $"{timestamp}_cost.py"), result.TestReports.AsPythonMatplotlibChart(TrainingReportType.Cost));
             File.WriteAllText(Path.Combine(path, $"{timestamp}_accuracy.py"), result.TestReports.AsPythonMatplotlibChart(TrainingReportType.Accuracy));
-            network.Save(new FileInfo(Path.Combine(path, $"{timestamp}{NeuralNetworkLoader.NetworkFileExtension}")));
+            network.Save(new FileInfo(Path.Combine(path, $"{timestamp}{NetworkLoader.NetworkFileExtension}")));
             File.WriteAllText(Path.Combine(path, $"{timestamp}.json"), network.SerializeMetadataAsJson());
             File.WriteAllText(Path.Combine(path, $"{timestamp}_report.json"), result.SerializeAsJson());
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");

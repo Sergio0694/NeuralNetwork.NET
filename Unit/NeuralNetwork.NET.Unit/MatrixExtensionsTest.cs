@@ -146,41 +146,25 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void IndexOfMax1()
         {
-            float[]
+            Span<float> 
                 v1 = new float[0],
                 v2 = new float[1];
-            Assert.IsTrue(v1.Argmax() == 0);
-            Assert.IsTrue(v2.Argmax() == 0);
+            Assert.IsTrue(v1.Argmax(float.MinValue) == 0);
+            Assert.IsTrue(v2.Argmax(float.MinValue) == 0);
         }
 
         [TestMethod]
         public void IndexOfMax2()
         {
-            float[]
-                v1 = { 1f, 2f, 3f, 4f, 5f },
-                v2 = { 99f, 11f },
-                v3 = { -2f, -2.1f },
-                v4 = { 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f };
-            Assert.IsTrue(v1.Argmax() == 4);
-            Assert.IsTrue(v2.Argmax() == 0);
-            Assert.IsTrue(v3.Argmax() == 0);
-            Assert.IsTrue(v4.Argmax() == 4);
-        }
-
-        [TestMethod]
-        public void ToFormattedString()
-        {
-            float[,]
-                empty = { { } },
-                oneLine = { { 1.0f, 2.0f, 3.0f } },
-                complete = { { 1.0f, 2.0f, 3.0f }, { 4.0f, 5.0f, 6.0f } };
-            String
-                emptyString = "{ { } }",
-                oneLineString = "{ { 1, 2, 3 } }",
-                completeString = "{ { 1, 2, 3 },\n  { 4, 5, 6 } }";
-            Assert.IsTrue(empty.ToFormattedString().Equals(emptyString));
-            Assert.IsTrue(oneLine.ToFormattedString().Equals(oneLineString));
-            Assert.IsTrue(complete.ToFormattedString().Equals(completeString));
+            Span<float>
+                v1 = new[] { 1f, 2f, 3f, 4f, 5f },
+                v2 = new[] { 99f, 11f },
+                v3 = new[] { -2f, -2.1f },
+                v4 = new[] { 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f };
+            Assert.IsTrue(v1.Argmax(float.MinValue) == 4);
+            Assert.IsTrue(v2.Argmax(float.MinValue) == 0);
+            Assert.IsTrue(v3.Argmax(float.MinValue) == 0);
+            Assert.IsTrue(v4.Argmax(float.MinValue) == 4);
         }
     }
 }

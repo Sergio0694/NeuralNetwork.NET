@@ -6,7 +6,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace DigitsTest
@@ -21,8 +20,10 @@ namespace DigitsTest
                 NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),
                 NetworkLayers.Softmax(10));
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 100,
-                TrainingAlgorithmsInfo.Adadelta(), 0.5f,
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network,
+                DatasetLoader.Training(training, 100), 
+                TrainingAlgorithms.Adadelta(), 
+                60, 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
                     Console.SetCursorPosition(0, Console.CursorTop);
@@ -31,7 +32,7 @@ namespace DigitsTest
                     for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
                     Console.Write($"[{new String(c)}] ");
                 }),
-                testParameters: new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
+                testDataset: DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
                 {
                     Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
                 })));

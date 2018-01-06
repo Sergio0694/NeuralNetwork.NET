@@ -73,7 +73,7 @@ namespace NeuralNetworkNET.Unit
             {
                 network.Save(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                INeuralNetwork copy = NeuralNetworkLoader.TryLoad(stream, LayersLoadingPreference.Cpu);
+                INeuralNetwork copy = NetworkLoader.TryLoad(stream, LayersLoadingPreference.Cpu);
                 Assert.IsTrue(network.Equals(copy));
             }
         }

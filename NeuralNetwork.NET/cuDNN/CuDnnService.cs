@@ -3,13 +3,14 @@ using System.Threading;
 using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Services;
 
-namespace NeuralNetworkNET.Services
+namespace NeuralNetworkNET.cuDNN
 {
     /// <summary>
     /// A static class that handles a shared, disposable instance of the <see cref="Dnn"/> class
     /// </summary>
-    internal static class DnnService
+    internal static class CuDnnService
     {
         #region Fields and tools
 

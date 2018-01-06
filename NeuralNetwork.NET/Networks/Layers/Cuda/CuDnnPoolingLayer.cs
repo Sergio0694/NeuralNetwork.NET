@@ -4,11 +4,11 @@ using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
-using NeuralNetworkNET.Services;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
@@ -37,7 +37,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// Gets the <see cref="Dnn"/> instance for the current layer
         /// </summary>
         [NotNull]
-        private readonly Dnn DnnInstance = DnnService.Instance;
+        private readonly Dnn DnnInstance = CuDnnService.Instance;
 
         #endregion
 

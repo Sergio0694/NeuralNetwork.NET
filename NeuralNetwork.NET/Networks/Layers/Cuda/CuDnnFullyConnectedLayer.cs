@@ -5,11 +5,11 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
+using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
-using NeuralNetworkNET.Services;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
@@ -19,7 +19,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// Gets the <see cref="Dnn"/> instance for the current layer
         /// </summary>
         [NotNull]
-        private readonly Dnn DnnInstance = DnnService.Instance;
+        private readonly Dnn DnnInstance = CuDnnService.Instance;
 
         public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
             : base(input, neurons, activation, weightsMode, biasMode) { }

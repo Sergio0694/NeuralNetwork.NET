@@ -18,10 +18,11 @@ The library also exposes Cuda-accelerated layers with more advanced features tha
 
 ### Supervised learning
 
-Training a neural network is pretty straightforward - just use the methods in the `NetworkManager` class. For example, here's how to create and train a new neural network from scratch:
+The `NeuralNetwork.NET` library exposes easy to use classes and methods to create a new neural network, prepare the datasets to use and train the network. These APIs are designed for rapid prototyping, and this section provides an overview of the required steps to get started.
+
+The first step is to create a custom network structure. Here is an example with a sequential network (a stack of layers):
 
 ```C#
-// A convolutional neural network to use with the MNIST dataset
 INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
     NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
     NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
@@ -30,18 +31,36 @@ INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGraysc
     NetworkLayers.FullyConnected(125, ActivationFunctionType.LeakyReLU),
     NetworkLayers.FullyConnected(64, ActivationFunctionType.LeakyReLU),
     NetworkLayers.Softmax(10));
-    
+```
+
+The next step is to prepare the datasets to use, through the APIs in the `DatasetLoader` class:
+
+```C#
+// A training dataset with a batch size of 100
+IEnumerable<(float[] x, float[] u)> data = ... // Your own dataset parsing routine
+ITrainingDataset dataset = DatasetLoader.Training(data, 100);
+
+// An optional test dataset with a callback to monitor the progress
+ITestDataset test = DatasetLoader.Test(..., new Progress<TrainingProgressEventArgs>(p =>
+{
+    Console.WriteLine($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
+});
+```
+
+Training a neural network is pretty straightforward - just use the methods in the `NetworkManager` class:
+
+```C#    
 // Train the network using Adadelta and 0.5 dropout probability
 TrainingSessionResult result = NetworkManager.TrainNetwork(network, 
-    dataset, // A (float[,], float[,]) tuple with the training samples and labels
-    60, // The expected number of training epochs to run
-    100, // The size of each training mini-batch
-    TrainingAlgorithmsInfo.Adadelta(), // The training algorithm to use
-    0.5f, // Dropout probability
-    new TestParameters(test, new Progress<BackpropagationProgressEventArgs>(p =>
-    {
-        Printf($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
-    }))); // The test dataset to monitor the progress
+    dataset,                                // The ITrainingDataset instance   
+    TrainingAlgorithms.Adadelta(),          // The training algorithm to use
+    60,                                     // The expected number of training epochs to run
+    0.5f,                                   // Dropout probability
+    new Progress<BatchProgress>(p => ...),  // Optional training epoch progress callback
+    null,                                   // Optional callback to monitor the accuracy on the training dataset
+    null,                                   // Optional validation dataset
+    test,                                   // Test dataset
+    token);                                 // Cancellation token for the training
 ```
 
 **Note:** the `NetworkManager` methods are also available as asynchronous APIs.
@@ -71,14 +90,16 @@ These `LayerFactory` instances can be used to create a new network just like in 
 ### Serialization and deserialization
 
 The `INeuralNetwork` interface exposes a `Save` method that can be used to serialize any network at any given time.
-In order to get a new network instance from a saved file or stream, just use the `NeuralNetworkLoader.TryLoad` method.
+In order to get a new network instance from a saved file or stream, just use the `NetworkLoader.TryLoad` method.
 
 As multiple layer types have different implementations across the available libraries, you can specify the layer providers to use when loading a saved network. For example, here's how to load a network using the cuDNN layers, when possible:
 
 ```C#
 FileInfo file = new FileInfo(@"C:\...\MySavedNetwork.nnet");
-INeuralNetwork network = NeuralNetworkLoader.TryLoad(file, CuDnnNetworkLayersDeserializer.Deserializer);
+INeuralNetwork network = NetworkLoader.TryLoad(file, LayersLoadingPreference.Cuda);
 ```
+
+**Note:** the `LayersLoadingPreference` option indicates the desired type of layers to deserialize whenever possible. For example, using `LayersLoadingPreference.Cpu`, the loaded network will only have CPU-powered layers, if supported.
 
 There's also an additional `SaveMetadataAsJson` method to export the metadata of an `INeuralNetwork` instance.
 

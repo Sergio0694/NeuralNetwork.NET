@@ -39,9 +39,9 @@ namespace NeuralNetworkNET.Unit
         {
             // Sequential
             float[,]
-                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 784),
-                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 10);
-            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1000);
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            BatchesCollection batches = BatchesCollection.From((x, y), 1000);
             HashSet<int>
                 set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
@@ -50,7 +50,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches.Count; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -62,7 +62,7 @@ namespace NeuralNetworkNET.Unit
             batches.CrossShuffle();
             HashSet<int>
                 set3 = new HashSet<int>();
-            for (int i = 0; i < batches.Count; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -78,9 +78,9 @@ namespace NeuralNetworkNET.Unit
         {
             // Sequential
             float[,]
-                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 784),
-                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsMatrix(20000, 10);
-            BatchesCollection batches = BatchesCollection.FromDataset((x, y), 1547);
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            BatchesCollection batches = BatchesCollection.From((x, y), 1547);
             HashSet<int>
                 set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches.Count; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -101,7 +101,7 @@ namespace NeuralNetworkNET.Unit
             batches.CrossShuffle();
             HashSet<int>
                 set3 = new HashSet<int>();
-            for (int i = 0; i < batches.Count; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -116,8 +116,8 @@ namespace NeuralNetworkNET.Unit
         public void BatchInitializationTest()
         {
             float[,]
-                x = Enumerable.Range(0, 250 * 600).Select(_ => ThreadSafeRandom.NextUniform(1000)).ToArray().AsMatrix(250, 600),
-                y = Enumerable.Range(0, 250 * 10).Select(_ => ThreadSafeRandom.NextUniform(500)).ToArray().AsMatrix(250, 10);
+                x = Enumerable.Range(0, 250 * 600).Select(_ => ThreadSafeRandom.NextUniform(1000)).ToArray().AsSpan().AsMatrix(250, 600),
+                y = Enumerable.Range(0, 250 * 10).Select(_ => ThreadSafeRandom.NextUniform(500)).ToArray().AsSpan().AsMatrix(250, 10);
             (float[], float[])[] samples = Enumerable.Range(0, 250).Select(i =>
             {
                 float[]
@@ -128,9 +128,50 @@ namespace NeuralNetworkNET.Unit
                 return (xv, yv);
             }).ToArray();
             BatchesCollection
-                batch1 = BatchesCollection.FromDataset((x, y), 100),
-                batch2 = BatchesCollection.FromDataset(samples, 100);
+                batch1 = BatchesCollection.From((x, y), 100),
+                batch2 = BatchesCollection.From(samples, 100);
             Assert.IsTrue(batch1.Batches.Zip(batch2.Batches, (b1, b2) => b1.X.ContentEquals(b2.X) && b1.Y.ContentEquals(b2.Y)).All(b => b));
+        }
+
+        [TestMethod]
+        public void ReshapeTest()
+        {
+            // Setup
+            float[,]
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            BatchesCollection 
+                batches1 = BatchesCollection.From((x, y), 1000),
+                batches2 = BatchesCollection.From((x, y), 1000);
+            HashSet<int>
+                set = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
+            {
+                set.Add(GetUid(x, i) ^ GetUid(y, i));
+            }
+            HashSet<int>
+                set1 = new HashSet<int>();
+            for (int i = 0; i < batches1.BatchSize; i++)
+            {
+                int h = batches1.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set1.Add(GetUid(batches1.Batches[i].X, j) ^ GetUid(batches1.Batches[i].Y, j));
+                }
+            }
+            Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set1.OrderBy(h => h)));
+            batches2.BatchSize = 1437;
+            HashSet<int>
+                set2 = new HashSet<int>();
+            for (int i = 0; i < batches2.BatchSize; i++)
+            {
+                int h = batches2.Batches[i].X.GetLength(0);
+                for (int j = 0; j < h; j++)
+                {
+                    set2.Add(GetUid(batches2.Batches[i].X, j) ^ GetUid(batches2.Batches[i].Y, j));
+                }
+            }
+            Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
         }
     }
 }

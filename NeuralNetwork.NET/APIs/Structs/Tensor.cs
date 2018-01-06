@@ -204,7 +204,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Overwrites the contents of the current matrix with the input matrix
         /// </summary>
-        /// <param name="source">The input tensor to copy</param>
+        /// <param name="tensor">The input <see cref="Tensor"/> to copy</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Overwrite(in Tensor tensor)
         {
@@ -229,11 +229,11 @@ namespace NeuralNetworkNET.APIs.Structs
         /// </summary>
         /// <param name="keepAlive">Indicates whether or not to automatically dispose the current instance</param>
         [Pure, NotNull]
-        public float[] ToArray(bool keepAlive = true)
+        public unsafe float[] ToArray(bool keepAlive = true)
         {
             if (Ptr == IntPtr.Zero) return new float[0];
             float[] result = new float[Size];
-            Marshal.Copy(Ptr, result, 0, Size);
+            new Span<float>(this, Size).CopyTo(result);
             if (!keepAlive) Free();
             return result;
         }
@@ -247,12 +247,17 @@ namespace NeuralNetworkNET.APIs.Structs
         {
             if (Ptr == IntPtr.Zero) return new float[0, 0];
             float[,] result = new float[Entities, Length];
-            int size = sizeof(float) * Size;
-            fixed (float* presult = result)
-                Buffer.MemoryCopy(this, presult, size, size);
+            new Span<float>(this, Size).CopyTo(result.AsSpan());
             if (!keepAlive) Free();
             return result;
         }
+
+        /// <summary>
+        /// Returns a <see cref="Span{T}"/> representing the current <see cref="Tensor"/>
+        /// </summary>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe Span<float> AsSpan() => new Span<float>(this, Size);
 
         #endregion
 

@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Unit
         public void Fill()
         {
             float[] v = new float[127];
-            v.Fill(() => 1.8f);
+            v.AsSpan().Fill(() => 1.8f);
             Assert.IsTrue(v.All(f => f.EqualsWithDelta(1.8f)));
         }
 
