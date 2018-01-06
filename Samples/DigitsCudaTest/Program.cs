@@ -35,8 +35,10 @@ namespace DigitsCudaTest
             // Setup and start the training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 20, 400,
-                TrainingAlgorithms.Adadelta(), 0.5f,
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, 
+                DatasetLoader.Training(training, 400), 
+                TrainingAlgorithms.Adadelta(),
+                20, 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
                     Console.SetCursorPosition(0, Console.CursorTop);

@@ -50,16 +50,15 @@ namespace NeuralNetworkNET.APIs
             return new NeuralNetwork(BuildLayers().ToArray());
         }
 
-        #region Synchronous APIs
+        #region Training
 
         /// <summary>
-        /// Generates and trains a neural network with the given parameters
+        /// Trains a neural network with the given parameters
         /// </summary>
         /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
-        /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
+        /// <param name="dataset">The <see cref="IDataset"/> instance to use to train the network</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
+        /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
@@ -71,10 +70,9 @@ namespace NeuralNetworkNET.APIs
         [CollectionAccess(CollectionAccessType.Read)]
         public static TrainingSessionResult TrainNetwork(
             [NotNull] INeuralNetwork network,
-            IEnumerable<Func<(float[] X, float[] Y)>> trainingSet,
-            int epochs, int batchSize,
+            [NotNull] IDataset dataset,
             [NotNull] ITrainingAlgorithmInfo algorithm,
-            float dropout = 0,
+            int epochs, float dropout = 0,
             [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
@@ -82,106 +80,22 @@ namespace NeuralNetworkNET.APIs
             CancellationToken token = default)
         {
             // Preliminary checks
-            if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
 
             // Start the training
-            BatchesCollection batches = BatchesCollection.From(trainingSet, batchSize);
-            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
+            return NetworkTrainer.TrainNetwork(
+                network as NeuralNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
+                dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
+                epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
         }
 
         /// <summary>
-        /// Generates and trains a neural network with the given parameters
+        /// Trains a neural network with the given parameters
         /// </summary>
         /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
-        /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
+        /// <param name="dataset">The <see cref="IDataset"/> instance to use to train the network</param>
         /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
-        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [PublicAPI]
-        [NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static TrainingSessionResult TrainNetwork(
-            [NotNull] INeuralNetwork network,
-            IEnumerable<(float[] X, float[] Y)> trainingSet,
-            int epochs, int batchSize,
-            [NotNull] ITrainingAlgorithmInfo algorithm,
-            float dropout = 0,
-            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
-            CancellationToken token = default)
-        {
-            // Preliminary checks
-            if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
-            if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
-
-            // Start the training
-            BatchesCollection batches = BatchesCollection.From(trainingSet, batchSize);
-            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
-        }
-
-        /// <summary>
-        /// Generates and trains a neural network with the given parameters
-        /// </summary>
-        /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> tuple with the training samples and expected results</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
-        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [PublicAPI]
-        [NotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static TrainingSessionResult TrainNetwork(
-            [NotNull] INeuralNetwork network,
-            (float[,] X, float[,] Y) trainingSet,
-            int epochs, int batchSize,
-            [NotNull] ITrainingAlgorithmInfo algorithm,
-            float dropout = 0,
-            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
-            CancellationToken token = default)
-        {
-            // Preliminary checks
-            if (trainingSet.X.Length == 0) throw new ArgumentOutOfRangeException("The input matrix is empty");
-            if (trainingSet.Y.Length == 0) throw new ArgumentOutOfRangeException("The results set is empty");
-            if (trainingSet.X.GetLength(0) != trainingSet.Y.GetLength(0)) throw new ArgumentOutOfRangeException("The number of inputs and results must be equal");
-            if (batchSize <= 0) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be a positive number");
-            if (batchSize > trainingSet.X.GetLength(0)) throw new ArgumentOutOfRangeException(nameof(batchSize), "The batch size must be less or equal than the number of training samples");
-            if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
-
-            // Start the training
-            BatchesCollection batches = BatchesCollection.From(trainingSet, batchSize);
-            return NetworkTrainer.TrainNetwork(network as NeuralNetwork, batches, epochs, dropout, algorithm, batchProgress, trainingProgress, validationParameters, testParameters, token);
-        }
-
-        #endregion
-
-        #region Asynchronous APIs
-
-        /// <summary>
-        /// Generates and trains a neural network with the given parameters
-        /// </summary>
-        /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
-        /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
         /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
         /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
@@ -193,81 +107,16 @@ namespace NeuralNetworkNET.APIs
         [CollectionAccess(CollectionAccessType.Read)]
         public static Task<TrainingSessionResult> TrainNetworkAsync(
             [NotNull] INeuralNetwork network,
-            IEnumerable<Func<(float[] X, float[] Y)>> trainingSet,
-            int epochs, int batchSize,
+            [NotNull] IDataset dataset,
             [NotNull] ITrainingAlgorithmInfo algorithm,
-            float dropout = 0,
+            int epochs, float dropout = 0,
             [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
             [CanBeNull] ValidationParameters validationParameters = null,
             [CanBeNull] TestParameters testParameters = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
-        }
-
-        /// <summary>
-        /// Generates and trains a neural network with the given parameters
-        /// </summary>
-        /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="trainingSet">A sequence of <see cref="ValueTuple{T1, T2}"/> tuples with the training samples and expected results</param>
-        /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
-        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [PublicAPI]
-        [NotNull, ItemNotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static Task<TrainingSessionResult> TrainNetworkAsync(
-            [NotNull] INeuralNetwork network,
-            IEnumerable<(float[] X, float[] Y)> trainingSet,
-            int epochs, int batchSize,
-            [NotNull] ITrainingAlgorithmInfo algorithm,
-            float dropout = 0,
-            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
-            CancellationToken token = default)
-        {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
-        }
-
-        /// <summary>
-        /// Generates and trains a neural network with the given parameters
-        /// </summary>
-        /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
-        /// <param name="trainingSet">A <see cref="ValueTuple{T1, T2}"/> tuple with the training samples and expected results</param>
-        /// <param name="epochs">The number of epochs to run with the training data</param>
-        /// <param name="batchSize">The size of each training batch that the dataset will be divided into</param>
-        /// <param name="algorithm">The desired training algorithm to use</param>
-        /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
-        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
-        /// <param name="validationParameters">An optional dataset used to check for convergence and avoid overfitting</param>
-        /// <param name="testParameters">The optional test dataset to use to monitor the current generalized training progress</param>       
-        /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
-        [PublicAPI]
-        [NotNull, ItemNotNull]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static Task<TrainingSessionResult> TrainNetworkAsync(
-            [NotNull] INeuralNetwork network,
-            (float[,] X, float[,] Y) trainingSet,
-            int epochs, int batchSize,
-            [NotNull] ITrainingAlgorithmInfo algorithm,
-            float dropout = 0,
-            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<BackpropagationProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationParameters validationParameters = null,
-            [CanBeNull] TestParameters testParameters = null,
-            CancellationToken token = default)
-        {
-            return Task.Run(() => TrainNetwork(network, trainingSet, epochs, batchSize, algorithm, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
+            return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationParameters, testParameters, token), token);
         }
 
         #endregion

@@ -21,8 +21,10 @@ namespace DigitsTest
                 NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),
                 NetworkLayers.Softmax(10));
-            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, (training.X, training.Y), 60, 100,
-                TrainingAlgorithms.Adadelta(), 0.5f,
+            TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network,
+                DatasetLoader.Training(training, 100), 
+                TrainingAlgorithms.Adadelta(), 
+                60, 0.5f,
                 new Progress<BatchProgress>(p =>
                 {
                     Console.SetCursorPosition(0, Console.CursorTop);
