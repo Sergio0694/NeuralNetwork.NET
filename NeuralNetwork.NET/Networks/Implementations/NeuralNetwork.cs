@@ -210,7 +210,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="batch">The input training batch</param>
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
-        internal unsafe void Backpropagate(in TrainingBatch batch, float dropout, [NotNull] WeightsUpdater updater)
+        internal unsafe void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
@@ -314,8 +314,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 int
                     offset = i * wy,
-                    maxHat = MatrixExtensions.Argmax(pyHat + offset, wy),
-                    max = MatrixExtensions.Argmax(pY + offset, wy);
+                    maxHat = new Span<float>(pyHat + offset, wy).Argmax(float.MinValue),
+                    max = new Span<float>(pY + offset, wy).Argmax(float.MinValue);
                 if (max == maxHat) Interlocked.Increment(ref total);
             }
 
@@ -380,9 +380,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 batchSize = NetworkManager.MaximumBatchSize,
                 classified = 0;
             float cost = 0;
-            for (int i = 0; i < batches.Count; i++)
+            for (int i = 0; i < batches.BatchSize; i++)
             {
-                ref readonly TrainingBatch batch = ref batches.Batches[i];
+                ref readonly SamplesBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
                 {
                     Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
@@ -392,7 +392,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     classified += partial.Classified;
                 }
             }
-            return (cost, classified, (float)classified / batches.Samples * 100);
+            return (cost, classified, (float)classified / batches.Count * 100);
         }
 
         #endregion

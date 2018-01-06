@@ -6,7 +6,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Progress
     /// <summary>
     /// A structure that contains the base progress data while optimizing a network
     /// </summary>
-    public sealed class BackpropagationProgressEventArgs : EventArgs
+    public sealed class TrainingProgressEventArgs : EventArgs
     {
         /// <summary>
         /// Gets the current iteration number
@@ -24,7 +24,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Progress
         /// <param name="iteration">The current iteration</param>
         /// <param name="cost">The current function cost</param>
         /// <param name="accuracy">The current network accuracy</param>
-        internal BackpropagationProgressEventArgs(int iteration, float cost, float accuracy)
+        internal TrainingProgressEventArgs(int iteration, float cost, float accuracy)
         {
             Iteration = iteration;
             Result = new DatasetEvaluationResult(cost, accuracy);

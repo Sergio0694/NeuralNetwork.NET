@@ -87,7 +87,7 @@ namespace NeuralNetworkNET.Unit
         public void GradientDescentTest1()
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
-            BatchesCollection batches = BatchesCollection.FromDataset(trainingSet, 100);
+            BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
             NeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, NeuralNetwork>();

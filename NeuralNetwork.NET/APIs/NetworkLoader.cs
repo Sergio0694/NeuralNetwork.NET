@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.APIs
     /// <summary>
     /// A static class that handles the JSON deserialization for the neural networks
     /// </summary>
-    public static class NeuralNetworkLoader
+    public static class NetworkLoader
     {
         /// <summary>
         /// Gets the file extension used when saving a network

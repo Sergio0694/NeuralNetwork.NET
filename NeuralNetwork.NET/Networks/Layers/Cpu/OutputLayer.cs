@@ -32,7 +32,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             : base(input, outputs, weights, biases, activation, cost) { }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new OutputLayer(InputInfo, OutputInfo.Size, Weights.BlockCopy(), Biases.BlockCopy(), ActivationFunctionType, CostFunctionType);
+        public override INetworkLayer Clone() => new OutputLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType, CostFunctionType);
 
         /// <summary>
         /// Tries to deserialize a new <see cref="OutputLayer"/> from the input <see cref="Stream"/>
