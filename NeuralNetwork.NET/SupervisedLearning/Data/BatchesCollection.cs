@@ -78,7 +78,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
             int
                 samples = dataset.X.GetLength(0),
-                w = dataset.X.GetLength(1),
+                wx = dataset.X.GetLength(1),
                 wy = dataset.Y.GetLength(1);
             if (samples != dataset.Y.GetLength(0)) throw new ArgumentOutOfRangeException(nameof(dataset), "The number of samples must be the same in both x and y");
 
@@ -92,21 +92,17 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             {
                 if (oddBatchPresent && i == batches.Length - 1)
                 {
-                    float[,]
-                        batch = new float[nBatchMod, w],
-                        batchY = new float[nBatchMod, wy];
-                    Buffer.BlockCopy(dataset.X, sizeof(float) * (dataset.X.Length - batch.Length), batch, 0, sizeof(float) * batch.Length);
-                    Buffer.BlockCopy(dataset.Y, sizeof(float) * (dataset.Y.Length - batchY.Length), batchY, 0, sizeof(float) * batchY.Length);
-                    batches[batches.Length - 1] = new SamplesBatch(batch, batchY);
+                    batches[i] = SamplesBatch.From(
+                        Span<float>.DangerousCreate(dataset.X, ref dataset.X[i * size, 0], nBatchMod * wx),
+                        Span<float>.DangerousCreate(dataset.Y, ref dataset.Y[i * size, 0], nBatchMod * wy),
+                        wx, wy);
                 }
                 else
                 {
-                    float[,]
-                        batch = new float[size, w],
-                        batchY = new float[size, wy];
-                    Buffer.BlockCopy(dataset.X, sizeof(float) * i * batch.Length, batch, 0, sizeof(float) * batch.Length);
-                    Buffer.BlockCopy(dataset.Y, sizeof(float) * i * batchY.Length, batchY, 0, sizeof(float) * batchY.Length);
-                    batches[i] = new SamplesBatch(batch, batchY);
+                    batches[i] = SamplesBatch.From(
+                        Span<float>.DangerousCreate(dataset.X, ref dataset.X[i * size, 0], size * wx),
+                        Span<float>.DangerousCreate(dataset.Y, ref dataset.Y[i * size, 0], size * wy),
+                        wx, wy);
                 }
             }
             return new BatchesCollection(batches);

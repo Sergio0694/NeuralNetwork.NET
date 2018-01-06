@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.SupervisedLearning.Data
 {
@@ -28,7 +29,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// </summary>
         /// <param name="x">The batch data</param>
         /// <param name="y">The batch expected results</param>
-        public SamplesBatch([NotNull] float[,] x, [NotNull] float[,] y)
+        private SamplesBatch([NotNull] float[,] x, [NotNull] float[,] y)
         {
             if (x.GetLength(0) != y.GetLength(0)) throw new ArgumentException("The number of samples in the data and results must be the same");
             X = x;
@@ -38,8 +39,22 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <summary>
         /// Creates a new instance from the input partition
         /// </summary>
+        /// <param name="x">A <see cref="Span{T}"/> representing the input samples partition</param>
+        /// <param name="y">A <see cref="Span{T}"/> representing the output samples partition</param>
+        /// <param name="inputs">The number of input features</param>
+        /// <param name="outputs">The number of output features</param>
+        public static SamplesBatch From(Span<float> x, Span<float> y, int inputs, int outputs)
+        {
+            int samples = x.Length / inputs;
+            if (y.Length / outputs != samples) throw new ArgumentException("The size of the input and output datasets isn't valid");
+            return new SamplesBatch(x.AsMatrix(samples, inputs), y.AsMatrix(samples, outputs));
+        }
+
+        /// <summary>
+        /// Creates a new instance from the input partition
+        /// </summary>
         /// <param name="batch">The source batch</param>
-        public  static SamplesBatch From([NotNull] IReadOnlyList<(float[] X, float[] Y)> batch)
+        public static SamplesBatch From([NotNull] IReadOnlyList<(float[] X, float[] Y)> batch)
         {
             int
                 wx = batch[0].X.Length,
