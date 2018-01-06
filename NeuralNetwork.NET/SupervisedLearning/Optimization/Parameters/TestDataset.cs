@@ -8,7 +8,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
     /// <summary>
     /// A class that contains additional parameters to test a network being trained to monitor the general progress
     /// </summary>
-    public sealed class TestDataset : DatasetBase, ITestDataset
+    internal sealed class TestDataset : DatasetBase, ITestDataset
     {
         /// <inheritdoc/>
         public IProgress<TrainingProgressEventArgs> ProgressCallback { get; set; }

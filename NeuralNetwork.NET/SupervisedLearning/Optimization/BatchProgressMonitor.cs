@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         public void NotifyCompletedBatch(int size)
         {
             _ProcessedItems += size;
-            Callback.Report(new BatchProgress(_ProcessedItems, ((float)_ProcessedItems) * 100 / WorkItems));
+            Callback.Report(new BatchProgress(_ProcessedItems, _ProcessedItems * 100f / WorkItems));
         }
 
         /// <summary>

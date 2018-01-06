@@ -8,11 +8,11 @@
         /// <summary>
         /// Gets the convergence tolerance for the validation dataset
         /// </summary>
-        float Tolerance { get; }
+        float Tolerance { get; set; }
 
         /// <summary>
         /// Gets the maximum number of epochs allowed to pass within the tolerance threshold before stopping the training
         /// </summary>
-        int EpochsInterval { get; }
+        int EpochsInterval { get; set; }
     }
 }

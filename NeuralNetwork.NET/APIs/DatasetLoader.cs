@@ -50,6 +50,45 @@ namespace NeuralNetworkNET.APIs
 
         #endregion
 
+        #region Validation
+
+        /// <summary>
+        /// Creates a new <see cref="IValidationDataset"/> instance to validate a network accuracy from the input collection
+        /// </summary>
+        /// <param name="data">The source collection to use to build the validation dataset</param>
+        /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
+        /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static IValidationDataset Validation([NotNull] IEnumerable<(float[] X, float[] Y)> data, float tolerance = 1e-2f, int epochs = 5)
+            => new ValidationDataset(data.MergeLines(), tolerance, epochs);
+
+        /// <summary>
+        /// Creates a new <see cref="IValidationDataset"/> instance to validate a network accuracy from the input collection
+        /// </summary>
+        /// <param name="data">The source collection to use to build the validation dataset</param>
+        /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
+        /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static IValidationDataset Validation([NotNull] IEnumerable<Func<(float[] X, float[] Y)>> data, float tolerance = 1e-2f, int epochs = 5)
+            => Validation(data.AsParallel().Select(f => f()), tolerance, epochs);
+
+        /// <summary>
+        /// Creates a new <see cref="IValidationDataset"/> instance to validate a network accuracy from the input collection
+        /// </summary>
+        /// <param name="data">The source collection to use to build the validation dataset</param>
+        /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
+        /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static IValidationDataset Validation((float[,] X, float[,] Y) data, float tolerance = 1e-2f, int epochs = 5) => new ValidationDataset(data, tolerance, epochs);
+
+        #endregion
+
         #region Test
 
         /// <summary>
@@ -61,18 +100,7 @@ namespace NeuralNetworkNET.APIs
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
         public static ITestDataset Test([NotNull] IEnumerable<(float[] X, float[] Y)> data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null)
-        {
-            (float[] X, float[] Y)[] set = data.ToArray();
-            float[,] 
-                x = new float[set.Length, set[0].X.Length],
-                y = new float[set.Length, set[0].Y.Length];
-            Parallel.For(0, set.Length, i =>
-            {
-                set[i].X.AsSpan().CopyTo(x.Slice(i));
-                set[i].Y.AsSpan().CopyTo(y.Slice(i));
-            }).AssertCompleted();
-            return new TestDataset((x, y), progress);
-        }
+            => new TestDataset(data.MergeLines(), progress);
 
         /// <summary>
         /// Creates a new <see cref="ITestDataset"/> instance to test a network from the input collection

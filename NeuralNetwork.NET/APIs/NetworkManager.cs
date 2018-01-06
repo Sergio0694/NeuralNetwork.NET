@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.APIs
             int epochs, float dropout = 0,
             [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationDataset validationDataset = null,
+            [CanBeNull] IValidationDataset validationDataset = null,
             [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {
@@ -87,8 +87,9 @@ namespace NeuralNetworkNET.APIs
             return NetworkTrainer.TrainNetwork(
                 network as NeuralNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
-                epochs, dropout, algorithm, batchProgress, trainingProgress, validationDataset, 
-                testDataset as TestDataset ?? throw new ArgumentException("The input test dataset instance isn't valid", nameof(testDataset)),
+                epochs, dropout, algorithm, batchProgress, trainingProgress, 
+                validationDataset as ValidationDataset,
+                testDataset as TestDataset,
                 token);
         }
 
@@ -115,7 +116,7 @@ namespace NeuralNetworkNET.APIs
             int epochs, float dropout = 0,
             [CanBeNull] IProgress<BatchProgress> batchProgress = null,
             [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress = null,
-            [CanBeNull] ValidationDataset validationDataset = null,
+            [CanBeNull] IValidationDataset validationDataset = null,
             [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {

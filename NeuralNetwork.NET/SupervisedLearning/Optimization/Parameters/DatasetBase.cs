@@ -9,7 +9,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
     /// <summary>
     /// A base class for an optional dataset to use in a training session
     /// </summary>
-    public abstract class DatasetBase : IDataset
+    internal abstract class DatasetBase : IDataset
     {
         /// <summary>
         /// Gets the raw content of the current dataset

@@ -6,13 +6,13 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
     /// <summary>
     /// A class that contains additional parameters to validate the training data during a training session
     /// </summary>
-    public sealed class ValidationDataset : DatasetBase, IValidationDataset
+    internal sealed class ValidationDataset : DatasetBase, IValidationDataset
     {
         /// <inheritdoc/>
-        public float Tolerance { get; }
+        public float Tolerance { get; set; }
 
         /// <inheritdoc/>
-        public int EpochsInterval { get; }
+        public int EpochsInterval { get; set; }
 
         public ValidationDataset((float[,] X, float[,] Y) validationSet, float tolerance, int epochs) : base(validationSet)
         {
