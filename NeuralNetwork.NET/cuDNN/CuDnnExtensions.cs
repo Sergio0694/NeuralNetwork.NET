@@ -4,12 +4,12 @@ using Alea.Parallel;
 using JetBrains.Annotations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 
-namespace NeuralNetworkNET.Extensions
+namespace NeuralNetworkNET.cuDNN
 {
     /// <summary>
     /// A static class with some extensions for the <see cref="Dnn"/> class
     /// </summary>
-    internal static class DnnExtensions
+    internal static class CuDnnExtensions
     {
         #region Activation
 

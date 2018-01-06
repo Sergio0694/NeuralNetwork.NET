@@ -5,11 +5,11 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
-using NeuralNetworkNET.Services;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
@@ -44,7 +44,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// Gets the <see cref="Dnn"/> instance for the current layer
         /// </summary>
         [NotNull]
-        private readonly Dnn DnnInstance = DnnService.Instance;
+        private readonly Dnn DnnInstance = CuDnnService.Instance;
 
         // cuDNN fields setup
         private void SetupCuDnnInfo()
