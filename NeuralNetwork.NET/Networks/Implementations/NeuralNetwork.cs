@@ -330,7 +330,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Calculates the current network performances with the given test samples
         /// </summary>
         /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
-        /// <param name="batchSize">The number of test samples to forward in parallel</param>
         internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
             // Actual test evaluation
@@ -372,7 +371,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <summary>
         /// Calculates the current network performances with the given test samples
         /// </summary>
-        /// <param name="batchSize">The training batches currently used to train the network</param>
+        /// <param name="batches">The training batches currently used to train the network</param>
         internal unsafe (float Cost, int Classified, float Accuracy) Evaluate([NotNull] BatchesCollection batches)
         {
             // Actual test evaluation

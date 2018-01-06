@@ -1,7 +1,7 @@
 ﻿namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
-    /// A simple <see cref="enum"/> indicating the type of convolution operation to perform
+    /// A simple <see langword="enum"/> indicating the type of convolution operation to perform
     /// </summary>
     public enum ConvolutionMode
     {

@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace NeuralNetworkNET.Helpers
 {
     /// <summary>
-    /// A shared event with an <see cref="Action"/> <see cref="delegate"/> as its handler
+    /// A shared event with an <see cref="Action"/> <see langword="delegate"/> as its handler
     /// </summary>
     internal sealed class SharedEvent
     {

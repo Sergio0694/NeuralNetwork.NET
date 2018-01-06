@@ -1,7 +1,7 @@
 ﻿namespace NeuralNetworkNET.SupervisedLearning.Algorithms
 {
     /// <summary>
-    /// An <see cref="enum"/> that indicates a supervised learning training algorithm
+    /// An <see langword="enum"/> that indicates a supervised learning training algorithm
     /// </summary>
     public enum TrainingAlgorithmType : byte
     {
@@ -11,7 +11,7 @@
         StochasticGradientDescent,
 
         /// <summary>
-        /// The Adadelta adaptive learning method, by Matthew D. Zeiler, see <see cref="https://arxiv.org/abs/1212.5701"/>
+        /// The Adadelta adaptive learning method, by Matthew D. Zeiler, see <a href="https://arxiv.org/abs/1212.5701">arxiv.org/abs/1212.5701</a>
         /// </summary>
         Adadelta
     }

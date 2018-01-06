@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         }
 
         /// <summary>
-        /// Fills the target <see cref="Tensor"/> with values from the Glorot & Bengio normal distribution
+        /// Fills the target <see cref="Tensor"/> with values from the Glorot &amp; Bengio normal distribution
         /// </summary>
         /// <param name="tensor">The target <see cref="Tensor"/> to fill</param>
         /// <param name="fanIn">The input neurons</param>
@@ -37,7 +37,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         }
 
         /// <summary>
-        /// Fills the target <see cref="Tensor"/> with values from the Glorot & Bengio uniform distribution
+        /// Fills the target <see cref="Tensor"/> with values from the Glorot &amp; Bengio uniform distribution
         /// </summary>
         /// <param name="tensor">The target <see cref="Tensor"/> to fill</param>
         /// <param name="fanIn">The input neurons</param>

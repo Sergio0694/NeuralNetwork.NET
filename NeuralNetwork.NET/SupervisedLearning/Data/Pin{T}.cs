@@ -3,7 +3,7 @@
 namespace NeuralNetworkNET.SupervisedLearning.Data
 {
     /// <summary>
-    /// A simple <see cref="struct"/> that holds a reference to a pinned target.
+    /// A simple <see langword="struct"/> that holds a reference to a pinned target.
     /// It can be used to replace <see cref="System.Span{T}"/> to quickly pass pointers around in non stack-only methods.
     /// </summary>
     /// <typeparam name="T">The type of the target referenced by the exposed pointer</typeparam>

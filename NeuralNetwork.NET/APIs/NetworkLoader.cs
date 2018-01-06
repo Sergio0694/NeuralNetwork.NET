@@ -27,7 +27,7 @@ namespace NeuralNetworkNET.APIs
         /// </summary>
         /// <param name="file">The <see cref="FileInfo"/> instance for the file to load</param>
         /// <param name="preference">The layers deserialization preference</param>
-        /// <returns>The deserialized network, or null if the operation fails</returns>
+        /// <returns>The deserialized network, or <see langword="null"/> if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
         public static INeuralNetwork TryLoad([NotNull] FileInfo file, LayersLoadingPreference preference)
@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.APIs
         /// </summary>
         /// <param name="stream">The <see cref="Stream"/> instance for the network to load</param>
         /// <param name="preference">The layers deserialization preference</param>
-        /// <returns>The deserialized network, or null if the operation fails</returns>
+        /// <returns>The deserialized network, or <see langword="null"/> if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
         public static INeuralNetwork TryLoad([NotNull] Stream stream, LayersLoadingPreference preference)

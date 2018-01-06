@@ -40,6 +40,9 @@ namespace NeuralNetworkNET.APIs.Results
         [NotNull]
         public IReadOnlyList<DatasetEvaluationResult> TestReports { get; }
 
+        /// <summary>
+        /// Serializes the current instance as a JSON string with all the current training info
+        /// </summary>
         [Pure, NotNull]
         public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 

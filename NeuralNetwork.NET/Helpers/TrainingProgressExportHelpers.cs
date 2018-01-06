@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Results;
 
 namespace NeuralNetworkNET.Helpers
@@ -46,14 +47,5 @@ namespace NeuralNetworkNET.Helpers
                 template = File.ReadAllText(path);
             return template.Replace("$VALUES$", values).Replace("$YLABEL$", ylabel);
         }
-    }
-
-    /// <summary>
-    /// Indicates a tye of training progress report
-    /// </summary>
-    public enum TrainingReportType
-    {
-        Accuracy,
-        Cost
     }
 }

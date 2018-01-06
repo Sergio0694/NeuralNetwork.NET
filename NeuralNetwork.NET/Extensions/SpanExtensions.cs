@@ -45,8 +45,8 @@ namespace NeuralNetworkNET.Extensions
         /// Finds the minimum and maximum value in the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The source <see cref="Span{T}"/> to scan</param>
-        /// <param name="min">The minimum possible value for a <see cref="T"/> value</param>
-        /// <param name="max">The maaximum possible value for a <see cref="T"/> value</param>
+        /// <param name="min">The minimum possible value for a <typeparamref name="T"/> value</param>
+        /// <param name="max">The maaximum possible value for a <typeparamref name="T"/> value</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         public static (T Min, T Max) MinMax<T>(this Span<T> span, T min, T max) where T : struct, IComparable<T>
@@ -82,7 +82,7 @@ namespace NeuralNetworkNET.Extensions
         /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The source <see cref="Span{T}"/> instance</param>
-        /// <param name="min">The minimum possible value for a <see cref="T"/> value</param>
+        /// <param name="min">The minimum possible value for a <typeparamref name="T"/> value</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         public static int Argmax<T>(this Span<T> span, T min) where T : struct, IComparable<T>

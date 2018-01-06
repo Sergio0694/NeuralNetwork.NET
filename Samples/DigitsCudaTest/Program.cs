@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;

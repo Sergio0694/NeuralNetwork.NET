@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace NeuralNetworkNET.APIs.Structs
 {
     /// <summary>
-    /// A <see cref="struct"/> that contains info on the size of a given tensor
+    /// A <see langword="struct"/> that contains info on the size of a given tensor
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     [DebuggerDisplay("Height: {Height}, Width: {Width}, Channels: {Channels}, Size: {Size}")]
@@ -100,7 +100,7 @@ namespace NeuralNetworkNET.APIs.Structs
         public bool Equals(TensorInfo other) => this == other;
 
         /// <inheritdoc/>
-        public override bool Equals(object obj) => obj is TensorInfo tensor ? this == tensor : false;
+        public override bool Equals(object obj) => obj is TensorInfo tensor && this == tensor;
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -115,9 +115,19 @@ namespace NeuralNetworkNET.APIs.Structs
             return hash;
         }
 
+        /// <summary>
+        /// Checks whether or not two <see cref="TensorInfo"/> instances have the same parameters
+        /// </summary>
+        /// <param name="a">The first instance</param>
+        /// <param name="b">The second instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(in TensorInfo a, in TensorInfo b) => a.Height == b.Height && a.Width == b.Width && a.Channels == b.Channels;
 
+        /// <summary>
+        /// Checks whether or not two <see cref="TensorInfo"/> instances have different parameters
+        /// </summary>
+        /// <param name="a">The first instance</param>
+        /// <param name="b">The second instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(in TensorInfo a, in TensorInfo b) => !(a == b);
 

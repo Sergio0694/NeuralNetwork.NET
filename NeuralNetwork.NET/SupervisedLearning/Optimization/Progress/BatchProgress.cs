@@ -1,7 +1,7 @@
 ﻿namespace NeuralNetworkNET.SupervisedLearning.Optimization.Progress
 {
     /// <summary>
-    /// A simple <see cref="struct"/> containing info on the current batch progress for the training dataset
+    /// A simple <see langword="struct"/> containing info on the current batch progress for the training dataset
     /// </summary>
     public readonly struct BatchProgress
     {

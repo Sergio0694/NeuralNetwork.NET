@@ -5,7 +5,14 @@
     /// </summary>
     public enum LayersLoadingPreference
     {
+        /// <summary>
+        /// The network layers are deserialized through the <see cref="NetworkLayers"/> class, if possible
+        /// </summary>
         Cpu,
+        
+        /// <summary>
+        /// The network layers are deserialized through the <see cref="CuDnnNetworkLayers"/> class
+        /// </summary>
         Cuda
     }
 }

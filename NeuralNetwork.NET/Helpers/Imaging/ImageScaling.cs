@@ -5,7 +5,14 @@
     /// </summary>
     public enum ImageScaling
     {
+        /// <summary>
+        /// The weights are exported using a 1:1 pixel size ratio
+        /// </summary>
         Native,
+
+        /// <summary>
+        /// The weights are upscaled in size when exported as images
+        /// </summary>
         HighQuality
     }
 }

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace NeuralNetworkNET.APIs.Structs
 {
     /// <summary>
-    /// A <see cref="struct"/> containing all the info on an inception module
+    /// A <see langword="struct"/> containing all the info on an inception module
     /// </summary>
     [JsonObject(MemberSerialization.Fields)]
     public readonly struct InceptionInfo : IEquatable<InceptionInfo>
@@ -110,7 +110,7 @@ namespace NeuralNetworkNET.APIs.Structs
         public bool Equals(InceptionInfo other) => this == other;
 
         /// <inheritdoc/>
-        public override bool Equals(object obj) => obj is InceptionInfo info ? this == info : false;
+        public override bool Equals(object obj) => obj is InceptionInfo info && this == info;
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -129,6 +129,11 @@ namespace NeuralNetworkNET.APIs.Structs
             return hash;
         }
 
+        /// <summary>
+        /// Checks whether or not two <see cref="InceptionInfo"/> instances have the same parameters
+        /// </summary>
+        /// <param name="a">The first instance</param>
+        /// <param name="b">The second instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(in InceptionInfo a, in InceptionInfo b) => a.Primary1x1ConvolutionKernels == b.Primary1x1ConvolutionKernels &&
                                                                                   a.Primary3x3Reduce1x1ConvolutionKernels == b.Primary3x3Reduce1x1ConvolutionKernels && 
@@ -138,6 +143,11 @@ namespace NeuralNetworkNET.APIs.Structs
                                                                                   a.Secondary1x1AfterPoolingConvolutionKernels == b.Secondary1x1AfterPoolingConvolutionKernels &&
                                                                                   a.Pooling == b.Pooling;
 
+        /// <summary>
+        /// Checks whether or not two <see cref="InceptionInfo"/> instances have different parameters
+        /// </summary>
+        /// <param name="a">The first instance</param>
+        /// <param name="b">The second instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(in InceptionInfo a, in InceptionInfo b) => !(a == b);
 

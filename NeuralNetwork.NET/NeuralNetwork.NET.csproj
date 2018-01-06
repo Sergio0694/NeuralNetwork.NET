@@ -8,11 +8,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <DocumentationFile>bin\Release\netstandard2.0\NeuralNetwork.NET.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <DocumentationFile>bin\Debug\netstandard2.0\NeuralNetwork.NET.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

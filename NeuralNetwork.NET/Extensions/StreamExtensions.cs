@@ -11,11 +11,11 @@ namespace NeuralNetworkNET.Extensions
     internal static class StreamExtensions
     {
         /// <summary>
-        /// Writes the input <see cref="struct"/> to the target <see cref="Stream"/> instance
+        /// Writes the input <see langword="struct"/> to the target <see cref="Stream"/> instance
         /// </summary>
-        /// <typeparam name="T">The <see cref="struct"/> type to serialize</typeparam>
+        /// <typeparam name="T">The <see langword="struct"/> type to serialize</typeparam>
         /// <param name="stream">The target <see cref="Stream"/> to use to write the data</param>
-        /// <param name="value">The <see cref="struct"/> to write to the <see cref="Stream"/> instance</param>
+        /// <param name="value">The <see langword="struct"/> to write to the <see cref="Stream"/> instance</param>
         public static unsafe void Write<T>([NotNull] this Stream stream, T value) where T : struct
         {
             byte[] bytes = new byte[Unsafe.SizeOf<T>()];
@@ -24,10 +24,11 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Reads a value of the given <see cref="struct"/> type from the input <see cref="Stream"/> instance
+        /// Reads a value of the given <see langword="struct"/> type from the input <see cref="Stream"/> instance
         /// </summary>
-        /// <typeparam name="T">The <see cref="struct"/> type to read and return</typeparam>
+        /// <typeparam name="T">The <see langword="struct"/> type to read and return</typeparam>
         /// <param name="stream">The source <see cref="Stream"/> instance to use to read the data</param>
+        /// <param name="value">The resulting <typeparamref name="T"/> value that is read from the <see cref="Stream"/></param>
         [MustUseReturnValue]
         public static unsafe bool TryRead<T>([NotNull] this Stream stream, out T value) where T : struct
         {

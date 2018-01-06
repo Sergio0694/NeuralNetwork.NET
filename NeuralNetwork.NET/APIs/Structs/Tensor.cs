@@ -53,10 +53,21 @@ namespace NeuralNetworkNET.APIs.Structs
             get => Ptr == IntPtr.Zero;
         }
 
+        /// <summary>
+        /// Gets a managed reference for the current <see cref="Tensor"/> data
+        /// </summary>
+        public unsafe ref float Ref
+        {
+            [PublicAPI]
+            [Pure]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AsRef<float>(this);
+        }
+
         #endregion
 
         /// <summary>
-        /// Gets a null instance
+        /// Gets a <see langword="null"/> instance
         /// </summary>
         public static readonly Tensor Null = new Tensor(IntPtr.Zero, 0, 0);
 
@@ -279,7 +290,10 @@ namespace NeuralNetworkNET.APIs.Structs
                 Marshal.FreeHGlobal(Ptr);
         }
 
-        // Implicit pointer conversion
+        /// <summary>
+        /// Gets a raw pointer to the <see cref="Tensor"/> data
+        /// </summary>
+        /// <param name="tensor"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
         public static unsafe implicit operator float*(in Tensor tensor) => (float*)tensor.Ptr.ToPointer();
@@ -289,7 +303,7 @@ namespace NeuralNetworkNET.APIs.Structs
         #region Debug
 
         /// <summary>
-        /// A proxy type to debug instances of the <see cref="Tensor"/> <see cref="struct"/>
+        /// A proxy type to debug instances of the <see cref="Tensor"/> <see langword="struct"/>
         /// </summary>
         private struct _TensorProxy
         {

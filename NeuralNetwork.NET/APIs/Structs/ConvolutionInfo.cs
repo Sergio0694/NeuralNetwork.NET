@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace NeuralNetworkNET.APIs.Structs
 {
     /// <summary>
-    /// A <see cref="struct"/> containing all the info on a convolution operation
+    /// A <see langword="struct"/> containing all the info on a convolution operation
     /// </summary>
     [JsonObject(MemberSerialization.Fields)]
     public readonly struct ConvolutionInfo : IEquatable<ConvolutionInfo>
@@ -96,7 +96,7 @@ namespace NeuralNetworkNET.APIs.Structs
         public bool Equals(ConvolutionInfo other) => this == other;
 
         /// <inheritdoc/>
-        public override bool Equals(object obj) => obj is ConvolutionInfo info ? this == info : false;
+        public override bool Equals(object obj) => obj is ConvolutionInfo info && this == info;
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -113,11 +113,21 @@ namespace NeuralNetworkNET.APIs.Structs
             return hash;
         }
 
+        /// <summary>
+        /// Checks whether or not two <see cref="ConvolutionInfo"/> instances have the same parameters
+        /// </summary>
+        /// <param name="a">The first instance</param>
+        /// <param name="b">The second instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(in ConvolutionInfo a, in ConvolutionInfo b) => a.Mode == b.Mode &&
                                                                                       a.VerticalPadding == b.VerticalPadding && a.HorizontalPadding == b.HorizontalPadding &&
                                                                                       a.VerticalStride == b.VerticalStride && a.HorizontalStride == b.HorizontalStride;
 
+        /// <summary>
+        /// Checks whether or not two <see cref="ConvolutionInfo"/> instances have different parameters
+        /// </summary>
+        /// <param name="a">The first instance</param>
+        /// <param name="b">The second instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(in ConvolutionInfo a, in ConvolutionInfo b) => !(a == b);
 

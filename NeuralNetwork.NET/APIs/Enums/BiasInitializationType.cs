@@ -1,7 +1,7 @@
 ﻿namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
-    /// An <see cref="enum"/> indicating an initialization mode for the biases in a network layer
+    /// An <see langword="enum"/> indicating an initialization mode for the biases in a network layer
     /// </summary>
     public enum BiasInitializationMode : byte
     {
