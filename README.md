@@ -4,7 +4,7 @@
 **NeuralNetwork.NET** is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
 It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network and its metadata and more.
 
-The library also exposes Cuda-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
+The library also exposes CUDA-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
 # Table of Contents
 
@@ -78,7 +78,7 @@ TrainingSessionResult result = NetworkManager.TrainNetwork(network,
 
 ### GPU acceleration
 
-When running on a supported framework (.NET Framework, Xamarin or Mono), it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU. To do that, just create a network using the layers from the `CuDnnNetworkLayers` class to enable the GPU processing mode.
+When running on a supported framework (.NET Framework, Xamarin or Mono), it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU. To do that, just use the layers from the `CuDnnNetworkLayers` class when creating a network.
 
 Some of the cuDNN-powered layers support additional options than the default layers. Here's an example:
 
@@ -97,6 +97,8 @@ LayerFactory inception = CuDnnNetworkLayers.Inception(InceptionInfo.New(
 ```
 
 These `LayerFactory` instances can be used to create a new network just like in the CPU example.
+
+**NOTE:** in order to use this feature, the CUDA and cuDNN toolkits must be installed on the current system, a CUDA-enabled nVidia GeForce/Quadro GPU must be available and the `Alea` NuGet package must be installed in the application using the **NeuralNetwork.NET** library as well. Additional info are available [here](http://www.aleagpu.com/release/3_0_4/doc/installation.html#deployment_considerations).
 
 ### Serialization and deserialization
 
