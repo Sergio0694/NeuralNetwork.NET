@@ -103,6 +103,29 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
+        /// Returns whether or not all the elements in the two input <see cref="Span{T}"/> instances respect the input threshold
+        /// </summary>
+        /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
+        /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
+        /// <param name="threshold">The target threshold</param>
+        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        internal static bool MatchElementwiseThreshold<T>(this Span<T> x1, Span<T> x2, T threshold) where T : struct, IComparable<T>
+        {
+            if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
+            for (int i = 0; i < x1.Length; i++)
+            {
+                int
+                    c1 = x1[i].CompareTo(threshold),
+                    c2 = x2[i].CompareTo(threshold);
+                if (c1 > 0 && c2 <= 0 || c1 <= 0 && c2 > 0)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Returns an hash code for the contents of the input <see cref="Span{T}"/>
         /// </summary>
         /// <typeparam name="T">The type of each value in the input <see cref="Span{T}"/></typeparam>

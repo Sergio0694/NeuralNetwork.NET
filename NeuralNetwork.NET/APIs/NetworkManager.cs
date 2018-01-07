@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
@@ -15,16 +16,6 @@ using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace NeuralNetworkNET.APIs
 {
-    /// <summary>
-    /// A <see langword="delegate"/> that represents a factory that produces instances of a specific layer type, with user-defined parameters.
-    /// This wrapper acts as an intemediary to streamline the user-side C# sintax when building up a new network structure, as all the input
-    /// details for each layer will be automatically computed during the network setup.
-    /// </summary>
-    /// <param name="info">The <see cref="TensorInfo"/> for the inputs of the upcoming network layer</param>
-    /// <remarks>It is also possible to invoke a <see cref="LayerFactory"/> instance just like any other <see langword="delegate"/> to immediately get an <see cref="INetworkLayer"/> value</remarks>
-    [NotNull]
-    public delegate INetworkLayer LayerFactory(TensorInfo info);
-
     /// <summary>
     /// A static class that create and trains a neural network for the input data and expected results
     /// </summary>
@@ -118,23 +109,6 @@ namespace NeuralNetworkNET.APIs
             CancellationToken token = default)
         {
             return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
-        }
-
-        #endregion
-
-        #region Settings
-
-        private static int _MaximumBatchSize = int.MaxValue;
-
-        /// <summary>
-        /// Gets or sets the maximum batch size (used to optimize the memory usage during validation/test processing)
-        /// </summary>
-        /// <remarks>Adjust this setting to the highest possible value according to the available RAM/VRAM and the size of the dataset. If the validation/test dataset has more
-        /// samples than <see cref="MaximumBatchSize"/>, it will be automatically divided into batches so that it won't cause an <see cref="OutOfMemoryException"/> or other problems</remarks>
-        public static int MaximumBatchSize
-        {
-            get => _MaximumBatchSize;
-            set => _MaximumBatchSize = value >= 10 ? value : throw new ArgumentOutOfRangeException(nameof(MaximumBatchSize), "The maximum batch size must be at least equal to 10");
         }
 
         #endregion
