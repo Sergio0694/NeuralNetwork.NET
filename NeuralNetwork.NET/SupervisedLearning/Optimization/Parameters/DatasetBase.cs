@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
@@ -38,6 +39,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
             {
                 if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
                 return new DatasetSample(Dataset.X.Slice(i), Dataset.Y.Slice(i));
+            }
+        }
+
+        /// <inheritdoc/>
+        public int Id
+        {
+            get
+            {
+                int[] temp = new int[Count];
+                Parallel.For(0, Count, i => temp[i] = Dataset.X.Slice(i).GetContentHashCode() ^ Dataset.Y.Slice(i).GetContentHashCode()).AssertCompleted();
+                Array.Sort(temp);
+                return temp.AsSpan().GetContentHashCode();
             }
         }
 

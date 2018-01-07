@@ -9,5 +9,10 @@
         /// Gets or sets the number of samples in each samples batch in the current dataset
         /// </summary>
         int BatchSize { get; set; }
+
+        /// <summary>
+        /// Gets the number of training batches in the current dataset (according to the number of samples and the batch size)
+        /// </summary>
+        int BatchesCount { get; }
     }
 }

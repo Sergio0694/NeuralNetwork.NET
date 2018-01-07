@@ -32,5 +32,11 @@ namespace NeuralNetworkNET.APIs.Interfaces.Data
         /// </summary>
         /// <param name="i">The index of the sample to retrieve</param>
         DatasetSample this[int i] { get; }
+
+        /// <summary>
+        /// Gets a unique content id for the current dataset (not the same as <see cref="System.Object.GetHashCode"/> method
+        /// that can be used to compare two <see cref="IDataset"/> instances and check if they contain the same samples (regardless of their relative order)
+        /// </summary>
+        int Id { get; }
     }
 }

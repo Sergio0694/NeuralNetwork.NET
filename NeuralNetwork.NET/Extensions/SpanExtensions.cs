@@ -103,6 +103,27 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
+        /// Returns an hash code for the contents of the input <see cref="Span{T}"/>
+        /// </summary>
+        /// <typeparam name="T">The type of each value in the input <see cref="Span{T}"/></typeparam>
+        /// <param name="span">The input <see cref="Span{T}"/> to read</param>
+        [Pure]
+        public static unsafe int GetContentHashCode<T>(this Span<T> span) where T : struct
+        {
+            fixed (byte* p0 = &Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()))
+            {
+                int size = Unsafe.SizeOf<T>();
+                int hash = 17;
+                unchecked
+                {
+                    for (int i = 0; i < span.Length; i++)
+                        hash = hash * 23 + Unsafe.Read<T>(p0 + size * i).GetHashCode();
+                    return hash;
+                }
+            }
+        }
+
+        /// <summary>
         /// Returns a deep copy of the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The <see cref="Span{T}"/> to clone</param>

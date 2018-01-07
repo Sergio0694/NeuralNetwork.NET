@@ -389,7 +389,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 batchSize = NetworkManager.MaximumBatchSize,
                 classified = 0;
             float cost = 0;
-            for (int i = 0; i < batches.BatchSize; i++)
+            for (int i = 0; i < batches.BatchesCount; i++)
             {
                 ref readonly SamplesBatch batch = ref batches.Batches[i];
                 fixed (float* px = batch.X, py = batch.Y)
