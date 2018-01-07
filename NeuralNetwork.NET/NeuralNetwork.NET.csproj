@@ -3,17 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>NeuralNetworkNET</RootNamespace>
-    <Version>1.1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Sergio Pedri</Authors>
     <Company>Sergio Pedri</Company>
     <Description>An easy to use CNN library, built from scratch in C# 7.2 for .NET Standard 2.0, with native memory management for better performance and additional GPU support with cuDNN</Description>
     <Copyright>Copyright (c) 2017 Sergio Pedri</Copyright>
     <PackageLicenseUrl>https://github.com/Sergio0694/NeuralNetwork.NET/blob/master/LICENSE.md</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Sergio0694/NeuralNetwork.NET</PackageProjectUrl>
-    <PackageIconUrl>https://i.pi.gy/qJoLQ.png</PackageIconUrl>
+    <PackageIconUrl>https://i.pi.gy/73nG2.png</PackageIconUrl>
     <PackageTags>cnn, neuralnetwork, deeplearning, ai, cuda, csharp, gpu, net, netstandard</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>Initial NuGet package release</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
