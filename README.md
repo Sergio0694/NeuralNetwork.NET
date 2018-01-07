@@ -1,6 +1,7 @@
 ![](http://i.pi.gy/8ZDDE.png)
 
 # What is it?
+
 **NeuralNetwork.NET** is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
 It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network and its metadata and more.
 
@@ -28,9 +29,9 @@ More details available [here](https://www.nuget.org/packages/NeuralNetwork.NET/)
 
 # Quick start
 
-### Supervised learning
-
 The **NeuralNetwork.NET** library exposes easy to use classes and methods to create a new neural network, prepare the datasets to use and train the network. These APIs are designed for rapid prototyping, and this section provides an overview of the required steps to get started.
+
+## Supervised learning
 
 The first step is to create a custom network structure. Here is an example with a sequential network (a stack of layers):
 
@@ -77,7 +78,7 @@ TrainingSessionResult result = NetworkManager.TrainNetwork(network,
 
 **Note:** the `NetworkManager` methods are also available as asynchronous APIs.
 
-### GPU acceleration
+## GPU acceleration
 
 When running on a supported framework (.NET Framework, Xamarin or Mono), it is possible to use a different implementation of the available layers that leverages the cuDNN toolkit and parallelizes most of the work on the available CUDA-enabled GPU. To do that, just use the layers from the `CuDnnNetworkLayers` class when creating a network.
 
@@ -101,7 +102,7 @@ These `LayerFactory` instances can be used to create a new network just like in 
 
 **NOTE:** in order to use this feature, the CUDA and cuDNN toolkits must be installed on the current system, a CUDA-enabled nVidia GeForce/Quadro GPU must be available and the **Alea** NuGet package must be installed in the application using the **NeuralNetwork.NET** library as well. Additional info are available [here](http://www.aleagpu.com/release/3_0_4/doc/installation.html#deployment_considerations).
 
-### Library settings
+## Library settings
 
 **NeuralNetwork.NET** provides various shared settings that are available through the `NetworkSettings` class.
 This class acts as a container to quickly check and modify any setting at any time, and these settings will influence the behavior of any existing `INeuralNetwork` instance and the library in general.
@@ -120,7 +121,7 @@ To avoid memory issues, it is possible to modify this behavior:
 NetworkSettings.MaximumBatchSize = 400;   // This will apply to any test or validation dataset
 ```
 
-### Serialization and deserialization
+## Serialization and deserialization
 
 The `INeuralNetwork` interface exposes a `Save` method that can be used to serialize any network at any given time.
 In order to get a new network instance from a saved file or stream, just use the `NetworkLoader.TryLoad` method.
