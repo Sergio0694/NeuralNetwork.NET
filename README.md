@@ -1,24 +1,35 @@
 ![](http://i.pi.gy/8ZDDE.png)
 
-## What is it?
-`NeuralNetwork.NET` is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
+# What is it?
+**NeuralNetwork.NET** is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
 It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network and its metadata and more.
 
 The library also exposes Cuda-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
 # Table of Contents
 
+- [Installing from NuGet](#installing-from-nuget)
 - [Quick start](#quick-start)
   - [Supervised learning](#supervised-learning) 
   - [GPU acceleration](#gpu-acceleration)
   - [Serialization and deserialization](#serialization-and-deserialization)
 - [Requirements](#requirements)
 
+# Installing from NuGet
+
+To install **NeuralNetwork.NET**, run the following command in the **Package Manager Console**
+
+```
+Install-Package NeuralNetwork.NET
+```
+
+More details available [here](https://www.nuget.org/packages/NeuralNetwork.NET/).
+
 # Quick start
 
 ### Supervised learning
 
-The `NeuralNetwork.NET` library exposes easy to use classes and methods to create a new neural network, prepare the datasets to use and train the network. These APIs are designed for rapid prototyping, and this section provides an overview of the required steps to get started.
+The **NeuralNetwork.NET** library exposes easy to use classes and methods to create a new neural network, prepare the datasets to use and train the network. These APIs are designed for rapid prototyping, and this section provides an overview of the required steps to get started.
 
 The first step is to create a custom network structure. Here is an example with a sequential network (a stack of layers):
 
@@ -105,7 +116,7 @@ There's also an additional `SaveMetadataAsJson` method to export the metadata of
 
 # Requirements
 
-The `NeuralNetwork.NET` library requires .NET Standard 2.0 support, so it is available for applications targeting:
+The **NeuralNetwork.NET** library requires .NET Standard 2.0 support, so it is available for applications targeting:
 - .NET Framework >= 4.7.1
 - .NET Core >= 2.0
 - New versions of Mono and Xamarin.
