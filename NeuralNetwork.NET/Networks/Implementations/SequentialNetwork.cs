@@ -34,13 +34,19 @@ namespace NeuralNetworkNET.Networks.Implementations
         [JsonProperty(nameof(InputInfo), Order = 1)]
         public NetworkType NetworkType { get; } = NetworkType.Sequential;
 
-        /// <inheritdoc/>
+        // JSON-targeted property
         [JsonProperty(nameof(InputInfo), Order = 2)]
-        public TensorInfo InputInfo => Layers[0].InputInfo;
+        private TensorInfo InputInfo => Layers[0].InputInfo;
 
         /// <inheritdoc/>
+        ref readonly TensorInfo INeuralNetwork.InputInfo => ref Layers[0].InputInfo;
+
+        // JSON-targeted property
         [JsonProperty(nameof(OutputInfo), Order = 3)]
-        public TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
+        private TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
+
+        /// <inheritdoc/>
+        ref readonly TensorInfo INeuralNetwork.OutputInfo => ref Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
         public IReadOnlyList<INetworkLayer> Layers => _Layers;

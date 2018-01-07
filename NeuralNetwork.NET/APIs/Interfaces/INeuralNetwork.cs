@@ -22,12 +22,12 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// <summary>
         /// Gets the size of the input layer
         /// </summary>
-        TensorInfo InputInfo { get; }
+        ref readonly TensorInfo InputInfo { get; }
 
         /// <summary>
         /// Gets the size of the output layer
         /// </summary>
-        TensorInfo OutputInfo { get; }
+        ref readonly TensorInfo OutputInfo { get; }
 
         /// <summary>
         /// Gets the list of layers in the network
