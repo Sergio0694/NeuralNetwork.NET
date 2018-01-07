@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -110,36 +109,6 @@ namespace NeuralNetworkNET.APIs
             CancellationToken token = default)
         {
             return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
-        }
-
-        #endregion
-
-        #region Settings
-
-        private static int _MaximumBatchSize = int.MaxValue;
-
-        /// <summary>
-        /// Gets or sets the maximum batch size (used to optimize the memory usage during validation/test processing)
-        /// </summary>
-        /// <remarks>Adjust this setting to the highest possible value according to the available RAM/VRAM and the size of the dataset. If the validation/test dataset has more
-        /// samples than <see cref="MaximumBatchSize"/>, it will be automatically divided into batches so that it won't cause an <see cref="OutOfMemoryException"/> or other problems</remarks>
-        public static int MaximumBatchSize
-        {
-            get => _MaximumBatchSize;
-            set => _MaximumBatchSize = value >= 10 ? value : throw new ArgumentOutOfRangeException(nameof(MaximumBatchSize), "The maximum batch size must be at least equal to 10");
-        }
-
-        private static AccuracyTester _AccuracyTester = AccuracyTesters.Argmax();
-
-        /// <summary>
-        /// Gets or sets the <see cref="Delegates.AccuracyTester"/> instance to use to test a network being trained. The default value is <see cref="AccuracyTesters.Argmax"/>.
-        /// </summary>
-        [NotNull]
-        public static AccuracyTester AccuracyTester
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _AccuracyTester;
-            set => _AccuracyTester = value ?? throw new ArgumentNullException(nameof(AccuracyTester), "The input delegate can't be null");
         }
 
         #endregion

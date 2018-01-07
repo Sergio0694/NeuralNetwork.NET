@@ -323,7 +323,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             void Kernel(int i)
             {
                 int offset = i * wy;
-                if (NetworkManager.AccuracyTester(new Span<float>(pyHat + offset, wy), new Span<float>(pY + offset, wy))) 
+                if (NetworkSettings.AccuracyTester(new Span<float>(pyHat + offset, wy), new Span<float>(pY + offset, wy))) 
                     Interlocked.Increment(ref total);
             }
 
@@ -341,7 +341,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
         {
             // Actual test evaluation
-            int batchSize = NetworkManager.MaximumBatchSize;
+            int batchSize = NetworkSettings.MaximumBatchSize;
             fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
             {
                 int
