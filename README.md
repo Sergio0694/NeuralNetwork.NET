@@ -12,6 +12,7 @@ The library also exposes CUDA-accelerated layers with more advanced features tha
 - [Quick start](#quick-start)
   - [Supervised learning](#supervised-learning) 
   - [GPU acceleration](#gpu-acceleration)
+  - [Library settings](#library-settings)
   - [Serialization and deserialization](#serialization-and-deserialization)
 - [Requirements](#requirements)
 
@@ -99,6 +100,25 @@ LayerFactory inception = CuDnnNetworkLayers.Inception(InceptionInfo.New(
 These `LayerFactory` instances can be used to create a new network just like in the CPU example.
 
 **NOTE:** in order to use this feature, the CUDA and cuDNN toolkits must be installed on the current system, a CUDA-enabled nVidia GeForce/Quadro GPU must be available and the **Alea** NuGet package must be installed in the application using the **NeuralNetwork.NET** library as well. Additional info are available [here](http://www.aleagpu.com/release/3_0_4/doc/installation.html#deployment_considerations).
+
+### Library settings
+
+**NeuralNetwork.NET** provides various shared settings that are available through the `NetworkSettings` class.
+This class acts as a container to quickly check and modify any setting at any time, and these settings will influence the behavior of any existing `INeuralNetwork` instance and the library in general.
+
+For example, it is possible to customize the criteria used by the networks to check their performance during training
+
+```C#
+NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default mode
+NetworkSettings.AccuracyTester = AccuracyTesters.Threshold();   // Useful for overlapping classes
+```
+
+When using CUDA-powered networks, sometimes the GPU in use might not be able to process the whole test or validation datasets in a single pass, which is the default behavior (these datasets are not divided into batches).
+To avoid memory issues, it is possible to modify this behavior:
+
+```C#
+NetworkSettings.MaximumBatchSize = 400;   // This will apply to any test or validation dataset
+```
 
 ### Serialization and deserialization
 
