@@ -385,9 +385,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal unsafe (float Cost, int Classified, float Accuracy) Evaluate([NotNull] BatchesCollection batches)
         {
             // Actual test evaluation
-            int
-                batchSize = NetworkManager.MaximumBatchSize,
-                classified = 0;
+            int classified = 0;
             float cost = 0;
             for (int i = 0; i < batches.BatchesCount; i++)
             {

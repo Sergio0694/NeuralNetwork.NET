@@ -39,16 +39,13 @@ namespace NeuralNetworkNET.APIs
         [Pure, NotNull]
         public static INeuralNetwork NewSequential(TensorInfo input, [NotNull, ItemNotNull] params LayerFactory[] factories)
         {
-            IEnumerable<INetworkLayer> BuildLayers()
+            return new SequentialNetwork(factories.Aggregate(new List<INetworkLayer>(), (l, f) =>
             {
-                foreach (LayerFactory f in factories)
-                {
-                    INetworkLayer layer = f(input);
-                    yield return layer;
-                    input = layer.OutputInfo;
-                }
-            }
-            return new SequentialNetwork(BuildLayers().ToArray());
+                INetworkLayer layer = f(input);
+                input = layer.OutputInfo;
+                l.Add(layer);
+                return l;
+            }).ToArray());
         }
 
         #region Training
