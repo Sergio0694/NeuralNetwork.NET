@@ -1,7 +1,7 @@
 ﻿namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
-    /// Indicates the type of a neural network layer (for serialization purposes only)
+    /// Indicates the type of a neural network layer
     /// </summary>
     public enum LayerType : byte
     {

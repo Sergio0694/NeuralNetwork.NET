@@ -24,9 +24,9 @@ namespace NeuralNetworkNET.Networks.Implementations
     internal static class NetworkTrainer
     {
         /// <summary>
-        /// Trains the target <see cref="NeuralNetwork"/> with the given parameters and data
+        /// Trains the target <see cref="SequentialNetwork"/> with the given parameters and data
         /// </summary>
-        /// <param name="network">The target <see cref="NeuralNetwork"/> to train</param>
+        /// <param name="network">The target <see cref="SequentialNetwork"/> to train</param>
         /// <param name="batches">The training baatches for the current session</param>
         /// <param name="epochs">The desired number of training epochs to run</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
@@ -38,7 +38,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         public static TrainingSessionResult TrainNetwork(
-            [NotNull] NeuralNetwork network, [NotNull] BatchesCollection batches,
+            [NotNull] SequentialNetwork network, [NotNull] BatchesCollection batches,
             int epochs, float dropout,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
@@ -62,11 +62,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Optimization algorithms
 
         /// <summary>
-        /// Trains the target <see cref="NeuralNetwork"/> using the gradient descent algorithm
+        /// Trains the target <see cref="SequentialNetwork"/> using the gradient descent algorithm
         /// </summary>
         [NotNull]
         private static TrainingSessionResult StochasticGradientDescent(
-            NeuralNetwork network,
+            SequentialNetwork network,
             BatchesCollection miniBatches,
             int epochs, float dropout, float eta, float lambda,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
@@ -104,11 +104,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <summary>
-        /// Trains the target <see cref="NeuralNetwork"/> using the Adadelta algorithm
+        /// Trains the target <see cref="SequentialNetwork"/> using the Adadelta algorithm
         /// </summary>
         [NotNull]
         private static unsafe TrainingSessionResult Adadelta(
-            NeuralNetwork network,
+            SequentialNetwork network,
             BatchesCollection miniBatches,
             int epochs, float dropout, float rho, float epsilon, float l2Factor,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
@@ -196,11 +196,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Core optimization
 
         /// <summary>
-        /// Trains the target <see cref="NeuralNetwork"/> using the input algorithm
+        /// Trains the target <see cref="SequentialNetwork"/> using the input algorithm
         /// </summary>
         [NotNull]
         private static TrainingSessionResult Optimize(
-            NeuralNetwork network,
+            SequentialNetwork network,
             BatchesCollection miniBatches,
             int epochs, float dropout,
             [NotNull] WeightsUpdater updater,

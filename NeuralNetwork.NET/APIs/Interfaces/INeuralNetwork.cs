@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.APIs.Interfaces
@@ -12,6 +13,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
     public interface INeuralNetwork : IEquatable<INeuralNetwork>, IClonable<INeuralNetwork>
     {
         #region Properties
+
+        /// <summary>
+        /// Gets the type of a given <see cref="INeuralNetwork"/> instance
+        /// </summary>
+        NetworkType NetworkType { get; }
 
         /// <summary>
         /// Gets the size of the input layer

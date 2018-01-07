@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using JetBrains.Annotations;
@@ -48,24 +47,15 @@ namespace NeuralNetworkNET.APIs
         {
             try
             {
-                List<INetworkLayer> layers = new List<INetworkLayer>();
                 using (GZipStream gzip = new GZipStream(stream, CompressionMode.Decompress))
                 {
-                    while (gzip.TryRead(out LayerType type))
+                    if (!gzip.TryRead(out NetworkType model)) return null;
+                    switch (model)
                     {
-                        // Deserialization attempt
-                        INetworkLayer layer = null;
-                        if (preference == LayersLoadingPreference.Cuda) layer = CudaDeserialize(gzip, type);
-                        if (layer == null) layer = CpuDeserialize(gzip, type);
-                        if (layer == null) return null;
-
-                        // Add to the queue
-                        layers.Add(layer);
+                        case NetworkType.Sequential: return SequentialNetwork.Deserialize(gzip, preference);
+                        default: return null;
                     }
                 }
-
-                // Try to create the network to return
-                return new NeuralNetwork(layers.ToArray());
             }
             catch
             {
@@ -76,9 +66,13 @@ namespace NeuralNetworkNET.APIs
 
         #region Deserializers
 
-        // Default layers deserializer
+        /// <summary>
+        /// Tries to deserialize a CPU-powered network layer
+        /// </summary>
+        /// <param name="stream">The source <see cref="Stream"/></param>
+        /// <param name="type">The target network layer type</param>
         [MustUseReturnValue, CanBeNull]
-        private static INetworkLayer CpuDeserialize([NotNull] Stream stream, LayerType type)
+        internal static INetworkLayer CpuLayerDeserialize([NotNull] Stream stream, LayerType type)
         {
             switch (type)
             {
@@ -91,9 +85,13 @@ namespace NeuralNetworkNET.APIs
             }
         }
 
-        // Cuda layers deserializer
+        /// <summary>
+        /// Tries to deserialize a Cuda-powered network layer
+        /// </summary>
+        /// <param name="stream">The source <see cref="Stream"/></param>
+        /// <param name="type">The target network layer type</param>
         [MustUseReturnValue, CanBeNull]
-        private static INetworkLayer CudaDeserialize([NotNull] Stream stream, LayerType type)
+        internal static INetworkLayer CuDnnLayerDeserialize([NotNull] Stream stream, LayerType type)
         {
             switch (type)
             {

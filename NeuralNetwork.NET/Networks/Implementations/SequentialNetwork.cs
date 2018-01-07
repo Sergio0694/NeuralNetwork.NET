@@ -26,23 +26,27 @@ namespace NeuralNetworkNET.Networks.Implementations
     /// A complete and fully connected neural network with an arbitrary number of hidden layers
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    public sealed class NeuralNetwork : INeuralNetwork
+    public sealed class SequentialNetwork : INeuralNetwork
     {
         #region Public parameters
 
         /// <inheritdoc/>
         [JsonProperty(nameof(InputInfo), Order = 1)]
+        public NetworkType NetworkType { get; } = NetworkType.Sequential;
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(InputInfo), Order = 2)]
         public TensorInfo InputInfo => Layers[0].InputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(OutputInfo), Order = 2)]
+        [JsonProperty(nameof(OutputInfo), Order = 3)]
         public TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
         public IReadOnlyList<INetworkLayer> Layers => _Layers;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Parameters), Order = 3)]
+        [JsonProperty(nameof(Parameters), Order = 4)]
         public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
 
         #endregion
@@ -51,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Order = 4)]
+        [JsonProperty(nameof(Layers), Order = 5)]
         internal readonly NetworkLayerBase[] _Layers;
 
         // The list of layers with weights to update
@@ -61,7 +65,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// Initializes a new network with the given parameters
         /// </summary>
         /// <param name="layers">The layers that make up the neural network</param>
-        internal NeuralNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers)
+        internal SequentialNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers)
         {
             // Input check
             if (layers.Length < 1) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
@@ -405,7 +409,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public bool Equals(INeuralNetwork other)
         {
             // Compare general features
-            if (other is NeuralNetwork network &&
+            if (other is SequentialNetwork network &&
                 other.InputInfo == InputInfo &&
                 other.OutputInfo == OutputInfo &&
                 _Layers.Length == network._Layers.Length)
@@ -427,12 +431,38 @@ namespace NeuralNetworkNET.Networks.Implementations
         public void Save(Stream stream)
         {
             using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal, true))
+            {
+                gzip.Write(NetworkType);
                 foreach (NetworkLayerBase layer in _Layers) 
                     layer.Serialize(gzip);
+            }
+        }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="SequentialNetwork"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
+        /// <param name="preference">The layers deserialization preference</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INeuralNetwork Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        {
+            List<INetworkLayer> layers = new List<INetworkLayer>();
+            while (stream.TryRead(out LayerType type))
+            {
+                // Deserialization attempt
+                INetworkLayer layer = null;
+                if (preference == LayersLoadingPreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, type);
+                if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, type);
+                if (layer == null) return null;
+
+                // Add to the queue
+                layers.Add(layer);
+            }
+            return new SequentialNetwork(layers.ToArray());
         }
 
         /// <inheritdoc/>
-        public INeuralNetwork Clone() => new NeuralNetwork(_Layers.Select(l => l.Clone()).ToArray());
+        public INeuralNetwork Clone() => new SequentialNetwork(_Layers.Select(l => l.Clone()).ToArray());
 
         #endregion
     }
