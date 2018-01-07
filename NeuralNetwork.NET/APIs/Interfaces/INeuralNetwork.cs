@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.APIs.Interfaces
@@ -14,14 +15,19 @@ namespace NeuralNetworkNET.APIs.Interfaces
         #region Properties
 
         /// <summary>
+        /// Gets the type of a given <see cref="INeuralNetwork"/> instance
+        /// </summary>
+        NetworkType NetworkType { get; }
+
+        /// <summary>
         /// Gets the size of the input layer
         /// </summary>
-        TensorInfo InputInfo { get; }
+        ref readonly TensorInfo InputInfo { get; }
 
         /// <summary>
         /// Gets the size of the output layer
         /// </summary>
-        TensorInfo OutputInfo { get; }
+        ref readonly TensorInfo OutputInfo { get; }
 
         /// <summary>
         /// Gets the list of layers in the network

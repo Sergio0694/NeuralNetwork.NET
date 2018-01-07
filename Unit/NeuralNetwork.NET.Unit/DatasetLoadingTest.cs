@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -9,11 +11,11 @@ using NeuralNetworkNET.SupervisedLearning.Data;
 namespace NeuralNetworkNET.Unit
 {
     /// <summary>
-    /// Test class for the <see cref="Networks.Implementations.NetworkTrainer"/> class and dependencies
+    /// Test class for the <see cref="DatasetLoader"/> class
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(TrainingTest))]
-    public class TrainingTest
+    [TestCategory(nameof(DatasetLoadingTest))]
+    public class DatasetLoadingTest
     {
         // Calculates a unique hash code for the target row of the input matrix
         private static unsafe int GetUid(float[,] m, int row)
@@ -50,7 +52,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches.BatchSize; i++)
+            for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -62,7 +64,7 @@ namespace NeuralNetworkNET.Unit
             batches.CrossShuffle();
             HashSet<int>
                 set3 = new HashSet<int>();
-            for (int i = 0; i < batches.BatchSize; i++)
+            for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -89,7 +91,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches.BatchSize; i++)
+            for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -101,7 +103,7 @@ namespace NeuralNetworkNET.Unit
             batches.CrossShuffle();
             HashSet<int>
                 set3 = new HashSet<int>();
-            for (int i = 0; i < batches.BatchSize; i++)
+            for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -151,7 +153,7 @@ namespace NeuralNetworkNET.Unit
             }
             HashSet<int>
                 set1 = new HashSet<int>();
-            for (int i = 0; i < batches1.BatchSize; i++)
+            for (int i = 0; i < batches1.BatchesCount; i++)
             {
                 int h = batches1.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -163,7 +165,7 @@ namespace NeuralNetworkNET.Unit
             batches2.BatchSize = 1437;
             HashSet<int>
                 set2 = new HashSet<int>();
-            for (int i = 0; i < batches2.BatchSize; i++)
+            for (int i = 0; i < batches2.BatchesCount; i++)
             {
                 int h = batches2.Batches[i].X.GetLength(0);
                 for (int j = 0; j < h; j++)
@@ -172,6 +174,35 @@ namespace NeuralNetworkNET.Unit
                 }
             }
             Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
+        }
+
+        [TestMethod]
+        public void IdTest1()
+        {
+            // Setup
+            float[,]
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            IDataset
+                set1 = DatasetLoader.Training((x, y), 1000),
+                set2 = DatasetLoader.Training((x, y), 1498);
+            Assert.IsTrue(set1.Id == set2.Id);
+            set2.To<IDataset, BatchesCollection>().CrossShuffle();
+            Assert.IsTrue(set1.Id == set2.Id);
+        }
+
+        [TestMethod]
+        public void IdTest2()
+        {
+            // Setup
+            float[,]
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            IDataset
+                set1 = DatasetLoader.Training((x, y), 1000),
+                set2 = DatasetLoader.Test((x, y));
+            set1.To<IDataset, BatchesCollection>().CrossShuffle();
+            Assert.IsTrue(set1.Id == set2.Id);
         }
     }
 }

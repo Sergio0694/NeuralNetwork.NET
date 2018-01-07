@@ -29,6 +29,13 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public int Count { get; }
 
         /// <inheritdoc/>
+        public int BatchesCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Batches.Length;
+        }
+
+        /// <inheritdoc/>
         public int InputFeatures => Batches[0].X.GetLength(1);
 
         /// <inheritdoc/>
@@ -41,7 +48,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             get
             {
                 if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
-                ref readonly SamplesBatch batch = ref Batches[i / Batches.Length];
+                ref readonly SamplesBatch batch = ref Batches[i / BatchSize];
                 return new DatasetSample(batch.X.Slice(i), batch.Y.Slice(i));
             }
         }
@@ -50,17 +57,29 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public int BatchSize
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Batches.Length;
-            set
-            {
-                // Setup
-                if (value < 10) throw new ArgumentOutOfRangeException(nameof(BatchSize), "The batch size must be greater than or equal to 10");
-                Reshape(value);
-            }
+            get => Batches[0].X.GetLength(0);
+            set => Reshape(value >= 10 ? value : throw new ArgumentOutOfRangeException(nameof(BatchSize), "The batch size must be greater than or equal to 10"));
         }
 
         /// <inheritdoc/>
         public long ByteSize => sizeof(float) * Count * (InputFeatures + OutputFeatures);
+
+        /// <inheritdoc/>
+        public int Id
+        {
+            get
+            {
+                int[] temp = new int[Count];
+                Parallel.For(0, Count, i =>
+                {
+                    ref readonly SamplesBatch batch = ref Batches[i / BatchSize];
+                    int offset = i % BatchSize;
+                    temp[i] = batch.X.Slice(offset).GetContentHashCode() ^ batch.Y.Slice(offset).GetContentHashCode();
+                }).AssertCompleted();
+                Array.Sort(temp);
+                return temp.AsSpan().GetContentHashCode();
+            }
+        }
 
         #endregion
 
@@ -190,9 +209,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public unsafe void CrossShuffle()
         {
             // Select the couples to cross-shuffle
-            int* indexes = stackalloc int[Batches.Length];
-            for (int i = 0; i < Batches.Length; i++) indexes[i] = i;
-            int n = Batches.Length;
+            int* indexes = stackalloc int[BatchesCount];
+            for (int i = 0; i < BatchesCount; i++) indexes[i] = i;
+            int n = BatchesCount;
             while (n > 1)
             {
                 int k = ThreadSafeRandom.NextInt(max: n);
@@ -237,10 +256,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                     Buffer.BlockCopy(tempY, 0, targetB.Y, sizeof(float) * wy * bound, sizeof(float) * wy);
                 }
             }
-            Parallel.For(0, Batches.Length / 2, Kernel).AssertCompleted();
+            Parallel.For(0, BatchesCount / 2, Kernel).AssertCompleted();
 
             // Shuffle the main list
-            n = Batches.Length;
+            n = Batches[BatchesCount - 1].X.GetLength(0) < BatchSize ? BatchesCount - 1 : BatchesCount; // Leave the odd batch in last position, if present
             while (n > 1)
             {
                 int k = ThreadSafeRandom.NextInt(max: n);
