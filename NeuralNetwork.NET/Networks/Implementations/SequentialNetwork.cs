@@ -322,11 +322,9 @@ namespace NeuralNetworkNET.Networks.Implementations
             int wy = y.Length, total = 0;
             void Kernel(int i)
             {
-                int
-                    offset = i * wy,
-                    maxHat = new Span<float>(pyHat + offset, wy).Argmax(float.MinValue),
-                    max = new Span<float>(pY + offset, wy).Argmax(float.MinValue);
-                if (max == maxHat) Interlocked.Increment(ref total);
+                int offset = i * wy;
+                if (NetworkManager.AccuracyTester(new Span<float>(pyHat + offset, wy), new Span<float>(pY + offset, wy))) 
+                    Interlocked.Increment(ref total);
             }
 
             // Check the correctly classified samples and calculate the cost
