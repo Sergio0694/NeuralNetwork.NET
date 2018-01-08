@@ -52,5 +52,26 @@ namespace NeuralNetworkNET.Unit
             Assert.IsFalse(tester(yHat, y1));
             Assert.IsTrue(tester(yHat, y2));
         }
+
+        [TestMethod]
+        public void TrimVerbatim()
+        {
+            const String text = @"import matplotlib.pyplot as plt
+                            x = [$VALUES$]
+                            plt.grid(linestyle=""dashed"")
+                            plt.ylabel(""$YLABEL$"")
+                            plt.xlabel(""Epoch"")
+                            plt.plot(x)
+                            plt.show()";
+            const String expected = @"import matplotlib.pyplot as plt
+x = [$VALUES$]
+plt.grid(linestyle=""dashed"")
+plt.ylabel(""$YLABEL$"")
+plt.xlabel(""Epoch"")
+plt.plot(x)
+plt.show()
+";
+            Assert.IsTrue(text.TrimVerbatim().Equals(expected));
+        }
     }
 }
