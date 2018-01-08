@@ -1,4 +1,5 @@
 ![](http://i.pi.gy/8ZDDE.png)
+[![NuGet](https://img.shields.io/nuget/v/NeuralNetwork.NET.svg)](https://www.nuget.org/packages/NeuralNetwork.NET/) [![NuGet](https://img.shields.io/nuget/dt/NeuralNetwork.NET.svg)](https://www.nuget.org/stats/packages/NeuralNetwork.NET?groupby=Version) [![Twitter Follow](https://img.shields.io/twitter/follow/Sergio0694.svg?style=social&label=Follow)](https://twitter.com/SergioPedri)
 
 # What is it?
 
@@ -140,10 +141,10 @@ There's also an additional `SaveMetadataAsJson` method to export the metadata of
 # Requirements
 
 The **NeuralNetwork.NET** library requires .NET Standard 2.0 support, so it is available for applications targeting:
-- .NET Framework >= 4.7.1
+- .NET Framework >= 4.6.1
 - .NET Core >= 2.0
-- New versions of Mono and Xamarin.
+- UWP (from SDK 10.0.16299)
+- Mono 5.4
+- Xamarin.iOS 10.14, Xamarin.Mac 3.8, Xamarin.Android 8.0
 
 In addition to the frameworks above, you need an IDE with C# 7.2 support to compile the library on your PC.
-
-The cuDNN layers require .NET Framework, Xamarin or Mono and a CUDA enabled GPU.
