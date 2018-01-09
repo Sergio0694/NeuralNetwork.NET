@@ -1,27 +1,27 @@
-﻿using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.APIs.Results;
-using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
-using NeuralNetworkNET.SupervisedLearning.Data;
-using NeuralNetworkNET.SupervisedLearning.Optimization;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Services;
+using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
+using NeuralNetworkNET.SupervisedLearning.Data;
+using NeuralNetworkNET.SupervisedLearning.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
+using NeuralNetworkNET.SupervisedLearning.Trackers;
 
-namespace NeuralNetworkNET.Networks.Implementations
+namespace NeuralNetworkNET.SupervisedLearning.Optimization
 {
     /// <summary>
     /// A static class that contains various network optimization algorithms
     /// </summary>
-    internal static class NetworkTrainer
+    internal static partial class NetworkTrainer
     {
         /// <summary>
         /// Trains the target <see cref="SequentialNetwork"/> with the given parameters and data
@@ -50,150 +50,24 @@ namespace NeuralNetworkNET.Networks.Implementations
             SharedEventsService.TrainingStarting.Raise();
             switch (algorithm)
             {
+                /* =================
+                 * Optimization
+                 * =================
+                 * The different optimization methods available are called here, and they will in turn call the base Optimize method, passing a WeightsUpdater
+                 * delegate that implements their own optimization logic. The reason why these methods are calling one another (instead of passing a single delegate
+                 * for each different optimizer) is that this way each optimizer implementation can keep local parameters allocated on the stack, if necessary, while
+                 * that wouldn't be possible with a delegate. Moreover, this way they can handle their own cleanup for unmanaged resources (for temporary training data)
+                 * without the need to pass another optional delegate just for that reason. */
                 case StochasticGradientDescentInfo sgd:
                     return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdadeltaInfo adadelta:
                     return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationDataset, testDataset, token);
+                case AdamInfo adam:
+                    return Adam(network, batches, epochs, dropout, adam.Eta, adam.Beta1, adam.Beta2, adam.Epsilon, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }
         }
-
-        #region Optimization algorithms
-
-        /// <summary>
-        /// Trains the target <see cref="SequentialNetwork"/> using the gradient descent algorithm
-        /// </summary>
-        [NotNull]
-        private static TrainingSessionResult StochasticGradientDescent(
-            SequentialNetwork network,
-            BatchesCollection miniBatches,
-            int epochs, float dropout, float eta, float lambda,
-            [CanBeNull] IProgress<BatchProgress> batchProgress,
-            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
-            [CanBeNull] ValidationDataset validationDataset,
-            [CanBeNull] TestDataset testDataset,
-            CancellationToken token)
-        {
-            // Plain SGD weights update
-            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
-            {
-                // Tweak the weights
-                float
-                    alpha = eta / samples,
-                    l2Factor = eta * lambda / samples;
-                fixed (float* pw = layer.Weights)
-                {
-                    float* pdj = dJdw;
-                    int w = layer.Weights.Length;
-                    for (int x = 0; x < w; x++)
-                        pw[x] -= l2Factor * pw[x] + alpha * pdj[x];
-                }
-
-                // Tweak the biases of the lth layer
-                fixed (float* pb = layer.Biases)
-                {
-                    float* pdj = dJdb;
-                    int w = layer.Biases.Length;
-                    for (int x = 0; x < w; x++)
-                        pb[x] -= alpha * pdj[x];
-                }
-            }
-
-            return Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationDataset, testDataset, token);
-        }
-
-        /// <summary>
-        /// Trains the target <see cref="SequentialNetwork"/> using the Adadelta algorithm
-        /// </summary>
-        [NotNull]
-        private static unsafe TrainingSessionResult Adadelta(
-            SequentialNetwork network,
-            BatchesCollection miniBatches,
-            int epochs, float dropout, float rho, float epsilon, float l2Factor,
-            [CanBeNull] IProgress<BatchProgress> batchProgress,
-            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
-            [CanBeNull] ValidationDataset validationDataset,
-            [CanBeNull] TestDataset testDataset,
-            CancellationToken token)
-        {
-            // Initialize Adadelta parameters
-            Tensor*
-                egSquaredW = stackalloc Tensor[network.WeightedLayersIndexes.Length],
-                eDeltaxSquaredW = stackalloc Tensor[network.WeightedLayersIndexes.Length],
-                egSquaredB = stackalloc Tensor[network.WeightedLayersIndexes.Length],
-                eDeltaxSquaredB = stackalloc Tensor[network.WeightedLayersIndexes.Length];
-            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
-            {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
-                Tensor.NewZeroed(1, layer.Weights.Length, out egSquaredW[i]);
-                Tensor.NewZeroed(1, layer.Weights.Length, out eDeltaxSquaredW[i]);
-                Tensor.NewZeroed(1, layer.Biases.Length, out egSquaredB[i]);
-                Tensor.NewZeroed(1, layer.Biases.Length, out eDeltaxSquaredB[i]);
-            }
-
-            // Adadelta update for weights and biases
-            void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
-            {
-                fixed (float* pw = layer.Weights)
-                {
-                    float*
-                        pdj = dJdw,
-                        egSqrt = egSquaredW[i],
-                        eDSqrtx = eDeltaxSquaredW[i];
-                    int w = layer.Weights.Length;
-                    for (int x = 0; x < w; x++)
-                    {
-                        float gt = pdj[x];
-                        egSqrt[x] = rho * egSqrt[x] + (1 - rho) * gt * gt;
-                        float
-                            rmsDx_1 = (float)Math.Sqrt(eDSqrtx[x] + epsilon),
-                            rmsGt = (float)Math.Sqrt(egSqrt[x] + epsilon),
-                            dx = -(rmsDx_1 / rmsGt) * gt;
-                        eDSqrtx[x] = rho * eDSqrtx[x] + (1 - rho) * dx * dx;
-                        pw[x] += dx - l2Factor * pw[x];
-                    }
-                }
-
-                // Tweak the biases of the lth layer
-                fixed (float* pb = layer.Biases)
-                {
-                    float*
-                        pdj = dJdb,
-                        egSqrt = egSquaredB[i],
-                        eDSqrtb = eDeltaxSquaredB[i];
-                    int w = layer.Biases.Length;
-                    for (int b = 0; b < w; b++)
-                    {
-                        float gt = pdj[b];
-                        egSqrt[b] = rho * egSqrt[b] + (1 - rho) * gt * gt;
-                        float
-                            rmsDx_1 = (float)Math.Sqrt(eDSqrtb[b] + epsilon),
-                            rmsGt = (float)Math.Sqrt(egSqrt[b] + epsilon),
-                            db = -(rmsDx_1 / rmsGt) * gt;
-                        eDSqrtb[b] = rho * eDSqrtb[b] + (1 - rho) * db * db;
-                        pb[b] += db - l2Factor * pb[b];
-                    }
-                }
-            }
-
-            TrainingSessionResult result = Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationDataset, testDataset, token);
-
-            // Cleanup
-            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
-            {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
-                egSquaredW[i].Free();
-                eDeltaxSquaredW[i].Free();
-                egSquaredB[i].Free();
-                eDeltaxSquaredB[i].Free();
-            }
-            return result;
-        }
-
-        #endregion
-
-        #region Core optimization
 
         /// <summary>
         /// Trains the target <see cref="SequentialNetwork"/> using the input algorithm
@@ -275,7 +149,5 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);
         }
-
-        #endregion
     }
 }

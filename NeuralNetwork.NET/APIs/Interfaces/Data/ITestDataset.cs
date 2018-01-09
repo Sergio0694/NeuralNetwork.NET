@@ -1,6 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.APIs.Interfaces.Data
 {

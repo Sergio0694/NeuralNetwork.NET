@@ -7,7 +7,7 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace DigitsTest

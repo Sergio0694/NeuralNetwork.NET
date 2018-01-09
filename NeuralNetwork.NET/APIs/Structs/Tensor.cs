@@ -64,6 +64,18 @@ namespace NeuralNetworkNET.APIs.Structs
             get => ref Unsafe.AsRef<float>(this);
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="Tensor"/> value for the specific index
+        /// </summary>
+        /// <param name="i">The target index to read or write</param>
+        public unsafe float this[int i]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ((float*)this)[i];
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => ((float*)this)[i] = value;
+        }
+
         #endregion
 
         /// <summary>

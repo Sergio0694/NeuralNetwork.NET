@@ -13,6 +13,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.Unit

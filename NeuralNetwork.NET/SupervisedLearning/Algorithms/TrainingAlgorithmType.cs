@@ -13,6 +13,11 @@
         /// <summary>
         /// The Adadelta adaptive learning method, by Matthew D. Zeiler, see <a href="https://arxiv.org/abs/1212.5701">arxiv.org/abs/1212.5701</a>
         /// </summary>
-        Adadelta
+        Adadelta,
+
+        /// <summary>
+        /// The Adam learning method, by Diederik P. Kingma and Jimmy Lei Ba, see <a href="https://arxiv.org/pdf/1412.6980v8.pdf">arxiv.org/pdf/1412.6980v8.pdf</a>
+        /// </summary>
+        Adam
     }
 }

@@ -27,7 +27,7 @@ using System;
 using System.Collections.Generic;
 using NeuralNetworkNET.Extensions;
 
-namespace NeuralNetworkNET.SupervisedLearning.Optimization
+namespace NeuralNetworkNET.SupervisedLearning.Trackers
 {
     /// <summary>
     ///   Relative convergence criteria

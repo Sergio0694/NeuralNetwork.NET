@@ -6,8 +6,8 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Data;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 

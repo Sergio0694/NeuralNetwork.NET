@@ -17,6 +17,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 

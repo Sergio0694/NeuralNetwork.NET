@@ -5,7 +5,7 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 
-namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
+namespace NeuralNetworkNET.SupervisedLearning.Parameters
 {
     /// <summary>
     /// A base class for an optional dataset to use in a training session
