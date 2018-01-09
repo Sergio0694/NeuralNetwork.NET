@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -20,8 +21,10 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="item">The item to cast</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOut To<TIn, TOut>([NotNull] this TIn item) where TOut : class, TIn => item as TOut 
-            ?? throw new InvalidOperationException($"The item of type {typeof(TIn)} is a {item.GetType()} instance and can't be cast to {typeof(TOut)}");
+        public static TOut To<TIn, TOut>([NotNull] this TIn item)
+            where TIn : class
+            where TOut : TIn
+            => (TOut)item;
 
         /// <summary>
         /// Returns the maximum value between two numbers
@@ -137,6 +140,21 @@ namespace NeuralNetworkNET.Extensions
         public static void AssertCompleted(in this ParallelLoopResult result)
         {
             if (!result.IsCompleted) throw new InvalidOperationException("Error while performing the parallel loop");
+        }
+
+        /// <summary>
+        /// Removes the left spaces from the input verbatim string
+        /// </summary>
+        /// <param name="text">The string to trim</param>
+        [Pure, NotNull]
+        public static String TrimVerbatim([NotNull] this String text)
+        {
+            String[] lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            return lines.Aggregate(new StringBuilder(), (b, s) =>
+            {
+                b.AppendLine(s.Trim());
+                return b;
+            }).ToString();
         }
     }
 }

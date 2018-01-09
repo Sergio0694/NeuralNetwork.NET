@@ -5,6 +5,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -20,7 +21,7 @@ namespace NeuralNetworkNET.Helpers
                                                       plt.ylabel(""$YLABEL$"")
                                                       plt.xlabel(""Epoch"")
                                                       plt.plot(x)
-                                                      plt.show()".Split(new[] { Environment.NewLine }, StringSplitOptions.None).Aggregate(String.Empty, (s, l) => $"{s}{l.Trim()}{Environment.NewLine}");
+                                                      plt.show()".TrimVerbatim();
 
         // The custom 4-spaces indentation for the data points (the \t character is not consistent across different editors)
         private const String Tab = "    ";

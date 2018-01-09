@@ -5,6 +5,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
 using System.IO;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {
@@ -18,7 +19,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void NetworkSerialization()
         {
-            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForRgbImage(120, 120),
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Rgb24>(120, 120),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.New(ConvolutionMode.Convolution, 2, 2), (5, 5), 20, ActivationFunctionType.ELU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (10, 10), 20, ActivationFunctionType.Identity),

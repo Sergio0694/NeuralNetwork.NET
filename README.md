@@ -37,7 +37,7 @@ The **NeuralNetwork.NET** library exposes easy to use classes and methods to cre
 The first step is to create a custom network structure. Here is an example with a sequential network (a stack of layers):
 
 ```C#
-INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
     NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
     NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
     NetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
