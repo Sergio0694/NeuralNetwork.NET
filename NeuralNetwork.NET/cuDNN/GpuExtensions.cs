@@ -8,7 +8,7 @@ namespace NeuralNetworkNET.cuDNN
     /// <summary>
     /// An extension class with some additions to the <see cref="Gpu"/> class
     /// </summary>
-    internal static class GpuExtensions
+    public static class GpuExtensions
     {
         #region Memory copy
 
@@ -111,7 +111,6 @@ namespace NeuralNetworkNET.cuDNN
         /// <param name="n">The height of the input memory area</param>
         /// <param name="chw">The width of the input memory area</param>
         /// <param name="result">The resulting matrix</param>
-        [MustUseReturnValue]
         public static void CopyToHost([NotNull] this DeviceMemory<float> source, int n, int chw, out Tensor result)
         {
             Tensor.New(n, chw, out result);
@@ -124,6 +123,7 @@ namespace NeuralNetworkNET.cuDNN
         /// Gets the amount of available GPU memory for a given GPU
         /// </summary>
         /// <param name="gpu">The target <see cref="Gpu"/> to use to retrieve the info</param>
+        [PublicAPI]
         [Pure]
         public static unsafe (ulong Free, ulong Total) GetFreeMemory([NotNull] this Gpu gpu)
         {
