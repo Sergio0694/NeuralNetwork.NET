@@ -26,5 +26,16 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static AdadeltaInfo Adadelta(float rho = 0.95f, float epsilon = 1e-8f, float l2 = 0f) => new AdadeltaInfo(rho, epsilon, l2);
+
+        /// <summary>
+        /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.Adam"/> algorithm
+        /// </summary>
+        /// <param name="eta">The learning rate factor</param>
+        /// <param name="beta1">The beta1 factor for the first moment vector</param>
+        /// <param name="beta2">The beta2 factor for the second moment vector</param>
+        /// <param name="epsilon">The Adadelta epsilon parameter</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static AdamInfo Adam(float eta = 0.001f, float beta1 = 0.9f, float beta2 = 0.999f, float epsilon = 1e-8f) => new AdamInfo(eta, beta1, beta2, epsilon);
     }
 }

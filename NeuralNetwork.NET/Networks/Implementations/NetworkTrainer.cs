@@ -182,7 +182,6 @@ namespace NeuralNetworkNET.Networks.Implementations
             // Cleanup
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
                 egSquaredW[i].Free();
                 eDeltaxSquaredW[i].Free();
                 egSquaredB[i].Free();
