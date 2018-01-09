@@ -7,6 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NeuralNetworkNET.Networks.Layers.Cuda;
 using NeuralNetworkNET.Networks.Layers.Initialization;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.Cuda.Unit
 {
@@ -21,7 +22,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         public unsafe void Inception1x1()
         {
             float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(10), 32 * 32 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(10, 32 * 32 * 3);
-            CuDnnConvolutionalLayer conv = new CuDnnConvolutionalLayer(TensorInfo.CreateForRgbImage(32, 32), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
+            CuDnnConvolutionalLayer conv = new CuDnnConvolutionalLayer(TensorInfo.CreateImage<Rgb24>(32, 32), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
             CuDnnInceptionLayer inception = new CuDnnInceptionLayer(conv.InputInfo, InceptionInfo.New(10, 10, 10, 10, 10, PoolingMode.Max, 10));
             fixed (float* pw = inception.Weights)
                 Unsafe.InitBlock(pw, 0, (uint)(sizeof(float) * inception.Weights.Length));
@@ -87,9 +88,9 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(10), 32 * 32 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(10, 32 * 32 * 3);
             CuDnnConvolutionalLayer
-                conv1 = new CuDnnConvolutionalLayer(TensorInfo.CreateForRgbImage(32, 32), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian),
+                conv1 = new CuDnnConvolutionalLayer(TensorInfo.CreateImage<Rgb24>(32, 32), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian),
                 conv2 = new CuDnnConvolutionalLayer(conv1.OutputInfo, ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 1, 1), (3, 3), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
-            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateForRgbImage(32, 32), InceptionInfo.New(10, 10, 10, 10, 10, PoolingMode.Max, 10));
+            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateImage<Rgb24>(32, 32), InceptionInfo.New(10, 10, 10, 10, 10, PoolingMode.Max, 10));
             fixed (float* pw = inception.Weights)
                 Unsafe.InitBlock(pw, 0, (uint)(sizeof(float) * inception.Weights.Length));
             Buffer.BlockCopy(conv1.Weights, 0, inception.Weights, sizeof(float) * 3 * 10, sizeof(float) * conv1.Weights.Length);
@@ -156,9 +157,9 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(10), 12 * 12 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(10, 12 * 12 * 3);
             CuDnnConvolutionalLayer
-                conv1 = new CuDnnConvolutionalLayer(TensorInfo.CreateForRgbImage(12, 12), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian),
+                conv1 = new CuDnnConvolutionalLayer(TensorInfo.CreateImage<Rgb24>(12, 12), ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian),
                 conv2 = new CuDnnConvolutionalLayer(conv1.OutputInfo, ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 2, 2), (5, 5), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
-            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateForRgbImage(12, 12), InceptionInfo.New(3, 2, 2, 10, 10, PoolingMode.Max, 2));
+            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateImage<Rgb24>(12, 12), InceptionInfo.New(3, 2, 2, 10, 10, PoolingMode.Max, 2));
             fixed (float* pw = inception.Weights)
                 Unsafe.InitBlock(pw, 0, (uint)(sizeof(float) * inception.Weights.Length));
             Buffer.BlockCopy(conv1.Weights, 0, inception.Weights, sizeof(float) * (3 * 3 + 3 * 2 + 3 * 3 * 2 * 2), sizeof(float) * conv1.Weights.Length);
@@ -223,9 +224,9 @@ namespace NeuralNetworkNET.Cuda.Unit
         public unsafe void InceptionPoolPipeline()
         {
             float[,] x = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(10), 12 * 12 * 3, WeightsInitializationMode.GlorotNormal).AsSpan().AsMatrix(10, 12 * 12 * 3);
-            CuDnnPoolingLayer pool = new CuDnnPoolingLayer(TensorInfo.CreateForRgbImage(12, 12), PoolingInfo.New(PoolingMode.Max, 3, 3, 1, 1, 1, 1), ActivationFunctionType.ReLU);
+            CuDnnPoolingLayer pool = new CuDnnPoolingLayer(TensorInfo.CreateImage<Rgb24>(12, 12), PoolingInfo.New(PoolingMode.Max, 3, 3, 1, 1, 1, 1), ActivationFunctionType.ReLU);
             CuDnnConvolutionalLayer conv = new CuDnnConvolutionalLayer(pool.OutputInfo, ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (1, 1), 10, ActivationFunctionType.ReLU, BiasInitializationMode.Gaussian);
-            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateForRgbImage(12, 12), InceptionInfo.New(3, 2, 2, 2, 2, PoolingMode.Max, 10));
+            CuDnnInceptionLayer inception = new CuDnnInceptionLayer(TensorInfo.CreateImage<Rgb24>(12, 12), InceptionInfo.New(3, 2, 2, 2, 2, PoolingMode.Max, 10));
             fixed (float* pw = inception.Weights)
                 Unsafe.InitBlock(pw, 0, (uint)(sizeof(float) * inception.Weights.Length));
             Buffer.BlockCopy(conv.Weights, 0, inception.Weights, sizeof(float) * (3 * 3 + 3 * 2 + 3 * 3 * 2 * 2 + 3 * 2 + 5 * 5 * 2 * 2), sizeof(float) * conv.Weights.Length);

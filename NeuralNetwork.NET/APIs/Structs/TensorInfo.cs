@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.APIs.Structs
 {
@@ -67,30 +68,38 @@ namespace NeuralNetworkNET.APIs.Structs
         }
 
         /// <summary>
-        /// Creates a new <see cref="TensorInfo"/> instance for an RGB image
-        /// </summary>
-        /// <param name="height">The height of the input image</param>
-        /// <param name="width">The width of the input image</param>
-        [PublicAPI]
-        [Pure]
-        public static TensorInfo CreateForRgbImage(int height, int width) => new TensorInfo(height, width, 3);
-
-        /// <summary>
-        /// Creates a new <see cref="TensorInfo"/> instance for a grayscale image
-        /// </summary>
-        /// <param name="height">The height of the input image</param>
-        /// <param name="width">The width of the input image</param>
-        [PublicAPI]
-        [Pure]
-        public static TensorInfo CreateForGrayscaleImage(int height, int width) => new TensorInfo(height, width, 1);
-
-        /// <summary>
         /// Creates a new <see cref="TensorInfo"/> instance for a linear network layer, without keeping track of spatial info
         /// </summary>
         /// <param name="size">The input size</param>
         [PublicAPI]
         [Pure]
         public static TensorInfo CreateLinear(int size) => new TensorInfo(1, 1, size);
+
+        /// <summary>
+        /// Creates a new <see cref="TensorInfo"/> instance for an image with a user-defined pixel type
+        /// </summary>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <param name="height">The height of the input image</param>
+        /// <param name="width">The width of the input image</param>
+        [PublicAPI]
+        [Pure]
+        public static TensorInfo CreateImage<TPixel>(int height, int width) where TPixel : struct, IPixel<TPixel>
+        {
+            if (typeof(TPixel) == typeof(Alpha8)) return new TensorInfo(height, width, 1);
+            if (typeof(TPixel) == typeof(Rgb24)) return new TensorInfo(height, width, 3);
+            if (typeof(TPixel) == typeof(Argb32)) return new TensorInfo(height, width, 4);
+            throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="TensorInfo"/> instance for with a custom 3D shape
+        /// </summary>
+        /// <param name="height">The input volume height</param>
+        /// <param name="width">The input volume width</param>
+        /// <param name="channels">The number of channels in the input volume</param>
+        [PublicAPI]
+        [Pure]
+        public static TensorInfo CreateVolume(int height, int width, int channels) => new TensorInfo(height, width, channels);
 
         #endregion
 
