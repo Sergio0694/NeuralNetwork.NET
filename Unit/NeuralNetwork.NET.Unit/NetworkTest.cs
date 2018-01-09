@@ -113,5 +113,8 @@ namespace NeuralNetworkNET.Unit
 
         [TestMethod]
         public void AdamTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adam()));
+
+        [TestMethod]
+        public void AdaMaxTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaMax()));
     }
 }
