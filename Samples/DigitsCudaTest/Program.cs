@@ -7,6 +7,7 @@ using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
@@ -15,42 +16,37 @@ using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
 
 namespace DigitsCudaTest
 {
-    class Program
+    public class Program
     {
-        static async Task Main()
+        public static async Task Main()
         {
-            // Parse the dataset and create the network
-            (var training, var test) = DataParser.LoadDatasets();
+            // Create the network
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
                 CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),
                 CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.FullyConnected(64, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.Softmax(10));
 
-            // Setup and start the training
+            // Prepare the dataset
+            (var training, var test) = DataParser.LoadDatasets();
+            ITrainingDataset trainingData = DatasetLoader.Training(training, 400); // Batches of 400 samples
+            ITestDataset testData = DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
+            {
+                Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
+            }));
+
+            // Setup and network training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, 
-                DatasetLoader.Training(training, 400), 
+                trainingData, 
                 TrainingAlgorithms.Adadelta(),
                 20, 0.5f,
-                new Progress<BatchProgress>(p =>
-                {
-                    Console.SetCursorPosition(0, Console.CursorTop);
-                    int n = (int)(p.Percentage * 32 / 100);
-                    char[] c = new char[32];
-                    for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
-                    Console.Write($"[{new String(c)}] ");
-                }),
-                testDataset: DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
-                {
-                    Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
-                })), token: cts.Token);
+                new Progress<BatchProgress>(TrackBatchProgress),
+                testDataset: testData, token: cts.Token);
 
             // Save the training reports
             String
@@ -74,6 +70,16 @@ namespace DigitsCudaTest
             Console.Write(">> ");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write($"{text}\n");
+        }
+
+        // Training monitor
+        private static void TrackBatchProgress(BatchProgress progress)
+        {
+            Console.SetCursorPosition(0, Console.CursorTop);
+            int n = (int)(progress.Percentage * 32 / 100); // 32 is the number of progress '=' characters to display
+            char[] c = new char[32];
+            for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
+            Console.Write($"[{new String(c)}] ");
         }
     }
 }
