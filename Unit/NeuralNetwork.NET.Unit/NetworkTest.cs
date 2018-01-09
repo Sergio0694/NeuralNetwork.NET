@@ -85,18 +85,33 @@ namespace NeuralNetworkNET.Unit
                     ParseSamples(Path.Combine(path, TestSetValuesFilename), Path.Combine(path, TestSetLabelsFilename), 10_000));
         }
 
-        [TestMethod]
-        public void GradientDescentTest1()
+        private static bool TestTrainingMethod(ITrainingAlgorithmInfo info)
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
             BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
             SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
-            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 4, 0, TrainingAlgorithms.StochasticGradientDescent(), null, null, null, null, default);
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 1, 0, info, null, null, null, null, default);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
             (_, _, float accuracy) = network.Evaluate(testSet);
-            Assert.IsTrue(accuracy > 80);
+            if (accuracy < 80)
+            {
+                // Try again, just in case
+                result = NetworkTrainer.TrainNetwork(network, batches, 1, 0, info, null, null, null, null, default);
+                Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
+                (_, _, accuracy) = network.Evaluate(testSet);
+            }
+            return accuracy > 80;
         }
+
+        [TestMethod]
+        public void GradientDescentTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.StochasticGradientDescent()));
+
+        [TestMethod]
+        public void AdadeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adadelta()));
+
+        [TestMethod]
+        public void AdamTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adam()));
     }
 }
