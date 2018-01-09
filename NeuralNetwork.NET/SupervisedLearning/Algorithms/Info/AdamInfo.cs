@@ -34,8 +34,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Algorithms.Info
         internal AdamInfo(float eta, float beta1, float beta2, float epsilon)
         {
             Eta = eta;
-            Beta1 = beta1 > 0 && beta1 < 1 ? beta1 : throw new ArgumentOutOfRangeException(nameof(beta1), "The beta1 factor must be in the [0,1) range");
-            Beta2 = beta2 > 0 && beta2 < 1 ? beta2 : throw new ArgumentOutOfRangeException(nameof(beta2), "The beta2 factor must be in the [0,1) range");
+            Beta1 = beta1 >= 0 && beta1 < 1 ? beta1 : throw new ArgumentOutOfRangeException(nameof(beta1), "The beta1 factor must be in the [0,1) range");
+            Beta2 = beta2 >= 0 && beta2 < 1 ? beta2 : throw new ArgumentOutOfRangeException(nameof(beta2), "The beta2 factor must be in the [0,1) range");
             Epsilon = epsilon;
         }
     }

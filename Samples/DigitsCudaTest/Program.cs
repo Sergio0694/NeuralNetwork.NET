@@ -23,12 +23,11 @@ namespace DigitsCudaTest
         {
             // Create the network
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 10, ActivationFunctionType.Identity),
                 CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 10, ActivationFunctionType.Identity),
                 CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
-                CuDnnNetworkLayers.FullyConnected(64, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.Softmax(10));
 
             // Prepare the dataset
@@ -44,7 +43,7 @@ namespace DigitsCudaTest
             Console.CancelKeyPress += (s, e) => cts.Cancel();
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, 
                 trainingData, 
-                TrainingAlgorithms.Adadelta(),
+                TrainingAlgorithms.Adam(),
                 20, 0.5f,
                 new Progress<BatchProgress>(TrackBatchProgress),
                 testDataset: testData, token: cts.Token);
