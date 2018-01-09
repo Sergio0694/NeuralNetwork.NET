@@ -13,6 +13,7 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace DigitsCudaTest
 {
@@ -21,7 +22,7 @@ namespace DigitsCudaTest
         public static async Task Main()
         {
             // Create the network
-            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
                 CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),

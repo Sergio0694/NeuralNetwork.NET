@@ -22,12 +22,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override LayerType LayerType { get; } = LayerType.FullyConnected;
 
         public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
-            : base(input, TensorInfo.CreateLinear(neurons),
+            : base(input, TensorInfo.Linear(neurons),
                   WeightsProvider.NewFullyConnectedWeights(input, neurons, weightsMode),
                   WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
         public FullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
-            : base(input, TensorInfo.CreateLinear(neurons), weights, biases, activation)
+            : base(input, TensorInfo.Linear(neurons), weights, biases, activation)
         {
             if (neurons != biases.Length)
                 throw new ArgumentException("The biases vector must have the same size as the number of output neurons");

@@ -13,6 +13,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -88,7 +89,7 @@ namespace NeuralNetworkNET.Unit
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
             BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
-            SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.CreateForGrayscaleImage(28, 28),
+            SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
             TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 4, 0, TrainingAlgorithms.StochasticGradientDescent(), null, null, null, null, default);
