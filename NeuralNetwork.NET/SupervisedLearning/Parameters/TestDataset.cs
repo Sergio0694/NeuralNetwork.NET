@@ -1,9 +1,9 @@
 ﻿using System;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces.Data;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
-namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
+namespace NeuralNetworkNET.SupervisedLearning.Parameters
 {
     /// <summary>
     /// A class that contains additional parameters to test a network being trained to monitor the general progress
