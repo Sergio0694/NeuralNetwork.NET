@@ -59,7 +59,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
         public static ITrainingDataset Training<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, int size, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
             where TPixel : struct, IPixel<TPixel>
-            => BatchesCollection.From(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.LoadSample(xy.X, modify), xy.Y)), size);
+            => BatchesCollection.From(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)), size);
 
         #endregion
 
@@ -110,7 +110,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
         public static IValidationDataset Validation<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, float tolerance = 1e-2f, int epochs = 5, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
             where TPixel : struct, IPixel<TPixel>
-            => Validation(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.LoadSample(xy.X, modify), xy.Y)).AsParallel(), tolerance, epochs);
+            => Validation(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)).AsParallel(), tolerance, epochs);
 
         #endregion
 
@@ -157,7 +157,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="progress">The optional progress callback to use</param>
         public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
             where TPixel : struct, IPixel<TPixel>
-            => Test(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.LoadSample(xy.X, modify), xy.Y)).AsParallel(), progress);
+            => Test(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)).AsParallel(), progress);
 
         #endregion
     }

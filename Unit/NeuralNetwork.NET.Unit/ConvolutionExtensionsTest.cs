@@ -38,11 +38,11 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 1, 16, out Tensor mTensor);
                 Tensor.New(1, 4, out Tensor result);
-                CpuDnn.PoolingForward(mTensor, TensorInfo.CreateImage<Alpha8>(4, 4), result);
+                CpuDnn.PoolingForward(mTensor, TensorInfo.Image<Alpha8>(4, 4), result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
 
                 // Upscale
-                CpuDnn.PoolingBackward(mTensor, TensorInfo.CreateImage<Alpha8>(4, 4), result, mTensor);
+                CpuDnn.PoolingBackward(mTensor, TensorInfo.Image<Alpha8>(4, 4), result, mTensor);
                 float[,] expected =
                 {
                     {
@@ -87,7 +87,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 1, 49, out Tensor mTensor);
                 Tensor.New(1, 16, out Tensor result);
-                CpuDnn.PoolingForward(mTensor, TensorInfo.CreateImage<Alpha8>(7, 7), result);
+                CpuDnn.PoolingForward(mTensor, TensorInfo.Image<Alpha8>(7, 7), result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
@@ -113,7 +113,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 1, 4, out Tensor mTensor);
                 Tensor.New(1, 1, out Tensor result);
-                CpuDnn.PoolingForward(mTensor, TensorInfo.CreateImage<Alpha8>(2, 2), result);
+                CpuDnn.PoolingForward(mTensor, TensorInfo.Image<Alpha8>(2, 2), result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
@@ -154,7 +154,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 2, 16, out Tensor mTensor);
                 Tensor.New(2, 4, out Tensor result);
-                CpuDnn.PoolingForward(mTensor, TensorInfo.CreateImage<Alpha8>(4, 4), result);
+                CpuDnn.PoolingForward(mTensor, TensorInfo.Image<Alpha8>(4, 4), result);
                 Assert.IsTrue(result.ToArray2D().ContentEquals(r));
                 result.Free();
             }
@@ -250,7 +250,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 1, 16, out Tensor mTensor);
                 Tensor.Reshape(pp, 1, 4, out Tensor pTensor);
-                CpuDnn.PoolingBackward(mTensor, TensorInfo.CreateImage<Alpha8>(4, 4), pTensor, mTensor);
+                CpuDnn.PoolingBackward(mTensor, TensorInfo.Image<Alpha8>(4, 4), pTensor, mTensor);
                 Assert.IsTrue(mTensor.ToArray2D().ContentEquals(r));
             }
         }
@@ -510,7 +510,7 @@ namespace NeuralNetworkNET.Unit
             {
                 Tensor.Reshape(pm, 1, 9, out Tensor mTensor);
                 Tensor.New(1, 1, out Tensor v);
-                CpuDnn.ConvolutionBackwardBias(mTensor, TensorInfo.CreateImage<Alpha8>(3, 3), v);
+                CpuDnn.ConvolutionBackwardBias(mTensor, TensorInfo.Image<Alpha8>(3, 3), v);
                 Assert.IsTrue(v.ToArray().ContentEquals(r));
                 v.Free();
             }

@@ -49,7 +49,7 @@ namespace NeuralNetworkNET.Unit
         {
             using (MemoryStream stream = new MemoryStream())
             {
-                float[] w = WeightsProvider.NewFullyConnectedWeights(TensorInfo.CreateLinear(784), 30, WeightsInitializationMode.GlorotNormal);
+                float[] w = WeightsProvider.NewFullyConnectedWeights(TensorInfo.Linear(784), 30, WeightsInitializationMode.GlorotNormal);
                 stream.WriteShuffled(w);
                 Assert.IsTrue(stream.Position == sizeof(float) * w.Length);
                 stream.Seek(0, SeekOrigin.Begin);
@@ -61,7 +61,7 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void NetworkSerialization()
         {
-            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateImage<Rgb24>(120, 120),
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Rgb24>(120, 120),
                 NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.AbsoluteReLU),
                 NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ELU),
                 NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),

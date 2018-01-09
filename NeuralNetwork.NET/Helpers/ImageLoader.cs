@@ -17,14 +17,14 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="path">The path of the image to load</param>
         /// <param name="modify">The optional changes to apply to the image</param>
         [Pure, NotNull]
-        public static float[] LoadSample<TPixel>([NotNull] String path, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
+        public static float[] Load<TPixel>([NotNull] String path, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
         {
             using (Image<TPixel> image = Image.Load<TPixel>(path))
             {
                 if (modify != null) image.Mutate(modify);
-                if (typeof(TPixel) == typeof(Alpha8)) return LoadSample(image as Image<Alpha8>);
-                if (typeof(TPixel) == typeof(Rgb24)) return LoadSample(image as Image<Rgb24>);
-                if (typeof(TPixel) == typeof(Argb32)) return LoadSample(image as Image<Argb32>);
+                if (typeof(TPixel) == typeof(Alpha8)) return Load(image as Image<Alpha8>);
+                if (typeof(TPixel) == typeof(Rgb24)) return Load(image as Image<Rgb24>);
+                if (typeof(TPixel) == typeof(Argb32)) return Load(image as Image<Argb32>);
                 throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
             }
         }
@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Helpers
 
         // Loads an RGBA32 image
         [Pure, NotNull]
-        private static unsafe float[] LoadSample(Image<Argb32> image)
+        private static unsafe float[] Load(Image<Argb32> image)
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 4];
@@ -54,7 +54,7 @@ namespace NeuralNetworkNET.Helpers
 
         // Loads an RGBA24 image
         [Pure, NotNull]
-        private static unsafe float[] LoadSample(Image<Rgb24> image)
+        private static unsafe float[] Load(Image<Rgb24> image)
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 3];
@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.Helpers
 
         // Loads an ALPHA8 image
         [Pure, NotNull]
-        private static unsafe float[] LoadSample(Image<Alpha8> image)
+        private static unsafe float[] Load(Image<Alpha8> image)
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution];

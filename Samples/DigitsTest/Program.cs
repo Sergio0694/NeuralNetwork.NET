@@ -16,7 +16,7 @@ namespace DigitsTest
         static async Task Main()
         {
             (var training, var test) = DataParser.LoadDatasets();
-            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateImage<Alpha8>(28, 28),
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
                 NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
                 NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),

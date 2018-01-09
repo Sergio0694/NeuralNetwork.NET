@@ -73,7 +73,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <param name="size">The input size</param>
         [PublicAPI]
         [Pure]
-        public static TensorInfo CreateLinear(int size) => new TensorInfo(1, 1, size);
+        public static TensorInfo Linear(int size) => new TensorInfo(1, 1, size);
 
         /// <summary>
         /// Creates a new <see cref="TensorInfo"/> instance for an image with a user-defined pixel type
@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <param name="width">The width of the input image</param>
         [PublicAPI]
         [Pure]
-        public static TensorInfo CreateImage<TPixel>(int height, int width) where TPixel : struct, IPixel<TPixel>
+        public static TensorInfo Image<TPixel>(int height, int width) where TPixel : struct, IPixel<TPixel>
         {
             if (typeof(TPixel) == typeof(Alpha8)) return new TensorInfo(height, width, 1);
             if (typeof(TPixel) == typeof(Rgb24)) return new TensorInfo(height, width, 3);
@@ -99,7 +99,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <param name="channels">The number of channels in the input volume</param>
         [PublicAPI]
         [Pure]
-        public static TensorInfo CreateVolume(int height, int width, int channels) => new TensorInfo(height, width, channels);
+        public static TensorInfo Volume(int height, int width, int channels) => new TensorInfo(height, width, channels);
 
         #endregion
 

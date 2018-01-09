@@ -19,7 +19,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void NetworkSerialization()
         {
-            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.CreateImage<Rgb24>(120, 120),
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Rgb24>(120, 120),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.New(ConvolutionMode.CrossCorrelation), (10, 10), 20, ActivationFunctionType.AbsoluteReLU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.New(ConvolutionMode.Convolution, 2, 2), (5, 5), 20, ActivationFunctionType.ELU),
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (10, 10), 20, ActivationFunctionType.Identity),
