@@ -18,6 +18,18 @@ namespace NeuralNetworkNET.APIs
         public static StochasticGradientDescentInfo StochasticGradientDescent(float eta = 0.1f, float lambda = 0f) => new StochasticGradientDescentInfo(eta, lambda);
 
         /// <summary>
+        /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.Momentum"/> algorithm
+        /// </summary>
+        /// <param name="eta">The learning rate</param>
+        /// <param name="lambda">The lambda regularization parameter</param>
+        /// <param name="momentum">The momentum value</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static StochasticGradientDescentInfo Momentum(float eta = 0.1f, float lambda = 0f, float momentum = 0.1f) => momentum > 0
+            ? new MomentumInfo(eta, lambda, momentum)
+            : new StochasticGradientDescentInfo(eta, lambda); // Momentum to 0 reduces the algorithm to plain SGD
+
+        /// <summary>
         /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.Adadelta"/> algorithm
         /// </summary>
         /// <param name="rho">The Adadelta rho parameter</param>

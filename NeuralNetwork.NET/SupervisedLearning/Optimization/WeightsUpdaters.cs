@@ -13,6 +13,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
     /// </summary>
     internal static class WeightsUpdaters
     {
+        #region Classic SGD
+
         /// <summary>
         /// Creates a stochastic gradient descent optimizer
         /// </summary>
@@ -42,13 +44,69 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     float* pdj = dJdb;
                     int w = layer.Biases.Length;
-                    for (int x = 0; x < w; x++)
-                        pb[x] -= alpha * pdj[x];
+                    for (int b = 0; b < w; b++)
+                        pb[b] -= alpha * pdj[b];
                 }
             }
 
             return Minimize;
         }
+
+        /// <summary>
+        /// Creates a stochastic gradient descent optimizer
+        /// </summary>
+        /// <param name="info">The optimizer parameters</param>
+        /// <param name="network">The target network to optimize</param>
+        [Pure, NotNull]
+        public static WeightsUpdater Momentum([NotNull] StochasticGradientDescentInfo info, [NotNull] SequentialNetwork network)
+        {
+            float
+                eta = info.Eta,
+                lambda = info.Lambda,
+                momentum = 0.01f;
+            float[][]
+                mW = new float[network.WeightedLayersIndexes.Length][],
+                mB = new float[network.WeightedLayersIndexes.Length][];
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                mW[i] = new float[layer.Weights.Length];
+                mB[i] = new float[layer.Biases.Length];
+            }
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights, pmw = mW[i])
+                {
+                    float* pdj = dJdw;
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        pmw[x] = momentum * pmw[x] + pdj[x];
+                        pw[x] -= l2Factor * pw[x] + alpha * pmw[x];
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases, pmb = mB[i])
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        pmb[b] = momentum * pmb[b] + pdj[b];
+                        pb[b] -= alpha * pdj[b];
+                    }
+                }
+            }
+
+            return Minimize;
+        }
+
+        #endregion
 
         /// <summary>
         /// Creates an Adadelta optimizer
@@ -118,6 +176,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
 
             return Minimize;
         }
+
+        #region Adam-like
 
         /// <summary>
         /// Creates an Adam optimizer
@@ -259,5 +319,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
 
             return Minimize;
         }
+
+        #endregion
     }
 }

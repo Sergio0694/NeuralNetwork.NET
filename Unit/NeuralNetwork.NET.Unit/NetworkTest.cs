@@ -109,6 +109,9 @@ namespace NeuralNetworkNET.Unit
         public void GradientDescentTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.StochasticGradientDescent()));
 
         [TestMethod]
+        public void MomentumTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Momentum()));
+
+        [TestMethod]
         public void AdadeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adadelta()));
 
         [TestMethod]

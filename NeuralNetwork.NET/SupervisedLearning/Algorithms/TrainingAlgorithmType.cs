@@ -11,6 +11,11 @@
         StochasticGradientDescent,
 
         /// <summary>
+        /// A variant of the stochastic gradient descent algorithm with momentum
+        /// </summary>
+        Momentum,
+
+        /// <summary>
         /// The Adadelta adaptive learning method, by Matthew D. Zeiler, see <a href="https://arxiv.org/abs/1212.5701">arxiv.org/abs/1212.5701</a>
         /// </summary>
         Adadelta,

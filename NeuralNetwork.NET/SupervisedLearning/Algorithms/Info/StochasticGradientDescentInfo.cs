@@ -5,10 +5,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Algorithms.Info
     /// <summary>
     /// A class containing all the info needed to use the <see cref="TrainingAlgorithmType.StochasticGradientDescent"/> algorithm
     /// </summary>
-    public sealed class StochasticGradientDescentInfo : ITrainingAlgorithmInfo
+    public class StochasticGradientDescentInfo : ITrainingAlgorithmInfo
     {
         /// <inheritdoc/>
-        public TrainingAlgorithmType AlgorithmType => TrainingAlgorithmType.StochasticGradientDescent;
+        public virtual TrainingAlgorithmType AlgorithmType => TrainingAlgorithmType.StochasticGradientDescent;
 
         /// <summary>
         /// Gets the current learning rate
