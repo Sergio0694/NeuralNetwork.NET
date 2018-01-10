@@ -64,6 +64,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdamInfo adam:
                     return Adam(network, batches, epochs, dropout, adam.Eta, adam.Beta1, adam.Beta2, adam.Epsilon, batchProgress, trainingProgress, validationDataset, testDataset, token);
+                case AdaMaxInfo adamax:
+                    return AdaMax(network, batches, epochs, dropout, adamax.Eta, adamax.Beta1, adamax.Beta2, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }

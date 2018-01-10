@@ -37,7 +37,7 @@ namespace NeuralNetworkNET.Unit
             return path;
         }
 
-        private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset()
+        private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset(int training = 50_000, int test = 10_000)
         {
             const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
             const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
@@ -81,8 +81,8 @@ namespace NeuralNetworkNET.Unit
                     return (x, y);
                 }
             }
-            return (ParseSamples(Path.Combine(path, TrainingSetValuesFilename), Path.Combine(path, TrainingSetLabelsFilename), 50_000),
-                    ParseSamples(Path.Combine(path, TestSetValuesFilename), Path.Combine(path, TestSetLabelsFilename), 10_000));
+            return (ParseSamples(Path.Combine(path, TrainingSetValuesFilename), Path.Combine(path, TrainingSetLabelsFilename), training),
+                    ParseSamples(Path.Combine(path, TestSetValuesFilename), Path.Combine(path, TestSetLabelsFilename), test));
         }
 
         private static bool TestTrainingMethod(ITrainingAlgorithmInfo info)
@@ -113,5 +113,24 @@ namespace NeuralNetworkNET.Unit
 
         [TestMethod]
         public void AdamTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adam()));
+
+        [TestMethod]
+        public void AdaMaxTest()
+        {
+            (var trainingSet, var testSet) = ParseMnistDataset(5000);
+            BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
+            SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
+                NetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
+                NetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
+                NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
+            ITrainingAlgorithmInfo info = TrainingAlgorithms.AdaMax();
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 1, 0, info, null, null, null, null, default);
+            Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
+            (_, _, float accuracy) = network.Evaluate(testSet);
+            Assert.IsTrue(accuracy > 80);
+        }
     }
 }

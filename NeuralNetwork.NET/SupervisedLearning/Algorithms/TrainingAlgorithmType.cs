@@ -18,6 +18,11 @@
         /// <summary>
         /// The Adam learning method, by Diederik P. Kingma and Jimmy Lei Ba, see <a href="https://arxiv.org/pdf/1412.6980v8.pdf">arxiv.org/pdf/1412.6980v8.pdf</a>
         /// </summary>
-        Adam
+        Adam,
+
+        /// <summary>
+        /// The AdaMax learning method, by Diederik P. Kingma and Jimmy Lei Ba, see section 7.1 of <a href="https://arxiv.org/pdf/1412.6980v8.pdf">arxiv.org/pdf/1412.6980v8.pdf</a>
+        /// </summary>
+        AdaMax
     }
 }

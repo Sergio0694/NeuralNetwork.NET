@@ -223,9 +223,94 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 vW[i].Free();
                 mB[i].Free();
                 vB[i].Free();
-                beta1t.Free();
-                beta2t.Free();
             }
+            beta1t.Free();
+            beta2t.Free();
+            return result;
+        }
+
+        // AdaMax method
+        [NotNull]
+        private static unsafe TrainingSessionResult AdaMax(
+            SequentialNetwork network,
+            BatchesCollection miniBatches,
+            int epochs, float dropout, float eta, float beta1, float beta2,
+            [CanBeNull] IProgress<BatchProgress> batchProgress,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
+            [CanBeNull] ValidationDataset validationDataset,
+            [CanBeNull] TestDataset testDataset,
+            CancellationToken token)
+        {
+            // Initialize Adadelta parameters
+            Tensor*
+                mW = stackalloc Tensor[network.WeightedLayersIndexes.Length],
+                uW = stackalloc Tensor[network.WeightedLayersIndexes.Length],
+                mB = stackalloc Tensor[network.WeightedLayersIndexes.Length],
+                uB = stackalloc Tensor[network.WeightedLayersIndexes.Length];
+            Tensor.New(1, network.WeightedLayersIndexes.Length, out Tensor beta1t);
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                Tensor.NewZeroed(1, layer.Weights.Length, out mW[i]);
+                Tensor.NewZeroed(1, layer.Weights.Length, out uW[i]);
+                Tensor.NewZeroed(1, layer.Biases.Length, out mB[i]);
+                Tensor.NewZeroed(1, layer.Biases.Length, out uB[i]);
+                beta1t[i] = beta1;
+            }
+
+            // Adadelta update for weights and biases
+            void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Alpha at timestep t
+                float b1t = beta1t[i];
+                beta1t[i] *= beta1;
+
+                // Weights
+                fixed (float* pw = layer.Weights)
+                {
+                    float*
+                        pdJ = dJdw,
+                        pm = mW[i],
+                        pu = uW[i];
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        float pdJi = pdJ[x];
+                        pm[x] = beta1 * pm[x] + (1 - beta1) * pdJi;
+                        pu[x] = (beta2 * pu[x]).Max(pdJi.Abs());
+                        pw[x] -= eta / (1 - b1t) * pm[x] / pu[x];
+                    }
+                }
+
+                // Biases
+                fixed (float* pb = layer.Biases)
+                {
+                    float*
+                        pdJ = dJdb,
+                        pm = mB[i],
+                        pu = uB[i];
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        float pdJi = pdJ[b];
+                        pm[b] = beta1 * pm[b] + (1 - beta1) * pdJi;
+                        pu[b] = (beta2 * pu[b]).Max(pdJi.Abs());
+                        pb[b] -= eta / (1 - b1t) * pm[b] / pu[b];
+                    }
+                }
+            }
+
+            TrainingSessionResult result = Optimize(network, miniBatches, epochs, dropout, Minimize, batchProgress, trainingProgress, validationDataset, testDataset, token);
+
+            // Cleanup
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                mW[i].Free();
+                uW[i].Free();
+                mB[i].Free();
+                uB[i].Free();
+            }
+            beta1t.Free();
             return result;
         }
     }
