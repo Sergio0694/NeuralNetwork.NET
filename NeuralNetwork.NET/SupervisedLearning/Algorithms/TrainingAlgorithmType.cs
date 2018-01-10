@@ -16,6 +16,11 @@
         Momentum,
 
         /// <summary>
+        /// The AdaGrad learning method, by John Duchi, Elad Hazan and Yoram Singer, see <a href="http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf">jmlr.org/papers/volume12/duchi11a/duchi11a.pdf</a>
+        /// </summary>
+        AdaGrad,
+
+        /// <summary>
         /// The Adadelta adaptive learning method, by Matthew D. Zeiler, see <a href="https://arxiv.org/abs/1212.5701">arxiv.org/abs/1212.5701</a>
         /// </summary>
         Adadelta,

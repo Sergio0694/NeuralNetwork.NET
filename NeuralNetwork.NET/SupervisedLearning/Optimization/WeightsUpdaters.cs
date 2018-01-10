@@ -53,17 +53,17 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         /// <summary>
-        /// Creates a stochastic gradient descent optimizer
+        /// Creates a momentum optimizer
         /// </summary>
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater Momentum([NotNull] StochasticGradientDescentInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater Momentum([NotNull] MomentumInfo info, [NotNull] SequentialNetwork network)
         {
             float
                 eta = info.Eta,
                 lambda = info.Lambda,
-                momentum = 0.01f;
+                momentum = info.Momentum;
             float[][]
                 mW = new float[network.WeightedLayersIndexes.Length][],
                 mB = new float[network.WeightedLayersIndexes.Length][];
@@ -107,6 +107,64 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         #endregion
+
+        #region L2 norm-based algorithms
+
+        /// <summary>
+        /// Creates an AdaGrad optimizer
+        /// </summary>
+        /// <param name="info">The optimizer parameters</param>
+        /// <param name="network">The target network to optimize</param>
+        [Pure, NotNull]
+        public static WeightsUpdater AdaGrad([NotNull] AdaGradInfo info, [NotNull] SequentialNetwork network)
+        {
+            float
+                eta = info.Eta,
+                lambda = info.Lambda,
+                epsilon = info.Epsilon;
+            float[][]
+                mW = new float[network.WeightedLayersIndexes.Length][],
+                mB = new float[network.WeightedLayersIndexes.Length][];
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                mW[i] = new float[layer.Weights.Length];
+                mB[i] = new float[layer.Biases.Length];
+            }
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights, pmw = mW[i])
+                {
+                    float* pdj = dJdw;
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        float pdJi = pdj[x];
+                        pmw[x] += pdJi * pdJi;
+                        pw[x] -= l2Factor * pw[x] + alpha * pdJi / ((float)Math.Sqrt(pmw[x]) + epsilon);
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases, pmb = mB[i])
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        float pdJi = pdj[b];
+                        pmb[b] += pdJi * pdJi;
+                        pb[b] -= alpha * pdJi / ((float)Math.Sqrt(pmb[b]) + epsilon);
+                    }
+                }
+            }
+
+            return Minimize;
+        }
 
         /// <summary>
         /// Creates an Adadelta optimizer
@@ -176,6 +234,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
 
             return Minimize;
         }
+
+        #endregion
 
         #region Adam-like
 

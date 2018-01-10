@@ -63,6 +63,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 case StochasticGradientDescentInfo sgd:
                     optimizer = WeightsUpdaters.StochasticGradientDescent(sgd);
                     break;
+                case AdaGradInfo adagrad:
+                    optimizer = WeightsUpdaters.AdaGrad(adagrad, network);
+                    break;
                 case AdadeltaInfo adadelta:
                     optimizer = WeightsUpdaters.Adadelta(adadelta, network);
                     break;

@@ -112,6 +112,9 @@ namespace NeuralNetworkNET.Unit
         public void MomentumTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Momentum()));
 
         [TestMethod]
+        public void AdaGradTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaGrad()));
+
+        [TestMethod]
         public void AdadeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adadelta()));
 
         [TestMethod]

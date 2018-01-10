@@ -28,6 +28,16 @@ namespace NeuralNetworkNET.APIs
         public static MomentumInfo Momentum(float eta = 0.1f, float lambda = 0f, float momentum = 0.1f) => new MomentumInfo(eta, lambda, momentum);
 
         /// <summary>
+        /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.AdaGrad"/> algorithm
+        /// </summary>
+        /// <param name="eta">The learning rate</param>
+        /// <param name="lambda">The lambda regularization parameter</param>
+        /// <param name="epsilon">The AdaGrad epsilon parameter</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static AdaGradInfo AdaGrad(float eta = 0.1f, float lambda = 0f, float epsilon = 1e-8f) => new AdaGradInfo(eta, lambda, epsilon);
+
+        /// <summary>
         /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.Adadelta"/> algorithm
         /// </summary>
         /// <param name="rho">The Adadelta rho parameter</param>
