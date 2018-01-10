@@ -92,13 +92,13 @@ namespace NeuralNetworkNET.Unit
             SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
-            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 1, 0, info, null, null, null, null, default);
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 2, 0, info, null, null, null, null, default);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
             (_, _, float accuracy) = network.Evaluate(testSet);
             if (accuracy < 80)
             {
                 // Try again, just in case
-                result = NetworkTrainer.TrainNetwork(network, batches, 1, 0, info, null, null, null, null, default);
+                result = NetworkTrainer.TrainNetwork(network, batches, 5, 0, info, null, null, null, null, default);
                 Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
                 (_, _, accuracy) = network.Evaluate(testSet);
             }
@@ -112,7 +112,7 @@ namespace NeuralNetworkNET.Unit
         public void MomentumTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Momentum()));
 
         [TestMethod]
-        public void AdaGradTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaGrad()));
+        public void AdaGradTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaGrad(0.1f)));
 
         [TestMethod]
         public void AdaDeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaDelta()));
