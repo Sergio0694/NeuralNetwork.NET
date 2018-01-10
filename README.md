@@ -65,7 +65,8 @@ Training a neural network is pretty straightforward - just use the methods in th
 
 ```C#    
 // Train the network using Adadelta and 0.5 dropout probability
-TrainingSessionResult result = NetworkManager.TrainNetwork(network, 
+TrainingSessionResult result = NetworkManager.TrainNetwork(
+    network,                                // The network instance to train
     dataset,                                // The ITrainingDataset instance   
     TrainingAlgorithms.Adadelta(),          // The training algorithm to use
     60,                                     // The expected number of training epochs to run
