@@ -13,6 +13,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
     /// </summary>
     internal static class WeightsUpdaters
     {
+        #region Classic SGD
+
         /// <summary>
         /// Creates a stochastic gradient descent optimizer
         /// </summary>
@@ -42,8 +44,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     float* pdj = dJdb;
                     int w = layer.Biases.Length;
-                    for (int x = 0; x < w; x++)
-                        pb[x] -= alpha * pdj[x];
+                    for (int b = 0; b < w; b++)
+                        pb[b] -= alpha * pdj[b];
                 }
             }
 
@@ -51,14 +53,134 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         /// <summary>
-        /// Creates an Adadelta optimizer
+        /// Creates a momentum optimizer
         /// </summary>
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater Adadelta([NotNull] AdadeltaInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater Momentum([NotNull] MomentumInfo info, [NotNull] SequentialNetwork network)
         {
-            // Initialize Adadelta parameters
+            // Setup
+            float
+                eta = info.Eta,
+                lambda = info.Lambda,
+                momentum = info.Momentum;
+            float[][]
+                mW = new float[network.WeightedLayersIndexes.Length][],
+                mB = new float[network.WeightedLayersIndexes.Length][];
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                mW[i] = new float[layer.Weights.Length];
+                mB[i] = new float[layer.Biases.Length];
+            }
+
+            // Closure
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights, pmw = mW[i])
+                {
+                    float* pdj = dJdw;
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        pmw[x] = momentum * pmw[x] + pdj[x];
+                        pw[x] -= l2Factor * pw[x] + alpha * pmw[x];
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases, pmb = mB[i])
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        pmb[b] = momentum * pmb[b] + pdj[b];
+                        pb[b] -= alpha * pdj[b];
+                    }
+                }
+            }
+
+            return Minimize;
+        }
+
+        #endregion
+
+        #region L2 norm-based algorithms
+
+        /// <summary>
+        /// Creates an AdaGrad optimizer
+        /// </summary>
+        /// <param name="info">The optimizer parameters</param>
+        /// <param name="network">The target network to optimize</param>
+        [Pure, NotNull]
+        public static WeightsUpdater AdaGrad([NotNull] AdaGradInfo info, [NotNull] SequentialNetwork network)
+        {
+            // Setup
+            float
+                eta = info.Eta,
+                lambda = info.Lambda,
+                epsilon = info.Epsilon;
+            float[][]
+                mW = new float[network.WeightedLayersIndexes.Length][],
+                mB = new float[network.WeightedLayersIndexes.Length][];
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                mW[i] = new float[layer.Weights.Length];
+                mB[i] = new float[layer.Biases.Length];
+            }
+
+            // Closure
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights, pmw = mW[i])
+                {
+                    float* pdj = dJdw;
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        float pdJi = pdj[x];
+                        pmw[x] += pdJi * pdJi;
+                        pw[x] -= l2Factor * pw[x] + alpha * pdJi / ((float)Math.Sqrt(pmw[x]) + epsilon);
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases, pmb = mB[i])
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        float pdJi = pdj[b];
+                        pmb[b] += pdJi * pdJi;
+                        pb[b] -= alpha * pdJi / ((float)Math.Sqrt(pmb[b]) + epsilon);
+                    }
+                }
+            }
+
+            return Minimize;
+        }
+
+        /// <summary>
+        /// Creates an AdaDelta optimizer
+        /// </summary>
+        /// <param name="info">The optimizer parameters</param>
+        /// <param name="network">The target network to optimize</param>
+        [Pure, NotNull]
+        public static WeightsUpdater AdaDelta([NotNull] AdaDeltaInfo info, [NotNull] SequentialNetwork network)
+        {
+            // Initialize AdaDelta parameters
             float
                 rho = info.Rho,
                 epsilon = info.Epsilon,
@@ -77,7 +199,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 eDeltaxSquaredB[i] = new float[layer.Biases.Length];
             }
 
-            // Adadelta update for weights and biases
+            // AdaDelta update for weights and biases
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 fixed (float* pw = layer.Weights, egSqrt = egSquaredW[i], eDSqrtx = eDeltaxSquaredW[i])
@@ -120,6 +242,70 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         /// <summary>
+        /// Creates an RMSProp optimizer
+        /// </summary>
+        /// <param name="info">The optimizer parameters</param>
+        /// <param name="network">The target network to optimize</param>
+        [Pure, NotNull]
+        public static WeightsUpdater RMSProp([NotNull] RMSPropInfo info, [NotNull] SequentialNetwork network)
+        {
+            // Setup
+            float
+                eta = info.Eta,
+                rho = info.Rho,
+                lambda = info.Lambda,
+                epsilon = info.Epsilon;
+            float[][]
+                mW = new float[network.WeightedLayersIndexes.Length][],
+                mB = new float[network.WeightedLayersIndexes.Length][];
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                mW[i] = new float[layer.Weights.Length];
+                mB[i] = new float[layer.Biases.Length];
+            }
+
+            // Closure
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights, pmw = mW[i])
+                {
+                    float* pdj = dJdw;
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        float pdJi = pdj[x];
+                        pmw[x] = rho * pmw[x] + (1 - rho) * pdJi * pdJi;
+                        pw[x] -= l2Factor * pw[x] + alpha * pdJi / ((float)Math.Sqrt(pmw[x]) + epsilon);
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases, pmb = mB[i])
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        float pdJi = pdj[b];
+                        pmb[b] = rho * pmb[b] + (1 - rho) * pdJi * pdJi;
+                        pb[b] -= alpha * pdJi / ((float)Math.Sqrt(pmb[b]) + epsilon);
+                    }
+                }
+            }
+
+            return Minimize;
+        }
+
+        #endregion
+
+        #region Adam-like
+
+        /// <summary>
         /// Creates an Adam optimizer
         /// </summary>
         /// <param name="info">The optimizer parameters</param>
@@ -152,7 +338,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 beta2t[i] = beta2;
             }
 
-            // Adadelta update for weights and biases
+            // AdaDelta update for weights and biases
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Alpha at timestep t
@@ -200,7 +386,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         [Pure, NotNull]
         public static WeightsUpdater AdaMax([NotNull] AdaMaxInfo info, [NotNull] SequentialNetwork network)
         {
-            // Initialize Adadelta parameters
+            // Initialize AdaDelta parameters
             float
                 eta = info.Eta,
                 beta1 = info.Beta1,
@@ -221,7 +407,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 beta1t[i] = beta1;
             }
 
-            // Adadelta update for weights and biases
+            // AdaDelta update for weights and biases
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Alpha at timestep t
@@ -259,5 +445,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
 
             return Minimize;
         }
+
+        #endregion
     }
 }

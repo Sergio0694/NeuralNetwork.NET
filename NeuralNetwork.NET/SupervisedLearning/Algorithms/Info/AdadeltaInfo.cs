@@ -4,20 +4,20 @@ using System;
 namespace NeuralNetworkNET.SupervisedLearning.Algorithms.Info
 {
     /// <summary>
-    /// A class containing all the info needed to use the <see cref="TrainingAlgorithmType.Adadelta"/> algorithm
+    /// A class containing all the info needed to use the <see cref="TrainingAlgorithmType.AdaDelta"/> algorithm
     /// </summary>
-    public sealed class AdadeltaInfo : ITrainingAlgorithmInfo
+    public sealed class AdaDeltaInfo : ITrainingAlgorithmInfo
     {
         /// <inheritdoc/>
-        public TrainingAlgorithmType AlgorithmType => TrainingAlgorithmType.Adadelta;
+        public TrainingAlgorithmType AlgorithmType => TrainingAlgorithmType.AdaDelta;
 
         /// <summary>
-        /// Gets the Adadelta rho parameter
+        /// Gets the AdaDelta rho parameter
         /// </summary>
         public float Rho { get; }
 
         /// <summary>
-        /// Gets the Adadelta epsilon parameter
+        /// Gets the AdaDelta epsilon parameter
         /// </summary>
         public float Epsilon { get; }
 
@@ -26,7 +26,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Algorithms.Info
         /// </summary>
         public float L2 { get; }
 
-        internal AdadeltaInfo(float rho, float epsilon, float l2)
+        internal AdaDeltaInfo(float rho, float epsilon, float l2)
         {
             Rho = rho;
             Epsilon = epsilon;

@@ -34,7 +34,7 @@ namespace DigitsTest
             // Train the network
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network,
                 trainingData,
-                TrainingAlgorithms.Adadelta(),
+                TrainingAlgorithms.AdaDelta(),
                 60, 0.5f,
                 new Progress<BatchProgress>(TrackBatchProgress),
                 testDataset: testData);
