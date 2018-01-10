@@ -16,6 +16,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Algorithms.Info
         public float Momentum { get; }
 
         internal MomentumInfo(float eta, float lambda, float momentum) : base(eta, lambda) 
-            => Momentum = momentum > 0 && momentum < 1 ? momentum : throw new ArgumentOutOfRangeException(nameof(momentum), "The momentum parameter must be in the [0,1) range");
+            => Momentum = momentum >= 0 && momentum < 1 ? momentum : throw new ArgumentOutOfRangeException(nameof(momentum), "The momentum parameter must be in the [0,1) range");
     }
 }

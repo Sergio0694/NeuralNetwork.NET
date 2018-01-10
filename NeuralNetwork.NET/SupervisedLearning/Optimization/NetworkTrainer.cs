@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
     /// <summary>
     /// A static class that contains various network optimization algorithms
     /// </summary>
-    internal static partial class NetworkTrainer
+    internal static class NetworkTrainer
     {
         /// <summary>
         /// Trains the target <see cref="SequentialNetwork"/> with the given parameters and data
@@ -57,6 +57,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                  * The right optimizer is selected here, and the capatured closure for each of them also contains local temporary data, if needed.
                  * In this case, the temporary data is managed, so that it will automatically be disposed by the GC and there won't be the need to use
                  * another callback when the training stops to handle the cleanup of unmanaged resources. */
+                case MomentumInfo momentum:
+                    optimizer = WeightsUpdaters.Momentum(momentum, network);
+                    break;
                 case StochasticGradientDescentInfo sgd:
                     optimizer = WeightsUpdaters.StochasticGradientDescent(sgd);
                     break;
