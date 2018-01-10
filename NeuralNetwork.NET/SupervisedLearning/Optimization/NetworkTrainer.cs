@@ -60,15 +60,15 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 case StochasticGradientDescentInfo sgd:
                     optimizer = WeightsUpdaters.StochasticGradientDescent(sgd);
                     break;
-                    //return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdadeltaInfo adadelta:
                     optimizer = WeightsUpdaters.Adadelta(adadelta, network);
                     break;
-                    //return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdamInfo adam:
-                    return Adam(network, batches, epochs, dropout, adam.Eta, adam.Beta1, adam.Beta2, adam.Epsilon, batchProgress, trainingProgress, validationDataset, testDataset, token);
+                    optimizer = WeightsUpdaters.Adam(adam, network);
+                    break;
                 case AdaMaxInfo adamax:
-                    return AdaMax(network, batches, epochs, dropout, adamax.Eta, adamax.Beta1, adamax.Beta2, batchProgress, trainingProgress, validationDataset, testDataset, token);
+                    optimizer = WeightsUpdaters.AdaMax(adamax, network);
+                    break;
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }
