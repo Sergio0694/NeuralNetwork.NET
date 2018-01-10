@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Algorithms.Info
         public float Lambda { get; }
 
         /// <summary>
-        /// Gets the Adadelta epsilon parameter
+        /// Gets the AdaGrad epsilon parameter
         /// </summary>
         public float Epsilon { get; }
 

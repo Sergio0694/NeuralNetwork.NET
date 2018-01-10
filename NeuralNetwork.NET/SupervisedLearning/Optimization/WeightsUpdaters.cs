@@ -167,14 +167,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         /// <summary>
-        /// Creates an Adadelta optimizer
+        /// Creates an AdaDelta optimizer
         /// </summary>
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater Adadelta([NotNull] AdadeltaInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater AdaDelta([NotNull] AdaDeltaInfo info, [NotNull] SequentialNetwork network)
         {
-            // Initialize Adadelta parameters
+            // Initialize AdaDelta parameters
             float
                 rho = info.Rho,
                 epsilon = info.Epsilon,
@@ -193,7 +193,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 eDeltaxSquaredB[i] = new float[layer.Biases.Length];
             }
 
-            // Adadelta update for weights and biases
+            // AdaDelta update for weights and biases
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 fixed (float* pw = layer.Weights, egSqrt = egSquaredW[i], eDSqrtx = eDeltaxSquaredW[i])
@@ -272,7 +272,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 beta2t[i] = beta2;
             }
 
-            // Adadelta update for weights and biases
+            // AdaDelta update for weights and biases
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Alpha at timestep t
@@ -320,7 +320,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         [Pure, NotNull]
         public static WeightsUpdater AdaMax([NotNull] AdaMaxInfo info, [NotNull] SequentialNetwork network)
         {
-            // Initialize Adadelta parameters
+            // Initialize AdaDelta parameters
             float
                 eta = info.Eta,
                 beta1 = info.Beta1,
@@ -341,7 +341,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 beta1t[i] = beta1;
             }
 
-            // Adadelta update for weights and biases
+            // AdaDelta update for weights and biases
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Alpha at timestep t

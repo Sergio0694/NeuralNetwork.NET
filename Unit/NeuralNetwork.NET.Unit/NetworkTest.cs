@@ -115,7 +115,7 @@ namespace NeuralNetworkNET.Unit
         public void AdaGradTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaGrad()));
 
         [TestMethod]
-        public void AdadeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adadelta()));
+        public void AdaDeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaDelta()));
 
         [TestMethod]
         public void AdamTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adam()));

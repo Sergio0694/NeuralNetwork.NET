@@ -66,8 +66,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 case AdaGradInfo adagrad:
                     optimizer = WeightsUpdaters.AdaGrad(adagrad, network);
                     break;
-                case AdadeltaInfo adadelta:
-                    optimizer = WeightsUpdaters.Adadelta(adadelta, network);
+                case AdaDeltaInfo adadelta:
+                    optimizer = WeightsUpdaters.AdaDelta(adadelta, network);
                     break;
                 case AdamInfo adam:
                     optimizer = WeightsUpdaters.Adam(adam, network);
