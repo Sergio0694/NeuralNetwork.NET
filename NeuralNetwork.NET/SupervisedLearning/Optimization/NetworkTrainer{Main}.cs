@@ -48,20 +48,23 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             CancellationToken token)
         {
             SharedEventsService.TrainingStarting.Raise();
+            WeightsUpdater optimizer;
             switch (algorithm)
             {
                 /* =================
                  * Optimization
                  * =================
-                 * The different optimization methods available are called here, and they will in turn call the base Optimize method, passing a WeightsUpdater
-                 * delegate that implements their own optimization logic. The reason why these methods are calling one another (instead of passing a single delegate
-                 * for each different optimizer) is that this way each optimizer implementation can keep local parameters allocated on the stack, if necessary, while
-                 * that wouldn't be possible with a delegate. Moreover, this way they can handle their own cleanup for unmanaged resources (for temporary training data)
-                 * without the need to pass another optional delegate just for that reason. */
+                 * The right optimizer is selected here, and the capatured closure for each of them also contains local temporary data, if needed.
+                 * In this case, the temporary data is managed, so that it will automatically be disposed by the GC and there won't be the need to use
+                 * another callback when the training stops to handle the cleanup of unmanaged resources. */
                 case StochasticGradientDescentInfo sgd:
-                    return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationDataset, testDataset, token);
+                    optimizer = WeightsUpdaters.StochasticGradientDescent(sgd);
+                    break;
+                    //return StochasticGradientDescent(network, batches, epochs, dropout, sgd.Eta, sgd.Lambda, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdadeltaInfo adadelta:
-                    return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationDataset, testDataset, token);
+                    optimizer = WeightsUpdaters.Adadelta(adadelta, network);
+                    break;
+                    //return Adadelta(network, batches, epochs, dropout, adadelta.Rho, adadelta.Epsilon, adadelta.L2, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdamInfo adam:
                     return Adam(network, batches, epochs, dropout, adam.Eta, adam.Beta1, adam.Beta2, adam.Epsilon, batchProgress, trainingProgress, validationDataset, testDataset, token);
                 case AdaMaxInfo adamax:
@@ -69,6 +72,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }
+            return Optimize(network, batches, epochs, dropout, optimizer, batchProgress, trainingProgress, validationDataset, testDataset, token);
         }
 
         /// <summary>
