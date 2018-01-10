@@ -75,6 +75,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 case AdaMaxInfo adamax:
                     optimizer = WeightsUpdaters.AdaMax(adamax, network);
                     break;
+                case RMSPropInfo rms:
+                    optimizer = WeightsUpdaters.RMSProp(rms, network);
+                    break;
                 default:
                     throw new ArgumentException("The input training algorithm type is not supported");
             }

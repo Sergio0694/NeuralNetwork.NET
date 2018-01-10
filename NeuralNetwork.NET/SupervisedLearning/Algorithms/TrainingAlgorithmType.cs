@@ -33,6 +33,11 @@
         /// <summary>
         /// The AdaMax learning method, by Diederik P. Kingma and Jimmy Lei Ba, see section 7.1 of <a href="https://arxiv.org/pdf/1412.6980v8.pdf">arxiv.org/pdf/1412.6980v8.pdf</a>
         /// </summary>
-        AdaMax
+        AdaMax,
+
+        /// <summary>
+        /// The RMSProp learning method, see <a href="http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf">cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf</a>
+        /// </summary>
+        RMSProp
     }
 }

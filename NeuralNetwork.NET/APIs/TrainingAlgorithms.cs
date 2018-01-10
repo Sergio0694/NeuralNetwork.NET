@@ -67,5 +67,16 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static AdaMaxInfo AdaMax(float eta = 0.002f, float beta1 = 0.9f, float beta2 = 0.999f) => new AdaMaxInfo(eta, beta1, beta2);
+
+        /// <summary>
+        /// Gets an instance implementing <see cref="Interfaces.ITrainingAlgorithmInfo"/> for the <see cref="SupervisedLearning.Algorithms.TrainingAlgorithmType.RMSProp"/> algorithm
+        /// </summary>
+        /// <param name="eta">The learning rate</param>
+        /// <param name="rho">The RMSProp rho parameter</param>
+        /// <param name="lambda">The lambda regularization parameter</param>
+        /// <param name="epsilon">The RMSProp epsilon parameter</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static RMSPropInfo RMSProp(float eta = 0.01f, float rho = 0.9f, float lambda = 0f, float epsilon = 1e-8f) => new RMSPropInfo(eta, rho, lambda, epsilon);
     }
 }

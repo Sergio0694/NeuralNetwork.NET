@@ -138,5 +138,8 @@ namespace NeuralNetworkNET.Unit
             (_, _, float accuracy) = network.Evaluate(testSet);
             Assert.IsTrue(accuracy > 80);
         }
+
+        [TestMethod]
+        public void RMSPropTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.RMSProp()));
     }
 }

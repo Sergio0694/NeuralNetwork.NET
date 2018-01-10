@@ -60,6 +60,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         [Pure, NotNull]
         public static WeightsUpdater Momentum([NotNull] MomentumInfo info, [NotNull] SequentialNetwork network)
         {
+            // Setup
             float
                 eta = info.Eta,
                 lambda = info.Lambda,
@@ -73,6 +74,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 mW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];
             }
+
+            // Closure
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Tweak the weights
@@ -118,6 +121,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         [Pure, NotNull]
         public static WeightsUpdater AdaGrad([NotNull] AdaGradInfo info, [NotNull] SequentialNetwork network)
         {
+            // Setup
             float
                 eta = info.Eta,
                 lambda = info.Lambda,
@@ -131,6 +135,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 mW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];
             }
+
+            // Closure
             unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
             {
                 // Tweak the weights
@@ -228,6 +234,66 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                             db = -(rmsDx_1 / rmsGt) * gt;
                         eDSqrtb[b] = rho * eDSqrtb[b] + (1 - rho) * db * db;
                         pb[b] += db - l2 * pb[b];
+                    }
+                }
+            }
+
+            return Minimize;
+        }
+
+        /// <summary>
+        /// Creates an RMSProp optimizer
+        /// </summary>
+        /// <param name="info">The optimizer parameters</param>
+        /// <param name="network">The target network to optimize</param>
+        [Pure, NotNull]
+        public static WeightsUpdater RMSProp([NotNull] RMSPropInfo info, [NotNull] SequentialNetwork network)
+        {
+            // Setup
+            float
+                eta = info.Eta,
+                rho = info.Rho,
+                lambda = info.Lambda,
+                epsilon = info.Epsilon;
+            float[][]
+                mW = new float[network.WeightedLayersIndexes.Length][],
+                mB = new float[network.WeightedLayersIndexes.Length][];
+            for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
+            {
+                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                mW[i] = new float[layer.Weights.Length];
+                mB[i] = new float[layer.Biases.Length];
+            }
+
+            // Closure
+            unsafe void Minimize(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
+            {
+                // Tweak the weights
+                float
+                    alpha = eta / samples,
+                    l2Factor = eta * lambda / samples;
+                fixed (float* pw = layer.Weights, pmw = mW[i])
+                {
+                    float* pdj = dJdw;
+                    int w = layer.Weights.Length;
+                    for (int x = 0; x < w; x++)
+                    {
+                        float pdJi = pdj[x];
+                        pmw[x] = rho * pmw[x] + (1 - rho) * pdJi * pdJi;
+                        pw[x] -= l2Factor * pw[x] + alpha * pdJi / ((float)Math.Sqrt(pmw[x]) + epsilon);
+                    }
+                }
+
+                // Tweak the biases of the lth layer
+                fixed (float* pb = layer.Biases, pmb = mB[i])
+                {
+                    float* pdj = dJdb;
+                    int w = layer.Biases.Length;
+                    for (int b = 0; b < w; b++)
+                    {
+                        float pdJi = pdj[b];
+                        pmb[b] = rho * pmb[b] + (1 - rho) * pdJi * pdJi;
+                        pb[b] -= alpha * pdJi / ((float)Math.Sqrt(pmb[b]) + epsilon);
                     }
                 }
             }
