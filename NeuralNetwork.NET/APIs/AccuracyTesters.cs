@@ -18,7 +18,7 @@ namespace NeuralNetworkNET.APIs
         public static AccuracyTester Argmax() => (yHat, y) => yHat.Argmax() == y.Argmax();
 
         /// <summary>
-        /// Gets an <see cref="AccuracyTester"/> <see langword="delegate"/> that can be used classification problems with mutually-exclusive classes
+        /// Gets an <see cref="AccuracyTester"/> <see langword="delegate"/> that checks if all the output values match the expected threshold
         /// </summary>
         [PublicAPI]
         [Pure, NotNull]
@@ -26,6 +26,17 @@ namespace NeuralNetworkNET.APIs
         {
             if (threshold <= 0 || threshold >= 1) throw new ArgumentOutOfRangeException(nameof(threshold), "The threshold must be in the (0,1) range");
             return (yHat, y) => yHat.MatchElementwiseThreshold(y, threshold);
+        }
+
+        /// <summary>
+        /// Gets an <see cref="AccuracyTester"/> <see langword="delegate"/> that checks if all the output values are within a specific distance from the expected values
+        /// </summary>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static AccuracyTester Distance(float distance)
+        {
+            if (distance <= 0) throw new ArgumentOutOfRangeException(nameof(distance), "The distance parameter must be a positive value");
+            return (yHat, y) => yHat.IsCloseTo(y, distance);
         }
     }
 }

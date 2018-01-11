@@ -165,6 +165,25 @@ namespace NeuralNetworkNET.Extensions
             return true;
         }
 
+        /// <summary>
+        /// Returns whether or not all the elements in the two input <see cref="Span{T}"/> respect the maximum distance between each other
+        /// </summary>
+        /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
+        /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
+        /// <param name="threshold">The target maximum distance</param>
+        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        internal static unsafe bool IsCloseTo(this Span<float> x1, Span<float> x2, float threshold)
+        {
+            if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
+            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+                for (int i = 0; i < x1.Length; i++)
+                    if ((px1[i] - px2[i]).Abs() > threshold)
+                        return false;
+            return true;
+        }
+
         #endregion
     }
 }
