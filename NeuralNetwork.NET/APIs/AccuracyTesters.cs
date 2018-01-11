@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.APIs
         /// </summary>
         [PublicAPI]
         [Pure, NotNull]
-        public static AccuracyTester Argmax() => (yHat, y) => yHat.Argmax(float.MinValue) == y.Argmax(float.MinValue);
+        public static AccuracyTester Argmax() => (yHat, y) => yHat.Argmax() == y.Argmax();
 
         /// <summary>
         /// Gets an <see cref="AccuracyTester"/> <see langword="delegate"/> that can be used classification problems with mutually-exclusive classes
