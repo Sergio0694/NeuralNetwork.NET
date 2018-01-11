@@ -67,7 +67,7 @@ Training a neural network is pretty straightforward - just use the methods in th
 // Train the network using Adadelta and 0.5 dropout probability
 TrainingSessionResult result = NetworkManager.TrainNetwork(network, 
     dataset,                                // The ITrainingDataset instance   
-    TrainingAlgorithms.Adadelta(),          // The training algorithm to use
+    TrainingAlgorithms.AdaDelta(),          // The training algorithm to use
     60,                                     // The expected number of training epochs to run
     0.5f,                                   // Dropout probability
     new Progress<BatchProgress>(p => ...),  // Optional training epoch progress callback
@@ -111,8 +111,11 @@ This class acts as a container to quickly check and modify any setting at any ti
 For example, it is possible to customize the criteria used by the networks to check their performance during training
 
 ```C#
-NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default mode
+NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default mode (mutually-exclusive classes)
+
+// Other testers are available too
 NetworkSettings.AccuracyTester = AccuracyTesters.Threshold();   // Useful for overlapping classes
+NetworkSettings.AccuracyTester = AccuracyTester.Distance(0.2f); // Distance between results and expected outputs
 ```
 
 When using CUDA-powered networks, sometimes the GPU in use might not be able to process the whole test or validation datasets in a single pass, which is the default behavior (these datasets are not divided into batches).
