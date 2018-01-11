@@ -115,7 +115,7 @@ NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default m
 
 // Other testers are available too
 NetworkSettings.AccuracyTester = AccuracyTesters.Threshold();   // Useful for overlapping classes
-NetworkSettings.AccuracyTester = AccuracyTester.Distance(0.2f); // Distance between results and expected outputs
+NetworkSettings.AccuracyTester = AccuracyTesters.Distance(0.2f); // Distance between results and expected outputs
 ```
 
 When using CUDA-powered networks, sometimes the GPU in use might not be able to process the whole test or validation datasets in a single pass, which is the default behavior (these datasets are not divided into batches).
