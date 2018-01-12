@@ -16,6 +16,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>• New optimizers added (Adam, AdaMax, RMSProp, Momentum and more)
 • MNIST, CIFAR-10 and CIFAR-100 datasets added
+• Added APIs to partition a training dataset
 • Added new distance-based accuracy tester
 • APIs refactoring and improvements
 • Bug fixes and speed optimizations</PackageReleaseNotes>

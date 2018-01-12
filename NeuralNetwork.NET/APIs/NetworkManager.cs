@@ -9,6 +9,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
@@ -76,7 +77,7 @@ namespace NeuralNetworkNET.APIs
             return NetworkTrainer.TrainNetwork(
                 network as SequentialNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
-                epochs, dropout, algorithm, new Progress<BatchProgress>(batchCallback), new Progress<TrainingProgressEventArgs>(trainingCallback), 
+                epochs, dropout, algorithm, batchCallback.AsIProgress(), trainingCallback.AsIProgress(), 
                 validationDataset as ValidationDataset,
                 testDataset as TestDataset,
                 token);
