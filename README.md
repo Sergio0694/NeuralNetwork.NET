@@ -56,9 +56,9 @@ IEnumerable<(float[] x, float[] u)> data = ... // Your own dataset parsing routi
 ITrainingDataset dataset = DatasetLoader.Training(data, 100);
 
 // An optional test dataset with a callback to monitor the progress
-ITestDataset test = DatasetLoader.Test(..., new Progress<TrainingProgressEventArgs>(p =>
+ITestDataset test = DatasetLoader.Test(..., p =>
 {
-    Console.WriteLine($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
+    Console.WriteLine($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}"); // Progress report
 });
 ```
 
@@ -148,10 +148,10 @@ The `NeuralNetworkNET.Datasets` namespace includes static classes to quickly loa
 
 ```C#
 ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(400); // Batches of 400 samples
-ITestDataset testData = await Mnist.GetTestDatasetAsync(new Progress<TrainingProgressEventArgs>(p =>
+ITestDataset testData = await Mnist.GetTestDatasetAsync(p =>
 {
     // Progress callback here
-}));
+});
 ```
 
 Each API in this namespace also supports an optional `CancellationToken` to stop the dataset loading, as the source data is downloaded from the internet and can take some time to be available, depending on the dataset being used.
