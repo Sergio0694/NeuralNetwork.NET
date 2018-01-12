@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.Helpers
     /// <summary>
     /// A static class that handles in-app resources downloaded from the web
     /// </summary>
-    internal static class DatasetsManager
+    internal static class DatasetsDownloader
     {
         #region Fields and properties
 
