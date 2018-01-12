@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Helpers
         #region Fields and properties
 
         // The default file extension for local resource files
-        private const String FileExtension = ".data";
+        private const String FileExtension = ".bin";
 
         /// <summary>
         /// Gets the default datasets path to use to store and load fdata files
@@ -125,8 +125,17 @@ namespace NeuralNetworkNET.Helpers
                         using (GZipInputStream gzip = new GZipInputStream(stream))
                         using (TarArchive tar = TarArchive.CreateInputTarArchive(gzip))
                         {
+                            // Extract into the target dir (this will create a subfolder in this position)
                             Directory.CreateDirectory(folder);
                             tar.ExtractContents(folder);
+
+                            // Move all the contents in the root directory
+                            foreach (String path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                                File.Move(path, Path.Combine(folder, Path.GetFileName(path)));
+
+                            // Delete the subfolders
+                            foreach (String subdir in Directory.GetDirectories(folder))
+                                Directory.Delete(subdir);
                         }
                     }
                     catch
@@ -138,7 +147,7 @@ namespace NeuralNetworkNET.Helpers
             }
 
             // Parse the files
-            return Directory.EnumerateFiles(url).ToDictionary<String, String, Func<Stream>>(file => file, file => () => File.OpenRead(file));
+            return Directory.EnumerateFiles(folder).ToDictionary<String, String, Func<Stream>>(Path.GetFileName, file => () => File.OpenRead(file));
         }
 
         #endregion
