@@ -24,6 +24,8 @@ namespace NeuralNetworkNET.APIs.Datasets
         // The test samples in the t10k-labels-idx1-ubyte.gz file
         private const int TestSamples = 10000;
 
+        private const int SampleSize = 784;
+
         private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
 
         private const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
@@ -81,7 +83,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// </summary>
         /// <param name="factory">A pair of factories for the input <see cref="Stream"/> instances to read</param>
         /// <param name="count">The number of samples to parse</param>
-        private static (float[,], float[,]) ParseSamples((Func<Stream> X, Func<Stream> Y) factory, int count)
+        private static unsafe (float[,], float[,]) ParseSamples((Func<Stream> X, Func<Stream> Y) factory, int count)
         {
             // Input checks
             using (Stream inputs = factory.X(), labels = factory.Y())
@@ -91,31 +93,27 @@ namespace NeuralNetworkNET.APIs.Datasets
                     yGzip = new GZipStream(labels, CompressionMode.Decompress))
                 {
                     float[,]
-                        x = new float[count, 784],
+                        x = new float[count, SampleSize],
                         y = new float[count, 10];
                     xGzip.Read(new byte[16], 0, 16);
                     yGzip.Read(new byte[8], 0, 8);
-                    for (int i = 0; i < count; i++)
+                    byte[] temp = new byte[SampleSize];
+                    fixed (float* px = x, py = y)
+                    fixed (byte* ptemp = temp)
                     {
-                        // Read the image pixel values
-                        byte[] temp = new byte[784];
-                        xGzip.Read(temp, 0, 784);
-                        float[] sample = new float[784];
-                        for (int j = 0; j < 784; j++)
+                        for (int i = 0; i < count; i++)
                         {
-                            sample[j] = temp[j] / 255f;
+                            // Read the image pixel values
+                            xGzip.Read(temp, 0, SampleSize);
+                            int offset = i * SampleSize;
+                            for (int j = 0; j < SampleSize; j++)
+                                px[offset + j] = ptemp[j] / 255f;
+
+                            // Read the label
+                            py[i * 10 + yGzip.ReadByte()] = 1;
                         }
-
-                        // Read the label
-                        float[,] label = new float[10, 1];
-                        int l = yGzip.ReadByte();
-                        label[l, 0] = 1;
-
-                        // Copy to result matrices
-                        Buffer.BlockCopy(sample, 0, x, sizeof(float) * i * 784, sizeof(float) * 784);
-                        Buffer.BlockCopy(label, 0, y, sizeof(float) * i * 10, sizeof(float) * 10);
+                        return (x, y);
                     }
-                    return (x, y);
                 }
             }
         }
