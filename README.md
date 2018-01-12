@@ -71,7 +71,7 @@ TrainingSessionResult result = NetworkManager.TrainNetwork(network,
     TrainingAlgorithms.AdaDelta(),          // The training algorithm to use
     60,                                     // The expected number of training epochs to run
     0.5f,                                   // Dropout probability
-    new Progress<BatchProgress>(p => ...),  // Optional training epoch progress callback
+    p => ...,                               // Optional training epoch progress callback
     null,                                   // Optional callback to monitor the accuracy on the training dataset
     null,                                   // Optional validation dataset
     test,                                   // Test dataset
@@ -148,10 +148,7 @@ The `NeuralNetworkNET.Datasets` namespace includes static classes to quickly loa
 
 ```C#
 ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(400); // Batches of 400 samples
-ITestDataset testData = await Mnist.GetTestDatasetAsync(p =>
-{
-    // Progress callback here
-});
+ITestDataset testData = await Mnist.GetTestDatasetAsync(p => ... /* Optional callback */);
 ```
 
 Each API in this namespace also supports an optional `CancellationToken` to stop the dataset loading, as the source data is downloaded from the internet and can take some time to be available, depending on the dataset being used.
