@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -67,34 +66,56 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="token">A cancellation token for the operation</param>
         public static async Task<Stream> GetAsync([NotNull] String url, CancellationToken token)
         {
-            // Check if the target resource already exists
-            byte[]
-                bytes = Encoding.UTF8.GetBytes(url),
-                hash = HashAlgorithm.Create(HashAlgorithmName.MD5.Name).TransformFinalBlock(bytes, 0, bytes.Length),
-                reduced = Enumerable.Range(0, hash.Length / 2).Select(i => (byte)(hash[i] * 23 + hash[i + 1])).ToArray(); // Shorten by half
+            // Get the target filename
             String
-                filename = $"{reduced.ToBase16()}{FileExtension}",
+                filename = $"{GetFilename(url)}{FileExtension}",
                 path = Path.Combine(DatasetsPath, filename);
             Directory.CreateDirectory(DatasetsPath);
-            if (File.Exists(path)) return File.OpenRead(path);
 
-            try
+            // Check if the target resource already exists
+            if (!File.Exists(path))
             {
-                // Download from the input URL
-                HttpResponseMessage result = await Client.GetAsync(url, token);
-                if (!result.IsSuccessStatusCode || token.IsCancellationRequested) return null;
-                byte[] data = await result.Content.ReadAsByteArrayAsync();
+                try
+                {
+                    // Download from the input URL
+                    HttpResponseMessage result = await Client.GetAsync(url, token);
+                    if (!result.IsSuccessStatusCode || token.IsCancellationRequested) return null;
+                    byte[] data = await result.Content.ReadAsByteArrayAsync();
 
-                // Write the HTTP content
-                FileStream stream = File.OpenWrite(path);
-                await stream.WriteAsync(data, 0, data.Length, default); // Ensure the whole content is written to disk
-                stream.Seek(0, SeekOrigin.Begin);
-                return stream;
+                    // Write the HTTP content
+                    using (FileStream stream = File.OpenWrite(path))
+                        await stream.WriteAsync(data, 0, data.Length, default); // Ensure the whole content is written to disk
+                }
+                catch
+                {
+                    // Connection error or operation canceled by the user
+                    return null;
+                }
             }
-            catch
+            return File.OpenRead(path);
+        }
+
+        /// <summary>
+        /// Gets a unique filename from the input URL
+        /// </summary>
+        /// <param name="url">The URL to convert to filename</param>
+        [Pure, NotNull]
+        private static String GetFilename([NotNull] String url)
+        {
+            using (HashAlgorithm md5 = MD5.Create())
             {
-                // Connection error or operation canceled by the user
-                return null;
+                // Hash and compress the url
+                byte[]
+                    bytes = Encoding.UTF8.GetBytes(url),
+                    hash = md5.ComputeHash(bytes),
+                    reduced = Enumerable.Range(0, hash.Length / 2).Select(i => (byte)(hash[i] * 23 + hash[i + 1])).ToArray(); // Shorten by half
+
+                // To base16
+                return reduced.Aggregate(new StringBuilder(), (builder, b) =>
+                {
+                    builder.Append($"{b:x2}");
+                    return builder;
+                }).ToString();
             }
         }
     }
