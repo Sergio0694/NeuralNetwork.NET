@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -44,10 +45,11 @@ namespace NeuralNetworkNET.APIs.Datasets
         [Pure, ItemCanBeNull]
         public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, CancellationToken token = default)
         {
-            Stream[] streams = await Task.WhenAll(
+            Func<Stream>[] factories = await Task.WhenAll(
                 DatasetsDownloader.GetAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", token), 
                 DatasetsDownloader.GetAsync($"{MnistHttpRootPath}{TrainingSetLabelsFilename}", token));
-            (float[,] X, float[,] Y) data = ParseSamples(streams, TrainingSamples);
+            if (factories.Any(s => s == null)) return null;
+            (float[,] X, float[,] Y) data = ParseSamples((factories[0], factories[1]), TrainingSamples);
             return data.X == null || data.Y == null
                 ? null
                 : DatasetLoader.Training(data, size);
@@ -62,10 +64,11 @@ namespace NeuralNetworkNET.APIs.Datasets
         [Pure, ItemCanBeNull]
         public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] IProgress<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
         {
-            Stream[] streams = await Task.WhenAll(
+            Func<Stream>[] factories = await Task.WhenAll(
                 DatasetsDownloader.GetAsync($"{MnistHttpRootPath}{TestSetValuesFilename}", token), 
                 DatasetsDownloader.GetAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", token));
-            (float[,] X, float[,] Y) data = ParseSamples(streams, TestSamples);
+            if (factories.Any(s => s == null)) return null;
+            (float[,] X, float[,] Y) data = ParseSamples((factories[0], factories[1]), TestSamples);
             return data.X == null || data.Y == null
                 ? null
                 : DatasetLoader.Test(data, progress);
@@ -76,14 +79,13 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// <summary>
         /// Parses a MNIST dataset
         /// </summary>
-        /// <param name="streams">The input <see cref="Stream"/> instances for the values and labels</param>
+        /// <param name="factory">A pair of factories for the input <see cref="Stream"/> instances to read</param>
         /// <param name="count">The number of samples to parse</param>
-        private static (float[,], float[,]) ParseSamples([NotNull] Stream[] streams, int count)
+        private static (float[,], float[,]) ParseSamples((Func<Stream> X, Func<Stream> Y) factory, int count)
         {
             // Input checks
-            using (Stream inputs = streams[0], labels = streams[1])
+            using (Stream inputs = factory.X(), labels = factory.Y())
             {
-                if (inputs == null || labels == null) return default;
                 using (GZipStream
                     xGzip = new GZipStream(inputs, CompressionMode.Decompress),
                     yGzip = new GZipStream(labels, CompressionMode.Decompress))

@@ -64,7 +64,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="url">The target URL to use to download the resources</param>
         /// <param name="token">A cancellation token for the operation</param>
-        public static async Task<Stream> GetAsync([NotNull] String url, CancellationToken token)
+        public static async Task<Func<Stream>> GetAsync([NotNull] String url, CancellationToken token)
         {
             // Get the target filename
             String
@@ -92,7 +92,7 @@ namespace NeuralNetworkNET.Helpers
                     return null;
                 }
             }
-            return File.OpenRead(path);
+            return () => File.OpenRead(path);
         }
 
         /// <summary>
