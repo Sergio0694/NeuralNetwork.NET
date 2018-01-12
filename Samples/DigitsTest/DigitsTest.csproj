@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
-    <ProjectReference Include="..\MnistDatasetToolkit\MnistDatasetToolkit.csproj" />
   </ItemGroup>
 
 </Project>
