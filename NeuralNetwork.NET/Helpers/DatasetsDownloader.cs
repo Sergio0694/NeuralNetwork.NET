@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -8,6 +9,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ICSharpCode.SharpZipLib.GZip;
+using ICSharpCode.SharpZipLib.Tar;
 using JetBrains.Annotations;
 
 namespace NeuralNetworkNET.Helpers
@@ -20,7 +23,7 @@ namespace NeuralNetworkNET.Helpers
         #region Fields and properties
 
         // The default file extension for local resource files
-        private const String FileExtension = ".data";
+        private const String FileExtension = ".bin";
 
         /// <summary>
         /// Gets the default datasets path to use to store and load fdata files
@@ -59,12 +62,15 @@ namespace NeuralNetworkNET.Helpers
 
         #endregion
 
+        #region APIs
+
         /// <summary>
-        /// Gets a <see cref="Stream"/> with the contents of the input URL
+        /// Gets a <see cref="Func{TResult}"/> instance returning a <see cref="Stream"/> with the contents of the input URL
         /// </summary>
         /// <param name="url">The target URL to use to download the resources</param>
         /// <param name="token">A cancellation token for the operation</param>
-        public static async Task<Func<Stream>> GetAsync([NotNull] String url, CancellationToken token)
+        [MustUseReturnValue, ItemCanBeNull]
+        public static async Task<Func<Stream>> GetFileAsync([NotNull] String url, CancellationToken token)
         {
             // Get the target filename
             String
@@ -96,6 +102,59 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
+        /// Gets an <see cref="IDictionary{TKey,TValue}"/> with a collection of <see cref="Func{TResult}"/> instances for each file in the tar.gz archive pointed by the input URL
+        /// </summary>
+        /// <param name="url">The target URL to use to download the archive</param>
+        /// <param name="token">A cancellation token for the operation</param>
+        [MustUseReturnValue, ItemCanBeNull]
+        public static async Task<IReadOnlyDictionary<String, Func<Stream>>> GetArchiveAsync([NotNull] String url, CancellationToken token)
+        {
+            // Check if the archive is already present
+            String folder = Path.Combine(DatasetsPath, GetFilename(url));
+            if (!Directory.Exists(folder))
+            {
+                {
+                    try
+                    {
+                        // Download from the input URL
+                        HttpResponseMessage result = await Client.GetAsync(url, token);
+                        if (!result.IsSuccessStatusCode || token.IsCancellationRequested) return null;
+                        
+                        // Extract the .tar.gz archive
+                        using (Stream stream = await result.Content.ReadAsStreamAsync())
+                        using (GZipInputStream gzip = new GZipInputStream(stream))
+                        using (TarArchive tar = TarArchive.CreateInputTarArchive(gzip))
+                        {
+                            // Extract into the target dir (this will create a subfolder in this position)
+                            Directory.CreateDirectory(folder);
+                            tar.ExtractContents(folder);
+
+                            // Move all the contents in the root directory
+                            foreach (String path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                                File.Move(path, Path.Combine(folder, Path.GetFileName(path)));
+
+                            // Delete the subfolders
+                            foreach (String subdir in Directory.GetDirectories(folder))
+                                Directory.Delete(subdir);
+                        }
+                    }
+                    catch
+                    {
+                        // Connection error or operation canceled by the user
+                        return null;
+                    }
+                }
+            }
+
+            // Parse the files
+            return Directory.EnumerateFiles(folder).ToDictionary<String, String, Func<Stream>>(Path.GetFileName, file => () => File.OpenRead(file));
+        }
+
+        #endregion
+
+        #region Tools
+
+        /// <summary>
         /// Gets a unique filename from the input URL
         /// </summary>
         /// <param name="url">The URL to convert to filename</param>
@@ -118,5 +177,7 @@ namespace NeuralNetworkNET.Helpers
                 }).ToString();
             }
         }
+
+        #endregion
     }
 }
