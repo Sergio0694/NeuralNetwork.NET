@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         }
 
         /// <summary>
-        /// Downloads the MNIST test datasets and returns a new <see cref="ITestDataset"/> instance
+        /// Downloads the CIFAR-10 test datasets and returns a new <see cref="ITestDataset"/> instance
         /// </summary>
         /// <param name="progress">The optional progress callback to use</param>
         /// <param name="token">An optional cancellation token for the operation</param>
@@ -59,7 +59,10 @@ namespace NeuralNetworkNET.APIs.Datasets
         [Pure, ItemCanBeNull]
         public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] IProgress<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
         {
-            throw new NotImplementedException();
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            if (map == null) return null;
+            IReadOnlyList<(float[], float[])> data = ParseSamples(map[TestBinFilename], TrainingSamplesInBinFiles);
+            return DatasetLoader.Test(data, progress);
         }
 
         #region Tools
