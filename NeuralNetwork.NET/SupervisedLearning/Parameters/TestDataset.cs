@@ -10,12 +10,26 @@ namespace NeuralNetworkNET.SupervisedLearning.Parameters
     /// </summary>
     internal sealed class TestDataset : DatasetBase, ITestDataset
     {
-        /// <inheritdoc/>
-        public IProgress<TrainingProgressEventArgs> ProgressCallback { get; set; }
+        private Action<TrainingProgressEventArgs> _ProgressCallback;
 
-        public TestDataset((float[,] X, float[,] Y) testSet, [CanBeNull] IProgress<TrainingProgressEventArgs> callback) : base(testSet)
+        /// <inheritdoc/>
+        public Action<TrainingProgressEventArgs> ProgressCallback
         {
-            ProgressCallback = callback;
+            get => _ProgressCallback;
+            set
+            {
+                _ProgressCallback = value;
+                ThreadSafeProgressCallback = value == null 
+                    ? null 
+                    : new Progress<TrainingProgressEventArgs>(value); // Creating a Progress instance captures the current synchronization context
+            }
         }
+        
+        /// <summary>
+        /// Gets the <see cref="IProgress{T}"/> instance to safely report the progress from any source thread
+        /// </summary>
+        internal IProgress<TrainingProgressEventArgs> ThreadSafeProgressCallback { get; private set; } 
+
+        public TestDataset((float[,] X, float[,] Y) testSet, [CanBeNull] Action<TrainingProgressEventArgs> callback) : base(testSet) => ProgressCallback = callback;
     }
 }

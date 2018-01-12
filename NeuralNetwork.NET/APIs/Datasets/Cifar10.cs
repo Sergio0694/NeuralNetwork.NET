@@ -57,7 +57,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] IProgress<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
+        public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
         {
             IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
             if (map == null) return null;

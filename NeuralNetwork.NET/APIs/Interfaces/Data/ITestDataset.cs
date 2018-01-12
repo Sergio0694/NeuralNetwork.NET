@@ -13,6 +13,6 @@ namespace NeuralNetworkNET.APIs.Interfaces.Data
         /// Gets the callback used to report the training progress
         /// </summary>
         [CanBeNull]
-        IProgress<TrainingProgressEventArgs> ProgressCallback { get; set; }
+        Action<TrainingProgressEventArgs> ProgressCallback { get; set; }
     }
 }

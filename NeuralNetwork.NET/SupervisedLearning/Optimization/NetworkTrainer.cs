@@ -159,7 +159,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 {
                     (float cost, _, float accuracy) = network.Evaluate(testDataset.Dataset);
                     testReports.Add(new DatasetEvaluationResult(cost, accuracy));
-                    testDataset.ProgressCallback?.Report(new TrainingProgressEventArgs(i + 1, cost, accuracy));
+                    testDataset.ThreadSafeProgressCallback?.Report(new TrainingProgressEventArgs(i + 1, cost, accuracy));
                 }
             }
             return PrepareResult(TrainingStopReason.EpochsCompleted, epochs);

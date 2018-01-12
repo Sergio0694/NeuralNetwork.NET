@@ -25,10 +25,7 @@ namespace DigitsTest
 
             // Prepare the dataset
             ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(100); // Batches of 100 samples
-            ITestDataset testData = await Mnist.GetTestDatasetAsync(new Progress<TrainingProgressEventArgs>(p =>
-            {
-                Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
-            }));
+            ITestDataset testData = await Mnist.GetTestDatasetAsync(p => Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}"));
             if (trainingData == null || testData == null)
             {
                 Printf("Error downloading the datasets");
