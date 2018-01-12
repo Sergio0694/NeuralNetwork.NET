@@ -156,5 +156,19 @@ namespace NeuralNetworkNET.Extensions
                 return b;
             }).ToString();
         }
+
+        /// <summary>
+        /// Returns the base16 string representation of the input bytes sequence
+        /// </summary>
+        /// <param name="bytes">The input <see cref="byte"/> sequence</param>
+        [Pure, NotNull]
+        public static String ToBase16([NotNull] this byte[] bytes)
+        {
+            return bytes.Aggregate(new StringBuilder(), (builder, b) =>
+            {
+                builder.Append($"{b:x2}");
+                return builder;
+            }).ToString();
+        }
     }
 }
