@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>NeuralNetworkNET</RootNamespace>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Authors>Sergio Pedri</Authors>
     <Company>Sergio Pedri</Company>
     <Description>An easy to use CNN library, built from scratch in C# 7.2 for .NET Standard 2.0, with native memory management for better performance and additional GPU support with cuDNN</Description>
@@ -14,7 +14,11 @@
     <PackageTags>cnn, neuralnetwork, deeplearning, ai, cuda, csharp, gpu, net, netstandard</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>New APIs to load a dataset from images, minor bug fixes and improvements</PackageReleaseNotes>
+    <PackageReleaseNotes>• New optimizers added (Adam, AdaMax, RMSProp, Momentum and more)
+• MNIST, CIFAR-10 and CIFAR-100 datasets added
+• Added new distance-based accuracy tester
+• APIs refactoring and improvements
+• Bug fixes and speed optimizations</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -33,7 +37,10 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <AssemblyVersion>1.4.0.0</AssemblyVersion>
+    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <AssetTargetFallback>
+      $(AssetTargetFallback);net45
+    </AssetTargetFallback>
   </PropertyGroup>
 
   <ItemGroup>
