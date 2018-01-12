@@ -16,6 +16,7 @@ The library also exposes CUDA-accelerated layers with more advanced features tha
   - [GPU acceleration](#gpu-acceleration)
   - [Library settings](#library-settings)
   - [Serialization and deserialization](#serialization-and-deserialization)
+  - [Built-in datasets](#built\-in-datasets)
 - [Requirements](#requirements)
 
 # Installing from NuGet
@@ -140,6 +141,20 @@ INeuralNetwork network = NetworkLoader.TryLoad(file, LayersLoadingPreference.Cud
 **Note:** the `LayersLoadingPreference` option indicates the desired type of layers to deserialize whenever possible. For example, using `LayersLoadingPreference.Cpu`, the loaded network will only have CPU-powered layers, if supported.
 
 There's also an additional `SaveMetadataAsJson` method to export the metadata of an `INeuralNetwork` instance.
+
+## Built-in datasets
+
+The `NeuralNetworkNET.Datasets` namespace includes static classes to quickly load a popular dataset and get an `IDataset` instance ready to use with a new neural network. As an example, here's how to get the MNIST dataset:
+
+```C#
+ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(400); // Batches of 400 samples
+ITestDataset testData = await Mnist.GetTestDatasetAsync(new Progress<TrainingProgressEventArgs>(p =>
+{
+    // Progress callback here
+}));
+```
+
+Each API in this namespace also supports an optional `CancellationToken` to stop the dataset loading, as the source data is downloaded from the internet and can take some time to be available, depending on the dataset being used.
 
 # Requirements
 
