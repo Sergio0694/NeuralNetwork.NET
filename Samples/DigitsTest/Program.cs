@@ -41,7 +41,7 @@ namespace DigitsTest
                 trainingData,
                 TrainingAlgorithms.AdaDelta(),
                 60, 0.5f,
-                new Progress<BatchProgress>(TrackBatchProgress),
+                TrackBatchProgress,
                 testDataset: testData);
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
             Console.ReadKey();

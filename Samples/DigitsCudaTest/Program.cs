@@ -50,7 +50,7 @@ namespace DigitsCudaTest
                 trainingData, 
                 TrainingAlgorithms.AdaDelta(),
                 20, 0.5f,
-                new Progress<BatchProgress>(TrackBatchProgress),
+                TrackBatchProgress,
                 testDataset: testData, token: cts.Token);
 
             // Save the training reports
