@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.APIs
             }).ToArray());
         }
 
-        #region Training
+        #region Training APIs
 
         /// <summary>
         /// Trains a neural network with the given parameters
@@ -70,17 +70,7 @@ namespace NeuralNetworkNET.APIs
             [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {
-            // Preliminary checks
-            if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
-
-            // Start the training
-            return NetworkTrainer.TrainNetwork(
-                network as SequentialNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
-                dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
-                epochs, dropout, algorithm, batchCallback.AsIProgress(), trainingCallback.AsIProgress(), 
-                validationDataset as ValidationDataset,
-                testDataset as TestDataset,
-                token);
+            return TrainNetworkCore(network, dataset, algorithm, epochs, dropout, batchCallback.AsIProgress(), trainingCallback.AsIProgress(), validationDataset, testDataset, token);
         }
 
         /// <summary>
@@ -110,9 +100,38 @@ namespace NeuralNetworkNET.APIs
             [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchCallback, trainingCallback, validationDataset, testDataset, token), token);
+            IProgress<BatchProgress> batchProgress = batchCallback.AsIProgress();
+            IProgress<TrainingProgressEventArgs> trainingProgress = trainingCallback.AsIProgress(); // Capture the synchronization contexts
+            return Task.Run(() => TrainNetworkCore(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
         }
 
         #endregion
+
+        // Core trainer method with additional checks
+        [NotNull]
+        private static TrainingSessionResult TrainNetworkCore(
+            [NotNull] INeuralNetwork network,
+            [NotNull] ITrainingDataset dataset,
+            [NotNull] ITrainingAlgorithmInfo algorithm,
+            int epochs, float dropout,
+            [CanBeNull] IProgress<BatchProgress> batchProgress,
+            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress,
+            [CanBeNull] IValidationDataset validationDataset,
+            [CanBeNull] ITestDataset testDataset,
+            CancellationToken token)
+        {
+            // Preliminary checks
+            if (epochs < 1) throw new ArgumentOutOfRangeException(nameof(epochs), "The number of epochs must at be at least equal to 1");
+            if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
+
+            // Start the training
+            return NetworkTrainer.TrainNetwork(
+                network as SequentialNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
+                dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
+                epochs, dropout, algorithm, batchProgress, trainingProgress, 
+                validationDataset as ValidationDataset,
+                testDataset as TestDataset,
+                token);
+        }
     }
 }
