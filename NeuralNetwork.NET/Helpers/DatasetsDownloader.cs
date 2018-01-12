@@ -107,7 +107,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="url">The target URL to use to download the archive</param>
         /// <param name="token">A cancellation token for the operation</param>
         [MustUseReturnValue, ItemCanBeNull]
-        public static async Task<IDictionary<String, Func<Stream>>> GetArchiveAsync([NotNull] String url, CancellationToken token)
+        public static async Task<IReadOnlyDictionary<String, Func<Stream>>> GetArchiveAsync([NotNull] String url, CancellationToken token)
         {
             // Check if the archive is already present
             String folder = Path.Combine(DatasetsPath, GetFilename(url));
