@@ -32,7 +32,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Order = 1)]
+        [JsonProperty(nameof(NetworkType), Order = 1)]
         public NetworkType NetworkType { get; } = NetworkType.Sequential;
 
         // JSON-targeted property
