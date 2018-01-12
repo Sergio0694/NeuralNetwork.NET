@@ -155,7 +155,7 @@ namespace NeuralNetworkNET.Extensions
         [Pure, NotNull]
         internal static String TrimVerbatim([NotNull] this String text)
         {
-            String[] lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            String[] lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             return lines.Aggregate(new StringBuilder(), (b, s) =>
             {
                 b.AppendLine(s.Trim());
