@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -69,10 +70,12 @@ namespace NeuralNetworkNET.Helpers
             // Check if the target resource already exists
             byte[]
                 bytes = Encoding.UTF8.GetBytes(url),
-                hash = HashAlgorithm.Create(HashAlgorithmName.MD5.Name).TransformFinalBlock(bytes, 0, bytes.Length);
+                hash = HashAlgorithm.Create(HashAlgorithmName.MD5.Name).TransformFinalBlock(bytes, 0, bytes.Length),
+                reduced = Enumerable.Range(0, hash.Length / 2).Select(i => (byte)(hash[i] * 23 + hash[i + 1])).ToArray(); // Shorten by half
             String
-                filename = $"{hash.ToBase16()}{FileExtension}",
+                filename = $"{reduced.ToBase16()}{FileExtension}",
                 path = Path.Combine(DatasetsPath, filename);
+            Directory.CreateDirectory(DatasetsPath);
             if (File.Exists(path)) return File.OpenRead(path);
 
             try
