@@ -33,6 +33,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                 throw new ArgumentException("The biases vector must have the same size as the number of output neurons");
         }
 
+        #region Implementation
+
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
@@ -66,6 +68,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             Tensor.New(1, Biases.Length, out dJdb);
             CpuDnn.FullyConnectedBackwardBias(delta, dJdb);
         }
+
+        #endregion
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);

@@ -6,8 +6,8 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Data;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -159,7 +159,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test([NotNull] IEnumerable<(float[] X, float[] Y)> data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null)
+        public static ITestDataset Test([NotNull] IEnumerable<(float[] X, float[] Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null)
             => new TestDataset(data.MergeLines(), progress);
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test([NotNull, ItemNotNull] IEnumerable<Func<(float[] X, float[] Y)>> data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null)
+        public static ITestDataset Test([NotNull, ItemNotNull] IEnumerable<Func<(float[] X, float[] Y)>> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null)
             => Test(data.AsParallel().Select(f => f()), progress);
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test((float[,] X, float[,] Y) data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null) => new TestDataset(data, progress);
+        public static ITestDataset Test((float[,] X, float[,] Y) data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null) => new TestDataset(data, progress);
 
         /// <summary>
         /// Creates a new <see cref="ITestDataset"/> instance to test a network from the input collection
@@ -193,7 +193,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
             where TPixel : struct, IPixel<TPixel>
             => Test(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)).AsParallel(), progress);
 
@@ -207,7 +207,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, Func<float[]> Y)> data, [CanBeNull] IProgress<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, Func<float[]> Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
             where TPixel : struct, IPixel<TPixel>
             => Test(data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y())).AsParallel(), progress);
 

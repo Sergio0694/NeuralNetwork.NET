@@ -13,6 +13,8 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     public static class MiscExtensions
     {
+        #region Public APIs
+
         /// <summary>
         /// Casts the input item to a class or interface that inherits from the initial type
         /// </summary>
@@ -100,12 +102,16 @@ namespace NeuralNetworkNET.Extensions
             return n;
         }
 
+        #endregion
+
+        #region Internal extensions
+
         /// <summary>
         /// Rounds the given <see cref="TimeSpan"/> to an interval with an integer number of total seconds
         /// </summary>
         /// <param name="timeSpan">The instance to round</param>
         [Pure]
-        public static TimeSpan RoundToSeconds(this TimeSpan timeSpan) => TimeSpan.FromSeconds((int)Math.Floor(timeSpan.TotalSeconds));
+        internal static TimeSpan RoundToSeconds(this TimeSpan timeSpan) => TimeSpan.FromSeconds((int)Math.Floor(timeSpan.TotalSeconds));
 
         /// <summary>
         /// Partitions the input sequence into a series of batches of the given size
@@ -115,7 +121,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="size">The desired batch size</param>
         [PublicAPI]
         [Pure, NotNull, ItemNotNull]
-        public static IEnumerable<IReadOnlyList<T>> Partition<T>([NotNull] this IEnumerable<T> values, int size)
+        internal static IEnumerable<IReadOnlyList<T>> Partition<T>([NotNull] this IEnumerable<T> values, int size)
         {
             // Private batch enumerator
             IEnumerable<T> GetChunk(IEnumerator<T> enumerator)
@@ -137,7 +143,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="result">The <see cref="ParallelLoopResult"/> to test</param>
         [AssertionMethod]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AssertCompleted(in this ParallelLoopResult result)
+        internal static void AssertCompleted(in this ParallelLoopResult result)
         {
             if (!result.IsCompleted) throw new InvalidOperationException("Error while performing the parallel loop");
         }
@@ -147,7 +153,7 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="text">The string to trim</param>
         [Pure, NotNull]
-        public static String TrimVerbatim([NotNull] this String text)
+        internal static String TrimVerbatim([NotNull] this String text)
         {
             String[] lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             return lines.Aggregate(new StringBuilder(), (b, s) =>
@@ -156,5 +162,15 @@ namespace NeuralNetworkNET.Extensions
                 return b;
             }).ToString();
         }
+
+        /// <summary>
+        /// Tries to convert the input <see cref="Action{T}"/> into an <see cref="IProgress{T}"/> instance
+        /// </summary>
+        /// <typeparam name="T">The type returned by the input <see cref="Action{T}"/></typeparam>
+        /// <param name="action">The input <see cref="Action{T}"/> to convert</param>
+        [Pure, CanBeNull]
+        internal static IProgress<T> AsIProgress<T>([CanBeNull] this Action<T> action) => action == null ? null : new Progress<T>(action);
+
+        #endregion
     }
 }

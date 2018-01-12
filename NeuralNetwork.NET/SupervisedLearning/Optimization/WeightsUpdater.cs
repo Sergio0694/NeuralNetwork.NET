@@ -2,7 +2,7 @@
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 
-namespace NeuralNetworkNET.Networks.Implementations
+namespace NeuralNetworkNET.SupervisedLearning.Optimization
 {
     /// <summary>
     /// A delegate used to update the weights in a neural network after each training batch is processed

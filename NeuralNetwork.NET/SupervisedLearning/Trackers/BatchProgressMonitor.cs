@@ -1,8 +1,8 @@
-﻿using JetBrains.Annotations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
-using System;
+﻿using System;
+using JetBrains.Annotations;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
-namespace NeuralNetworkNET.SupervisedLearning.Optimization
+namespace NeuralNetworkNET.SupervisedLearning.Trackers
 {
     /// <summary>
     /// A simple monitor object that keeps track of the current training progress and notifies every time a batch is completed

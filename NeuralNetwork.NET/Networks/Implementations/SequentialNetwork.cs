@@ -17,6 +17,7 @@ using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -31,7 +32,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public parameters
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(InputInfo), Order = 1)]
+        [JsonProperty(nameof(NetworkType), Order = 1)]
         public NetworkType NetworkType { get; } = NetworkType.Sequential;
 
         // JSON-targeted property

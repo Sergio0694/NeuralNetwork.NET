@@ -1,7 +1,7 @@
 ﻿using System;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 
-namespace NeuralNetworkNET.SupervisedLearning.Optimization.Parameters
+namespace NeuralNetworkNET.SupervisedLearning.Parameters
 {
     /// <summary>
     /// A class that contains additional parameters to validate the training data during a training session

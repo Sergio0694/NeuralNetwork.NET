@@ -9,10 +9,12 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Parameters;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
+using NeuralNetworkNET.SupervisedLearning.Parameters;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.APIs
 {
@@ -49,8 +51,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
-        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
+        /// <param name="batchCallback">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingCallback">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationDataset">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testDataset">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -62,8 +64,8 @@ namespace NeuralNetworkNET.APIs
             [NotNull] ITrainingDataset dataset,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             int epochs, float dropout = 0,
-            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress = null,
+            [CanBeNull] Action<BatchProgress> batchCallback = null,
+            [CanBeNull] Action<TrainingProgressEventArgs> trainingCallback = null,
             [CanBeNull] IValidationDataset validationDataset = null,
             [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
@@ -75,7 +77,7 @@ namespace NeuralNetworkNET.APIs
             return NetworkTrainer.TrainNetwork(
                 network as SequentialNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
-                epochs, dropout, algorithm, batchProgress, trainingProgress, 
+                epochs, dropout, algorithm, batchCallback.AsIProgress(), trainingCallback.AsIProgress(), 
                 validationDataset as ValidationDataset,
                 testDataset as TestDataset,
                 token);
@@ -89,8 +91,8 @@ namespace NeuralNetworkNET.APIs
         /// <param name="algorithm">The desired training algorithm to use</param>
         /// <param name="epochs">The number of epochs to run with the training data</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="Enums.LayerType.FullyConnected"/> layer</param>
-        /// <param name="batchProgress">An optional callback to monitor the training progress (in terms of dataset completion)</param>
-        /// <param name="trainingProgress">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
+        /// <param name="batchCallback">An optional callback to monitor the training progress (in terms of dataset completion)</param>
+        /// <param name="trainingCallback">An optional progress callback to monitor progress on the training dataset (in terms of classification performance)</param>
         /// <param name="validationDataset">An optional dataset used to check for convergence and avoid overfitting</param>
         /// <param name="testDataset">The optional test dataset to use to monitor the current generalized training progress</param>       
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
@@ -102,13 +104,13 @@ namespace NeuralNetworkNET.APIs
             [NotNull] ITrainingDataset dataset,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             int epochs, float dropout = 0,
-            [CanBeNull] IProgress<BatchProgress> batchProgress = null,
-            [CanBeNull] IProgress<TrainingProgressEventArgs> trainingProgress = null,
+            [CanBeNull] Action<BatchProgress> batchCallback = null,
+            [CanBeNull] Action<TrainingProgressEventArgs> trainingCallback = null,
             [CanBeNull] IValidationDataset validationDataset = null,
             [CanBeNull] ITestDataset testDataset = null,
             CancellationToken token = default)
         {
-            return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
+            return Task.Run(() => TrainNetwork(network, dataset, algorithm, epochs, dropout, batchCallback, trainingCallback, validationDataset, testDataset, token), token);
         }
 
         #endregion

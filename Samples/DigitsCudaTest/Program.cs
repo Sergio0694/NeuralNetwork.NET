@@ -3,8 +3,8 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Datasets;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
@@ -12,7 +12,7 @@ using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace DigitsCudaTest
@@ -28,25 +28,26 @@ namespace DigitsCudaTest
                 CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),
                 CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
-                CuDnnNetworkLayers.FullyConnected(64, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.Softmax(10));
 
             // Prepare the dataset
-            (var training, var test) = DataParser.LoadDatasets();
-            ITrainingDataset trainingData = DatasetLoader.Training(training, 400); // Batches of 400 samples
-            ITestDataset testData = DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
+            ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(400); // Batches of 400 samples
+            ITestDataset testData = await Mnist.GetTestDatasetAsync(p => Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}"));
+            if (trainingData == null || testData == null)
             {
-                Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
-            }));
+                Printf("Error downloading the datasets");
+                Console.ReadKey();
+                return;
+            }
 
             // Setup and network training
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (s, e) => cts.Cancel();
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network, 
                 trainingData, 
-                TrainingAlgorithms.Adadelta(),
+                TrainingAlgorithms.AdaDelta(),
                 20, 0.5f,
-                new Progress<BatchProgress>(TrackBatchProgress),
+                TrackBatchProgress,
                 testDataset: testData, token: cts.Token);
 
             // Save the training reports

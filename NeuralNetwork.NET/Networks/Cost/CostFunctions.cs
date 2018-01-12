@@ -131,7 +131,7 @@ namespace NeuralNetworkNET.Networks.Cost
             {
                 int
                     offset = i * w,
-                    iy = new Span<float>(py + offset, w).Argmax(float.MinValue);
+                    iy = new Span<float>(py + offset, w).Argmax();
                 pv[i] = -(float)Math.Log(pyHat[offset + iy]);
             }
             Parallel.For(0, h, Kernel).AssertCompleted();

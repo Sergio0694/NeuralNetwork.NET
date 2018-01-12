@@ -9,7 +9,7 @@ namespace NeuralNetworkNET.cuDNN
     /// <summary>
     /// A static class with some extensions for the <see cref="Dnn"/> class
     /// </summary>
-    internal static class CuDnnExtensions
+    public static class CuDnnExtensions
     {
         #region Activation
 

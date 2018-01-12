@@ -16,6 +16,7 @@ The library also exposes CUDA-accelerated layers with more advanced features tha
   - [GPU acceleration](#gpu-acceleration)
   - [Library settings](#library-settings)
   - [Serialization and deserialization](#serialization-and-deserialization)
+  - [Built-in datasets](#built\-in-datasets)
 - [Requirements](#requirements)
 
 # Installing from NuGet
@@ -55,9 +56,9 @@ IEnumerable<(float[] x, float[] u)> data = ... // Your own dataset parsing routi
 ITrainingDataset dataset = DatasetLoader.Training(data, 100);
 
 // An optional test dataset with a callback to monitor the progress
-ITestDataset test = DatasetLoader.Test(..., new Progress<TrainingProgressEventArgs>(p =>
+ITestDataset test = DatasetLoader.Test(..., p =>
 {
-    Console.WriteLine($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}");
+    Console.WriteLine($"Epoch {p.Iteration}, cost: {p.Cost}, accuracy: {p.Accuracy}"); // Progress report
 });
 ```
 
@@ -68,10 +69,10 @@ Training a neural network is pretty straightforward - just use the methods in th
 TrainingSessionResult result = NetworkManager.TrainNetwork(
     network,                                // The network instance to train
     dataset,                                // The ITrainingDataset instance   
-    TrainingAlgorithms.Adadelta(),          // The training algorithm to use
+    TrainingAlgorithms.AdaDelta(),          // The training algorithm to use
     60,                                     // The expected number of training epochs to run
     0.5f,                                   // Dropout probability
-    new Progress<BatchProgress>(p => ...),  // Optional training epoch progress callback
+    p => ...,                               // Optional training epoch progress callback
     null,                                   // Optional callback to monitor the accuracy on the training dataset
     null,                                   // Optional validation dataset
     test,                                   // Test dataset
@@ -112,8 +113,11 @@ This class acts as a container to quickly check and modify any setting at any ti
 For example, it is possible to customize the criteria used by the networks to check their performance during training
 
 ```C#
-NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default mode
+NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default mode (mutually-exclusive classes)
+
+// Other testers are available too
 NetworkSettings.AccuracyTester = AccuracyTesters.Threshold();   // Useful for overlapping classes
+NetworkSettings.AccuracyTester = AccuracyTesters.Distance(0.2f); // Distance between results and expected outputs
 ```
 
 When using CUDA-powered networks, sometimes the GPU in use might not be able to process the whole test or validation datasets in a single pass, which is the default behavior (these datasets are not divided into batches).
@@ -138,6 +142,17 @@ INeuralNetwork network = NetworkLoader.TryLoad(file, LayersLoadingPreference.Cud
 **Note:** the `LayersLoadingPreference` option indicates the desired type of layers to deserialize whenever possible. For example, using `LayersLoadingPreference.Cpu`, the loaded network will only have CPU-powered layers, if supported.
 
 There's also an additional `SaveMetadataAsJson` method to export the metadata of an `INeuralNetwork` instance.
+
+## Built-in datasets
+
+The `NeuralNetworkNET.Datasets` namespace includes static classes to quickly load a popular dataset and get an `IDataset` instance ready to use with a new neural network. As an example, here's how to get the MNIST dataset:
+
+```C#
+ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(400); // Batches of 400 samples
+ITestDataset testData = await Mnist.GetTestDatasetAsync(p => ... /* Optional callback */);
+```
+
+Each API in this namespace also supports an optional `CancellationToken` to stop the dataset loading, as the source data is downloaded from the internet and can take some time to be available, depending on the dataset being used.
 
 # Requirements
 

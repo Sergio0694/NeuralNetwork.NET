@@ -5,10 +5,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.SupervisedLearning.Data
 {
@@ -36,6 +38,22 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         }
 
         /// <inheritdoc/>
+        public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
+        {
+            if (ratio <= 0 || ratio >= 1) throw new ArgumentOutOfRangeException(nameof(ratio), "The ratio must be in the (0,1) range");
+            int left = ((int)(Count * (1 - ratio))).Max(1); // Ensure there's at least one element
+            return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
+        }
+
+        /// <inheritdoc/>
+        public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
+        {
+            if (ratio <= 0 || ratio >= 1) throw new ArgumentOutOfRangeException(nameof(ratio), "The ratio must be in the (0,1) range");
+            int left = ((int)(Count * (1 - ratio))).Max(1); // Ensure there's at least one element
+            return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
+        }
+
+        /// <inheritdoc/>
         public int InputFeatures => Batches[0].X.GetLength(1);
 
         /// <inheritdoc/>
@@ -49,7 +67,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             {
                 if (i < 0 || i > Count - 1) throw new ArgumentOutOfRangeException(nameof(i), "The target index is not valid");
                 ref readonly SamplesBatch batch = ref Batches[i / BatchSize];
-                return new DatasetSample(batch.X.Slice(i), batch.Y.Slice(i));
+                int row = i % BatchSize;
+                return new DatasetSample(batch.X.Slice(row), batch.Y.Slice(row));
             }
         }
 
@@ -196,6 +215,19 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             {
                 xhandles[i].Free();
                 yhandles[i].Free();
+            }
+        }
+
+        // Takes a range of samples from the current dataset
+        [Pure, NotNull]
+        private IEnumerable<(float[], float[])> Take(int start, int end)
+        {
+            if (start < 0 || start == end) throw new ArgumentOutOfRangeException(nameof(start));
+            if (end > Count) throw new ArgumentOutOfRangeException(nameof(end));
+            for (int i = start; i < end; i++)
+            {
+                DatasetSample sample = this[i];
+                yield return (sample.X.ToArray(), sample.Y.ToArray());
             }
         }
 

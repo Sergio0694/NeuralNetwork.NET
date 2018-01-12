@@ -10,6 +10,8 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     public static class SpanExtensions
     {
+        #region Generics
+
         /// <summary>
         /// Fills the target <see cref="Span{T}"/> with the input values provider
         /// </summary>
@@ -42,27 +44,6 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Finds the minimum and maximum value in the input <see cref="Span{T}"/>
-        /// </summary>
-        /// <param name="span">The source <see cref="Span{T}"/> to scan</param>
-        /// <param name="min">The minimum possible value for a <typeparamref name="T"/> value</param>
-        /// <param name="max">The maaximum possible value for a <typeparamref name="T"/> value</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static (T Min, T Max) MinMax<T>(this Span<T> span, T min, T max) where T : struct, IComparable<T>
-        {
-            if (span.IsEmpty) return (default, default);
-            T low = max, high = min;
-            for (int i = 0; i < span.Length; i++)
-            {
-                T value = span[i];
-                if (value.CompareTo(low) < 0) low = value;
-                if (value.CompareTo(high) > 0) high = value;
-            }
-            return (low, high);
-        }
-
-        /// <summary>
         /// Returns a matrix with the reshaped content of the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The input <see cref="Span{T}"/></param>
@@ -76,53 +57,6 @@ namespace NeuralNetworkNET.Extensions
             T[,] m = new T[h, w];
             span.CopyTo(m.AsSpan());
             return m;
-        }
-
-        /// <summary>
-        /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
-        /// </summary>
-        /// <param name="span">The source <see cref="Span{T}"/> instance</param>
-        /// <param name="min">The minimum possible value for a <typeparamref name="T"/> value</param>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static int Argmax<T>(this Span<T> span, T min) where T : struct, IComparable<T>
-        {
-            if (span.Length < 2) return default;
-            int index = 0;
-            T max = min;
-            for (int j = 0; j < span.Length; j++)
-            {
-                T value = span[j];
-                if (value.CompareTo(max) > 0)
-                {
-                    max = value;
-                    index = j;
-                }
-            }
-            return index;
-        }
-
-        /// <summary>
-        /// Returns whether or not all the elements in the two input <see cref="Span{T}"/> instances respect the input threshold
-        /// </summary>
-        /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
-        /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
-        /// <param name="threshold">The target threshold</param>
-        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        internal static bool MatchElementwiseThreshold<T>(this Span<T> x1, Span<T> x2, T threshold) where T : struct, IComparable<T>
-        {
-            if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
-            for (int i = 0; i < x1.Length; i++)
-            {
-                int
-                    c1 = x1[i].CompareTo(threshold),
-                    c2 = x2[i].CompareTo(threshold);
-                if (c1 > 0 && c2 <= 0 || c1 <= 0 && c2 > 0)
-                    return false;
-            }
-            return true;
         }
 
         /// <summary>
@@ -181,5 +115,75 @@ namespace NeuralNetworkNET.Extensions
             if (row < 0 || row > m.GetLength(0) - 1) throw new ArgumentOutOfRangeException(nameof(row), "The row index isn't valid");
             return Span<T>.DangerousCreate(m, ref m[row, 0], m.GetLength(1));
         }
+
+        #endregion
+
+        #region Float
+
+        /// <summary>
+        /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
+        /// </summary>
+        /// <param name="span">The source <see cref="Span{T}"/> instance</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe int Argmax(this Span<float> span)
+        {
+            if (span.Length < 2) return default;
+            int index = 0;
+            float max = float.MinValue;
+            fixed (float* p = &span.DangerousGetPinnableReference())
+            {
+                for (int j = 0; j < span.Length; j++)
+                {
+                    float value = p[j];
+                    if (value > max)
+                    {
+                        max = value;
+                        index = j;
+                    }
+                }
+            }
+            return index;
+        }
+
+        /// <summary>
+        /// Returns whether or not all the elements in the two input <see cref="Span{T}"/> instances respect the input threshold
+        /// </summary>
+        /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
+        /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
+        /// <param name="threshold">The target threshold</param>
+        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        internal static unsafe bool MatchElementwiseThreshold(this Span<float> x1, Span<float> x2, float threshold)
+        {
+            if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
+            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+                for (int i = 0; i < x1.Length; i++)
+                    if (px1[i] > threshold != px2[i] > threshold)
+                        return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Returns whether or not all the elements in the two input <see cref="Span{T}"/> respect the maximum distance between each other
+        /// </summary>
+        /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
+        /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
+        /// <param name="threshold">The target maximum distance</param>
+        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        internal static unsafe bool IsCloseTo(this Span<float> x1, Span<float> x2, float threshold)
+        {
+            if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
+            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+                for (int i = 0; i < x1.Length; i++)
+                    if ((px1[i] - px2[i]).Abs() > threshold)
+                        return false;
+            return true;
+        }
+
+        #endregion
     }
 }

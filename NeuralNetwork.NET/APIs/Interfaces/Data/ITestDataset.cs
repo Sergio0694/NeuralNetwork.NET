@@ -1,6 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 
 namespace NeuralNetworkNET.APIs.Interfaces.Data
 {
@@ -13,6 +13,6 @@ namespace NeuralNetworkNET.APIs.Interfaces.Data
         /// Gets the callback used to report the training progress
         /// </summary>
         [CanBeNull]
-        IProgress<TrainingProgressEventArgs> ProgressCallback { get; set; }
+        Action<TrainingProgressEventArgs> ProgressCallback { get; set; }
     }
 }

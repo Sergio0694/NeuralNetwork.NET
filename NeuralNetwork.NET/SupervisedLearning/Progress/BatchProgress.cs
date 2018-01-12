@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.SupervisedLearning.Optimization.Progress
+﻿namespace NeuralNetworkNET.SupervisedLearning.Progress
 {
     /// <summary>
     /// A simple <see langword="struct"/> containing info on the current batch progress for the training dataset

@@ -77,7 +77,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         #endregion
 
         /// <inheritdoc/>
-        public override void Serialize([NotNull] Stream stream)
+        public override void Serialize(Stream stream)
         {
             base.Serialize(stream);
             stream.Write(CostFunctionType);

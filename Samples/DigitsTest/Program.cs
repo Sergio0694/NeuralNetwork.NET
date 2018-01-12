@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
-using MnistDatasetToolkit;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Datasets;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.SupervisedLearning.Optimization.Progress;
+using NeuralNetworkNET.SupervisedLearning.Progress;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace DigitsTest
@@ -24,19 +24,21 @@ namespace DigitsTest
                 NetworkLayers.Softmax(10));
 
             // Prepare the dataset
-            (var training, var test) = DataParser.LoadDatasets();
-            ITrainingDataset trainingData = DatasetLoader.Training(training, 100); // Batches of 100 samples
-            ITestDataset testData = DatasetLoader.Test(test, new Progress<TrainingProgressEventArgs>(p =>
+            ITrainingDataset trainingData = await Mnist.GetTrainingDatasetAsync(100); // Batches of 100 samples
+            ITestDataset testData = await Mnist.GetTestDatasetAsync(p => Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}"));
+            if (trainingData == null || testData == null)
             {
-                Printf($"Epoch {p.Iteration}, cost: {p.Result.Cost}, accuracy: {p.Result.Accuracy}");
-            }));
+                Printf("Error downloading the datasets");
+                Console.ReadKey();
+                return;
+            }
 
             // Train the network
             TrainingSessionResult result = await NetworkManager.TrainNetworkAsync(network,
                 trainingData,
-                TrainingAlgorithms.Adadelta(),
+                TrainingAlgorithms.AdaDelta(),
                 60, 0.5f,
-                new Progress<BatchProgress>(TrackBatchProgress),
+                TrackBatchProgress,
                 testDataset: testData);
             Printf($"Stop reason: {result.StopReason}, elapsed time: {result.TrainingTime}");
             Console.ReadKey();
