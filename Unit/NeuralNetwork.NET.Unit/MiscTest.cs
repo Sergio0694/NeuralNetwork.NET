@@ -75,14 +75,17 @@ namespace NeuralNetworkNET.Unit
                                   plt.xlabel(""Epoch"")
                                   plt.plot(x)
                                   plt.show()";
-            const String expected = @"import matplotlib.pyplot as plt
-x = [$VALUES$]
-plt.grid(linestyle=""dashed"")
-plt.ylabel(""$YLABEL$"")
-plt.xlabel(""Epoch"")
-plt.plot(x)
-plt.show()
-";
+            String[] lines =
+            {
+                "import matplotlib.pyplot as plt",
+                "x = [$VALUES$]",
+                "plt.grid(linestyle=\"dashed\")",
+                "plt.ylabel(\"$YLABEL$\")",
+                "plt.xlabel(\"Epoch\")",
+                "plt.plot(x)",
+                "plt.show()"
+            };
+            String expected = lines.Skip(1).Aggregate(lines[0], (s, l) => $"{s}{Environment.NewLine}{l}") + Environment.NewLine;
             Assert.IsTrue(text.TrimVerbatim().Equals(expected));
         }
     }

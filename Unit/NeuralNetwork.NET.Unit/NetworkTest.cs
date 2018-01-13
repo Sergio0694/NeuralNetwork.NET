@@ -85,14 +85,14 @@ namespace NeuralNetworkNET.Unit
                     ParseSamples(Path.Combine(path, TestSetValuesFilename), Path.Combine(path, TestSetLabelsFilename), test));
         }
 
-        private static bool TestTrainingMethod(ITrainingAlgorithmInfo info)
+        private static bool TestTrainingMethod(ITrainingAlgorithmInfo info, int epochs)
         {
             (var trainingSet, var testSet) = ParseMnistDataset();
             BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
             SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
                 NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
-            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 2, 0, info, null, null, null, null, default);
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, epochs, 0, info, null, null, null, null, default);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
             (_, _, float accuracy) = network.Evaluate(testSet);
             if (accuracy < 80)
@@ -106,19 +106,19 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void GradientDescentTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.StochasticGradientDescent()));
+        public void GradientDescentTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.StochasticGradientDescent(0.1f), 1));
 
         [TestMethod]
-        public void MomentumTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Momentum()));
+        public void MomentumTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Momentum(0.1f), 1));
 
         [TestMethod]
-        public void AdaGradTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaGrad(0.1f)));
+        public void AdaGradTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaGrad(0.1f), 2));
 
         [TestMethod]
-        public void AdaDeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaDelta()));
+        public void AdaDeltaTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.AdaDelta(), 1));
 
         [TestMethod]
-        public void AdamTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adam()));
+        public void AdamTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.Adam(), 1));
 
         [TestMethod]
         public void AdaMaxTest()
@@ -140,6 +140,6 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void RMSPropTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.RMSProp()));
+        public void RMSPropTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.RMSProp(), 1));
     }
 }
