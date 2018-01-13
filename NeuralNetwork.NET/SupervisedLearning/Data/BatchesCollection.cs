@@ -40,16 +40,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <inheritdoc/>
         public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
         {
-            if (ratio <= 0 || ratio >= 1) throw new ArgumentOutOfRangeException(nameof(ratio), "The ratio must be in the (0,1) range");
-            int left = ((int)(Count * (1 - ratio))).Max(1); // Ensure there's at least one element
+            int left = CalculatePartitionSize(ratio);
             return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
         }
 
         /// <inheritdoc/>
         public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
         {
-            if (ratio <= 0 || ratio >= 1) throw new ArgumentOutOfRangeException(nameof(ratio), "The ratio must be in the (0,1) range");
-            int left = ((int)(Count * (1 - ratio))).Max(1); // Ensure there's at least one element
+            int left = CalculatePartitionSize(ratio);
             return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
         }
 
@@ -229,6 +227,16 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 DatasetSample sample = this[i];
                 yield return (sample.X.ToArray(), sample.Y.ToArray());
             }
+        }
+
+        // Computes the size of the first dataset partition given a partition ratio
+        [Pure]
+        private int CalculatePartitionSize(float ratio)
+        {
+            if (ratio <= 0 || ratio >= 1) throw new ArgumentOutOfRangeException(nameof(ratio), "The ratio must be in the (0,1) range");
+            int left = ((int)(Count * (1 - ratio))).Max(10); // Ensure there are at least 10 elements
+            if (Count - left < 10) throw new ArgumentOutOfRangeException(nameof(ratio), "Each partition must have at least 10 samples");
+            return left;
         }
 
         #endregion

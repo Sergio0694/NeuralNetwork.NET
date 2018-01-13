@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Interfaces.Data;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -44,14 +45,12 @@ namespace NeuralNetworkNET.Unit
                 x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
                 y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.From((x, y), 1000);
-            HashSet<int>
-                set1 = new HashSet<int>();
+            HashSet<int> set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
             {
                 set1.Add(GetUid(x, i) ^ GetUid(y, i));
             }
-            HashSet<int>
-                set2 = new HashSet<int>();
+            HashSet<int> set2 = new HashSet<int>();
             for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
@@ -62,8 +61,7 @@ namespace NeuralNetworkNET.Unit
             }
             Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
             batches.CrossShuffle();
-            HashSet<int>
-                set3 = new HashSet<int>();
+            HashSet<int> set3 = new HashSet<int>();
             for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
@@ -83,14 +81,12 @@ namespace NeuralNetworkNET.Unit
                 x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
                 y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
             BatchesCollection batches = BatchesCollection.From((x, y), 1547);
-            HashSet<int>
-                set1 = new HashSet<int>();
+            HashSet<int> set1 = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
             {
                 set1.Add(GetUid(x, i) ^ GetUid(y, i));
             }
-            HashSet<int>
-                set2 = new HashSet<int>();
+            HashSet<int> set2 = new HashSet<int>();
             for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
@@ -101,8 +97,7 @@ namespace NeuralNetworkNET.Unit
             }
             Assert.IsTrue(set1.OrderBy(h => h).SequenceEqual(set2.OrderBy(h => h)));
             batches.CrossShuffle();
-            HashSet<int>
-                set3 = new HashSet<int>();
+            HashSet<int> set3 = new HashSet<int>();
             for (int i = 0; i < batches.BatchesCount; i++)
             {
                 int h = batches.Batches[i].X.GetLength(0);
@@ -145,14 +140,12 @@ namespace NeuralNetworkNET.Unit
             BatchesCollection 
                 batches1 = BatchesCollection.From((x, y), 1000),
                 batches2 = BatchesCollection.From((x, y), 1000);
-            HashSet<int>
-                set = new HashSet<int>();
+            HashSet<int> set = new HashSet<int>();
             for (int i = 0; i < 20000; i++)
             {
                 set.Add(GetUid(x, i) ^ GetUid(y, i));
             }
-            HashSet<int>
-                set1 = new HashSet<int>();
+            HashSet<int> set1 = new HashSet<int>();
             for (int i = 0; i < batches1.BatchesCount; i++)
             {
                 int h = batches1.Batches[i].X.GetLength(0);
@@ -163,8 +156,7 @@ namespace NeuralNetworkNET.Unit
             }
             Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set1.OrderBy(h => h)));
             batches2.BatchSize = 1437;
-            HashSet<int>
-                set2 = new HashSet<int>();
+            HashSet<int> set2 = new HashSet<int>();
             for (int i = 0; i < batches2.BatchesCount; i++)
             {
                 int h = batches2.Batches[i].X.GetLength(0);
@@ -203,6 +195,58 @@ namespace NeuralNetworkNET.Unit
                 set2 = DatasetLoader.Test((x, y));
             set1.To<IDataset, BatchesCollection>().CrossShuffle();
             Assert.IsTrue(set1.Id == set2.Id);
+        }
+
+        // Calculates a unique hash code for the target vector
+        private static unsafe int GetUid(float[] v)
+        {
+            fixed (float* pv = v)
+            {
+                int hash = 17;
+                unchecked
+                {
+                    for (int i = 0; i < v.Length; i++)
+                        hash = hash * 23 + pv[i].GetHashCode();
+                    return hash;
+                }
+            }
+        }
+
+        [TestMethod]
+        public void DatasetPartition()
+        {
+            float[,]
+                x = Enumerable.Range(0, 20000 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 784),
+                y = Enumerable.Range(0, 20000 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(20000, 10);
+            ITrainingDataset sourceDataset = DatasetLoader.Training((x, y), 1000);
+            (ITrainingDataset training, ITestDataset test) = sourceDataset.PartitionWithTest(0.33f);
+            HashSet<int> set = new HashSet<int>();
+            for (int i = 0; i < 20000; i++)
+            {
+                set.Add(GetUid(x, i) ^ GetUid(y, i));
+            }
+            HashSet<int> set1 = new HashSet<int>();
+            for (int i = 0; i < training.Count; i++)
+            {
+                DatasetSample sample = training[i];
+                set1.Add(GetUid(sample.X.ToArray()) ^ GetUid(sample.Y.ToArray()));
+            }
+            for (int i = 0; i < test.Count; i++)
+            {
+                DatasetSample sample = test[i];
+                set1.Add(GetUid(sample.X.ToArray()) ^ GetUid(sample.Y.ToArray()));
+            }
+            Assert.IsTrue(set.OrderBy(h => h).SequenceEqual(set1.OrderBy(h => h)));
+        }
+
+        [TestMethod]
+        public void DatasetPartitionException()
+        {
+            float[,]
+                x = Enumerable.Range(0, 15 * 784).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(15, 784),
+                y = Enumerable.Range(0, 15 * 10).Select(_ => ThreadSafeRandom.NextUniform(100)).ToArray().AsSpan().AsMatrix(15, 10);
+            ITrainingDataset sourceDataset = DatasetLoader.Training((x, y), 1000);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => sourceDataset.PartitionWithTest(0.33f));
         }
     }
 }
