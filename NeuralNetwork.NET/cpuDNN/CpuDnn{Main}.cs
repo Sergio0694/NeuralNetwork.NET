@@ -241,5 +241,87 @@ namespace NeuralNetworkNET.cpuDNN
         }
 
         #endregion
+
+        #region Depth concatenation
+
+        /// <summary>
+        /// Executes the forward pass on a depth stacking layer
+        /// </summary>
+        /// <param name="inputs">A <see cref="Span{T}"/> containing the input <see cref="Tensor"/> instances to stack</param>
+        /// <param name="y">The output <see cref="Tensor"/></param>
+        public static unsafe void DepthConcatenationForward(Span<Tensor> inputs, in Tensor y)
+        {
+            // Checks and offsets computation
+            if (inputs.Length == 0) throw new ArgumentException("The inputs can't be empty", nameof(inputs));
+            int
+                n = y.Entities,
+                count = 0;
+            int* offsets = stackalloc int[inputs.Length];
+            fixed (Tensor* p = &inputs.DangerousGetPinnableReference())
+            {
+                for (int i = 0; i < inputs.Length; i++)
+                {
+                    offsets[i] = count;
+                    count += p[i].Length;
+                    if (p[i].Entities != y.Entities) throw new ArgumentException("The number of samples must be the same for all tensors");
+                }
+            }
+            if (y.Length != count) throw new ArgumentException("The target tensor doesn't have the right size", nameof(y));
+
+            // Concatenate the tensors in parallel
+            float* py = y;
+            void Kernel(int i)
+            {
+                float*
+                    psource = inputs[i],
+                    ptarget = py + offsets[i];
+                int l = inputs[i].Length;
+                long bytes = sizeof(float) * l;
+                for (int j = 0; j < n; j++, psource += l, ptarget += count)
+                    Buffer.MemoryCopy(psource, ptarget, bytes, bytes);
+            }
+            Parallel.For(0, inputs.Length, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Executes the backward pass on a depth stacking layer
+        /// </summary>
+        /// <param name="dy">The input <see cref="Tensor"/> with the error delta to backpropagate</param>
+        /// <param name="dx">A <see cref="Span{T}"/> with the target <see cref="Tensor"/> instances</param>
+        public static unsafe void DepthConcatenationBackward(in Tensor dy, Span<Tensor> dx)
+        {
+            // Checks and offsets computation
+            if (dx.Length == 0) throw new ArgumentException("The result span can't be empty", nameof(dx));
+            int
+                n = dy.Entities,
+                count = 0;
+            int* offsets = stackalloc int[dx.Length];
+            fixed (Tensor* p = &dx.DangerousGetPinnableReference())
+            {
+                for (int i = 0; i < dx.Length; i++)
+                {
+                    offsets[i] = count;
+                    count += p[i].Length;
+                    if (p[i].Entities != dy.Entities) throw new ArgumentException("The number of samples must be the same for all tensors");
+                }
+            }
+            if (dy.Length != count) throw new ArgumentException("The size of the output tensors doesn't match the size of the input tensor");
+
+            // Backpropagate in parallel
+            float* pdy = dy;
+            void Kernel(int i)
+            {
+                float*
+                    psource = pdy + offsets[i],
+                    ptarget = dx[i];
+                int l = dx[i].Length;
+                long bytes = sizeof(float) * l;
+                for (int j = 0; j < n; j++, psource += count, ptarget += l)
+                    Buffer.MemoryCopy(psource, ptarget, bytes, bytes);
+            }
+            Parallel.For(0, dx.Length, Kernel);
+        }
+
+        #endregion
     }
 }

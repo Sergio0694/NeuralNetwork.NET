@@ -16,7 +16,7 @@ using NeuralNetworkNET.Networks.Layers.Initialization;
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
-    /// A simplified inception module, with 4 pipelines combining 1x1 convolution, 1x1 + 3x3, 1x1 + 5x5 and pooling + 1x1
+    /// An inception module with 4 pipelines combining 1x1 convolution, 1x1 + 3x3, 1x1 + 5x5 and pooling + 1x1, see <a href="https://arxiv.org/pdf/1409.4842.pdf">arxiv.org/pdf/1409.4842.pdf</a>
     /// </summary>
     internal sealed class CuDnnInceptionLayer : WeightedLayerBase, IDisposable
     {
