@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>NeuralNetworkNET</RootNamespace>
-    <Version>1.5.0</Version>
+    <Version>1.5.1</Version>
     <Authors>Sergio Pedri</Authors>
     <Company>Sergio Pedri</Company>
     <Description>An easy to use CNN library, built from scratch in C# 7.2 for .NET Standard 2.0, with native memory management for better performance and additional GPU support with cuDNN</Description>
@@ -38,7 +38,7 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <AssemblyVersion>1.5.1.0</AssemblyVersion>
     <AssetTargetFallback>
       $(AssetTargetFallback);net45
     </AssetTargetFallback>
