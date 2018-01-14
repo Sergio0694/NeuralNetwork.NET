@@ -35,6 +35,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public override IReadOnlyList<INetworkLayer> Layers => _Layers;
 
+        /// <inheritdoc/>
+        protected override OutputLayerBase OutputLayer => _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>();
+
         #endregion
 
         /// <summary>
@@ -136,16 +139,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        protected override float CalculateCost(in Tensor x, in Tensor y)
-        {
-            Forward(x, out Tensor yHat);
-            float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
-            yHat.Free();
-            return cost;
-        }
-
-        /// <inheritdoc/>
-        internal override unsafe void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater)
+        internal override unsafe void Backpropagate(in SamplesBatch batch, float dropout, WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {

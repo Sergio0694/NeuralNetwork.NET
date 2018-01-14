@@ -70,6 +70,12 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
         }
 
+        /// <summary>
+        /// Gets the output layer of the network, used to compute the cost of a samples batch
+        /// </summary>
+        [NotNull]
+        protected abstract OutputLayerBase OutputLayer { get; }
+
         #endregion
 
         #region Public APIs
@@ -144,7 +150,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         /// <param name="x">The input <see cref="Tensor"/></param>
         /// <param name="y">The expected results</param>
-        protected abstract float CalculateCost(in Tensor x, in Tensor y);
+        protected float CalculateCost(in Tensor x, in Tensor y)
+        {
+            Forward(x, out Tensor yHat);
+            float cost = OutputLayer.CalculateCost(yHat, y);
+            yHat.Free();
+            return cost;
+        }
 
         /// <summary>
         /// Calculates the gradient of the cost function with respect to the individual weights and biases
@@ -152,7 +164,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="batch">The input training batch</param>
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
-        internal abstract unsafe void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater);
+        internal abstract void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater);
 
         #endregion
 
@@ -176,7 +188,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
             // Check the correctly classified samples and calculate the cost
             Parallel.For(0, x.Entities, Kernel).AssertCompleted();
-            float cost = CalculateCost(yHat, y);
+            float cost = OutputLayer.CalculateCost(yHat, y);
             yHat.Free();
             return (cost, total);
         }
