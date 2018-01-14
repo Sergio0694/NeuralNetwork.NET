@@ -53,6 +53,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
 
+        /// <summary>
+        /// Gets the list of indexes corresponding to layers with weights to update during training
+        /// </summary>
+        public int[] WeightedLayersIndexes { get; protected set; }
+
         #endregion
 
         #region Public APIs

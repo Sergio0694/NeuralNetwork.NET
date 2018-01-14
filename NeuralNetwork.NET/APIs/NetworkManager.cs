@@ -126,7 +126,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             return NetworkTrainer.TrainNetwork(
-                network as SequentialNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
+                network as NeuralNetworkBase ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
                 epochs, dropout, algorithm, batchProgress, trainingProgress, 
                 validationDataset as ValidationDataset,
