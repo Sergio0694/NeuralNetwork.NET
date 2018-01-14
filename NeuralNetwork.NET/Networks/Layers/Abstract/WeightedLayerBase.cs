@@ -35,7 +35,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
                     using (UnmanagedMemoryStream
                         weightsStream = new UnmanagedMemoryStream((byte*)pw, weightsSize, weightsSize, FileAccess.Read),
                         biasesStream = new UnmanagedMemoryStream((byte*)pb, biasesSize, biasesSize, FileAccess.Read))
-                    using (HashAlgorithm provider = HashAlgorithm.Create(HashAlgorithmName.SHA256.Name))
+                    using (SHA256 provider = SHA256.Create())
                     {
                         // Compute the two SHA256 hashes and combine them (there isn't a way to concatenate two streams with the hash class)
                         byte[]
@@ -45,7 +45,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
                         unchecked
                         {
                             for (int i = 0; i < 32; i++)
-                                hash[i] = (byte)((17 * 31 * weightsHash[i] * 31 * biasesHash[i]) % byte.MaxValue); // Trust me
+                                hash[i] = (byte)(17 * 31 * weightsHash[i] * 31 * biasesHash[i] % byte.MaxValue); // Trust me
                         }
 
                         // Convert the final hash to a base64 string
