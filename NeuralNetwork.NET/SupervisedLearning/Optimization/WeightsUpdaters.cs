@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
@@ -58,7 +59,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater Momentum([NotNull] MomentumInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater Momentum([NotNull] MomentumInfo info, [NotNull] NeuralNetworkBase network)
         {
             // Setup
             float
@@ -70,7 +71,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 mB = new float[network.WeightedLayersIndexes.Length][];
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                WeightedLayerBase layer = network.Layers[network.WeightedLayersIndexes[i]].To<INetworkLayer, WeightedLayerBase>();
                 mW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];
             }
@@ -119,7 +120,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater AdaGrad([NotNull] AdaGradInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater AdaGrad([NotNull] AdaGradInfo info, [NotNull] NeuralNetworkBase network)
         {
             // Setup
             float
@@ -131,7 +132,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 mB = new float[network.WeightedLayersIndexes.Length][];
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                WeightedLayerBase layer = network.Layers[network.WeightedLayersIndexes[i]].To<INetworkLayer, WeightedLayerBase>();
                 mW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];
             }
@@ -178,7 +179,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater AdaDelta([NotNull] AdaDeltaInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater AdaDelta([NotNull] AdaDeltaInfo info, [NotNull] NeuralNetworkBase network)
         {
             // Initialize AdaDelta parameters
             float
@@ -192,7 +193,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 eDeltaxSquaredB = new float[network.WeightedLayersIndexes.Length][];
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                WeightedLayerBase layer = network.Layers[network.WeightedLayersIndexes[i]].To<INetworkLayer, WeightedLayerBase>();
                 egSquaredW[i] = new float[layer.Weights.Length];
                 eDeltaxSquaredW[i] = new float[layer.Weights.Length];
                 egSquaredB[i] = new float[layer.Biases.Length];
@@ -247,7 +248,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater RMSProp([NotNull] RMSPropInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater RMSProp([NotNull] RMSPropInfo info, [NotNull] NeuralNetworkBase network)
         {
             // Setup
             float
@@ -260,7 +261,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 mB = new float[network.WeightedLayersIndexes.Length][];
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                WeightedLayerBase layer = network.Layers[network.WeightedLayersIndexes[i]].To<INetworkLayer, WeightedLayerBase>();
                 mW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];
             }
@@ -311,7 +312,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater Adam([NotNull] AdamInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater Adam([NotNull] AdamInfo info, [NotNull] NeuralNetworkBase network)
         {
             // Initialize Adam parameters
             float
@@ -329,7 +330,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 beta2t = new float[network.WeightedLayersIndexes.Length];
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                WeightedLayerBase layer = network.Layers[network.WeightedLayersIndexes[i]].To<INetworkLayer, WeightedLayerBase>();
                 mW[i] = new float[layer.Weights.Length];
                 vW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];
@@ -384,7 +385,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="info">The optimizer parameters</param>
         /// <param name="network">The target network to optimize</param>
         [Pure, NotNull]
-        public static WeightsUpdater AdaMax([NotNull] AdaMaxInfo info, [NotNull] SequentialNetwork network)
+        public static WeightsUpdater AdaMax([NotNull] AdaMaxInfo info, [NotNull] NeuralNetworkBase network)
         {
             // Initialize AdaDelta parameters
             float
@@ -399,7 +400,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
             float[] beta1t = new float[network.WeightedLayersIndexes.Length];
             for (int i = 0; i < network.WeightedLayersIndexes.Length; i++)
             {
-                WeightedLayerBase layer = network._Layers[network.WeightedLayersIndexes[i]].To<NetworkLayerBase, WeightedLayerBase>();
+                WeightedLayerBase layer = network.Layers[network.WeightedLayersIndexes[i]].To<INetworkLayer, WeightedLayerBase>();
                 mW[i] = new float[layer.Weights.Length];
                 uW[i] = new float[layer.Weights.Length];
                 mB[i] = new float[layer.Biases.Length];

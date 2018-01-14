@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.APIs.Interfaces
@@ -39,6 +40,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// Gets the total number of parameters in the current network layer
         /// </summary>
         int Parameters { get; }
+
+        /// <summary>
+        /// Gets whether or not a numeric overflow has occurred in the network
+        /// </summary>
+        bool IsInNumericOverflow { get; }
 
         #endregion
 
@@ -95,6 +101,12 @@ namespace NeuralNetworkNET.APIs.Interfaces
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         float CalculateCost([NotNull] float[,] x, [NotNull] float[,] y);
+
+        /// <summary>
+        /// Calculates the current network performances with the given dataset
+        /// </summary>
+        /// <param name="dataset">The <see cref="IDataset"/> instance to evaluate</param>
+        (float Cost, int Classified, float Accuracy) Evaluate([NotNull] IDataset dataset);
 
         #endregion
 

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
@@ -18,43 +16,27 @@ using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
     /// <summary>
     /// A complete and fully connected neural network with an arbitrary number of hidden layers
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class SequentialNetwork : INeuralNetwork
+    internal sealed class SequentialNetwork : NeuralNetworkBase
     {
-        #region Public parameters
+        #region Base class
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(NetworkType), Order = 1)]
-        public NetworkType NetworkType { get; } = NetworkType.Sequential;
-
-        // JSON-targeted property
-        [JsonProperty(nameof(InputInfo), Order = 2)]
-        private TensorInfo InputInfo => Layers[0].InputInfo;
+        public override ref readonly TensorInfo InputInfo => ref Layers[0].InputInfo;
 
         /// <inheritdoc/>
-        ref readonly TensorInfo INeuralNetwork.InputInfo => ref Layers[0].InputInfo;
-
-        // JSON-targeted property
-        [JsonProperty(nameof(OutputInfo), Order = 3)]
-        private TensorInfo OutputInfo => Layers[Layers.Count - 1].OutputInfo;
+        public override ref readonly TensorInfo OutputInfo => ref Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
-        ref readonly TensorInfo INeuralNetwork.OutputInfo => ref Layers[Layers.Count - 1].OutputInfo;
+        public override IReadOnlyList<INetworkLayer> Layers => _Layers;
 
         /// <inheritdoc/>
-        public IReadOnlyList<INetworkLayer> Layers => _Layers;
-
-        /// <inheritdoc/>
-        [JsonProperty(nameof(Parameters), Order = 4)]
-        public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
+        protected override OutputLayerBase OutputLayer => _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>();
 
         #endregion
 
@@ -62,17 +44,13 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The list of layers that make up the neural network
         /// </summary>
         [NotNull, ItemNotNull]
-        [JsonProperty(nameof(Layers), Order = 5)]
         internal readonly NetworkLayerBase[] _Layers;
-
-        // The list of layers with weights to update
-        internal readonly int[] WeightedLayersIndexes;
 
         /// <summary>
         /// Initializes a new network with the given parameters
         /// </summary>
         /// <param name="layers">The layers that make up the neural network</param>
-        internal SequentialNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers)
+        internal SequentialNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers) : base(NetworkType.Sequential)
         {
             // Input check
             if (layers.Length < 1) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
@@ -95,31 +73,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Public APIs
 
         /// <inheritdoc/>
-        public unsafe float[] Forward(float[] x)
-        {
-            fixed (float* px = x)
-            {
-                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
-                Forward(xTensor, out Tensor yHatTensor);
-                float[] yHat = yHatTensor.ToArray();
-                yHatTensor.Free();
-                return yHat;
-            }
-        }
-
-        /// <inheritdoc/>
-        public unsafe float CalculateCost(float[] x, float[] y)
-        {
-            fixed (float* px = x, py = y)
-            {
-                Tensor.Reshape(px, 1, x.Length, out Tensor xTensor);
-                Tensor.Reshape(py, 1, y.Length, out Tensor yTensor);
-                return CalculateCost(xTensor, yTensor);
-            }
-        }
-
-        /// <inheritdoc/>
-        public unsafe IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures(float[] x)
+        public override unsafe IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures(float[] x)
         {
             fixed (float* px = x)
             {
@@ -143,31 +97,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public unsafe float[,] Forward(float[,] x)
-        {
-            fixed (float* px = x)
-            {
-                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
-                Forward(xTensor, out Tensor yHatTensor);
-                float[,] yHat = yHatTensor.ToArray2D();
-                yHatTensor.Free();
-                return yHat;
-            }
-        }
-
-        /// <inheritdoc/>
-        public unsafe float CalculateCost(float[,] x, float[,] y)
-        {
-            fixed (float* px = x, py = y)
-            {
-                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xTensor);
-                Tensor.Reshape(py, y.GetLength(0), y.GetLength(1), out Tensor yTensor);
-                return CalculateCost(xTensor, yTensor);
-            }
-        }
-
-        /// <inheritdoc/>
-        public unsafe IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
+        public override unsafe IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
         {
             fixed (float* px = x)
             {
@@ -194,7 +124,8 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Implementation
 
-        private void Forward(in Tensor x, out Tensor yHat)
+        /// <inheritdoc/>
+        protected override void Forward(in Tensor x, out Tensor yHat)
         {
             Tensor input = x;
             for (int i = 0; i < _Layers.Length; i++)
@@ -207,21 +138,8 @@ namespace NeuralNetworkNET.Networks.Implementations
             yHat = input;
         }
 
-        private float CalculateCost(in Tensor x, in Tensor y)
-        {
-            Forward(x, out Tensor yHat);
-            float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
-            yHat.Free();
-            return cost;
-        }
-
-        /// <summary>
-        /// Calculates the gradient of the cost function with respect to the individual weights and biases
-        /// </summary>
-        /// <param name="batch">The input training batch</param>
-        /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
-        /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
-        internal unsafe void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater)
+        /// <inheritdoc/>
+        internal override unsafe void Backpropagate(in SamplesBatch batch, float dropout, WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
@@ -310,136 +228,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
-        #region Evaluation
-
-        // Auxiliary function to forward a test batch
-        private unsafe (float Cost, int Classified) Evaluate(in Tensor x, in Tensor y)
-        {
-            // Feedforward
-            Forward(x, out Tensor yHat);
-
-            // Function that counts the correctly classified items
-            float* pyHat = yHat, pY = y;
-            int wy = y.Length, total = 0;
-            void Kernel(int i)
-            {
-                int offset = i * wy;
-                if (NetworkSettings.AccuracyTester(new Span<float>(pyHat + offset, wy), new Span<float>(pY + offset, wy))) 
-                    Interlocked.Increment(ref total);
-            }
-
-            // Check the correctly classified samples and calculate the cost
-            Parallel.For(0, x.Entities, Kernel).AssertCompleted();
-            float cost = _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().CalculateCost(yHat, y);
-            yHat.Free();
-            return (cost, total);
-        }
-
-        /// <summary>
-        /// Calculates the current network performances with the given test samples
-        /// </summary>
-        /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
-        internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
-        {
-            // Actual test evaluation
-            int batchSize = NetworkSettings.MaximumBatchSize;
-            fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
-            {
-                int
-                    h = evaluationSet.X.GetLength(0),
-                    wx = evaluationSet.X.GetLength(1),
-                    wy = evaluationSet.Y.GetLength(1),
-                    batches = h / batchSize,
-                    batchMod = h % batchSize,
-                    classified = 0;
-                float cost = 0;
-
-                // Process the even batches
-                for (int i = 0; i < batches; i++)
-                {
-                    Tensor.Reshape(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
-                    Tensor.Reshape(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
-                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
-                    cost += pCost;
-                    classified += pClassified;
-                }
-
-                // Process the remaining samples, if any
-                if (batchMod > 0)
-                {
-                    Tensor.Reshape(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
-                    Tensor.Reshape(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
-                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
-                    cost += pCost;
-                    classified += pClassified;
-                }
-                return (cost, classified, (float)classified / h * 100);
-            }
-        }
-
-        /// <summary>
-        /// Calculates the current network performances with the given test samples
-        /// </summary>
-        /// <param name="batches">The training batches currently used to train the network</param>
-        internal unsafe (float Cost, int Classified, float Accuracy) Evaluate([NotNull] BatchesCollection batches)
-        {
-            // Actual test evaluation
-            int classified = 0;
-            float cost = 0;
-            for (int i = 0; i < batches.BatchesCount; i++)
-            {
-                ref readonly SamplesBatch batch = ref batches.Batches[i];
-                fixed (float* px = batch.X, py = batch.Y)
-                {
-                    Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
-                    Tensor.Reshape(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
-                    var partial = Evaluate(xTensor, yTensor);
-                    cost += partial.Cost;
-                    classified += partial.Classified;
-                }
-            }
-            return (cost, classified, (float)classified / batches.Count * 100);
-        }
-
-        #endregion
-
-        #region Serialization and misc
-
-        /// <inheritdoc/>
-        public String SerializeMetadataAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
-
-        /// <inheritdoc/>
-        public bool Equals(INeuralNetwork other)
-        {
-            // Compare general features
-            if (other is SequentialNetwork network &&
-                other.InputInfo == InputInfo &&
-                other.OutputInfo == OutputInfo &&
-                _Layers.Length == network._Layers.Length)
-            {
-                // Compare the individual layers
-                return _Layers.Zip(network._Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
-            }
-            return false;
-        }
-
-        /// <inheritdoc/>
-        public void Save(FileInfo file)
-        {
-            using (FileStream stream = file.OpenWrite()) 
-                Save(stream);
-        }
-
-        /// <inheritdoc/>
-        public void Save(Stream stream)
-        {
-            using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal, true))
-            {
-                gzip.Write(NetworkType);
-                foreach (NetworkLayerBase layer in _Layers) 
-                    layer.Serialize(gzip);
-            }
-        }
+        #region Deserialization and misc
 
         /// <summary>
         /// Tries to deserialize a new <see cref="SequentialNetwork"/> from the input <see cref="Stream"/>
@@ -465,7 +254,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public INeuralNetwork Clone() => new SequentialNetwork(_Layers.Select(l => l.Clone()).ToArray());
+        public override INeuralNetwork Clone() => new SequentialNetwork(_Layers.Select(l => l.Clone()).ToArray());
 
         #endregion
     }
