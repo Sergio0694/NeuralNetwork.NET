@@ -1,10 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
@@ -134,6 +136,99 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="dropout">The dropout probability for eaach neuron in a <see cref="LayerType.FullyConnected"/> layer</param>
         /// <param name="updater">The function to use to update the network weights after calculating the gradient</param>
         internal abstract unsafe void Backpropagate(in SamplesBatch batch, float dropout, [NotNull] WeightsUpdater updater);
+
+        #endregion
+
+        #region Evaluation
+
+        // Auxiliary function to forward a test batch
+        private unsafe (float Cost, int Classified) Evaluate(in Tensor x, in Tensor y)
+        {
+            // Feedforward
+            Forward(x, out Tensor yHat);
+
+            // Function that counts the correctly classified items
+            float* pyHat = yHat, pY = y;
+            int wy = y.Length, total = 0;
+            void Kernel(int i)
+            {
+                int offset = i * wy;
+                if (NetworkSettings.AccuracyTester(new Span<float>(pyHat + offset, wy), new Span<float>(pY + offset, wy))) 
+                    Interlocked.Increment(ref total);
+            }
+
+            // Check the correctly classified samples and calculate the cost
+            Parallel.For(0, x.Entities, Kernel).AssertCompleted();
+            float cost = CalculateCost(yHat, y);
+            yHat.Free();
+            return (cost, total);
+        }
+
+        /// <summary>
+        /// Calculates the current network performances with the given test samples
+        /// </summary>
+        /// <param name="evaluationSet">The inputs and expected outputs to test the network</param>
+        internal unsafe (float Cost, int Classified, float Accuracy) Evaluate((float[,] X, float[,] Y) evaluationSet)
+        {
+            // Actual test evaluation
+            int batchSize = NetworkSettings.MaximumBatchSize;
+            fixed (float* px = evaluationSet.X, py = evaluationSet.Y)
+            {
+                int
+                    h = evaluationSet.X.GetLength(0),
+                    wx = evaluationSet.X.GetLength(1),
+                    wy = evaluationSet.Y.GetLength(1),
+                    batches = h / batchSize,
+                    batchMod = h % batchSize,
+                    classified = 0;
+                float cost = 0;
+
+                // Process the even batches
+                for (int i = 0; i < batches; i++)
+                {
+                    Tensor.Reshape(px + i * batchSize * wx, batchSize, wx, out Tensor xTensor);
+                    Tensor.Reshape(py + i * batchSize * wy, batchSize, wy, out Tensor yTensor);
+                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
+                    cost += pCost;
+                    classified += pClassified;
+                }
+
+                // Process the remaining samples, if any
+                if (batchMod > 0)
+                {
+                    Tensor.Reshape(px + batches * batchSize * wx, batchMod, wx, out Tensor xTensor);
+                    Tensor.Reshape(py + batches * batchSize * wy, batchMod, wy, out Tensor yTensor);
+                    (float pCost, int pClassified) = Evaluate(xTensor, yTensor);
+                    cost += pCost;
+                    classified += pClassified;
+                }
+                return (cost, classified, (float)classified / h * 100);
+            }
+        }
+
+        /// <summary>
+        /// Calculates the current network performances with the given test samples
+        /// </summary>
+        /// <param name="batches">The training batches currently used to train the network</param>
+        internal unsafe (float Cost, int Classified, float Accuracy) Evaluate([NotNull] BatchesCollection batches)
+        {
+            // Actual test evaluation
+            int classified = 0;
+            float cost = 0;
+            for (int i = 0; i < batches.BatchesCount; i++)
+            {
+                ref readonly SamplesBatch batch = ref batches.Batches[i];
+                fixed (float* px = batch.X, py = batch.Y)
+                {
+                    Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor xTensor);
+                    Tensor.Reshape(py, xTensor.Entities, batch.Y.GetLength(1), out Tensor yTensor);
+                    var partial = Evaluate(xTensor, yTensor);
+                    cost += partial.Cost;
+                    classified += partial.Classified;
+                }
+            }
+            return (cost, classified, (float)classified / batches.Count * 100);
+        }
 
         #endregion
 
