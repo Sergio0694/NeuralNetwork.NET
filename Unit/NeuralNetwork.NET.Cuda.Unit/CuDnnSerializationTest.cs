@@ -13,8 +13,8 @@ namespace NeuralNetworkNET.Cuda.Unit
     /// Test class for the cuDNN layers serialization methods
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(SerializationTest))]
-    public class SerializationTest
+    [TestCategory(nameof(CuDnnSerializationTest))]
+    public class CuDnnSerializationTest
     {
         [TestMethod]
         public void NetworkSerialization()
