@@ -41,14 +41,14 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
         {
             int left = CalculatePartitionSize(ratio);
-            return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
+            return (From(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
         }
 
         /// <inheritdoc/>
         public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
         {
             int left = CalculatePartitionSize(ratio);
-            return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
+            return (From(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
         }
 
         /// <inheritdoc/>
@@ -96,6 +96,29 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 Array.Sort(temp);
                 return temp.AsSpan().GetContentHashCode();
             }
+        }
+
+        /// <inheritdoc/>
+        public void Expand(params Func<float[], float[]>[] factories)
+        {
+            if (factories.Length < 1) throw new ArgumentException("There haas to be at least one input factory", nameof(factories));
+            Batches = From(Batches.SelectMany(b =>
+            {
+                IEnumerable<Func<(float[], float[])>> Expander()
+                {
+                    int n = b.X.GetLength(0);
+                    for (int i = 0; i < n; i++)
+                    {
+                        float[]
+                            x = b.X.Slice(i).ToArray(),
+                            y = b.Y.Slice(i).ToArray();
+                        yield return () => (x, y);
+                        for (int j = 0; j < factories.Length; j++)
+                            yield return () => (factories[j](x), y);
+                    }
+                }
+                return Expander();
+            }), BatchSize).Batches;
         }
 
         #endregion

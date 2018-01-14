@@ -20,6 +20,12 @@ namespace NeuralNetworkNET.APIs.Interfaces.Data
         int BatchesCount { get; }
 
         /// <summary>
+        /// Artificially expands the current dataset applying the input transformation to each sample to create new ones
+        /// </summary>
+        /// <param name="factories">The list of functions to use to generate new samples from each one in the dataset</param>
+        void Expand([NotNull, ItemNotNull] params Func<float[], float[]>[] factories);
+
+        /// <summary>
         /// Returns a pair of new datasets, where the first is an <see cref="ITrainingDataset"/> with the specified fraction of samples and 
         /// the second is an <see cref="ITestDataset"/> with the remaining number of samples from the current dataset
         /// </summary>
