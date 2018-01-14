@@ -9,11 +9,13 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
+using NeuralNetworkNET.SupervisedLearning.Parameters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -257,6 +259,20 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
             }
             return (cost, classified, (float)classified / batches.Count * 100);
+        }
+
+        /// <inheritdoc/>
+        public (float Cost, int Classified, float Accuracy) Evaluate(IDataset dataset)
+        {
+            switch (dataset)
+            {
+                    case BatchesCollection batches:
+                        return Evaluate(batches);
+                    case DatasetBase block:
+                        return Evaluate(block.Dataset);
+                    default:
+                        throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset));
+            }
         }
 
         #endregion
