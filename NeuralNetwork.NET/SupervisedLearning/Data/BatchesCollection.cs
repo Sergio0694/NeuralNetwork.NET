@@ -11,6 +11,8 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Progress;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.SupervisedLearning.Data
 {
@@ -113,8 +115,32 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                             x = b.X.Slice(i).ToArray(),
                             y = b.Y.Slice(i).ToArray();
                         yield return () => (x, y);
-                        for (int j = 0; j < factories.Length; j++)
-                            yield return () => (factories[j](x), y);
+                        foreach (Func<float[], float[]> f in factories)
+                            yield return () => (f(x), y);
+                    }
+                }
+                return Expander();
+            }), BatchSize).Batches;
+        }
+
+        /// <inheritdoc/>
+        public void Expand<TPixel>(int width, int height, params Action<IImageProcessingContext<TPixel>>[] factories) where TPixel : struct, IPixel<TPixel>
+        {
+            if (factories.Length < 1) throw new ArgumentException("There haas to be at least one input factory", nameof(factories));
+            if (width * height != InputFeatures) throw new ArgumentException("The specified image resolution doesn't match the samples size");
+            Batches = From(Batches.SelectMany(b =>
+            {
+                IEnumerable<Func<(float[], float[])>> Expander()
+                {
+                    int n = b.X.GetLength(0);
+                    for (int i = 0; i < n; i++)
+                    {
+                        float[]
+                            x = b.X.Slice(i).ToArray(),
+                            y = b.Y.Slice(i).ToArray();
+                        yield return () => (x, y);
+                        foreach (Action<IImageProcessingContext<TPixel>> f in factories)
+                            yield return () => (ImageLoader.Process(x, width, height, f), y);
                     }
                 }
                 return Expander();
