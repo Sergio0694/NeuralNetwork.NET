@@ -131,12 +131,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     batchMonitor?.NotifyCompletedBatch(miniBatches.Batches[j].X.GetLength(0));
                 }
                 batchMonitor?.Reset();
-
-                // Check for overflows
-                if (!Parallel.For(0, network.Layers.Count, (j, state) =>
-                {
-                    if (network.Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
-                }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
+                if (network.IsInNumericOverflow) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 
                 // Check the training progress
                 if (trainingProgress != null)

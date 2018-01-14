@@ -58,6 +58,18 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// </summary>
         public int[] WeightedLayersIndexes { get; protected set; }
 
+        /// <inheritdoc/>
+        public bool IsInNumericOverflow
+        {
+            get
+            {
+                return !Parallel.For(0, Layers.Count, (j, state) =>
+                {
+                    if (Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
+                }).IsCompleted;
+            }
+        }
+
         #endregion
 
         #region Public APIs

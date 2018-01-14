@@ -40,6 +40,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// </summary>
         int Parameters { get; }
 
+        /// <summary>
+        /// Gets whether or not a numeric overflow has occurred in the network
+        /// </summary>
+        bool IsInNumericOverflow { get; }
+
         #endregion
 
         #region Methods
