@@ -40,20 +40,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         }
 
         /// <inheritdoc/>
-        public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
-        {
-            int left = CalculatePartitionSize(ratio);
-            return (From(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
-        }
-
-        /// <inheritdoc/>
-        public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
-        {
-            int left = CalculatePartitionSize(ratio);
-            return (From(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
-        }
-
-        /// <inheritdoc/>
         public int InputFeatures => Batches[0].X.GetLength(1);
 
         /// <inheritdoc/>
@@ -100,6 +86,10 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
             }
         }
 
+        #endregion
+
+        #region Dataset management
+
         /// <inheritdoc/>
         public void Expand(params Func<float[], float[]>[] factories)
         {
@@ -145,6 +135,38 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 }
                 return Expander();
             }), BatchSize).Batches;
+        }
+
+        /// <inheritdoc/>
+        public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
+        {
+            int left = CalculatePartitionSize(ratio);
+            return (From(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
+        }
+
+        /// <inheritdoc/>
+        public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
+        {
+            int left = CalculatePartitionSize(ratio);
+            return (From(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
+        }
+
+        /// <inheritdoc/>
+        public ITestDataset ExtractTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
+        {
+            int left = CalculatePartitionSize(ratio);
+            ITestDataset test = DatasetLoader.Test(Take(left, Count), progress);
+            Batches = From(Take(0, left), BatchSize).Batches;
+            return test;
+        }
+
+        /// <inheritdoc/>
+        public IValidationDataset ExtractValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
+        {
+            int left = CalculatePartitionSize(ratio);
+            IValidationDataset validation = DatasetLoader.Validation(Take(left, Count), tolerance, epochs);
+            Batches = From(Take(0, left), BatchSize).Batches;
+            return validation;
         }
 
         #endregion

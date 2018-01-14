@@ -37,6 +37,24 @@ namespace NeuralNetworkNET.APIs.Interfaces.Data
         void Expand<TPixel>(int width, int height, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] factories) where TPixel : struct, IPixel<TPixel>;
 
         /// <summary>
+        /// Removes a specified fraction of samples from the current instance and returns a new <see cref="ITestDataset"/>
+        /// </summary>
+        /// <param name="ratio">The ratio of samples to include in the returned <see cref="ITrainingDataset"/></param>
+        /// <param name="progress">The optional progress callback to use</param>
+        [Pure, NotNull]
+        ITestDataset ExtractTest(float ratio, [CanBeNull] Action<TrainingProgressEventArgs> progress = null);
+
+        /// <summary>
+        /// Returns a pair of new datasets, where the first is an <see cref="ITrainingDataset"/> with the specified fraction of samples and 
+        /// the second is an <see cref="IValidationDataset"/> with the remaining number of samples from the current dataset
+        /// </summary>
+        /// <param name="ratio">The ratio of samples to include in the returned <see cref="ITrainingDataset"/></param>
+        /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
+        /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
+        [Pure, NotNull]
+        IValidationDataset ExtractValidation(float ratio, float tolerance = 1e-2f, int epochs = 5);
+
+        /// <summary>
         /// Returns a pair of new datasets, where the first is an <see cref="ITrainingDataset"/> with the specified fraction of samples and 
         /// the second is an <see cref="ITestDataset"/> with the remaining number of samples from the current dataset
         /// </summary>
