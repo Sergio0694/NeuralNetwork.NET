@@ -33,6 +33,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Properties
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(NetworkType), Order = 1)]
         public NetworkType NetworkType { get; }
 
         // JSON-targeted property
@@ -50,9 +51,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         public abstract ref readonly TensorInfo OutputInfo { get; }
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(Layers), Order = 6)]
         public abstract IReadOnlyList<INetworkLayer> Layers { get; }
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(Parameters), Order = 4)]
         public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
 
         /// <summary>
@@ -61,6 +64,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public int[] WeightedLayersIndexes { get; protected set; }
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(IsInNumericOverflow), Order = 5)]
         public bool IsInNumericOverflow
         {
             get
