@@ -28,7 +28,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <inheritdoc/>
         public IReadOnlyList<IComputationGraphNode> Children { get; }
 
-        internal ProcessingNode([NotNull] INetworkLayer layer, [NotNull] ProcessingNode parent, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> children)
+        internal ProcessingNode([NotNull] INetworkLayer layer, [NotNull] IComputationGraphNode parent, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> children)
         {
             Layer = layer;
             Parent = parent;
