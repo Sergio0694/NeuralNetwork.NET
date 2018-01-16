@@ -12,29 +12,18 @@ namespace NeuralNetworkNET.Networks.Graph
     public sealed class ComputationGraph : IReadOnlyList<INetworkLayer>
     {
         /// <summary>
-        /// Gets the root <see cref="ComputationGraphNode"/> for the current graph
+        /// Gets the root <see cref="ProcessingNode"/> for the current graph
         /// </summary>
         [NotNull]
-        public ComputationGraphNode Root { get; }
+        public ProcessingNode Root { get; }
 
         // The in-order serialized view of the network layers in the graph
         [NotNull, ItemNotNull]
         private readonly IReadOnlyList<INetworkLayer> Layers;
         
-        internal ComputationGraph(ComputationGraphNode root)
+        internal ComputationGraph(ProcessingNode root)
         {
             Root = root;
-
-            // Explore the graph and build the serialized list
-            List<INetworkLayer> layers = new List<INetworkLayer>();
-            void Explore(ComputationGraphNode node)
-            {
-                layers.Add(node.Layer);
-                foreach (ComputationGraphNode child in node.Children)
-                    Explore(child);
-            }
-            Explore(root);
-            Layers = layers;
         }
 
         #region Interface
