@@ -19,7 +19,7 @@ namespace NeuralNetworkNET.Networks.Implementations
     internal sealed class ComputationGraphNetwork : NeuralNetworkBase
     {
         /// <inheritdoc/>
-        public override ref readonly TensorInfo InputInfo => ref Graph.Root.To<IComputationGraphNode, ProcessingNode>().Layer.InputInfo;
+        public override ref readonly TensorInfo InputInfo => ref Graph.Root.Children[0].To<IComputationGraphNode, ProcessingNode>().Layer.InputInfo;
         
         /// <inheritdoc/>
         public override ref readonly TensorInfo OutputInfo => ref OutputLayer.OutputInfo;

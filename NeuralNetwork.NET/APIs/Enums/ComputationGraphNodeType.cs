@@ -6,6 +6,11 @@
     public enum ComputationGraphNodeType : byte
     {
         /// <summary>
+        /// The root node for a computation graph, that forwards the network inputs through the computation pipeline(s)
+        /// </summary>
+        Input,
+
+        /// <summary>
         /// A computation graph node with an associated <see cref="Interfaces.INetworkLayer"/> that processes an input <see cref="Structs.Tensor"/>
         /// </summary>
         Processing,

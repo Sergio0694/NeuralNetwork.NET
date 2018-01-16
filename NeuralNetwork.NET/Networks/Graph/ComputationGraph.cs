@@ -11,13 +11,13 @@ namespace NeuralNetworkNET.Networks.Graph
     /// <summary>
     /// A graph of <see cref="INetworkLayer"/> instances, with O(1) pre-order access time for nodes
     /// </summary>
-    public sealed class ComputationGraph
+    internal sealed class ComputationGraph
     {
         /// <summary>
-        /// Gets the root <see cref="IComputationGraphNode"/> for the current graph
+        /// Gets the root <see cref="InputNode"/> for the current graph
         /// </summary>
         [NotNull]
-        public IComputationGraphNode Root { get; }
+        public InputNode Root { get; }
 
         /// <summary>
         /// Gets the in-order serialized view of the network graph nodes
@@ -29,18 +29,18 @@ namespace NeuralNetworkNET.Networks.Graph
         /// Gets the graph main output node
         /// </summary>
         [NotNull]
-        internal readonly IComputationGraphNode OutputNode;
+        internal readonly ProcessingNode OutputNode;
 
         /// <summary>
         /// Gets the training output nodes, if present
         /// </summary>
         [NotNull, ItemNotNull]
-        internal readonly IReadOnlyCollection<IComputationGraphNode> TrainingOutputNodes;
+        internal readonly IReadOnlyCollection<ProcessingNode> TrainingOutputNodes;
         
         internal ComputationGraph(IComputationGraphNode root)
         {
-            Root = root;
-            (Layers, OutputNode, TrainingOutputNodes) = ExtractGraphInfo(root);
+            Root = root is InputNode input ? input : throw new ArgumentException("The root node isn't valid");
+            (Layers, OutputNode, TrainingOutputNodes) = ExtractGraphInfo(Root);
         }
 
         #region Tools
@@ -48,14 +48,15 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <summary>
         /// Extracts the info on the input computation graph, and validates its structure
         /// </summary>
-        /// <param name="root">The root <see cref="IComputationGraphNode"/> for the computation graph</param>
+        /// <param name="root">The root <see cref="InputNode"/> for the computation graph</param>
         [Pure]
-        private static (IReadOnlyList<IComputationGraphNode> Nodes, IComputationGraphNode output, IReadOnlyCollection<IComputationGraphNode> trainingOutputs) ExtractGraphInfo(IComputationGraphNode root)
+        private static (IReadOnlyList<IComputationGraphNode> Nodes, ProcessingNode output, IReadOnlyCollection<ProcessingNode> trainingOutputs) ExtractGraphInfo(InputNode root)
         {
             // Exploration setup
+            if (root.Children.Any(child => !(child is ProcessingNode))) throw new ArgumentException("The nodes right after the graph root must be processing nodes");
             HashSet<IComputationGraphNode> nodes = new HashSet<IComputationGraphNode>();
-            Dictionary<Guid, IComputationGraphNode> trainingOutputs = new Dictionary<Guid, IComputationGraphNode>();
-            IComputationGraphNode output = null;
+            Dictionary<Guid, ProcessingNode> trainingOutputs = new Dictionary<Guid, ProcessingNode>();
+            ProcessingNode output = null;
 
             // Function to recursively explore and validate the graph
             bool Explore(IComputationGraphNode node, Guid trainingId)
@@ -75,9 +76,9 @@ namespace NeuralNetworkNET.Networks.Graph
                             {
                                 if (trainingOutputs.ContainsKey(trainingId))
                                     throw new ArgumentException("A training branch can only have a single output node");
-                                trainingOutputs.Add(trainingId, node);
+                                trainingOutputs.Add(trainingId, processing);
                             }
-                            else if (output == null) output = node;
+                            else if (output == null) output = processing;
                             else throw new ArgumentException("The graph can only have a single inference output node");
                         }
                         else
