@@ -6,6 +6,7 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Graph;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -53,9 +54,54 @@ namespace NeuralNetworkNET.Networks.Implementations
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         protected override void Forward(in Tensor x, out Tensor yHat)
         {
-            throw new NotImplementedException();
+            // Local mapping
+            Dictionary<IComputationGraphNode, int> mergeMap = new Dictionary<IComputationGraphNode, int>();
+            using (TensorMap<IComputationGraphNode> 
+                zMap = new TensorMap<IComputationGraphNode>(),
+                aMap = new TensorMap<IComputationGraphNode>())
+            {
+                // Recursive forward function
+                void Forward(IComputationGraphNode node)
+                {
+                    switch (node)
+                    {
+                        case ProcessingNode processing:
+                            processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(aMap[processing.Parent], out Tensor z, out Tensor a);
+                            zMap[processing] = z;
+                            aMap[processing] = a;
+                            if (processing == Graph.OutputNode) return;
+                            foreach (IComputationGraphNode child in processing.Children)
+                                Forward(child);
+                            break;
+                        case MergeNode merge:
+                            if (mergeMap.TryGetValue(merge, out int value) && value == merge.Parents.Count - 1)
+                                throw new NotImplementedException();
+                            else mergeMap[merge]++;
+                            break;
+                        case TrainingSplitNode split:
+                            Forward(split.InferenceBranchNode);
+                            break;
+                        default:
+                            throw new ArgumentException("The node type is not supported", nameof(node));
+                    }
+                }
+
+                // Manually start the forward pass on the first input branches
+                foreach (IComputationGraphNode child in Graph.Root.Children)
+                {
+                    child.To<IComputationGraphNode, ProcessingNode>().Layer.To<INetworkLayer, NetworkLayerBase>().Forward(x, out Tensor z, out Tensor a);
+                    zMap[child] = z;
+                    aMap[child] = a;
+                    Forward(child);
+                }
+
+                // Collect the outputs and return
+                yHat = aMap[Graph.OutputNode];
+                aMap.Remove(Graph.OutputNode); // Remove yHat from the map to keep it allocated
+            }
         }
 
         internal override void Backpropagate(in SamplesBatch batch, float dropout, WeightsUpdater updater)
