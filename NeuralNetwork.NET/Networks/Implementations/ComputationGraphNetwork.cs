@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Graph;
@@ -55,7 +56,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        protected override void Forward(in Tensor x, out Tensor yHat)
+        protected override unsafe void Forward(in Tensor x, out Tensor yHat)
         {
             // Local mapping
             Dictionary<IComputationGraphNode, int> mergeMap = new Dictionary<IComputationGraphNode, int>();
@@ -78,7 +79,20 @@ namespace NeuralNetworkNET.Networks.Implementations
                             break;
                         case MergeNode merge:
                             if (mergeMap.TryGetValue(merge, out int value) && value == merge.Parents.Count - 1)
-                                throw new NotImplementedException();
+                            {
+                                // Prepare the inputs
+                                Tensor* xs = stackalloc Tensor[merge.Parents.Count];
+                                for (int i = 0; i < merge.Parents.Count; i++)
+                                    xs[i] = aMap[merge.Parents[i]];
+                                Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
+
+                                // Forward through the merge node
+                                Tensor.New(xs[0].Entities, xs[0].Length, out Tensor y);
+                                if (merge.Type == ComputationGraphNodeType.Sum) CpuDnn.SumForward(inputs, y);
+                                else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, y);
+                                else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+                                aMap[merge] = y;
+                            }
                             else mergeMap[merge]++;
                             break;
                         case TrainingSplitNode split:

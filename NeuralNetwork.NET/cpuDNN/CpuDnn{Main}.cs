@@ -323,5 +323,50 @@ namespace NeuralNetworkNET.cpuDNN
         }
 
         #endregion
+
+        #region Sum
+
+        /// <summary>
+        /// Executes the forward pass on a sum layer
+        /// </summary>
+        /// <param name="inputs">A <see cref="Span{T}"/> containing the input <see cref="Tensor"/> instances to sum</param>
+        /// <param name="y">The output <see cref="Tensor"/></param>
+        public static unsafe void SumForward(Span<Tensor> inputs, in Tensor y)
+        {
+            if (inputs.Length == 0) throw new ArgumentException("The inputs can't be empty", nameof(inputs));
+            int
+                count = inputs.Length,
+                n = y.Entities,
+                l = y.Length;
+            fixed (Tensor * p = &inputs.DangerousGetPinnableReference())
+            {
+                // Initial checks
+                float** ps = stackalloc float*[count];
+                for (int i = 0; i < count; i++)
+                {
+                    if (p[i].Entities != n || p[i].Length != l)
+                        throw new ArgumentException("The input tensors must have the same size as the output tensor", nameof(inputs));
+                    ps[i] = p[i];
+                }
+
+                // Sum the tensors in parallel
+                float* py = y;
+                void Kernel(int i)
+                {
+                    int offset = i * l;
+                    for (int j = 0; j < l; j++)
+                    {
+                        int target = offset + j;
+                        py[target] = 0;
+                        for (int z = 0; z < count; z++)
+                            py[target] += ps[z][target];
+                    }
+
+                }
+                Parallel.For(0, n, Kernel).AssertCompleted();
+            }
+        }
+
+        #endregion
     }
 }
