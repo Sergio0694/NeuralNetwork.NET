@@ -16,6 +16,8 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
     [JsonObject(MemberSerialization.OptIn)]
     internal abstract class WeightedLayerBase : NetworkLayerBase
     {
+        #region Parameters
+
         /// <summary>
         /// Gets an SHA256 hash calculated on both the weights and biases of the layer
         /// </summary>
@@ -67,6 +69,8 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         [NotNull]
         public float[] Biases { get; }
 
+        #endregion
+
         protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[] w, [NotNull] float[] b, ActivationFunctionType activation) 
             : base(input, output, activation)
         {
@@ -75,14 +79,16 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         }
 
         /// <summary>
-        /// Computes the gradient for the weights in the current network layer
+        /// Backpropagates the error to compute the delta for the inputs of the layer
         /// </summary>
-        /// <param name="a">The input activation</param>
-        /// <param name="delta">The output delta</param>
+        /// <param name="z">The output <see cref="Tensor"/> computed in the forward pass</param>
+        /// <param name="a">The layer activation computed in the forward pass</param>
+        /// <param name="dy">The output error delta to backpropagate</param>
+        /// <param name="x">The layer inputs used in the forward pass</param>
+        /// <param name="dx">The resulting backpropagated error</param>
         /// <param name="dJdw">The resulting gradient with respect to the weights</param>
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
-        public abstract void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb);
-
+        public abstract void Backpropagate(in Tensor z, in Tensor a, in Tensor dy, in Tensor x, in Tensor dx, out Tensor dJdw, out Tensor dJdb);
 
         #region Implementation
 
