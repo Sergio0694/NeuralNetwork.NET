@@ -53,7 +53,8 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <param name="yHat">The estimated outputs for the network</param>
         /// <param name="y">The expected outputs for the used inputs</param>
         /// <param name="z">The activity on the output layer</param>
-        public void Backpropagate(in Tensor yHat, in Tensor y, in Tensor z) => CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime);
+        /// <param name="dx">The backpropagated error</param>
+        public void Backpropagate(in Tensor yHat, in Tensor y, in Tensor z, in Tensor dx) => CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime, dx);
 
         /// <summary>
         /// Calculates the output cost with respect to the cost function currently in use

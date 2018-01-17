@@ -50,12 +50,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
         {
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
-                CpuDnn.FullyConnectedBackwardData(z, w, dy, activationPrime, z);
+                CpuDnn.FullyConnectedBackwardData(z, w, dy, activationPrime, dx);
             }
         }
 

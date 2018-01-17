@@ -171,7 +171,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
                  * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
                  *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1]);
+                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1], aList[_Layers.Length - 1]);
                 deltas[_Layers.Length - 1] = aList + _Layers.Length - 1;
                 for (int l = _Layers.Length - 2; l >= 0; l--)
                 {
@@ -181,7 +181,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * Perform the sigmoid prime of z(l), the activity on the previous layer
                      * Multiply the previous delta with the transposed weights of the following layer
                      * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                    _Layers[l + 1].Backpropagate(aList[l], *deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime);
+                    _Layers[l + 1].Backpropagate(aList[l], *deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime, zList[l]);
                     if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(zList[l], dropoutMasks[l], zList[l]);
                     deltas[l] = zList + l;
                 }

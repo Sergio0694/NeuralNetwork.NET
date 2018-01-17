@@ -79,7 +79,8 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <param name="dy">The output error delta</param>
         /// <param name="z">The activity on the inputs of the layer. It will be modified to become the computed delta</param>
         /// <param name="activationPrime">The activation prime function performed by the previous layer</param>
-        public abstract void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime);
+        /// <param name="dx">The resulting backpropagated error</param>
+        public abstract void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx);
 
         #region Equality check
 

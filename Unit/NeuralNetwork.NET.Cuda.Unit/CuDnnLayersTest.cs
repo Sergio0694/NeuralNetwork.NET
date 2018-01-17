@@ -44,8 +44,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Reshape(pd_1, delta_1.GetLength(0), delta_1.GetLength(1), out Tensor delta_1t);
                 Tensor.Reshape(pz, z.GetLength(0), z.GetLength(1), out Tensor zt);
                 zt.Duplicate(out Tensor zt2);
-                cpu.Backpropagate(Tensor.Null, delta_1t, zt, ActivationFunctions.LeCunTanhPrime);
-                gpu.Backpropagate(Tensor.Null, delta_1t, zt2, ActivationFunctions.LeCunTanhPrime);
+                cpu.Backpropagate(Tensor.Null, delta_1t, zt, ActivationFunctions.LeCunTanhPrime, zt);
+                gpu.Backpropagate(Tensor.Null, delta_1t, zt2, ActivationFunctions.LeCunTanhPrime, zt2);
                 Assert.IsTrue(zt.ContentEquals(zt2));
             }
         }
@@ -160,8 +160,8 @@ namespace NeuralNetworkNET.Cuda.Unit
                 cpu.Forward(xt, out Tensor z, out Tensor a);
                 a.Duplicate(out Tensor a2);
                 Tensor.Reshape(py, y.GetLength(0), y.GetLength(1), out Tensor yt);
-                cpu.Backpropagate(a, yt, z);
-                gpu.Backpropagate(a2, yt, z);
+                cpu.Backpropagate(a, yt, z, a);
+                gpu.Backpropagate(a2, yt, z, a2);
                 Assert.IsTrue(a.ContentEquals(a2));
                 a.Free();
                 a2.Free();
@@ -252,8 +252,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             KerasWeightsProvider.FillWithHeEtAlUniform(delta, 10);
 
             // Backward
-            cpu.Backpropagate(x, delta, x1, ActivationFunctions.LeakyReLUPrime);
-            gpu.Backpropagate(x, delta, x2, ActivationFunctions.LeakyReLUPrime);
+            cpu.Backpropagate(x, delta, x1, ActivationFunctions.LeakyReLUPrime, x1);
+            gpu.Backpropagate(x, delta, x2, ActivationFunctions.LeakyReLUPrime, x2);
             bool valid = true;
             float* px = (float*)x1.Ptr.ToPointer(), px2 = (float*)x2.Ptr.ToPointer();
             int count = 0;
