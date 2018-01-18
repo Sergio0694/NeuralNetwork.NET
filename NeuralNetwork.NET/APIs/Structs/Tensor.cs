@@ -48,7 +48,6 @@ namespace NeuralNetworkNET.APIs.Structs
         /// </summary>
         public bool IsNull
         {
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Ptr == IntPtr.Zero;
         }
@@ -59,7 +58,6 @@ namespace NeuralNetworkNET.APIs.Structs
         public unsafe ref float Ref
         {
             [PublicAPI]
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => ref Unsafe.AsRef<float>(this);
         }

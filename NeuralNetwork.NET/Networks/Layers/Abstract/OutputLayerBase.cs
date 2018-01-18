@@ -68,14 +68,20 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <param name="dx">The backpropagated error</param>
         /// <param name="dJdw">The resulting gradient with respect to the weights</param>
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
-        public virtual void Backpropagate(in Tensor x, in Tensor yHat, in Tensor y, in Tensor z, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
+        public virtual unsafe void Backpropagate(in Tensor x, in Tensor yHat, in Tensor y, in Tensor z, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime, dx);
+            Tensor.Like(y, out Tensor dy);
+            CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime, dy);
+            fixed (float* pw = Weights)
+            {
+                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
+                CpuDnn.FullyConnectedBackwardData(w, dy, dx);
+            }
             Tensor.New(InputInfo.Size, OutputInfo.Size, out Tensor dw);
-            CpuDnn.FullyConnectedBackwardFilter(x, dx, dw);
+            CpuDnn.FullyConnectedBackwardFilter(x, dy, dw);
             dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
             Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.FullyConnectedBackwardBias(dx, dJdb);
+            CpuDnn.FullyConnectedBackwardBias(dy, dJdb);
         }
 
         /// <summary>

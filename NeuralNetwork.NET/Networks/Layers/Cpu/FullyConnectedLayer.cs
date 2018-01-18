@@ -52,20 +52,23 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            fixed (float* pw = Weights)
+            // Backpropagation
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy);
+            if (!dx.IsNull) // Stop the error backpropagation if needed
             {
-                // Backpropagation
-                CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy);
-                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
-                CpuDnn.FullyConnectedBackwardData(w, dy, dx);
-
-                // Gradient
-                Tensor.New(InputInfo.Size, OutputInfo.Size, out Tensor dw);
-                CpuDnn.FullyConnectedBackwardFilter(x, dy, dw);
-                dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
-                Tensor.New(1, Biases.Length, out dJdb);
-                CpuDnn.FullyConnectedBackwardBias(dy, dJdb);
+                fixed (float* pw = Weights)
+                {
+                    Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
+                    CpuDnn.FullyConnectedBackwardData(w, dy, dx);
+                }
             }
+
+            // Gradient
+            Tensor.New(InputInfo.Size, OutputInfo.Size, out Tensor dw);
+            CpuDnn.FullyConnectedBackwardFilter(x, dy, dw);
+            dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.FullyConnectedBackwardBias(dy, dJdb);
         }
 
         #endregion
