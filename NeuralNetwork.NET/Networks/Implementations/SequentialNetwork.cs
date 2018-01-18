@@ -147,10 +147,10 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length],
-                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
+                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1],
+                    deltas = stackalloc Tensor[_Layers.Length]; // One delta for each hop through the network
                 Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
                 Tensor.Reshape(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
-                Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
 
                 // Feedforward
                 for (int i = 0; i < _Layers.Length; i++)
@@ -171,34 +171,34 @@ namespace NeuralNetworkNET.Networks.Implementations
                  * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
                  * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
                  *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1], aList[_Layers.Length - 1]);
-                deltas[_Layers.Length - 1] = aList + _Layers.Length - 1;
-                for (int l = _Layers.Length - 2; l >= 0; l--)
-                {
-                    /* ======================
-                     * Calculate delta(l)
-                     * ======================
-                     * Perform the sigmoid prime of z(l), the activity on the previous layer
-                     * Multiply the previous delta with the transposed weights of the following layer
-                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                    _Layers[l + 1].Backpropagate(aList[l], *deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime, zList[l]);
-                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(zList[l], dropoutMasks[l], zList[l]);
-                    deltas[l] = zList + l;
-                }
-
-                /* =============================================
-                 * Compute the gradients DJDw(l) and DJDb(l)
-                 * =============================================
-                 * Compute the gradients for each layer with weights and biases.
-                 * NOTE: the gradient is only computed for layers with weights and biases, for all the other
-                 *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
                 Tensor*
                     dJdw = stackalloc Tensor[WeightedLayersIndexes.Length], // One gradient item for layer
                     dJdb = stackalloc Tensor[WeightedLayersIndexes.Length];
-                for (int j = 0; j < WeightedLayersIndexes.Length; j++)
+                Tensor.Like(aList[_Layers.Length - 1], out deltas[_Layers.Length - 1]);
+                OutputLayer.Backpropagate(aList[_Layers.Length - 2], aList[_Layers.Length - 1], y, zList[_Layers.Length - 1], deltas[_Layers.Length - 1], out dJdw[WeightedLayersIndexes.Length - 1], out dJdb[WeightedLayersIndexes.Length - 1]);
+                for (int l = _Layers.Length - 2; l >= 0; l--)
                 {
-                    int i = WeightedLayersIndexes[j];
-                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().ComputeGradient(i == 0 ? x : aList[i - 1], *deltas[i], out dJdw[j], out dJdb[j]);
+                    /* ====================================================================
+                     * Calculate delta(l) and compute the gradients DJDw(l) and DJDb(l)
+                     * ====================================================================
+                     * Perform the sigmoid prime of z(l), the activity on the previous layer
+                     * Multiply the previous delta with the transposed weights of the following layer
+                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T.
+                     * NOTE: the gradient is only computed for layers with weights and biases, for all the other
+                     *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
+                    NetworkLayerBase layer = _Layers[l + 1];
+                    Tensor.Like(l == 0 ? x : aList[l - 1], out deltas[l]);
+                    switch (layer)
+                    {
+                        case ConstantLayerBase constant:
+                            constant.Backpropagate(aList[l], zList[l + 1], deltas[l + 1], deltas[l]);
+                            break;
+                        case WeightedLayerBase weighted:
+                            weighted.Backpropagate(aList[l], zList[l + 1], deltas[l + 1], deltas[l], out dJdw[l], out dJdb[l]);
+                            break;
+                        default: throw new InvalidOperationException("Invalid layer type");
+                    }
+                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
                 }
 
                 /* ====================

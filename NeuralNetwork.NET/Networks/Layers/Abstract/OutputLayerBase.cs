@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
@@ -50,11 +51,22 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <summary>
         /// Computes the output delta, with respect to the cost function of the network
         /// </summary>
+        /// <param name="x">The layer inputs in the forward pass</param>
         /// <param name="yHat">The estimated outputs for the network</param>
         /// <param name="y">The expected outputs for the used inputs</param>
         /// <param name="z">The activity on the output layer</param>
         /// <param name="dx">The backpropagated error</param>
-        public void Backpropagate(in Tensor yHat, in Tensor y, in Tensor z, in Tensor dx) => CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime, dx);
+        /// <param name="dJdw">The resulting gradient with respect to the weights</param>
+        /// <param name="dJdb">The resulting gradient with respect to the biases</param>
+        public virtual void Backpropagate(in Tensor x, in Tensor yHat, in Tensor y, in Tensor z, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
+        {
+            CostFunctions.CostPrime(yHat, y, z, ActivationFunctions.ActivationPrime, dx);
+            Tensor.New(InputInfo.Size, OutputInfo.Size, out Tensor dw);
+            CpuDnn.FullyConnectedBackwardFilter(x, dx, dw);
+            dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.FullyConnectedBackwardBias(dx, dJdb);
+        }
 
         /// <summary>
         /// Calculates the output cost with respect to the cost function currently in use
