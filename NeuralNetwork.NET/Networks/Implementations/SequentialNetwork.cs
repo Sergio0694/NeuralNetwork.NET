@@ -198,7 +198,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     switch (layer)
                     {
                         case ConstantLayerBase constant:
-                            constant.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1]);
+                            if (l > 0) constant.Backpropagate(inputs, zList[l], deltas[l], deltas[l - 1]);
                             break;
                         case WeightedLayerBase weighted:
                             weighted.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1], out dJdw[l], out dJdb[l]);

@@ -8,7 +8,6 @@ using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
@@ -52,13 +51,18 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 dy_gpu = DnnInstance.Gpu.AllocateDevice(dy),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
                 y_gpu = DnnInstance.Gpu.AllocateDevice(y),
-                dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
                 x_gpu = DnnInstance.Gpu.AllocateDevice(x))
             {
                 // Backpropagation
                 DnnInstance.ActivationBackward(y.Entities, y.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
-                DnnInstance.FullyConnectedBackwardData(y.Entities, InputInfo.Size, OutputInfo.Size, dy_gpu.Ptr, w_gpu.Ptr, dx_gpu.Ptr);
-                dx_gpu.CopyTo(dx);
+                if (!dx.IsNull)
+                {
+                    using (DeviceMemory<float> dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size))
+                    {
+                        DnnInstance.FullyConnectedBackwardData(y.Entities, InputInfo.Size, OutputInfo.Size, dy_gpu.Ptr, w_gpu.Ptr, dx_gpu.Ptr);
+                        dx_gpu.CopyTo(dx);
+                    }
+                }
 
                 // Gradient
                 DnnInstance.FullyConnectedBackwardFilter(x.Entities, x.Length, dy.Length, x_gpu.Ptr, dy_gpu.Ptr, w_gpu.Ptr);

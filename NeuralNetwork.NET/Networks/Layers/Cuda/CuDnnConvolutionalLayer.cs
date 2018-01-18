@@ -113,29 +113,31 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 y_gpu = DnnInstance.Gpu.AllocateDevice(y),
                 dy_gpu = DnnInstance.Gpu.AllocateDevice(dy),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
                 x_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
-                dJdw_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
                 dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
             {
                 // Backpropagation
                 DnnInstance.ActivationBackward(y.Entities, y.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
-                DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo dAlgo);
-                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, dAlgo, out IntPtr size);
-                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                if (!dx.IsNull)
                 {
-                    DnnInstance.ConvolutionBackwardData(1, FilterDescription, w_gpu.Ptr, OutputDescription, dy_gpu.Ptr, ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 0, InputDescription, dx_gpu.Ptr);
+                    DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo dAlgo);
+                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, dAlgo, out IntPtr dSize);
+                    using (DeviceMemory<float> dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size))
+                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(dSize))
+                    {
+                        DnnInstance.ConvolutionBackwardData(1, FilterDescription, w_gpu.Ptr, OutputDescription, dy_gpu.Ptr, ConvolutionDescription, dAlgo, workspace_gpu.Ptr, dSize, 0, InputDescription, dx_gpu.Ptr);
+                        dx_gpu.CopyTo(dx);
+                    }
                 }
-                dx_gpu.CopyTo(dx);
 
                 // Gradient
                 DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo wAlgo);
-                DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, wAlgo, out size);
-                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, wAlgo, out IntPtr wSize);
+                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(wSize))
                 {
-                    DnnInstance.ConvolutionBackwardFilter(1, InputDescription, x_gpu.Ptr, OutputDescription, dy_gpu.Ptr, ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, FilterDescription, dJdw_gpu.Ptr);
+                    DnnInstance.ConvolutionBackwardFilter(1, InputDescription, x_gpu.Ptr, OutputDescription, dy_gpu.Ptr, ConvolutionDescription, wAlgo, workspace_gpu.Ptr, wSize, 0, FilterDescription, w_gpu.Ptr);
                 }
-                dJdw_gpu.CopyToHost(1, Weights.Length, out dJdw);
+                w_gpu.CopyToHost(1, Weights.Length, out dJdw);
                 DnnInstance.ConvolutionBackwardBias(1, OutputDescription, dy_gpu.Ptr, 0, BiasDescription, dJdb_gpu.Ptr);
                 dJdb_gpu.CopyToHost(1, OutputInfo.Channels, out dJdb);
             }
