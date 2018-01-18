@@ -81,14 +81,13 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <summary>
         /// Backpropagates the error to compute the delta for the inputs of the layer
         /// </summary>
-        /// <param name="z">The output <see cref="Tensor"/> computed in the forward pass</param>
-        /// <param name="a">The layer activation computed in the forward pass</param>
-        /// <param name="dy">The output error delta to backpropagate</param>
         /// <param name="x">The layer inputs used in the forward pass</param>
+        /// <param name="y">The output <see cref="Tensor"/> computed in the forward pass</param>
+        /// <param name="dy">The output error delta to backpropagate</param>
         /// <param name="dx">The resulting backpropagated error</param>
         /// <param name="dJdw">The resulting gradient with respect to the weights</param>
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
-        public abstract void Backpropagate(in Tensor z, in Tensor a, in Tensor dy, in Tensor x, in Tensor dx, out Tensor dJdw, out Tensor dJdb);
+        public abstract void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb);
 
         #region Implementation
 

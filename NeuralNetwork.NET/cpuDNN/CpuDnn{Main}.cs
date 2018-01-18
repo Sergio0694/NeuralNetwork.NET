@@ -157,16 +157,13 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Executes the backward pass on a fully connected layer
         /// </summary>
-        /// <param name="x">The activity on the layer inputs</param>
         /// <param name="w">The layer weights</param>
         /// <param name="dy">The output error delta</param>
-        /// <param name="f_">The derivative of the activation function used in the forward pass</param>
         /// <param name="dx">The resulting input error delta</param>
-        public static unsafe void FullyConnectedBackwardData(in Tensor x, in Tensor w, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
+        public static unsafe void FullyConnectedBackwardData(in Tensor w, in Tensor dy, in Tensor dx)
         {
-            if (w.Entities != x.Length) throw new ArgumentException("The weights tensor doesn't have a valid shape", nameof(w));
-            if (!x.MatchShape(dy.Entities, w.Entities)) throw new ArgumentException("The input tensor doesn't have the right shape", nameof(x));
-            if (!dx.MatchShape(x)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(dx));
+            if (w.Length != dy.Length) throw new ArgumentException("The weights tensor doesn't have a valid shape", nameof(w));
+            if (!dx.MatchShape(dy.Entities, w.Entities)) throw new ArgumentException("The input tensor doesn't have the right shape", nameof(dx));
             Tensor.New(w.Length, w.Entities, out Tensor wt);
             CpuBlas.Transpose(w, wt);
 
@@ -175,7 +172,7 @@ namespace NeuralNetworkNET.cpuDNN
                 h = dy.Entities,
                 l = dy.Length,
                 k = wt.Length;
-            float* pdx = dx, px = x, pdy = dy, pwt = wt;
+            float* pdx = dx, pdy = dy, pwt = wt;
 
             // Execute the multiplication in parallel
             void Kernel(int i)
@@ -192,8 +189,7 @@ namespace NeuralNetworkNET.cpuDNN
                     }
 
                     // res has now the tensor multiplication result for position [i, j]
-                    int zIndex = i * k + j;
-                    pdx[zIndex] = f_(px[zIndex]) * res;
+                    pdx[i * k + j] = res;
                 }
             }
             Parallel.For(0, h, Kernel).AssertCompleted();

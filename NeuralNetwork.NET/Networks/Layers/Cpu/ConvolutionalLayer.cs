@@ -95,26 +95,22 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
+        public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
             fixed (float* pw = Weights)
             {
+                // Backpropagation
+                CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy);
                 Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                Tensor.New(z.Entities, InputInfo.Size, out Tensor data);
-                CpuDnn.ConvolutionBackwardData(dy, OutputInfo, wTensor, KernelInfo, data, InputInfo);
-                CpuDnn.ActivationBackward(z, data, activationPrime, dx);
-                data.Free();
-            }
-        }
+                CpuDnn.ConvolutionBackwardData(dy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
 
-        /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
-            Tensor.New(OutputInfo.Channels, KernelInfo.Size, out Tensor dw);
-            CpuDnn.ConvolutionBackwardFilter(a, InputInfo, delta, OutputInfo, dw, KernelInfo);
-            dw.Reshape(1, Weights.Length, out dJdw);
-            Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.ConvolutionBackwardBias(delta, OutputInfo, dJdb);
+                // Gradient
+                Tensor.New(OutputInfo.Channels, KernelInfo.Size, out Tensor dw);
+                CpuDnn.ConvolutionBackwardFilter(x, InputInfo, dy, OutputInfo, dw, KernelInfo);
+                dw.Reshape(1, Weights.Length, out dJdw);
+                Tensor.New(1, Biases.Length, out dJdb);
+                CpuDnn.ConvolutionBackwardBias(dy, OutputInfo, dJdb);
+            }
         }
 
         #endregion
