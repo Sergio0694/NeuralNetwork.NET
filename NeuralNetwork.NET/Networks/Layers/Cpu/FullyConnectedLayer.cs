@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 

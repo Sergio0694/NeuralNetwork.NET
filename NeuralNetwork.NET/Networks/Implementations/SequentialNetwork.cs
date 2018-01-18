@@ -192,18 +192,19 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * NOTE: the gradient is only computed for layers with weights and biases, for all the other
                      *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
                     NetworkLayerBase layer = _Layers[l];
+                    ref readonly Tensor inputs = ref (l == 0).SwitchRef(ref x, ref aList[l - 1]);
                     if (l > 0) Tensor.Like(aList[l - 1], out deltas[l - 1]);
+                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
                     switch (layer)
                     {
                         case ConstantLayerBase constant:
-                            constant.Backpropagate(l == 0 ? x : aList[l], zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1]);
+                            constant.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1]);
                             break;
                         case WeightedLayerBase weighted:
-                            weighted.Backpropagate(l == 0 ? x : aList[l], zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1], out dJdw[l], out dJdb[l]);
+                            weighted.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1], out dJdw[l], out dJdb[l]);
                             break;
                         default: throw new InvalidOperationException("Invalid layer type");
                     }
-                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
                 }
 
                 /* ================
@@ -214,9 +215,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Parallel.For(0, WeightedLayersIndexes.Length, i =>
                 {
                     int l = WeightedLayersIndexes[i];
-                    updater(i, dJdw[i], dJdb[i], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
-                    dJdw[i].Free();
-                    dJdb[i].Free();
+                    updater(i, dJdw[l], dJdb[l], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
+                    dJdw[l].Free();
+                    dJdb[l].Free();
                 }).AssertCompleted();
 
                 // Cleanup
