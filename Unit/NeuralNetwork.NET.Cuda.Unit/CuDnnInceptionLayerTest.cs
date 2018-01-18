@@ -17,7 +17,7 @@ namespace NeuralNetworkNET.Cuda.Unit
     [TestClass]
     [TestCategory(nameof(CuDnnInceptionLayerTest))]
     public class CuDnnInceptionLayerTest
-    {
+    { /*
         [TestMethod]
         public unsafe void Inception1x1()
         {
@@ -276,6 +276,6 @@ namespace NeuralNetworkNET.Cuda.Unit
                 aInc.Free();
                 reshaped.Free();
             }
-        }
+        } */
     }
 }

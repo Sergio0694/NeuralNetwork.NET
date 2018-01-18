@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -47,6 +48,15 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
         }
+
+        
+        #pragma warning disable CS0809 // Backpropagation method replaced with overload with expected output values
+
+        [Obsolete("Invalid for an output layer, use the overload with the output tensor instead", true)]
+        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
+            => throw new InvalidOperationException();
+
+        #pragma warning restore CS0809
 
         /// <summary>
         /// Computes the output delta, with respect to the cost function of the network
