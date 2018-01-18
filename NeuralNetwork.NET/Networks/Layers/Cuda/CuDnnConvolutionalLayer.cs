@@ -8,7 +8,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
@@ -108,55 +107,37 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
+        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            using (DeviceMemory<float> delta_gpu = DnnInstance.Gpu.AllocateDevice<float>(z.Size))
+            using (DeviceMemory<float> 
+                y_gpu = DnnInstance.Gpu.AllocateDevice(y),
+                dy_gpu = DnnInstance.Gpu.AllocateDevice(dy),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
+                x_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
+                dJdw_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
             {
-                // Convolution
-                DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
-                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, algorithm, out IntPtr size);
-                using (DeviceMemory<float>
-                    delta_1_gpu = DnnInstance.Gpu.AllocateDevice(dy),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice(Weights))
+                // Backpropagation
+                DnnInstance.ActivationBackward(y.Entities, y.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
+                DnnInstance.GetConvolutionBackwardDataAlgorithm(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo dAlgo);
+                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(FilterDescription, OutputDescription, ConvolutionDescription, InputDescription, dAlgo, out IntPtr size);
                 using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                 {
-                    DnnInstance.ConvolutionBackwardData(1, FilterDescription, w_gpu.Ptr, OutputDescription, delta_1_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, InputDescription, delta_gpu.Ptr);
+                    DnnInstance.ConvolutionBackwardData(1, FilterDescription, w_gpu.Ptr, OutputDescription, dy_gpu.Ptr, ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 0, InputDescription, dx_gpu.Ptr);
                 }
+                dx_gpu.CopyTo(dx);
 
-                // Activation
-                using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice(z))
+                // Gradient
+                DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo wAlgo);
+                DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, wAlgo, out size);
+                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                 {
-                    DnnInstance.ActivationBackward(z.Entities, z.Length, z_gpu.Ptr, delta_gpu.Ptr, activationPrime);
-                    z_gpu.CopyTo(dx);
+                    DnnInstance.ConvolutionBackwardFilter(1, InputDescription, x_gpu.Ptr, OutputDescription, dy_gpu.Ptr, ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, FilterDescription, dJdw_gpu.Ptr);
                 }
-            }
-        }
-
-        /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
-            using (DeviceMemory<float> delta_gpu = DnnInstance.Gpu.AllocateDevice(delta))
-            {
-                // Kernels
-                using (DeviceMemory<float>
-                    a_gpu = DnnInstance.Gpu.AllocateDevice(a),
-                    w_gpu = DnnInstance.Gpu.AllocateDevice<float>(Kernels * KernelInfo.Size))
-                {
-                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, OutputDescription, ConvolutionDescription, FilterDescription, algorithm, out IntPtr size);
-                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                    {
-                        DnnInstance.ConvolutionBackwardFilter(1, InputDescription, a_gpu.Ptr, OutputDescription, delta_gpu.Ptr, ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, FilterDescription, w_gpu.Ptr);
-                    }
-                    w_gpu.CopyToHost(1, Weights.Length, out dJdw);
-                }
-
-                // Bias
-                using (DeviceMemory<float> dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
-                {
-                    DnnInstance.ConvolutionBackwardBias(1, OutputDescription, delta_gpu.Ptr, 0, BiasDescription, dJdb_gpu.Ptr);
-                    dJdb_gpu.CopyToHost(1, OutputInfo.Channels, out dJdb);
-                }
+                dJdw_gpu.CopyToHost(1, Weights.Length, out dJdw);
+                DnnInstance.ConvolutionBackwardBias(1, OutputDescription, dy_gpu.Ptr, 0, BiasDescription, dJdb_gpu.Ptr);
+                dJdb_gpu.CopyToHost(1, OutputInfo.Channels, out dJdb);
             }
         }
 

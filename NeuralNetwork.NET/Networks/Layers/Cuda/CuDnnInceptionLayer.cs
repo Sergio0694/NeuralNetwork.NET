@@ -9,7 +9,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 
@@ -438,8 +437,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
+        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
+            throw new NotImplementedException();
+            /* 
             using (DeviceMemory<float> 
                 dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights))
@@ -542,10 +543,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     DnnInstance.ActivationBackward(z.Entities, z.Length, z_gpu.Ptr, dx_gpu.Ptr, activationPrime);
                     z_gpu.CopyTo(dx);
                 }
-            }
+            } */
         }
 
-        /// <inheritdoc/>
+        /*
         public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
         {
             Tensor.New(1, Weights.Length, out dJdw);
@@ -678,7 +679,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Primary5x5Reduce1x1ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels, OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
                 }
             }
-        }
+        } */
 
         #endregion
 

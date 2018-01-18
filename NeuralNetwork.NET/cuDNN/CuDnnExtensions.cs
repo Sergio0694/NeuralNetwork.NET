@@ -42,10 +42,11 @@ namespace NeuralNetworkNET.cuDNN
         /// <param name="dnn">The current <see cref="Dnn"/> instance being used</param>
         /// <param name="n">The number of samples in the input tensor</param>
         /// <param name="w">The size of each sample to process</param>
-        /// <param name="z">A pointer to the input memory area</param>
-        /// <param name="delta">The delta memory area</param>
+        /// <param name="x">A pointer to the input memory area</param>
+        /// <param name="dy">The delta memory area</param>
         /// <param name="f">The activation function to use</param>
-        public static void ActivationBackward([NotNull] this Dnn dnn, int n, int w, deviceptr<float> z, deviceptr<float> delta, [NotNull] ActivationFunction f)
+        /// <param name="dx">The backpropagated error</param>
+        public static void ActivationBackward([NotNull] this Dnn dnn, int n, int w, deviceptr<float> x, deviceptr<float> dy, [NotNull] ActivationFunction f, deviceptr<float> dx)
         {
             void Kernel(int i)
             {
@@ -53,7 +54,7 @@ namespace NeuralNetworkNET.cuDNN
                 for (int j = 0; j < w; j++)
                 {
                     int target = offset + j;
-                    z[target] = f(z[target]) * delta[target];
+                    dx[target] = f(x[target]) * dy[target];
                 }
             }
             dnn.Gpu.For(0, n, Kernel);
@@ -102,11 +103,10 @@ namespace NeuralNetworkNET.cuDNN
         /// <param name="n">The number of samples in the input tensor</param>
         /// <param name="k">The number of output features for each sample</param>
         /// <param name="l">The size of each input error delta to process</param>
-        /// <param name="z">A pointer to the activity on the previous layer</param>
         /// <param name="dy">A pointer to the output error delta</param>
         /// <param name="w">A pointer to the layer weights</param>
-        /// <param name="f_">The derivative of the activation function of the previous layer</param>
-        public static void FullyConnectedBackwardData([NotNull] this Dnn dnn, int n, int k, int l, deviceptr<float> z, deviceptr<float> dy, deviceptr<float> w, [NotNull] ActivationFunction f_)
+        /// <param name="dx">The backpropagated error delta</param>
+        public static void FullyConnectedBackwardData([NotNull] this Dnn dnn, int n, int k, int l, deviceptr<float> dy, deviceptr<float> w, deviceptr<float> dx)
         {
             void Kernel(int index)
             {
@@ -126,8 +126,7 @@ namespace NeuralNetworkNET.cuDNN
                 }
 
                 // Activation
-                int z_offset = i * k + j;
-                z[z_offset] = f_(z[z_offset]) * sum;
+                dx[i * k + j] = sum;
             }
             dnn.Gpu.For(0, n * k, Kernel);
         }
