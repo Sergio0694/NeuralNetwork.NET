@@ -167,9 +167,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                     }
                 }
 
-                /* ======================
-                 * Calculate delta(L)
-                 * ======================
+                /* ===========================================
+                 * Calculate delta(L), DJDw(L) and DJDb(L)
+                 * ===========================================
                  * Perform the sigmoid prime of zL, the activity on the last layer
                  * Calculate the gradient of C with respect to a
                  * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
@@ -180,7 +180,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                     dJdb = stackalloc Tensor[_Layers.Length];
                 Tensor.Like(aList[_Layers.Length - 2], out deltas[_Layers.Length - 2]);
                 OutputLayer.Backpropagate(aList[_Layers.Length - 2], aList[_Layers.Length - 1], y, zList[_Layers.Length - 1], deltas[_Layers.Length - 2], out dJdw[_Layers.Length - 1], out dJdb[_Layers.Length - 1]);
-                var t = new Span<Tensor>(deltas, _Layers.Length - 1);
                 for (int l = _Layers.Length - 2; l >= 0; l--)
                 {
                     /* ====================================================================
@@ -194,13 +193,13 @@ namespace NeuralNetworkNET.Networks.Implementations
                     NetworkLayerBase layer = _Layers[l];
                     ref readonly Tensor inputs = ref (l == 0).SwitchRef(ref x, ref aList[l - 1]);
                     if (l > 0) Tensor.Like(aList[l - 1], out deltas[l - 1]);
-                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
                     switch (layer)
                     {
                         case ConstantLayerBase constant:
                             if (l > 0) constant.Backpropagate(inputs, zList[l], deltas[l], deltas[l - 1]);
                             break;
                         case WeightedLayerBase weighted:
+                            if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
                             weighted.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1], out dJdw[l], out dJdb[l]);
                             break;
                         default: throw new InvalidOperationException("Invalid layer type");
