@@ -87,26 +87,17 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         // 3x3 reduction 1x1 convolution activation
         private Tensor _3x3Reduce1x1A;
 
-        // 3x3 reduction 1x1 convolution output delta
-        private Tensor _3x3Reduce1x1Delta;
-
         // 5x5 reduction 1x1 convolution activity
         private Tensor _5x5Reduce1x1Z;
 
         // 5x5 reduction 1x1 convolution activation
         private Tensor _5x5Reduce1x1A;
 
-        // 5x5 reduction 1x1 convolution output delta
-        private Tensor _5x5Reduce1x1Delta;
-
         // Pooling output activity
         private Tensor _PoolingZ;
 
         // Pooling output activation
         private Tensor _PoolingA;
-
-        // Pooling output delta
-        private Tensor _PoolingDelta;
 
         #endregion
 
@@ -305,7 +296,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 // Pointers
                 deviceptr<float> pw_gpu = w_gpu.Ptr, pb_gpu = b_gpu.Ptr;
 
-                // First 1x1 convolution
+                #region First 1x1 convolution
+
                 using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels))
                 {
                     // Descriptors setup and first 1x1 convolution
@@ -326,7 +318,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     y_gpu.CopyTo(a, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels);
                 }
 
-                // 1x1 + 3x3 convolution
+                #endregion
+
+                #region 1x1 + 3x3 convolution
+
                 using (DeviceMemory<float> 
                     y1x1_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary3x3Reduce1x1ConvolutionKernels),
                     y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels))
@@ -363,7 +358,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     y_gpu.CopyTo(a, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels);
                 }
 
-                // 1x1 + 5x5 convolution
+                #endregion
+
+                #region 1x1 + 5x5 convolution
+
                 using (DeviceMemory<float> 
                     y1x1_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Primary5x5Reduce1x1ConvolutionKernels),
                     y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Entities * InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels))
@@ -400,7 +398,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     y_gpu.CopyTo(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels);
                 }
 
-                // Pooling pipeline
+                #endregion
+
+                #region Pooling pipeline
+
                 PoolingOutputDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                 using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size))
                 {
@@ -433,253 +434,244 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                         _1x1Output_gpu.CopyTo(a, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
                     }
                 }
+
+                #endregion
             }
         }
 
         /// <inheritdoc/>
         public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            throw new NotImplementedException();
-            /* 
-            using (DeviceMemory<float> 
+            Tensor.New(1, Weights.Length, out dJdw);
+            Tensor.New(1, Biases.Length, out dJdb);
+            using (DeviceMemory<float>
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                 dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights))
             {
-                // First 1x1 convolution
-                DnnInstance.GetConvolutionBackwardDataAlgorithm(_1x1FilterDescription, _1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo algorithm);
-                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_1x1FilterDescription, _1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, algorithm, out IntPtr size);
-                using (DeviceMemory<float> dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels))
-                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                {
-                    DnnInstance.ConvolutionBackwardData(1, _1x1FilterDescription, w_gpu.Ptr, _1x1OutputDescription, dy_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, InputDescription, dx_gpu.Ptr);
-                }
+                #region First 1x1 convolution
 
-                // 1x1 + 3x3 convolution
-                using (DeviceMemory<float> _3x3Reduce1x1z_gpu = DnnInstance.Gpu.AllocateDevice(_3x3Reduce1x1Z))
+                // Backpropagation
+                DnnInstance.GetConvolutionBackwardDataAlgorithm(_1x1FilterDescription, _1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdDataAlgo dAlgo);
+                DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_1x1FilterDescription, _1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, dAlgo, out IntPtr size);
+                using (DeviceMemory<float> 
+                    _1x1dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels),
+                    _1x1y_gpu = DnnInstance.Gpu.AllocateDevice(y, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels))
                 {
-                    // 3x3 backward
-                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_3x3FilterDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3Reduce1x1OutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
-                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_3x3FilterDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3Reduce1x1OutputDescription, algorithm, out size);
-                    using (DeviceMemory<float> 
-                        dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels),
-                        _3x3Reduce1x1dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_3x3Reduce1x1Z.Size))
+                    DnnInstance.ActivationBackward(y.Entities, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, _1x1y_gpu.Ptr, _1x1dy_gpu.Ptr, ActivationFunctions.ActivationPrime, _1x1dy_gpu.Ptr);
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        deviceptr<float> p3x3Weights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights;
-                        DnnInstance.ConvolutionBackwardData(1, _3x3FilterDescription, p3x3Weights_gpu, _3x3OutputDescription, dy_gpu.Ptr, _3x3ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _3x3Reduce1x1OutputDescription, _3x3Reduce1x1dx_gpu.Ptr);
-                        DnnInstance.ActivationBackward(_3x3Reduce1x1Z.Entities, _3x3Reduce1x1Z.Length, _3x3Reduce1x1z_gpu.Ptr, _3x3Reduce1x1dx_gpu.Ptr, ActivationFunctions.ActivationPrime);
-                        _3x3Reduce1x1Delta.TryFree();
-                        _3x3Reduce1x1z_gpu.CopyToHost(_3x3Reduce1x1Z.Entities, _3x3Reduce1x1Z.Length, out _3x3Reduce1x1Delta);
+                        DnnInstance.ConvolutionBackwardData(1, _1x1FilterDescription, w_gpu.Ptr, _1x1OutputDescription, _1x1dy_gpu.Ptr, _1x1ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 0, InputDescription, dx_gpu.Ptr);
                     }
 
-                    // 3x3 reduce 1x1 backward
-                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_3x3Reduce1x1FilterDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
-                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_3x3Reduce1x1FilterDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, algorithm, out size);
-                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                    {
-                        deviceptr<float> p3x3Reduce1x1Weights_gpu = w_gpu.Ptr + _1x1Weights;
-                        DnnInstance.ConvolutionBackwardData(1, _3x3Reduce1x1FilterDescription, p3x3Reduce1x1Weights_gpu, _3x3Reduce1x1OutputDescription, _3x3Reduce1x1z_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 1, InputDescription, dx_gpu.Ptr);
-                    }
-                }
-
-                // 1x1 + 5x5 convolution
-                using (DeviceMemory<float> _5x5Reduce1x1z_gpu = DnnInstance.Gpu.AllocateDevice(_5x5Reduce1x1Z))
-                {
-                    // 5x5 backward
-                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_5x5FilterDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5Reduce1x1OutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
-                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_5x5FilterDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5Reduce1x1OutputDescription, algorithm, out size);
-                    using (DeviceMemory<float> 
-                        dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels),
-                        _5x5Reduce1x1dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_5x5Reduce1x1Z.Size))
-                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                    {
-                        deviceptr<float> p5x5Weights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights;
-                        DnnInstance.ConvolutionBackwardData(1, _5x5FilterDescription, p5x5Weights_gpu, _5x5OutputDescription, dy_gpu.Ptr, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1OutputDescription, _5x5Reduce1x1dx_gpu.Ptr);
-                        DnnInstance.ActivationBackward(_5x5Reduce1x1Z.Entities, _5x5Reduce1x1Z.Length, _5x5Reduce1x1z_gpu.Ptr, _5x5Reduce1x1dx_gpu.Ptr, ActivationFunctions.ActivationPrime);
-                        _5x5Reduce1x1Delta.TryFree();
-                        _5x5Reduce1x1z_gpu.CopyToHost(_5x5Reduce1x1Z.Entities, _5x5Reduce1x1Z.Length, out _5x5Reduce1x1Delta);
-                    }
-
-                    // 5x5 reduce 1x1 backward
-                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_5x5Reduce1x1FilterDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
-                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_5x5Reduce1x1FilterDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, algorithm, out size);
-                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                    {
-                        deviceptr<float> p5x5Reduce1x1Weights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights;
-                        DnnInstance.ConvolutionBackwardData(1, _5x5Reduce1x1FilterDescription, p5x5Reduce1x1Weights_gpu, _5x5Reduce1x1OutputDescription, _5x5Reduce1x1z_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 1, InputDescription, dx_gpu.Ptr);
-                    }
-                }
-
-                // Pooling
-                using (DeviceMemory<float> pooldy_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
-                {
-                    // 1x1 backward
-                    DnnInstance.GetConvolutionBackwardDataAlgorithm(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out algorithm);
-                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, algorithm, out size);
-                    using (DeviceMemory<float> 
-                        dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels),
-                        poolDx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_PoolingZ.Size))
-                    using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                    {
-                        deviceptr<float> p1x1PoolingWeights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights + _5x5Weights;
-                        DnnInstance.ConvolutionBackwardData(1, Secondary1x1FilterDescription, p1x1PoolingWeights_gpu, Secondary1x1OutputDescription, dy_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, PoolingOutputDescription, poolDx_gpu.Ptr);
-                        DnnInstance.ActivationBackward(_PoolingZ.Entities, _PoolingZ.Length, pooldy_gpu.Ptr, poolDx_gpu.Ptr, ActivationFunctions.ActivationPrime);
-                        _PoolingDelta.TryFree();
-                        pooldy_gpu.CopyToHost(_PoolingZ.Entities, _PoolingZ.Length, out _PoolingDelta);
-                    }
-
-                    // Pooling backward
-                    using (DeviceMemory<float> 
-                        x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                        poolZ_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
-                    {
-                        DnnInstance.PoolingBackward(PoolingDescription, 1, PoolingOutputDescription, poolZ_gpu.Ptr, PoolingOutputDescription, pooldy_gpu.Ptr, InputDescription, x_gpu.Ptr, 1, InputDescription, dx_gpu.Ptr); // TODO: finish pooling backward
-                    }
-                }
-
-                // Activation backward
-                using (DeviceMemory<float> z_gpu = DnnInstance.Gpu.AllocateDevice(z))
-                {
-                    DnnInstance.ActivationBackward(z.Entities, z.Length, z_gpu.Ptr, dx_gpu.Ptr, activationPrime);
-                    z_gpu.CopyTo(dx);
-                }
-            } */
-        }
-
-        /*
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
-            Tensor.New(1, Weights.Length, out dJdw);
-            Tensor.New(1, Biases.Length, out dJdb);
-            using (DeviceMemory<float> a_gpu = DnnInstance.Gpu.AllocateDevice(a))
-            {
-                // 1x1 weights
-                using (DeviceMemory<float> dy1x1_gpu = DnnInstance.Gpu.AllocateDevice(delta, 0, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels))
-                {
-                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, _1x1OutputDescription, _1x1ConvolutionDescription, _1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, _1x1OutputDescription, _1x1ConvolutionDescription, _1x1FilterDescription, algorithm, out IntPtr size);
+                    // Gradient
+                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, _1x1OutputDescription, _1x1ConvolutionDescription, _1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo wAlgo);
+                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, _1x1OutputDescription, _1x1ConvolutionDescription, _1x1FilterDescription, wAlgo, out size);
                     using (DeviceMemory<float> dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_1x1Weights))
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionBackwardFilter(1, InputDescription, a_gpu.Ptr, _1x1OutputDescription, dy1x1_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _1x1FilterDescription, dw_gpu.Ptr);
+                        DnnInstance.ConvolutionBackwardFilter(1, InputDescription, x_gpu.Ptr, _1x1OutputDescription, _1x1dy_gpu.Ptr, _1x1ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, _1x1FilterDescription, dw_gpu.Ptr);
                         dw_gpu.CopyTo(dJdw, 0, _1x1Weights);
                     }
 
                     // 1x1 bias
                     using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Primary1x1ConvolutionKernels))
                     {
-                        DnnInstance.ConvolutionBackwardBias(1, _1x1OutputDescription, dy1x1_gpu.Ptr, 0, _1x1BiasDescription, db_gpu.Ptr);
+                        DnnInstance.ConvolutionBackwardBias(1, _1x1OutputDescription, _1x1dy_gpu.Ptr, 0, _1x1BiasDescription, db_gpu.Ptr);
                         db_gpu.CopyTo(dJdb, 0, OperationInfo.Primary1x1ConvolutionKernels);
                     }
                 }
 
-                // 3x3 reduce 1x1 weights
-                using (DeviceMemory<float> dy3x3Reduce1x1_gpu = DnnInstance.Gpu.AllocateDevice(_3x3Reduce1x1Delta))
+                #endregion
+
+                #region 1x1 + 3x3 convolution
+                
+                using (DeviceMemory<float> _3x3Reduce1x1z_gpu = DnnInstance.Gpu.AllocateDevice(_3x3Reduce1x1Z))
                 {
-                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, _3x3Reduce1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, _3x3Reduce1x1FilterDescription, algorithm, out IntPtr size);
-                    using (DeviceMemory<float> dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_3x3Reduce1x1Weights))
+                    // 3x3 backward
+                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_3x3FilterDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3Reduce1x1OutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out dAlgo);
+                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_3x3FilterDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3Reduce1x1OutputDescription, dAlgo, out size);
+                    using (DeviceMemory<float> 
+                        _3x3dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels),
+                        _3x3y_gpu = DnnInstance.Gpu.AllocateDevice(y, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels),
+                        _3x3Reduce1x1dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_3x3Reduce1x1Z.Size))
+                    {
+                        DnnInstance.ActivationBackward(y.Entities, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels, _3x3y_gpu.Ptr, _3x3dy_gpu.Ptr, ActivationFunctions.ActivationPrime, _3x3dy_gpu.Ptr);
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            deviceptr<float> p3x3Weights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights;
+                            DnnInstance.ConvolutionBackwardData(1, _3x3FilterDescription, p3x3Weights_gpu, _3x3OutputDescription, _3x3dy_gpu.Ptr, _3x3ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 0, _3x3Reduce1x1OutputDescription, _3x3Reduce1x1dx_gpu.Ptr);
+                            DnnInstance.ActivationBackward(_3x3Reduce1x1Z.Entities, _3x3Reduce1x1Z.Length, _3x3Reduce1x1z_gpu.Ptr, _3x3Reduce1x1dx_gpu.Ptr, ActivationFunctions.ActivationPrime, _3x3Reduce1x1dx_gpu.Ptr);
+                        }
+
+                        // 3x3 gradient
+                        DnnInstance.GetConvolutionBackwardFilterAlgorithm(_3x3Reduce1x1OutputDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo wAlgo);
+                        DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(_3x3Reduce1x1OutputDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3FilterDescription, wAlgo, out size);
+                        using (DeviceMemory<float>
+                            a3x3Reduce1x1_gpu = DnnInstance.Gpu.AllocateDevice(_3x3Reduce1x1A),
+                            dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_3x3Weights))
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            DnnInstance.ConvolutionBackwardFilter(1, _3x3Reduce1x1OutputDescription, a3x3Reduce1x1_gpu.Ptr, _3x3OutputDescription, _3x3dy_gpu.Ptr, _3x3ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, _3x3FilterDescription, dw_gpu.Ptr);
+                            dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights, _3x3Weights);
+                        }
+
+                        // 3x3 bias
+                        using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary3x3ConvolutionKernels))
+                        {
+                            DnnInstance.ConvolutionBackwardBias(1, _3x3OutputDescription, _3x3dy_gpu.Ptr, 0, _3x3BiasDescription, db_gpu.Ptr);
+                            db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, OperationInfo.Secondary3x3ConvolutionKernels);
+                        }
+
+                        // 3x3 reduce 1x1 gradient
+                        DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, _3x3Reduce1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out wAlgo);
+                        DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, _3x3Reduce1x1FilterDescription, wAlgo, out size);
+                        using (DeviceMemory<float> dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_3x3Reduce1x1Weights))
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            DnnInstance.ConvolutionBackwardFilter(1, InputDescription, x_gpu.Ptr, _3x3Reduce1x1OutputDescription, _3x3Reduce1x1dx_gpu.Ptr, _1x1ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, _3x3Reduce1x1FilterDescription, dw_gpu.Ptr);
+                            dw_gpu.CopyTo(dJdw, _1x1Weights, _3x3Reduce1x1Weights);
+                        }
+
+                        // 3x3 reduce 1x1 bias
+                        using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Primary3x3Reduce1x1ConvolutionKernels))
+                        {
+                            DnnInstance.ConvolutionBackwardBias(1, _3x3Reduce1x1OutputDescription, _3x3Reduce1x1dx_gpu.Ptr, 0, _3x3Reduce1x1BiasDescription, db_gpu.Ptr);
+                            db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels, OperationInfo.Primary3x3Reduce1x1ConvolutionKernels);
+                        }
+                    }
+
+                    // 3x3 reduce 1x1 backward
+                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_3x3Reduce1x1FilterDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out dAlgo);
+                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_3x3Reduce1x1FilterDescription, _3x3Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, dAlgo, out size);
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionBackwardFilter(1, InputDescription, a_gpu.Ptr, _3x3Reduce1x1OutputDescription, dy3x3Reduce1x1_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _3x3Reduce1x1FilterDescription, dw_gpu.Ptr);
-                        dw_gpu.CopyTo(dJdw, _1x1Weights, _3x3Reduce1x1Weights);
-                    }
-
-                    // 3x3 reduce 1x1 bias
-                    using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Primary3x3Reduce1x1ConvolutionKernels))
-                    {
-                        DnnInstance.ConvolutionBackwardBias(1, _3x3Reduce1x1OutputDescription, dy3x3Reduce1x1_gpu.Ptr, 0, _3x3Reduce1x1BiasDescription, db_gpu.Ptr);
-                        db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels, OperationInfo.Primary3x3Reduce1x1ConvolutionKernels);
+                        deviceptr<float> p3x3Reduce1x1Weights_gpu = w_gpu.Ptr + _1x1Weights;
+                        DnnInstance.ConvolutionBackwardData(1, _3x3Reduce1x1FilterDescription, p3x3Reduce1x1Weights_gpu, _3x3Reduce1x1OutputDescription, _3x3Reduce1x1z_gpu.Ptr, _1x1ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 1, InputDescription, dx_gpu.Ptr);
                     }
                 }
 
-                // 5x5 reduce 1x1 weights
-                using (DeviceMemory<float> dy5x5Reduce1x1_gpu = DnnInstance.Gpu.AllocateDevice(_5x5Reduce1x1Delta))
+                #endregion
+
+                #region 1x1 + 5x5 convolution
+
+                using (DeviceMemory<float> _5x5Reduce1x1z_gpu = DnnInstance.Gpu.AllocateDevice(_5x5Reduce1x1Z))
                 {
-                    DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, _5x5Reduce1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                    DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, _5x5Reduce1x1FilterDescription, algorithm, out IntPtr size);
-                    using (DeviceMemory<float> dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_5x5Reduce1x1Weights))
+                    // 5x5 backward
+                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_5x5FilterDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5Reduce1x1OutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out dAlgo);
+                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_5x5FilterDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5Reduce1x1OutputDescription, dAlgo, out size);
+                    using (DeviceMemory<float> 
+                        _5x5dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels),
+                        _5x5y_gpu = DnnInstance.Gpu.AllocateDevice(y, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels),
+                        _5x5Reduce1x1dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_5x5Reduce1x1Z.Size))
+                    {
+                        DnnInstance.ActivationBackward(y.Entities, InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels, _5x5y_gpu.Ptr, _5x5dy_gpu.Ptr, ActivationFunctions.ActivationPrime, _5x5dy_gpu.Ptr);
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            deviceptr<float> p5x5Weights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights;
+                            DnnInstance.ConvolutionBackwardData(1, _5x5FilterDescription, p5x5Weights_gpu, _5x5OutputDescription, _5x5dy_gpu.Ptr, _5x5ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1OutputDescription, _5x5Reduce1x1dx_gpu.Ptr);
+                            DnnInstance.ActivationBackward(_5x5Reduce1x1Z.Entities, _5x5Reduce1x1Z.Length, _5x5Reduce1x1z_gpu.Ptr, _5x5Reduce1x1dx_gpu.Ptr, ActivationFunctions.ActivationPrime, _5x5Reduce1x1dx_gpu.Ptr);
+                        }
+
+                        // 5x5 gradient
+                        DnnInstance.GetConvolutionBackwardFilterAlgorithm(_5x5Reduce1x1OutputDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo wAlgo);
+                        DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(_5x5Reduce1x1OutputDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5FilterDescription, wAlgo, out size);
+                        using (DeviceMemory<float>
+                            a5x5Reduce1x1_gpu = DnnInstance.Gpu.AllocateDevice(_5x5Reduce1x1A),
+                            dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_5x5Weights))
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            DnnInstance.ConvolutionBackwardFilter(1, _5x5Reduce1x1OutputDescription, a5x5Reduce1x1_gpu.Ptr, _5x5OutputDescription, _5x5dy_gpu.Ptr, _5x5ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, _5x5FilterDescription, dw_gpu.Ptr);
+                            dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights, _5x5Weights);
+                        }
+
+                        // 5x5 bias
+                        using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary5x5ConvolutionKernels))
+                        {
+                            DnnInstance.ConvolutionBackwardBias(1, _5x5OutputDescription, _5x5dy_gpu.Ptr, 0, _5x5BiasDescription, db_gpu.Ptr);
+                            db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, OperationInfo.Secondary5x5ConvolutionKernels);
+                        }
+
+                        // 5x5 reduce 1x1 weights
+                        DnnInstance.GetConvolutionBackwardFilterAlgorithm(InputDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, _5x5Reduce1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out wAlgo);
+                        DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(InputDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, _5x5Reduce1x1FilterDescription, wAlgo, out size);
+                        using (DeviceMemory<float> dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_5x5Reduce1x1Weights))
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            DnnInstance.ConvolutionBackwardFilter(1, InputDescription, x_gpu.Ptr, _5x5Reduce1x1OutputDescription, _5x5Reduce1x1dx_gpu.Ptr, _1x1ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1FilterDescription, dw_gpu.Ptr);
+                            dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights, _5x5Reduce1x1Weights);
+                        }
+
+                        // 5x5 reduce 1x1 bias
+                        using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Primary5x5Reduce1x1ConvolutionKernels))
+                        {
+                            DnnInstance.ConvolutionBackwardBias(1, _5x5Reduce1x1OutputDescription, _5x5Reduce1x1dx_gpu.Ptr, 0, _5x5Reduce1x1BiasDescription, db_gpu.Ptr);
+                            db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels, OperationInfo.Primary5x5Reduce1x1ConvolutionKernels);
+                        }
+                    }
+
+                    // 5x5 reduce 1x1 backward
+                    DnnInstance.GetConvolutionBackwardDataAlgorithm(_5x5Reduce1x1FilterDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out dAlgo);
+                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(_5x5Reduce1x1FilterDescription, _5x5Reduce1x1OutputDescription, _1x1ConvolutionDescription, InputDescription, dAlgo, out size);
                     using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
                     {
-                        DnnInstance.ConvolutionBackwardFilter(1, InputDescription, a_gpu.Ptr, _5x5Reduce1x1OutputDescription, dy5x5Reduce1x1_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5Reduce1x1FilterDescription, dw_gpu.Ptr);
-                        dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights, _5x5Reduce1x1Weights);
+                        deviceptr<float> p5x5Reduce1x1Weights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights;
+                        DnnInstance.ConvolutionBackwardData(1, _5x5Reduce1x1FilterDescription, p5x5Reduce1x1Weights_gpu, _5x5Reduce1x1OutputDescription, _5x5Reduce1x1z_gpu.Ptr, _1x1ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 1, InputDescription, dx_gpu.Ptr);
                     }
+                }
 
-                    // 5x5 reduce 1x1 bias
-                    using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Primary5x5Reduce1x1ConvolutionKernels))
+                #endregion
+
+                #region Pooling
+
+                using (DeviceMemory<float> pooldy_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
+                {
+                    // 1x1 backward
+                    DnnInstance.GetConvolutionBackwardDataAlgorithm(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, ConvolutionBwdDataPreference.PREFER_FASTEST, IntPtr.Zero, out dAlgo);
+                    DnnInstance.GetConvolutionBackwardDataWorkspaceSize(Secondary1x1FilterDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, PoolingOutputDescription, dAlgo, out size);
+                    using (DeviceMemory<float> 
+                        dy_gpu = DnnInstance.Gpu.AllocateDevice(dy, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels),
+                        y_gpu = DnnInstance.Gpu.AllocateDevice(y, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels),
+                        poolDx_gpu = DnnInstance.Gpu.AllocateDevice<float>(_PoolingZ.Size))
                     {
-                        DnnInstance.ConvolutionBackwardBias(1, _5x5Reduce1x1OutputDescription, dy5x5Reduce1x1_gpu.Ptr, 0, _5x5Reduce1x1BiasDescription, db_gpu.Ptr);
-                        db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels, OperationInfo.Primary5x5Reduce1x1ConvolutionKernels);
+                        DnnInstance.ActivationBackward(y.Entities, InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            deviceptr<float> p1x1PoolingWeights_gpu = w_gpu.Ptr + _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights + _5x5Weights;
+                            DnnInstance.ConvolutionBackwardData(1, Secondary1x1FilterDescription, p1x1PoolingWeights_gpu, Secondary1x1OutputDescription, dy_gpu.Ptr, _1x1ConvolutionDescription, dAlgo, workspace_gpu.Ptr, size, 0, PoolingOutputDescription, poolDx_gpu.Ptr);
+                            DnnInstance.ActivationBackward(_PoolingZ.Entities, _PoolingZ.Length, pooldy_gpu.Ptr, poolDx_gpu.Ptr, ActivationFunctions.ActivationPrime, poolDx_gpu.Ptr);
+                        }
+
+                        // 1x1 gradient
+                        DnnInstance.GetConvolutionBackwardFilterAlgorithm(PoolingOutputDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, Secondary1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo wAlgo);
+                        DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(PoolingOutputDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, Secondary1x1FilterDescription, wAlgo, out size);
+                        using (DeviceMemory<float>
+                            aPool_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingA),
+                            dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(Secondary1x1Weights))
+                        using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
+                        {
+                            DnnInstance.ConvolutionBackwardFilter(1, PoolingOutputDescription, aPool_gpu.Ptr, Secondary1x1OutputDescription, dy_gpu.Ptr, _1x1ConvolutionDescription, wAlgo, workspace_gpu.Ptr, size, 0, Secondary1x1FilterDescription, dw_gpu.Ptr);
+                            dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights + _5x5Weights, Secondary1x1Weights);
+                        }
+
+                        // Pooling 1x1 bias
+                        using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary1x1AfterPoolingConvolutionKernels))
+                        {
+                            DnnInstance.ConvolutionBackwardBias(1, Secondary1x1OutputDescription, dy_gpu.Ptr, 0, Secondary1x1BiasDescription, db_gpu.Ptr);
+                            db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Primary5x5Reduce1x1ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels, OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
+                        }
+                    }
+
+                    // Pooling backward
+                    using (DeviceMemory<float> poolZ_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingZ))
+                    {
+                        DnnInstance.PoolingBackward(PoolingDescription, 1, PoolingOutputDescription, poolZ_gpu.Ptr, PoolingOutputDescription, pooldy_gpu.Ptr, InputDescription, x_gpu.Ptr, 1, InputDescription, dx_gpu.Ptr);
                     }
                 }
+
+                #endregion
             }
-
-            // 3x3 weights
-            using (DeviceMemory<float> dy3x3_gpu = DnnInstance.Gpu.AllocateDevice(delta, InputInfo.SliceSize * OperationInfo.Primary1x1ConvolutionKernels, InputInfo.SliceSize * OperationInfo.Secondary3x3ConvolutionKernels))
-            {
-                DnnInstance.GetConvolutionBackwardFilterAlgorithm(_3x3Reduce1x1OutputDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(_3x3Reduce1x1OutputDescription, _3x3OutputDescription, _3x3ConvolutionDescription, _3x3FilterDescription, algorithm, out IntPtr size);
-                using (DeviceMemory<float>
-                    a3x3Reduce1x1_gpu = DnnInstance.Gpu.AllocateDevice(_3x3Reduce1x1A),
-                    dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_3x3Weights))
-                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                {
-                    DnnInstance.ConvolutionBackwardFilter(1, _3x3Reduce1x1OutputDescription, a3x3Reduce1x1_gpu.Ptr, _3x3OutputDescription, dy3x3_gpu.Ptr, _3x3ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _3x3FilterDescription, dw_gpu.Ptr);
-                    dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights, _3x3Weights);
-                }
-
-                // 3x3 bias
-                using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary3x3ConvolutionKernels))
-                {
-                    DnnInstance.ConvolutionBackwardBias(1, _3x3OutputDescription, dy3x3_gpu.Ptr, 0, _3x3BiasDescription, db_gpu.Ptr);
-                    db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels, OperationInfo.Secondary3x3ConvolutionKernels);
-                }
-            }
-
-            // 5x5 weights
-            using (DeviceMemory<float> dy5x5_gpu = DnnInstance.Gpu.AllocateDevice(delta, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary5x5ConvolutionKernels))
-            {
-                DnnInstance.GetConvolutionBackwardFilterAlgorithm(_5x5Reduce1x1OutputDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(_5x5Reduce1x1OutputDescription, _5x5OutputDescription, _5x5ConvolutionDescription, _5x5FilterDescription, algorithm, out IntPtr size);
-                using (DeviceMemory<float>
-                    a5x5Reduce1x1_gpu = DnnInstance.Gpu.AllocateDevice(_5x5Reduce1x1A),
-                    dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(_5x5Weights))
-                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                {
-                    DnnInstance.ConvolutionBackwardFilter(1, _5x5Reduce1x1OutputDescription, a5x5Reduce1x1_gpu.Ptr, _5x5OutputDescription, dy5x5_gpu.Ptr, _5x5ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, _5x5FilterDescription, dw_gpu.Ptr);
-                    dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights, _5x5Weights);
-                }
-
-                // 5x5 bias
-                using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary5x5ConvolutionKernels))
-                {
-                    DnnInstance.ConvolutionBackwardBias(1, _5x5OutputDescription, dy5x5_gpu.Ptr, 0, _5x5BiasDescription, db_gpu.Ptr);
-                    db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Primary5x5Reduce1x1ConvolutionKernels, OperationInfo.Secondary5x5ConvolutionKernels);
-                }
-            }
-
-            // Pooling 1x1 convolution
-            using (DeviceMemory<float> dy1x1Pool_gpu = DnnInstance.Gpu.AllocateDevice(delta, InputInfo.SliceSize * (OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels), InputInfo.SliceSize * OperationInfo.Secondary1x1AfterPoolingConvolutionKernels))
-            {
-                DnnInstance.GetConvolutionBackwardFilterAlgorithm(PoolingOutputDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, Secondary1x1FilterDescription, ConvolutionBwdFilterPreference.PREFER_FASTEST, IntPtr.Zero, out ConvolutionBwdFilterAlgo algorithm);
-                DnnInstance.GetConvolutionBackwardFilterWorkspaceSize(PoolingOutputDescription, Secondary1x1OutputDescription, _1x1ConvolutionDescription, Secondary1x1FilterDescription, algorithm, out IntPtr size);
-                using (DeviceMemory<float>
-                    aPool_gpu = DnnInstance.Gpu.AllocateDevice(_PoolingA),
-                    dw_gpu = DnnInstance.Gpu.AllocateDevice<float>(Secondary1x1Weights))
-                using (DeviceMemory<byte> workspace_gpu = DnnInstance.Gpu.AllocateDevice<byte>(size))
-                {
-                    DnnInstance.ConvolutionBackwardFilter(1, PoolingOutputDescription, aPool_gpu.Ptr, Secondary1x1OutputDescription, dy1x1Pool_gpu.Ptr, _1x1ConvolutionDescription, algorithm, workspace_gpu.Ptr, size, 0, Secondary1x1FilterDescription, dw_gpu.Ptr);
-                    dw_gpu.CopyTo(dJdw, _1x1Weights + _3x3Reduce1x1Weights + _3x3Weights + _5x5Reduce1x1Weights + _5x5Weights, Secondary1x1Weights);
-                }
-
-                // Pooling 1x1 bias
-                using (DeviceMemory<float> db_gpu = DnnInstance.Gpu.AllocateDevice<float>(OperationInfo.Secondary1x1AfterPoolingConvolutionKernels))
-                {
-                    DnnInstance.ConvolutionBackwardBias(1, Secondary1x1OutputDescription, dy1x1Pool_gpu.Ptr, 0, Secondary1x1BiasDescription, db_gpu.Ptr);
-                    db_gpu.CopyTo(dJdb, OperationInfo.Primary1x1ConvolutionKernels + OperationInfo.Primary3x3Reduce1x1ConvolutionKernels + OperationInfo.Secondary3x3ConvolutionKernels + OperationInfo.Primary5x5Reduce1x1ConvolutionKernels + OperationInfo.Secondary5x5ConvolutionKernels, OperationInfo.Secondary1x1AfterPoolingConvolutionKernels);
-                }
-            }
-        } */
+        }
 
         #endregion
 
@@ -731,13 +723,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             _3x3Reduce1x1Z.TryFree();
             _3x3Reduce1x1A.TryFree();
-            _3x3Reduce1x1Delta.TryFree();
             _5x5Reduce1x1Z.TryFree();
             _5x5Reduce1x1A.TryFree();
-            _5x5Reduce1x1Delta.TryFree();
             _PoolingZ.TryFree();
             _PoolingA.TryFree();
-            _PoolingDelta.TryFree();
         }
 
         #endregion
