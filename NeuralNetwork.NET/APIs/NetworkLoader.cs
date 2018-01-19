@@ -31,8 +31,16 @@ namespace NeuralNetworkNET.APIs
         [Pure, CanBeNull]
         public static INeuralNetwork TryLoad([NotNull] FileInfo file, LayersLoadingPreference preference)
         {
-            using (FileStream stream = file.OpenRead())
-                return TryLoad(stream, preference);
+            try
+            {
+                using (FileStream stream = file.OpenRead())
+                    return TryLoad(stream, preference);
+            }
+            catch (FileNotFoundException)
+            {
+                // Just keep going
+                return null;
+            }
         }
 
         /// <summary>
