@@ -101,8 +101,8 @@ namespace NeuralNetworkNET.cuDNN
         /// </summary>
         /// <param name="dnn">The current <see cref="Dnn"/> instance being used</param>
         /// <param name="n">The number of samples in the input tensor</param>
-        /// <param name="k">The number of output features for each sample</param>
-        /// <param name="l">The size of each input error delta to process</param>
+        /// <param name="k">The number of input features in the resulting backpropagated error delta</param>
+        /// <param name="l">The number of features in the input delta</param>
         /// <param name="dy">A pointer to the output error delta</param>
         /// <param name="w">A pointer to the layer weights</param>
         /// <param name="dx">The backpropagated error delta</param>

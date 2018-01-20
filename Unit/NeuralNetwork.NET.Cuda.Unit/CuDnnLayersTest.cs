@@ -35,13 +35,6 @@ namespace NeuralNetworkNET.Cuda.Unit
             }
         }
 
-        // Frees a series of tensors
-        private static void Free(params Tensor[] tensors)
-        {
-            foreach (Tensor tensor in tensors)
-                tensor.Free();
-        }
-
         private static void TestForward(NetworkLayerBase cpu, NetworkLayerBase gpu, int samples)
         {
             Tensor x = CreateRandomTensor(samples, cpu.InputInfo.Size);
@@ -49,21 +42,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             gpu.Forward(x, out Tensor z_gpu, out Tensor a_gpu);
             Assert.IsTrue(z_cpu.ContentEquals(z_gpu));
             Assert.IsTrue(a_cpu.ContentEquals(a_gpu));
-            Free(x, z_cpu, a_cpu, z_gpu, a_gpu);
-        }
-
-        private static void TestBackward(ConstantLayerBase cpu, ConstantLayerBase gpu, int samples)
-        {
-            Tensor
-                x = CreateRandomTensor(samples, cpu.InputInfo.Size),
-                dy = CreateRandomTensor(samples, cpu.OutputInfo.Size);
-            Tensor.Like(x, out Tensor dx1);
-            Tensor.Like(x, out Tensor dx2);
-            cpu.Forward(x, out Tensor z, out Tensor a);
-            cpu.Backpropagate(x, z, dy, dx1);
-            gpu.Backpropagate(x, z, dy, dx2);
-            Assert.IsTrue(dx1.ContentEquals(dx2));
-            Free(x, dy, dx1, dx2, z, a);
+            Tensor.Free(x, z_cpu, a_cpu, z_gpu, a_gpu);
         }
 
         private static void TestBackward(WeightedLayerBase cpu, WeightedLayerBase gpu, int samples)
@@ -80,7 +59,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             Assert.IsTrue(dx1.ContentEquals(dx2));
             Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
             Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f)); // The cuDNN ConvolutionBackwardBias is not always as precise as the CPU version
-            Free(x, dy, dx1, dx2, z_cpu, a_cpu, z_gpu, a_gpu, dJdb_cpu, dJdb_cpu, dJdw_gpu, dJdb_gpu);
+            Tensor.Free(x, dy, dx1, dx2, z_cpu, a_cpu, z_gpu, a_gpu, dJdb_cpu, dJdb_cpu, dJdw_gpu, dJdb_gpu);
         }
 
         private static unsafe void TestBackward(OutputLayerBase cpu, OutputLayerBase gpu, float[,] y)
@@ -100,7 +79,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Assert.IsTrue(dx1.ContentEquals(dx2));
                 Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
                 Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f));
-                Free(x, dy, dx1, dx2, z_cpu, a_cpu, dJdb_cpu, dJdb_cpu, dJdw_gpu, dJdb_gpu);
+                Tensor.Free(x, dy, dx1, dx2, z_cpu, a_cpu, dJdb_cpu, dJdb_cpu, dJdw_gpu, dJdb_gpu);
             }
         }
 
@@ -228,7 +207,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 }
             }
             Assert.IsTrue(valid && count * 100f / x1.Size < 2);
-            Free(x, x1, x2, z, delta);
+            Tensor.Free(x, x1, x2, z, delta);
         }
 
         #endregion

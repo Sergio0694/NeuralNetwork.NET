@@ -301,6 +301,31 @@ namespace NeuralNetworkNET.APIs.Structs
         }
 
         /// <summary>
+        /// Frees the input sequence of <see cref="Tensor"/> instances
+        /// </summary>
+        /// <param name="tensors">The tensors to free</param>
+        /// <remarks>The <see langword="params"/> usage in the method arguments will cause a heap allocation
+        /// when this method is called. Manually calling <see cref="Free()"/> on each target <see cref="Tensor"/>
+        /// should have a slightly better performance. The same is true for the <see cref="TryFree(Tensor[])"/> method as well.</remarks>
+        public static unsafe void Free([NotNull] params Tensor[] tensors)
+        {
+            fixed (Tensor* p = tensors)
+                for (int i = 0; i < tensors.Length; i++)
+                    p[i].Free();
+        }
+
+        /// <summary>
+        /// Frees the input sequence of <see cref="Tensor"/> instances, if possible
+        /// </summary>
+        /// <param name="tensors">The tensors to free</param>
+        public static unsafe void TryFree([NotNull] params Tensor[] tensors)
+        {
+            fixed (Tensor* p = tensors)
+                for (int i = 0; i < tensors.Length; i++)
+                    p[i].TryFree();
+        }
+
+        /// <summary>
         /// Gets a raw pointer to the <see cref="Tensor"/> data
         /// </summary>
         /// <param name="tensor"></param>
