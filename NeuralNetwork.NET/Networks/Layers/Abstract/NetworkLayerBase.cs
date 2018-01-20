@@ -72,16 +72,6 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <param name="a">The output activation on the current layer</param>
         public abstract void Forward(in Tensor x, out Tensor z, out Tensor a);
 
-        /// <summary>
-        /// Backpropagates the error to compute the delta for the inputs of the layer
-        /// </summary>
-        /// <param name="x">The input <see cref="Tensor"/> used in the forward pass</param>
-        /// <param name="dy">The output error delta</param>
-        /// <param name="z">The activity on the inputs of the layer. It will be modified to become the computed delta</param>
-        /// <param name="activationPrime">The activation prime function performed by the previous layer</param>
-        /// <param name="dx">The resulting backpropagated error</param>
-        public abstract void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx);
-
         #region Equality check
 
         /// <inheritdoc/>

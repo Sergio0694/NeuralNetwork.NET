@@ -29,6 +29,21 @@ namespace NeuralNetworkNET.Extensions
             => (TOut)item;
 
         /// <summary>
+        /// Returns a reference according to the input flag
+        /// </summary>
+        /// <typeparam name="T">The reference type to return</typeparam>
+        /// <param name="flag">The switch flag</param>
+        /// <param name="left">The first option</param>
+        /// <param name="right">The second option</param>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T SwitchRef<T>(this bool flag, ref T left, ref T right)
+        {
+            if (flag) return ref left;
+            return ref right;
+        }
+
+        /// <summary>
         /// Returns the maximum value between two numbers
         /// </summary>
         /// <param name="a">The first number</param>

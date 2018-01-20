@@ -53,7 +53,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal SequentialNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers) : base(NetworkType.Sequential)
         {
             // Input check
-            if (layers.Length < 1) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least one layer");
+            if (layers.Length < 2) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least two layers");
             foreach ((NetworkLayerBase layer, int i) in layers.Select((l, i) => (l as NetworkLayerBase, i)))
             {
                 if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
@@ -147,12 +147,16 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Tensor*
                     zList = stackalloc Tensor[_Layers.Length],
                     aList = stackalloc Tensor[_Layers.Length],
-                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1];
+                    dropoutMasks = stackalloc Tensor[_Layers.Length - 1],
+                    deltas = stackalloc Tensor[_Layers.Length - 1]; // One delta for each hop through the network, excluding the first layer
                 Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
                 Tensor.Reshape(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
-                Tensor** deltas = stackalloc Tensor*[_Layers.Length]; // One delta for each hop through the network
 
-                // Feedforward
+                /* ===============
+                 * Feedforward
+                 * ===============
+                 * Process the input tensor through the network and calculate the
+                 * activity and activaation tensors for each intermediate step */
                 for (int i = 0; i < _Layers.Length; i++)
                 {
                     _Layers[i].Forward(i == 0 ? x : aList[i - 1], out zList[i], out aList[i]);
@@ -163,55 +167,56 @@ namespace NeuralNetworkNET.Networks.Implementations
                     }
                 }
 
-                /* ======================
-                 * Calculate delta(L)
-                 * ======================
+                /* ===========================================
+                 * Calculate delta(L), DJDw(L) and DJDb(L)
+                 * ===========================================
                  * Perform the sigmoid prime of zL, the activity on the last layer
                  * Calculate the gradient of C with respect to a
                  * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
                  * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
                  *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
-                _Layers[_Layers.Length - 1].To<NetworkLayerBase, OutputLayerBase>().Backpropagate(aList[_Layers.Length - 1], y, zList[_Layers.Length - 1], aList[_Layers.Length - 1]);
-                deltas[_Layers.Length - 1] = aList + _Layers.Length - 1;
+                Tensor*
+                    dJdw = stackalloc Tensor[_Layers.Length], // One gradient item for layer (the constant layers will be skipped)
+                    dJdb = stackalloc Tensor[_Layers.Length];
+                Tensor.Like(aList[_Layers.Length - 2], out deltas[_Layers.Length - 2]);
+                OutputLayer.Backpropagate(aList[_Layers.Length - 2], aList[_Layers.Length - 1], y, zList[_Layers.Length - 1], deltas[_Layers.Length - 2], out dJdw[_Layers.Length - 1], out dJdb[_Layers.Length - 1]);
                 for (int l = _Layers.Length - 2; l >= 0; l--)
                 {
-                    /* ======================
-                     * Calculate delta(l)
-                     * ======================
+                    /* ====================================================================
+                     * Calculate delta(l) and compute the gradients DJDw(l) and DJDb(l)
+                     * ====================================================================
                      * Perform the sigmoid prime of z(l), the activity on the previous layer
                      * Multiply the previous delta with the transposed weights of the following layer
-                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T */
-                    _Layers[l + 1].Backpropagate(aList[l], *deltas[l + 1], zList[l], _Layers[l].ActivationFunctions.ActivationPrime, zList[l]);
-                    if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(zList[l], dropoutMasks[l], zList[l]);
-                    deltas[l] = zList + l;
+                     * Compute d(l), the Hadamard product of z'(l) and delta(l + 1) * W(l + 1)T.
+                     * NOTE: the gradient is only computed for layers with weights and biases, for all the other
+                     *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
+                    NetworkLayerBase layer = _Layers[l];
+                    ref readonly Tensor inputs = ref (l == 0).SwitchRef(ref x, ref aList[l - 1]);
+                    if (l > 0) Tensor.Like(aList[l - 1], out deltas[l - 1]);
+                    switch (layer)
+                    {
+                        case ConstantLayerBase constant:
+                            if (l > 0) constant.Backpropagate(inputs, zList[l], deltas[l], deltas[l - 1]);
+                            break;
+                        case WeightedLayerBase weighted:
+                            if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
+                            weighted.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1], out dJdw[l], out dJdb[l]);
+                            break;
+                        default: throw new InvalidOperationException("Invalid layer type");
+                    }
                 }
 
-                /* =============================================
-                 * Compute the gradients DJDw(l) and DJDb(l)
-                 * =============================================
-                 * Compute the gradients for each layer with weights and biases.
-                 * NOTE: the gradient is only computed for layers with weights and biases, for all the other
-                 *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
-                Tensor*
-                    dJdw = stackalloc Tensor[WeightedLayersIndexes.Length], // One gradient item for layer
-                    dJdb = stackalloc Tensor[WeightedLayersIndexes.Length];
-                for (int j = 0; j < WeightedLayersIndexes.Length; j++)
-                {
-                    int i = WeightedLayersIndexes[j];
-                    _Layers[i].To<NetworkLayerBase, WeightedLayerBase>().ComputeGradient(i == 0 ? x : aList[i - 1], *deltas[i], out dJdw[j], out dJdb[j]);
-                }
-
-                /* ====================
-                 * Gradient descent
-                 * ====================
+                /* ================
+                 * Optimization
+                 * ================
                  * Edit the network weights according to the computed gradients and the current training parameters */
                 int samples = batch.X.GetLength(0);
                 Parallel.For(0, WeightedLayersIndexes.Length, i =>
                 {
                     int l = WeightedLayersIndexes[i];
-                    updater(i, dJdw[i], dJdb[i], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
-                    dJdw[i].Free();
-                    dJdb[i].Free();
+                    updater(i, dJdw[l], dJdb[l], samples, _Layers[l].To<NetworkLayerBase, WeightedLayerBase>());
+                    dJdw[l].Free();
+                    dJdb[l].Free();
                 }).AssertCompleted();
 
                 // Cleanup
@@ -219,6 +224,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 {
                     zList[i].Free();
                     aList[i].Free();
+                    deltas[i].Free();
                     dropoutMasks[i].TryFree();
                 }
                 zList[_Layers.Length - 1].Free();

@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using Newtonsoft.Json;
 
@@ -17,7 +16,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
     /// A pooling layer, with a 2x2 window and a stride of 2
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    internal class PoolingLayer : NetworkLayerBase
+    internal class PoolingLayer : ConstantLayerBase
     {
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.Pooling;
@@ -48,7 +47,13 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx) => CpuDnn.PoolingBackward(x, InputInfo, dy, dx);
+        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx)
+        {
+            Tensor.Like(dy, out Tensor dy_copy);
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
+            CpuDnn.PoolingBackward(x, InputInfo, dy_copy, dx);
+            dy_copy.Free();
+        }
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);

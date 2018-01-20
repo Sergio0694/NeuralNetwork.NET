@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 
@@ -50,23 +49,27 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
+        public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            fixed (float* pw = Weights)
+            // Backpropagation
+            Tensor.Like(dy, out Tensor dy_copy);
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
+            if (!dx.IsNull) // Stop the error backpropagation if needed
             {
-                Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
-                CpuDnn.FullyConnectedBackwardData(z, w, dy, activationPrime, dx);
+                fixed (float* pw = Weights)
+                {
+                    Tensor.Reshape(pw, InputInfo.Size, OutputInfo.Size, out Tensor w);
+                    CpuDnn.FullyConnectedBackwardData(w, dy_copy, dx);
+                }
             }
-        }
 
-        /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
+            // Gradient
             Tensor.New(InputInfo.Size, OutputInfo.Size, out Tensor dw);
-            CpuDnn.FullyConnectedBackwardFilter(a, delta, dw);
+            CpuDnn.FullyConnectedBackwardFilter(x, dy_copy, dw);
             dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
             Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.FullyConnectedBackwardBias(delta, dJdb);
+            CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb);
+            dy_copy.Free();
         }
 
         #endregion
