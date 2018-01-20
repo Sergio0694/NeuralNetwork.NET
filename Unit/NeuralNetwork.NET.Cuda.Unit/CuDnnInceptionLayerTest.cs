@@ -17,7 +17,7 @@ namespace NeuralNetworkNET.Cuda.Unit
     [TestClass]
     [TestCategory(nameof(CuDnnInceptionLayerTest))]
     public class CuDnnInceptionLayerTest
-    { /*
+    {
         [TestMethod]
         public unsafe void Inception1x1()
         {
@@ -47,41 +47,20 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Assert.IsTrue(reshaped.ContentEquals(aConv));
 
                 // Backpropagate
-                Tensor.New(xTensor.Entities, xTensor.Length, out Tensor z1);
-                KerasWeightsProvider.FillWithHeEtAlUniform(z1, 10);
-                z1.Duplicate(out Tensor z2);
-                conv.Backpropagate(Tensor.Null, aConv, z1, ActivationFunctions.ReLUPrime, z1);
-                inception.Backpropagate(xTensor, aInc, z2, ActivationFunctions.ReLUPrime, z2);
-                Assert.IsTrue(z1.ContentEquals(z2));
-
-                // Gradient
-                Tensor.New(xTensor.Entities, xTensor.Length, out Tensor a);
-                KerasWeightsProvider.FillWithHeEtAlUniform(a, 10);
-                conv.ComputeGradient(a, aConv, out Tensor dJdwConv, out Tensor dJdbConv);
-                inception.ComputeGradient(a, aInc, out Tensor dJdwInc, out Tensor dJdbInc);
-                Tensor.New(1, dJdwConv.Length, out Tensor dJdwInc0);
-                Buffer.MemoryCopy((float*)dJdwInc.Ptr.ToPointer(), (float*)dJdwInc0.Ptr.ToPointer(), sizeof(float) * dJdwInc0.Size, sizeof(float) * dJdwInc0.Size);
-                Tensor.New(1, dJdbConv.Length, out Tensor dJdbInc0);
-                Buffer.MemoryCopy((float*)dJdbInc.Ptr.ToPointer(), (float*)dJdbInc0.Ptr.ToPointer(), sizeof(float) * dJdbInc0.Size, sizeof(float) * dJdbInc0.Size);
-                Assert.IsTrue(dJdwConv.ContentEquals(dJdwInc0, 1e-5f));
-                Assert.IsTrue(dJdbConv.ContentEquals(dJdbInc0, 1e-5f));
+                Tensor.Like(xTensor, out Tensor dx1);
+                Tensor.Like(xTensor, out Tensor dx2);
+                conv.Backpropagate(xTensor, zConv, aConv, dx1, out Tensor dJdw1, out Tensor dJdb1);
+                inception.Backpropagate(xTensor, zInc, aInc, dx2, out Tensor dJdw2, out Tensor dJdb2);
+                Assert.IsTrue(dx1.ContentEquals(dx2));
+                Tensor.Reshape((float*)dJdw2.Ptr.ToPointer(), 1, dJdw1.Size, out dJdw2);
+                Tensor.Reshape((float*)dJdb2.Ptr.ToPointer(), 1, dJdb1.Size, out dJdb2);
+                Assert.IsTrue(dJdw1.ContentEquals(dJdw2, 1e-5f));
+                Assert.IsTrue(dJdb1.ContentEquals(dJdb2, 1e-5f));
 
                 // Cleanup
-                dJdwConv.Free();
-                dJdbConv.Free();
-                dJdwInc.Free();
-                dJdbInc.Free();
-                dJdwInc0.Free();
-                dJdbInc0.Free();
-                z1.Free();
-                z2.Free();
-                zConv.Free();
-                aConv.Free();
-                zInc.Free();
-                aInc.Free();
-                reshaped.Free();
+                Tensor.Free(zConv, aConv, zInc, aInc, reshaped, dx1, dx2, dJdw1, dJdw2, dJdb1, dJdb2);
             }
-        }
+        } /*
 
         [TestMethod]
         public unsafe void Inception3x3Pipeline()
