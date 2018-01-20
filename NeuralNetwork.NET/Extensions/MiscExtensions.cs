@@ -117,6 +117,22 @@ namespace NeuralNetworkNET.Extensions
             return n;
         }
 
+        /// <summary>
+        /// Filters the input sequence by only choosing the items of type <typeparamref name="TOut"/>
+        /// </summary>
+        /// <typeparam name="TIn">The base type of the sequence items</typeparam>
+        /// <typeparam name="TOut">The type of the items to select</typeparam>
+        /// <param name="enumerable">The source sequence</param>
+        [Pure, NotNull, ItemNotNull]
+        public static IEnumerable<TOut> Pick<TIn, TOut>([NotNull, ItemNotNull] this IEnumerable<TIn> enumerable)
+            where TOut : TIn 
+            where TIn : class
+        {
+            foreach (TIn entry in enumerable)
+                if (entry is TOut pick)
+                    yield return pick;
+        }
+
         #endregion
 
         #region Internal extensions

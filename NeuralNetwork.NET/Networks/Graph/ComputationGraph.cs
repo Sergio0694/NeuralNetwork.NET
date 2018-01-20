@@ -4,6 +4,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 
 namespace NeuralNetworkNET.Networks.Graph
@@ -23,7 +24,13 @@ namespace NeuralNetworkNET.Networks.Graph
         /// Gets the in-order serialized view of the network graph nodes
         /// </summary>
         [NotNull, ItemNotNull]
-        internal readonly IReadOnlyList<IComputationGraphNode> Layers;
+        internal readonly IReadOnlyList<IComputationGraphNode> Nodes;
+
+        /// <summary>
+        /// Gets the in-order serialized view of the <see cref="ProcessingNode"/> instances in the current graph
+        /// </summary>
+        [NotNull, ItemNotNull]
+        internal readonly IReadOnlyList<ProcessingNode> ProcessingNodes;
 
         /// <summary>
         /// Gets the graph main output node
@@ -40,7 +47,8 @@ namespace NeuralNetworkNET.Networks.Graph
         internal ComputationGraph(IComputationGraphNode root)
         {
             Root = root is InputNode input ? input : throw new ArgumentException("The root node isn't valid");
-            (Layers, OutputNode, TrainingOutputNodes) = ExtractGraphInfo(Root);
+            (Nodes, OutputNode, TrainingOutputNodes) = ExtractGraphInfo(Root);
+            ProcessingNodes = Nodes.Pick<IComputationGraphNode, ProcessingNode>().ToArray();
         }
 
         #region Tools
