@@ -191,15 +191,15 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * NOTE: the gradient is only computed for layers with weights and biases, for all the other
                      *       layers a dummy gradient is added to the list and then ignored during the weights update pass */
                     NetworkLayerBase layer = _Layers[l];
-                    ref readonly Tensor inputs = ref (l == 0).SwitchRef(ref x, ref aList[l - 1]);
                     if (l > 0) Tensor.Like(aList[l - 1], out deltas[l - 1]);
                     switch (layer)
                     {
                         case ConstantLayerBase constant:
-                            if (l > 0) constant.Backpropagate(inputs, zList[l], deltas[l], deltas[l - 1]);
+                            if (l > 0) constant.Backpropagate(aList[l - 1], zList[l], deltas[l], deltas[l - 1]);
                             break;
                         case WeightedLayerBase weighted:
                             if (!dropoutMasks[l].IsNull) CpuBlas.MultiplyElementwise(deltas[l], dropoutMasks[l], deltas[l]);
+                            ref readonly Tensor inputs = ref (l == 0).SwitchRef(ref x, ref aList[l - 1]);
                             weighted.Backpropagate(inputs, zList[l], deltas[l], l == 0 ? Tensor.Null : deltas[l - 1], out dJdw[l], out dJdb[l]);
                             break;
                         default: throw new InvalidOperationException("Invalid layer type");

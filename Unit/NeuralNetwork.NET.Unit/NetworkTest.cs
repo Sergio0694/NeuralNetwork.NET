@@ -109,61 +109,6 @@ namespace NeuralNetworkNET.Unit
             return accuracy > 80;
         }
 
-        // This test is used to check whether the network results change after internal library refactorings
-        [TestMethod]
-        public void NetworkCoherenceTest()
-        {
-            // Load the network
-            if (!(NetworkLoader.TryLoad(new FileInfo(Path.Combine(GetAssetsPath(), "untrained.nnet")), LayersLoadingPreference.Cpu) is SequentialNetwork network))
-            {
-                network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                    NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
-                    NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-                    NetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
-                    NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-                    NetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
-                    NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
-                network.Save(new FileInfo(Path.Combine(GetAssetsPath(), "untrained.nnet")));
-            }
-            (var trainingSet, _) = ParseMnistDataset(10);
-            BatchesCollection batches = BatchesCollection.From(trainingSet, 10);
-    
-            // Check activations
-            IReadOnlyList<(float[,], float[,])> 
-                fw1 = network.ExtractDeepFeatures(batches.Batches[0].X),
-                fw2 = network.ExtractDeepFeatures(batches.Batches[0].X);
-            for (int i = 0; i < fw1.Count; i++)
-            {
-                Assert.IsTrue(fw1[i].Item1.AsSpan().GetContentHashCode() == fw2[i].Item1.AsSpan().GetContentHashCode());
-                Assert.IsTrue(fw1[i].Item2.AsSpan().GetContentHashCode() == fw2[i].Item2.AsSpan().GetContentHashCode());
-            }
-
-            // Validate forward results
-            var hash = fw1.Aggregate(17, (s, t) =>
-            {
-                unchecked
-                {
-                    var h1 = s * 23 + t.Item1.AsSpan().GetContentHashCode();
-                    var h2 = h1 * 23 + t.Item2.AsSpan().GetContentHashCode();
-                    return h2;
-                }
-            });
-            Assert.IsTrue(hash == -1001400892);
-
-            // Backpropagation test
-            ConcurrentDictionary<int, int> map = new ConcurrentDictionary<int, int>();
-            void Test(int i, in Tensor dJdw, in Tensor dJdb, int samples, WeightedLayerBase layer)
-            {
-                unchecked
-                {
-                    map[i] = dJdw.AsSpan().GetContentHashCode() * 23 + dJdb.AsSpan().GetContentHashCode();
-                }
-            }
-            network.Backpropagate(batches.Batches[0], 0, Test);
-            var hash2 = map.OrderBy(p => p.Key).Select(p => p.Value).ToArray().AsSpan().GetContentHashCode();
-            Assert.IsTrue(hash2 == 1545755603);
-        }
-
         [TestMethod]
         public void GradientDescentTest() => Assert.IsTrue(TestTrainingMethod(TrainingAlgorithms.StochasticGradientDescent(0.1f), 1));
 
