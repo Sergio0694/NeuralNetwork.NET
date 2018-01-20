@@ -4,7 +4,6 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
@@ -49,9 +48,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             using (DeviceMemory<float>
                 dy_gpu = DnnInstance.Gpu.AllocateDevice(dy),
-                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights), // Shared for the weights and dJdw, for better efficiency
                 y_gpu = DnnInstance.Gpu.AllocateDevice(y),
-                x_gpu = DnnInstance.Gpu.AllocateDevice(x))
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
             {
                 // Backpropagation
                 DnnInstance.ActivationBackward(y.Entities, y.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
@@ -67,10 +67,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 // Gradient
                 DnnInstance.FullyConnectedBackwardFilter(x.Entities, x.Length, dy.Length, x_gpu.Ptr, dy_gpu.Ptr, w_gpu.Ptr);
                 w_gpu.CopyToHost(1, Weights.Length, out dJdw);
-                dy_gpu.CopyToHost(dy.Entities, dy.Length, out Tensor dy_copy); // Temporary copy, as dy has been modified on GPU memory only
-                Tensor.New(1, Biases.Length, out dJdb);
-                CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb); // Doing this on CPU is generally faster than launching the kernels
-                dy_copy.Free();
+                DnnInstance.FullyConnectedBackwardBias(dy.Entities, dy.Length, dy_gpu.Ptr, dJdb_gpu.Ptr); // Doing this on CPU is generally faster than launching the kernels
+                dJdb_gpu.CopyToHost(1, Biases.Length, out dJdb);
             }
         }
 

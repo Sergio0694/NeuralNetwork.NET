@@ -161,6 +161,26 @@ namespace NeuralNetworkNET.cuDNN
             dnn.Gpu.For(0, l * k, Kernel);
         }
 
+        /// <summary>
+        /// Executes the backward pass on a fully connected layer to calculate the gradient with respect to the biases
+        /// </summary>
+        /// <param name="dnn">The current <see cref="Dnn"/> instance being used</param>
+        /// <param name="n">The number of samples in the input tensor</param>
+        /// <param name="l">The number of features for each input sample</param>
+        /// <param name="dy">A pointer to the layer output error delta</param>
+        /// <param name="db">A pointer to the resulting biases gradient</param>
+        public static void FullyConnectedBackwardBias([NotNull] this Dnn dnn, int n, int l, deviceptr<float> dy, deviceptr<float> db)
+        {
+            void Kernel(int j)
+            {
+                float sum = 0;
+                for (int i = 0; i < n; i++)
+                    sum += dy[i * l + j];
+                db[j] = sum;
+            }
+            dnn.Gpu.For(0, l, Kernel);
+        }
+
         #endregion
     }
 }
