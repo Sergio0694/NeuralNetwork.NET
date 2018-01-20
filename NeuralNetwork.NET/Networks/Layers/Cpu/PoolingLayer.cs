@@ -49,8 +49,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx)
         {
-            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy);
-            CpuDnn.PoolingBackward(x, InputInfo, dy, dx);
+            Tensor.Like(dy, out Tensor dy_copy);
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
+            CpuDnn.PoolingBackward(x, InputInfo, dy_copy, dx);
+            dy_copy.Free();
         }
 
         /// <inheritdoc/>

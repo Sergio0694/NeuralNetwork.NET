@@ -97,22 +97,24 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
             // Backpropagation
-            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy);
+            Tensor.Like(dy, out Tensor dy_copy);
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
             if (!dx.IsNull)
             {
                 fixed (float* pw = Weights)
                 {
                     Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                    CpuDnn.ConvolutionBackwardData(dy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
+                    CpuDnn.ConvolutionBackwardData(dy_copy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
                 }
             }
 
             // Gradient
             Tensor.New(OutputInfo.Channels, KernelInfo.Size, out Tensor dw);
-            CpuDnn.ConvolutionBackwardFilter(x, InputInfo, dy, OutputInfo, dw, KernelInfo);
+            CpuDnn.ConvolutionBackwardFilter(x, InputInfo, dy_copy, OutputInfo, dw, KernelInfo);
             dw.Reshape(1, Weights.Length, out dJdw);
             Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.ConvolutionBackwardBias(dy, OutputInfo, dJdb);
+            CpuDnn.ConvolutionBackwardBias(dy_copy, OutputInfo, dJdb);
+            dy_copy.Free();
         }
 
         #endregion

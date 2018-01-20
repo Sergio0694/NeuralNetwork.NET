@@ -109,11 +109,11 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// <inheritdoc/>
         public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            using (DeviceMemory<float> 
+            using (DeviceMemory<float>
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                 y_gpu = DnnInstance.Gpu.AllocateDevice(y),
                 dy_gpu = DnnInstance.Gpu.AllocateDevice(dy),
                 w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                x_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
                 dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
             {
                 // Backpropagation
