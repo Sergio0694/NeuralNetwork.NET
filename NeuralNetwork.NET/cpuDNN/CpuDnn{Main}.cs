@@ -51,8 +51,7 @@ namespace NeuralNetworkNET.cpuDNN
             // Setup
             if (!x.MatchShape(y)) throw new ArgumentException("The input tensor doesn't have the same shape as the output tensor");
             int n = x.Entities, l = x.Length;
-            Tensor.New(1, n, out Tensor partials);
-            float* pp = partials, px = x, py = y;
+            float* px = x, py = y;
 
             // Activation
             void ActivationWithAggregate(int i)
@@ -66,20 +65,10 @@ namespace NeuralNetworkNET.cpuDNN
                     py[target] = value;
                     sum += value;
                 }
-                pp[i] = sum;
+                for (int j = 0; j < l; j++)
+                    py[offset + j] /= sum;
             }
             Parallel.For(0, n, ActivationWithAggregate).AssertCompleted();
-
-            // Normalization of the tensor values
-            void NormalizationKernel(int i)
-            {
-                int offset = i * l;
-                float factor = pp[i];
-                for (int j = 0; j < l; j++)
-                    py[offset + j] /= factor;
-            }
-            Parallel.For(0, n, NormalizationKernel).AssertCompleted();
-            partials.Free();
         }
 
         /// <summary>

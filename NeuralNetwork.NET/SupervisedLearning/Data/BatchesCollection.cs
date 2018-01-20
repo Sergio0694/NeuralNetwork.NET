@@ -11,6 +11,8 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Progress;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.SupervisedLearning.Data
 {
@@ -35,20 +37,6 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Batches.Length;
-        }
-
-        /// <inheritdoc/>
-        public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
-        {
-            int left = CalculatePartitionSize(ratio);
-            return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
-        }
-
-        /// <inheritdoc/>
-        public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
-        {
-            int left = CalculatePartitionSize(ratio);
-            return (DatasetLoader.Training(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
         }
 
         /// <inheritdoc/>
@@ -96,6 +84,89 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 Array.Sort(temp);
                 return temp.AsSpan().GetContentHashCode();
             }
+        }
+
+        #endregion
+
+        #region Dataset management
+
+        /// <inheritdoc/>
+        public void Expand(params Func<float[], float[]>[] factories)
+        {
+            if (factories.Length < 1) throw new ArgumentException("There haas to be at least one input factory", nameof(factories));
+            Batches = From(Batches.SelectMany(b =>
+            {
+                IEnumerable<Func<(float[], float[])>> Expander()
+                {
+                    int n = b.X.GetLength(0);
+                    for (int i = 0; i < n; i++)
+                    {
+                        float[]
+                            x = b.X.Slice(i).ToArray(),
+                            y = b.Y.Slice(i).ToArray();
+                        yield return () => (x, y);
+                        foreach (Func<float[], float[]> f in factories)
+                            yield return () => (f(x), y);
+                    }
+                }
+                return Expander();
+            }), BatchSize).Batches;
+        }
+
+        /// <inheritdoc/>
+        public void Expand<TPixel>(int width, int height, params Action<IImageProcessingContext<TPixel>>[] factories) where TPixel : struct, IPixel<TPixel>
+        {
+            if (factories.Length < 1) throw new ArgumentException("There haas to be at least one input factory", nameof(factories));
+            if (width * height != InputFeatures) throw new ArgumentException("The specified image resolution doesn't match the samples size");
+            Batches = From(Batches.SelectMany(b =>
+            {
+                IEnumerable<Func<(float[], float[])>> Expander()
+                {
+                    int n = b.X.GetLength(0);
+                    for (int i = 0; i < n; i++)
+                    {
+                        float[]
+                            x = b.X.Slice(i).ToArray(),
+                            y = b.Y.Slice(i).ToArray();
+                        yield return () => (x, y);
+                        foreach (Action<IImageProcessingContext<TPixel>> f in factories)
+                            yield return () => (ImageLoader.Process(x, width, height, f), y);
+                    }
+                }
+                return Expander();
+            }), BatchSize).Batches;
+        }
+
+        /// <inheritdoc/>
+        public (ITrainingDataset, ITestDataset) PartitionWithTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
+        {
+            int left = CalculatePartitionSize(ratio);
+            return (From(Take(0, left), BatchSize), DatasetLoader.Test(Take(left, Count), progress));
+        }
+
+        /// <inheritdoc/>
+        public (ITrainingDataset, IValidationDataset) PartitionWithValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
+        {
+            int left = CalculatePartitionSize(ratio);
+            return (From(Take(0, left), BatchSize), DatasetLoader.Validation(Take(left, Count), tolerance, epochs));
+        }
+
+        /// <inheritdoc/>
+        public ITestDataset ExtractTest(float ratio, Action<TrainingProgressEventArgs> progress = null)
+        {
+            int left = CalculatePartitionSize(ratio);
+            ITestDataset test = DatasetLoader.Test(Take(left, Count), progress);
+            Batches = From(Take(0, left), BatchSize).Batches;
+            return test;
+        }
+
+        /// <inheritdoc/>
+        public IValidationDataset ExtractValidation(float ratio, float tolerance = 1e-2f, int epochs = 5)
+        {
+            int left = CalculatePartitionSize(ratio);
+            IValidationDataset validation = DatasetLoader.Validation(Take(left, Count), tolerance, epochs);
+            Batches = From(Take(0, left), BatchSize).Batches;
+            return validation;
         }
 
         #endregion
