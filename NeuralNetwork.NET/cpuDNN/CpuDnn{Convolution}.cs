@@ -9,6 +9,8 @@ namespace NeuralNetworkNET.cpuDNN
     /// <inheritdoc cref="CpuDnn"/>
     public static partial class CpuDnn
     {
+        #region Implementation
+
         /// <summary>
         /// Performs a forward convolution operation for a network layer
         /// </summary>
@@ -305,7 +307,7 @@ namespace NeuralNetworkNET.cpuDNN
              * kernels, where p is the input depth and q is the kernel index.
              * The final weights gradient is the sum for all the samples in the current training batch */
             dw.Reshape(1, dw.Size, out Tensor wPlane);  // The gradient is [q,p]-shaped, flatten to the size of each sample before compressing
-            CpuBlas.CompressVertically(dwTemp, wPlane);
+            CompressVertically(dwTemp, wPlane);
             dwTemp.Free();
         }
 
@@ -348,9 +350,11 @@ namespace NeuralNetworkNET.cpuDNN
                 ptemp[iSample * depth + z] = sum;
             }
             Parallel.For(0, h * depth, Kernel).AssertCompleted();
-            CpuBlas.CompressVertically(temp, db);
+            CompressVertically(temp, db);
             temp.Free();
         }
+
+        #endregion
 
         #region Tools
 
@@ -402,6 +406,31 @@ namespace NeuralNetworkNET.cpuDNN
                 }
             }
             Parallel.For(0, n * depth, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Compresses a <see cref="Tensor"/> into a row by summing the components column by column
+        /// </summary>
+        /// <param name="x">The <see cref="Tensor"/> to compress</param>
+        /// <param name="y">The resulting <see cref="Tensor"/></param>
+        private static unsafe void CompressVertically(in Tensor x, in Tensor y)
+        {
+            // Preliminary checks and declarations
+            int
+                n = x.Entities,
+                l = x.Length;
+            if (!y.MatchShape(1, x.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(y));
+            float* px = x, py = y;
+
+            // Compress the tensor
+            void Kernel(int j)
+            {
+                float sum = 0;
+                for (int i = 0; i < n; i++)
+                    sum += px[i * l + j];
+                py[j] = sum;
+            }
+            Parallel.For(0, l, Kernel).AssertCompleted();
         }
 
         #endregion
