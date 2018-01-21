@@ -16,10 +16,9 @@
         Processing,
 
         /// <summary>
-        /// A computation graph node that forwards its input to two different branches: an inference branch that eventually leads to the output
-        /// layers using to evaluate the network, and a secondary training branch used during backpropagation to inject partial gradients
+        /// The root node for a training sub-graph, a secondary training branch used during backpropagation to inject partial gradients
         /// </summary>
-        TrainingSplit,
+        TrainingBranch,
 
         /// <summary>
         /// A computation graph node that merges a series of inputs by stacking them along the depth axis

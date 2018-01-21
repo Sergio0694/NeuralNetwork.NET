@@ -91,10 +91,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             for (int i = 0; i < merge.Children.Count; i++)
                                 Forward(merge.Children[i]);
                             break;
-                        case TrainingSplitNode split:
-                            for (int i = 0; i < split.TrainingBranchNodes.Count; i++)
-                                Forward(split.TrainingBranchNodes[i]);
-                            break;
+                        case TrainingNode _: return;
                         default:
                             throw new ArgumentException("The node type is not supported", nameof(node));
                     }
@@ -165,7 +162,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
                                 aMap[merge] = m;
                                 break;
-                            case TrainingSplitNode split: 
+                            case TrainingNode split: 
                                 aMap[split.Parent].Duplicate(out Tensor copy);
                                 aMap[node] = copy;
                                 break;
@@ -205,7 +202,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthStacking)
                                     for (int j = 0; j < merge.Parents.Count; j++)
                                         if (merge.Parents[j] == node)
-                                            dyt[i] = aMap[merge.Parents[j]]; // Get the input tensor that has been stacked
+                                            dyt[i] = aMap[merge.Parents[j]]; // TODO: fix depth stacking backward
                                 else dyt[i] = dMap[node.Children[i]];
                             }
                             Tensor.Like(*dyt, out dy);
@@ -253,7 +250,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 for (int i = 0; i < merge.Parents.Count; i++)
                                     Backward(merge.Parents[i]);
                                 break;
-                            case TrainingSplitNode split:
+                            case TrainingNode split:
                                 dMap[node] = dy;
                                 Backward(split.Parent);
                                 break;
@@ -334,10 +331,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 for (int i = 0; i < node.Children.Count; i++)
                                     Forward(node.Children[i]);
                                 break;
-                            case TrainingSplitNode split: 
-                                for (int i = 0; i < split.TrainingBranchNodes.Count; i++)
-                                    Forward(split.TrainingBranchNodes[i]);
-                                break;
+                            case TrainingNode _: return;
                             default:
                                 throw new ArgumentException("The node type is not supported", nameof(node));
                         }                        

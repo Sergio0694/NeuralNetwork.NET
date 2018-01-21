@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
@@ -102,17 +101,10 @@ namespace NeuralNetworkNET.Networks.Graph
                             if (!Explore(child, trainingId))
                                 return false;
                         break;
-                    case TrainingSplitNode split:
+                    case TrainingNode split:
                         if (trainingId != default) throw new ArgumentException("A training branch can't contain training split nodes");
-                        for (int i = 0; i < split.InferenceBranchNodes.Count; i++)
-                        {
-                            if (split.InferenceBranchNodes[i].Type == ComputationGraphNodeType.TrainingSplit)
-                                throw new ArgumentException("The inference branch of a training split node can't start with another training split node");
-                            if (!Explore(split.InferenceBranchNodes[i], default)) 
-                                return false; 
-                        }
-                        for (int i = 0; i < split.TrainingBranchNodes.Count; i++)
-                            if (!Explore(split.TrainingBranchNodes[i], Guid.NewGuid()))
+                        for (int i = 0; i < split.Children.Count; i++)
+                            if (!Explore(split.Children[i], Guid.NewGuid()))
                                 return false;
                         break;
                     default: throw new ArgumentException("Invalid node type", nameof(node));
