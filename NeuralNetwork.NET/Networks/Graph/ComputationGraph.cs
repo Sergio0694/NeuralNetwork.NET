@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 
@@ -51,6 +54,65 @@ namespace NeuralNetworkNET.Networks.Graph
         }
 
         #region Tools
+
+        /// <summary>
+        /// Builds a computation graph from the input node and <see cref="TensorInfo"/> shape
+        /// </summary>
+        /// <param name="input">The shape of the inputs for the graph to create</param>
+        /// <param name="root">The <see cref="NodeBuilder"/> instance that represents the graph root node</param>
+        [Pure, NotNull]
+        public static IComputationGraphNode BuildGraph(TensorInfo input, [NotNull] NodeBuilder root)
+        {
+            // Captured dictionary to keep track of graph nodes and tensor shape for each builder
+            Dictionary<NodeBuilder, (NodeBase Node, TensorInfo Info)> map = new Dictionary<NodeBuilder, (NodeBase, TensorInfo)>();
+
+            // Function to build the computation graph with a top-down direction
+            void BuildMap(NodeBuilder node)
+            {
+                if (map.ContainsKey(node)) return;
+                switch (node.NodeType)
+                {
+                    case ComputationGraphNodeType.Input:
+                        map[node] = (new InputNode(), input);
+                        break;
+                    case ComputationGraphNodeType.Processing:
+                        if (node.Factory == null) throw new InvalidOperationException("Missing layer factory");
+                        INetworkLayer layer = node.Factory(map[node.Parents[0]].Info);
+                        map[node] = (new ProcessingNode(layer, map[node.Parents[0]].Node), layer.OutputInfo);
+                        break;
+                    case ComputationGraphNodeType.TrainingBranch:
+                        map[node] = (new TrainingNode(map[node.Parents[0]].Node), map[node.Parents[0]].Info);
+                        break;
+                    case ComputationGraphNodeType.DepthConcatenation:
+                    case ComputationGraphNodeType.Sum:
+
+                        // Gather the parent nodes
+                        (NodeBase Node, TensorInfo Info)[] parents = new (NodeBase, TensorInfo)[node.Parents.Count];
+                        foreach ((NodeBuilder parent, int i) in node.Parents.Select((p, i) => (p, i)))
+                            if (!map.TryGetValue(parent, out parents[i]))
+                                return;
+
+                        // Calculate the output tensor size
+                        TensorInfo output = node.NodeType == ComputationGraphNodeType.Sum 
+                            ? parents[0].Info 
+                            : TensorInfo.Volume(parents[0].Info.Height, parents[0].Info.Width, parents.Sum(p => p.Info.Channels));
+                        map[node] = (new MergeNode(node.NodeType, parents.Select(t => t.Node).ToArray()), output);
+                        break;
+                    default:
+                        throw new ArgumentException($"Invalid node type: {node.NodeType}", nameof(root));
+                }
+                foreach (NodeBuilder child in node.Children)
+                    BuildMap(child);
+            }
+
+            // Build the graph and bind the child nodes
+            BuildMap(root);
+            foreach (KeyValuePair<NodeBuilder, (NodeBase Node, TensorInfo Info)> pair in map)
+            {
+                pair.Value.Node.Children = pair.Key.Children.Select(child => map[child].Node).ToArray();
+            }
+            return map[root].Node;
+        }
 
         /// <summary>
         /// Extracts the info on the input computation graph, and validates its structure
