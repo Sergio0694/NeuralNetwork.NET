@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -57,39 +58,36 @@ namespace NeuralNetworkNET.Networks.Implementations
         protected override unsafe void Forward(in Tensor x, out Tensor yHat)
         {
             // Local mapping
-            Dictionary<IComputationGraphNode, int> mergeMap = new Dictionary<IComputationGraphNode, int>();
             using (TensorMap<IComputationGraphNode> aMap = new TensorMap<IComputationGraphNode>())
             {
                 // Recursive forward function
+                Tensor xc = x; // Local copy for closure
                 void Forward(IComputationGraphNode node)
                 {
                     switch (node)
                     {
                         case ProcessingNode processing:
-                            processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(aMap[processing.Parent], out Tensor z, out Tensor a);
+                            processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? xc : aMap[processing.Parent], out Tensor z, out Tensor a);
                             z.Free();
                             aMap[processing] = a;
                             if (processing == Graph.OutputNode) return;
-                            foreach (IComputationGraphNode child in processing.Children)
-                                Forward(child);
+                            for (int i = 0; i < processing.Children.Count; i++)
+                                Forward(processing.Children[i]);
                             break;
                         case MergeNode merge:
-                            if (mergeMap.TryGetValue(merge, out int value) && value == merge.Parents.Count - 1)
-                            {
-                                // Prepare the inputs
-                                Tensor* xs = stackalloc Tensor[merge.Parents.Count];
-                                for (int i = 0; i < merge.Parents.Count; i++)
-                                    xs[i] = aMap[merge.Parents[i]];
-                                Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
 
-                                // Forward through the merge node
-                                Tensor.New(xs[0].Entities, xs[0].Length, out Tensor y);
-                                if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, y);
-                                else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, y);
-                                else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
-                                aMap[merge] = y;
-                            }
-                            else mergeMap[merge]++;
+                            // Prepare the inputs
+                            Tensor* xs = stackalloc Tensor[merge.Parents.Count];
+                            for (int i = 0; i < merge.Parents.Count; i++)
+                                if (!aMap.TryGetValue(merge.Parents[i], out xs[i])) break;
+                            Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
+
+                            // Forward through the merge node
+                            Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
+                            if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
+                            else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, m);
+                            else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+                            aMap[merge] = m;
                             break;
                         case TrainingSplitNode split:
                             Forward(split.InferenceBranchNode);
@@ -109,6 +107,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
+        [SuppressMessage("ReSharper", "AccessToDisposedClosure")] // Tensor maps in optimization closure
         internal override unsafe void Backpropagate(in SamplesBatch batch, float dropout, WeightsUpdater updater)
         {
             fixed (float* px = batch.X, py = batch.Y)
@@ -138,7 +137,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         switch (node)
                         {
                             case ProcessingNode processing:
-                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(aMap[processing.Parent], out Tensor z, out Tensor a);
+                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? x : aMap[processing.Parent], out Tensor z, out Tensor a);
                                 zMap[processing] = z;
                                 aMap[processing] = a;
                                 if (processing.Layer.LayerType == LayerType.FullyConnected && dropout > 0)
@@ -147,8 +146,6 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     CpuBlas.MultiplyElementwise(a, mask, a);
                                     dropMap[processing] = mask;
                                 }
-                                foreach (IComputationGraphNode child in processing.Children)
-                                    Forward(child);
                                 break;
                             case MergeNode merge:
 
@@ -165,13 +162,15 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
                                 aMap[merge] = m;
                                 break;
-                            case TrainingSplitNode split:
-                                Forward(split.InferenceBranchNode);
-                                Forward(split.TrainingBranchNode);
+                            case TrainingSplitNode split: 
+                                aMap[split.Parent].Duplicate(out Tensor copy);
+                                aMap[node] = copy;
                                 break;
                             default:
                                 throw new ArgumentException("The node type is not supported", nameof(node));
                         }
+                        for (int i = 0; i < node.Children.Count; i++)
+                            Forward(node.Children[i]);
                     }
 
                     // Manually start the forward pass on the first input branches
