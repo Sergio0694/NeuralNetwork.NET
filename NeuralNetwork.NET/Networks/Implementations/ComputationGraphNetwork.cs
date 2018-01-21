@@ -44,9 +44,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         
         #endregion
 
-        public ComputationGraphNetwork([NotNull] IComputationGraphNode root) : base(NetworkType.ComputationGraph)
+        public ComputationGraphNetwork([NotNull] ComputationGraph graph) : base(NetworkType.ComputationGraph)
         {
-            Graph = new ComputationGraph(root);
+            Graph = graph;
             OutputLayer = Graph.OutputNode.To<IComputationGraphNode, ProcessingNode>().Layer.To<INetworkLayer, OutputLayerBase>();
             Layers = Graph.ProcessingNodes.Select(node => node.Layer).ToArray();
             WeightedLayersIndexes = Layers.Select((l, i) => (Layer: l as WeightedLayerBase, Index: i)).Where(t => t.Layer != null).Select(t => t.Index).ToArray();
