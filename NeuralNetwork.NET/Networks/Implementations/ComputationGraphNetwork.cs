@@ -88,9 +88,12 @@ namespace NeuralNetworkNET.Networks.Implementations
                             else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, m);
                             else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
                             aMap[merge] = m;
+                            for (int i = 0; i < merge.Children.Count; i++)
+                                Forward(merge.Children[i]);
                             break;
                         case TrainingSplitNode split:
-                            Forward(split.InferenceBranchNode);
+                            for (int i = 0; i < split.TrainingBranchNodes.Count; i++)
+                                Forward(split.TrainingBranchNodes[i]);
                             break;
                         default:
                             throw new ArgumentException("The node type is not supported", nameof(node));
@@ -292,10 +295,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
+        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public override unsafe IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
         {
-            // Local mapping
-            List<(float[,], float[,])> features = new List<(float[,], float[,])>();           
+            // Local mapping           
             fixed (float* px = x)
             {
                 Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xc);
@@ -332,7 +335,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     Forward(node.Children[i]);
                                 break;
                             case TrainingSplitNode split: 
-                                Forward(split.InferenceBranchNode);
+                                for (int i = 0; i < split.TrainingBranchNodes.Count; i++)
+                                    Forward(split.TrainingBranchNodes[i]);
                                 break;
                             default:
                                 throw new ArgumentException("The node type is not supported", nameof(node));

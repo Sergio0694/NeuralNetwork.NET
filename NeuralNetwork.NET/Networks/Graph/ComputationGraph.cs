@@ -104,10 +104,16 @@ namespace NeuralNetworkNET.Networks.Graph
                         break;
                     case TrainingSplitNode split:
                         if (trainingId != default) throw new ArgumentException("A training branch can't contain training split nodes");
-                        if (split.InferenceBranchNode.Type == ComputationGraphNodeType.TrainingSplit)
-                            throw new ArgumentException("The inference branch of a training split node can't start with another training split node");
-                        if (!Explore(split.InferenceBranchNode, default)) return false;
-                        if (!Explore(split.TrainingBranchNode, Guid.NewGuid())) return false;
+                        for (int i = 0; i < split.InferenceBranchNodes.Count; i++)
+                        {
+                            if (split.InferenceBranchNodes[i].Type == ComputationGraphNodeType.TrainingSplit)
+                                throw new ArgumentException("The inference branch of a training split node can't start with another training split node");
+                            if (!Explore(split.InferenceBranchNodes[i], default)) 
+                                return false; 
+                        }
+                        for (int i = 0; i < split.TrainingBranchNodes.Count; i++)
+                            if (!Explore(split.TrainingBranchNodes[i], Guid.NewGuid()))
+                                return false;
                         break;
                     default: throw new ArgumentException("Invalid node type", nameof(node));
                 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -20,27 +21,27 @@ namespace NeuralNetworkNET.Networks.Graph
         public IComputationGraphNode Parent { get; }
 
         /// <summary>
-        /// Gets the first node of the following inference branch
+        /// Gets the child nodes for the following inference branch
         /// </summary>
-        [NotNull]
-        public IComputationGraphNode InferenceBranchNode { get; }
+        [NotNull, ItemNotNull]
+        public IReadOnlyList<IComputationGraphNode> InferenceBranchNodes { get; }
 
         /// <summary>
-        /// Gets the first node of the following training branch
+        /// Gets the child nodes for the following training branch
         /// </summary>
-        [NotNull]
-        public IComputationGraphNode TrainingBranchNode { get; }
+        [NotNull, ItemNotNull]
+        public IReadOnlyList<IComputationGraphNode> TrainingBranchNodes { get; }
 
         private IReadOnlyList<IComputationGraphNode> _Children;
 
         /// <inheritdoc/>
-        public IReadOnlyList<IComputationGraphNode> Children => _Children ?? (_Children = new[] { InferenceBranchNode, TrainingBranchNode });
+        public IReadOnlyList<IComputationGraphNode> Children => _Children ?? (_Children = InferenceBranchNodes.Concat(TrainingBranchNodes).ToArray());
 
-        internal TrainingSplitNode([NotNull] IComputationGraphNode parent, [NotNull] IComputationGraphNode inference, [NotNull] IComputationGraphNode training)
+        internal TrainingSplitNode([NotNull] IComputationGraphNode parent, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> inference, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> training)
         {
             Parent = parent;
-            InferenceBranchNode = inference;
-            TrainingBranchNode = training;
+            InferenceBranchNodes = inference;
+            TrainingBranchNodes = training;
         }
     }
 }
