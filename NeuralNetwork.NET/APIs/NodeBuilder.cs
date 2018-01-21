@@ -21,10 +21,16 @@ namespace NeuralNetworkNET.APIs
         internal ComputationGraphNodeType NodeType { get; }
 
         /// <summary>
+        /// Gets the current list of parent <see cref="NodeBuilder"/> instances
+        /// </summary>
+        [NotNull, ItemNotNull]
+        internal List<NodeBuilder> Parents { get; } = new List<NodeBuilder>();
+
+        /// <summary>
         /// Gets the current list of child <see cref="NodeBuilder"/> instances
         /// </summary>
         [NotNull, ItemNotNull]
-        private List<NodeBuilder> Children { get; } = new List<NodeBuilder>();
+        internal List<NodeBuilder> Children { get; } = new List<NodeBuilder>();
 
         private NodeBuilder(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
         {
@@ -41,15 +47,17 @@ namespace NeuralNetworkNET.APIs
             NodeBuilder @this = new NodeBuilder(type, factory);
             foreach (NodeBuilder input in inputs)
                 input.Children.Add(@this);
+            @this.Parents.AddRange(inputs);
             return @this;
         }
 
         // Constructor for a node with a single parent
         private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
         {
-            NodeBuilder builder = new NodeBuilder(type, factory);
-            Children.Add(builder);
-            return builder;
+            NodeBuilder @this = new NodeBuilder(type, factory);
+            Children.Add(@this);
+            @this.Parents.Add(this);
+            return @this;
         }
 
         #endregion

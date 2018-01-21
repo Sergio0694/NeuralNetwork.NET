@@ -9,27 +9,19 @@ namespace NeuralNetworkNET.Networks.Graph
     /// <summary>
     /// A class representing a junction node in a computation graph
     /// </summary>
-    public sealed class MergeNode : IComputationGraphNode
+    internal sealed class MergeNode : NodeBase
     {
-        /// <inheritdoc/>
-        public ComputationGraphNodeType Type { get; }
-
         /// <summary>
         /// Gets the list of parents nodes to merge for the current node
         /// </summary>
         [NotNull, ItemNotNull]
         public IReadOnlyList<IComputationGraphNode> Parents { get; }
 
-        /// <inheritdoc/>
-        public IReadOnlyList<IComputationGraphNode> Children { get; }
-
-        internal MergeNode(ComputationGraphNodeType type, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> parents, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> children)
+        internal MergeNode(ComputationGraphNodeType type, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) : base(type)
         {
-            Type = type == ComputationGraphNodeType.DepthConcatenation || type == ComputationGraphNodeType.Sum
-                ? type
-                : throw new ArgumentOutOfRangeException(nameof(type), "The graph node type is invalid for the current instance");
+            if (type != ComputationGraphNodeType.DepthConcatenation && type != ComputationGraphNodeType.Sum)
+                throw new ArgumentOutOfRangeException(nameof(type), "The graph node type is invalid for the current instance");
             Parents = parents.Count >= 2 ? parents : throw new ArgumentException("The number of parents must be at least equal to two", nameof(parents));
-            Children = children.Count > 0 ? children : throw new ArgumentException("The number of child nodes must be greater than 0", nameof(children));
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 
@@ -8,11 +7,8 @@ namespace NeuralNetworkNET.Networks.Graph
     /// <summary>
     /// A class representing a single node in a computation graph
     /// </summary>
-    public sealed class ProcessingNode : IComputationGraphNode
+    internal sealed class ProcessingNode : NodeBase
     {
-        /// <inheritdoc/>
-        public ComputationGraphNodeType Type { get; } = ComputationGraphNodeType.Processing;
-
         /// <summary>
         /// Gets the layer associated with the current graph node
         /// </summary>
@@ -25,14 +21,10 @@ namespace NeuralNetworkNET.Networks.Graph
         [NotNull]
         public IComputationGraphNode Parent { get; }
 
-        /// <inheritdoc/>
-        public IReadOnlyList<IComputationGraphNode> Children { get; }
-
-        internal ProcessingNode([NotNull] INetworkLayer layer, [NotNull] IComputationGraphNode parent, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> children)
+        internal ProcessingNode([NotNull] INetworkLayer layer, [NotNull] IComputationGraphNode parent) : base(ComputationGraphNodeType.Processing)
         {
             Layer = layer;
             Parent = parent;
-            Children = children;
         }
     }
 }
