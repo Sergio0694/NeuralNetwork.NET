@@ -23,7 +23,7 @@
         /// <summary>
         /// A computation graph node that merges a series of inputs by stacking them along the depth axis
         /// </summary>
-        DepthStacking,
+        DepthConcatenation,
 
         /// <summary>
         /// A computation graph node that merges a series of inputs by summing their values together

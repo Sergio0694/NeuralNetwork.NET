@@ -25,7 +25,7 @@ namespace NeuralNetworkNET.Networks.Graph
 
         internal MergeNode(ComputationGraphNodeType type, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> parents, [NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> children)
         {
-            Type = type == ComputationGraphNodeType.DepthStacking || type == ComputationGraphNodeType.Sum
+            Type = type == ComputationGraphNodeType.DepthConcatenation || type == ComputationGraphNodeType.Sum
                 ? type
                 : throw new ArgumentOutOfRangeException(nameof(type), "The graph node type is invalid for the current instance");
             Parents = parents.Count >= 2 ? parents : throw new ArgumentException("The number of parents must be at least equal to two", nameof(parents));

@@ -85,7 +85,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             // Forward through the merge node
                             Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
                             if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
-                            else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, m);
+                            else if (merge.Type == ComputationGraphNodeType.DepthConcatenation) CpuDnn.DepthConcatenationForward(inputs, m);
                             else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
                             aMap[merge] = m;
                             for (int i = 0; i < merge.Children.Count; i++)
@@ -158,7 +158,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 // Forward through the merge node
                                 Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
                                 if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
-                                else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, m);
+                                else if (merge.Type == ComputationGraphNodeType.DepthConcatenation) CpuDnn.DepthConcatenationForward(inputs, m);
                                 else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
                                 aMap[merge] = m;
                                 break;
@@ -199,7 +199,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             for (int i = 0; i < node.Children.Count; i++)
                             {
                                 if (!dMap.ContainsKey(node.Children[i])) return; // Stop if not all deltas are available yet
-                                if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthStacking)
+                                if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthConcatenation)
                                 {
                                     int offset = 0, length = -1;
                                     for (int j = 0; j < merge.Parents.Count; j++)
@@ -333,7 +333,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 // Forward through the merge node
                                 Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
                                 if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
-                                else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, m);
+                                else if (merge.Type == ComputationGraphNodeType.DepthConcatenation) CpuDnn.DepthConcatenationForward(inputs, m);
                                 else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
                                 aMap[merge] = m;
                                 for (int i = 0; i < node.Children.Count; i++)
