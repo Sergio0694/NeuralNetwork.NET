@@ -60,7 +60,15 @@ namespace NeuralNetworkNET.APIs
             return @this;
         }
 
+        /// <summary>
+        /// Creates an input node to use to build a new graph
+        /// </summary>
+        [Pure, NotNull]
+        internal static NodeBuilder Input() => new NodeBuilder(ComputationGraphNodeType.Input, null);
+
         #endregion
+
+        #region APIs
 
         /// <summary>
         /// Creates a new linear sum node that merges multiple input nodes
@@ -92,5 +100,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public NodeBuilder TrainingBranch() => New(ComputationGraphNodeType.TrainingBranch, null);
+
+        #endregion
     }
 }
