@@ -280,17 +280,82 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
+        #region Features extraction
+
         /// <inheritdoc/>
         public override IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures(float[] x)
         {
-            throw new NotImplementedException();
+            return (from pair in ExtractDeepFeatures(x.AsSpan().AsMatrix(1, x.Length))
+                    let z = pair.Z?.AsSpan().ToArray()
+                    let a = pair.A.AsSpan().ToArray()
+                    select (z, a)).ToArray();
         }
 
         /// <inheritdoc/>
-        public override IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
+        public override unsafe IReadOnlyList<(float[,] Z, float[,] A)> ExtractDeepFeatures(float[,] x)
         {
-            throw new NotImplementedException();
+            // Local mapping
+            List<(float[,], float[,])> features = new List<(float[,], float[,])>();           
+            fixed (float* px = x)
+            {
+                Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xc);
+                using (TensorMap<IComputationGraphNode> 
+                    zMap = new TensorMap<IComputationGraphNode>(),
+                    aMap = new TensorMap<IComputationGraphNode>())
+                {
+                    void Forward(IComputationGraphNode node)
+                    {
+                        switch (node)
+                        {
+                            case ProcessingNode processing:
+                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? xc : aMap[processing.Parent], out Tensor z, out Tensor a);
+                                zMap[processing] = z;
+                                aMap[processing] = a;
+                                for (int i = 0; i < node.Children.Count; i++)
+                                    Forward(node.Children[i]);
+                                break;
+                            case MergeNode merge:
+
+                                // Prepare the inputs
+                                Tensor* xs = stackalloc Tensor[merge.Parents.Count];
+                                for (int i = 0; i < merge.Parents.Count; i++)
+                                    if (!aMap.TryGetValue(merge.Parents[i], out xs[i])) break;
+                                Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
+
+                                // Forward through the merge node
+                                Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
+                                if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
+                                else if (merge.Type == ComputationGraphNodeType.DepthStacking) CpuDnn.DepthConcatenationForward(inputs, m);
+                                else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+                                aMap[merge] = m;
+                                for (int i = 0; i < node.Children.Count; i++)
+                                    Forward(node.Children[i]);
+                                break;
+                            case TrainingSplitNode split: 
+                                Forward(split.InferenceBranchNode);
+                                break;
+                            default:
+                                throw new ArgumentException("The node type is not supported", nameof(node));
+                        }                        
+                    }
+
+                    // Manually start the forward pass on the first input branches
+                    foreach (IComputationGraphNode child in Graph.Root.Children) Forward(child);
+
+                    // Return the extracted features
+                    return Graph.Nodes.Where(node => zMap.ContainsKey(node) || aMap.ContainsKey(node)).Select(node =>
+                    {
+                        aMap.TryGetValue(node, out Tensor at);
+                        float[,] 
+                            z = zMap.TryGetValue(node, out Tensor zt) ? zt.ToArray2D() : null,
+                            a = at.ToArray2D();
+                        return (z, a);
+                    }).ToArray();
+                }
+            }
         }
+
+        #endregion
 
         /// <inheritdoc/>
         public override INeuralNetwork Clone()
