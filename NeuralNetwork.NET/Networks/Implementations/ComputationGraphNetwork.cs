@@ -200,9 +200,17 @@ namespace NeuralNetworkNET.Networks.Implementations
                             {
                                 if (!dMap.ContainsKey(node.Children[i])) return; // Stop if not all deltas are available yet
                                 if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthStacking)
+                                {
+                                    int offset = 0, length = -1;
                                     for (int j = 0; j < merge.Parents.Count; j++)
-                                        if (merge.Parents[j] == node)
-                                            dyt[i] = aMap[merge.Parents[j]]; // TODO: fix depth stacking backward
+                                    {
+                                        if (merge.Parents[j] == node) break;
+                                        offset += j == 0 ? 0 : aMap[merge.Parents[j - 1]].Length;
+                                        length = aMap[merge.Parents[j]].Length;
+                                    }
+                                    Tensor.New(x.Entities, length, out dyt[i]);
+                                    CpuDnn.DepthConcatenationBackward(dMap[merge], offset, dyt[i]);
+                                }
                                 else dyt[i] = dMap[node.Children[i]];
                             }
                             Tensor.Like(*dyt, out dy);
