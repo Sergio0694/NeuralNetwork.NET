@@ -1,21 +1,12 @@
-﻿using System.Collections.Generic;
-using JetBrains.Annotations;
-using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.APIs.Interfaces;
+﻿using NeuralNetworkNET.APIs.Enums;
 
 namespace NeuralNetworkNET.Networks.Graph
 {
     /// <summary>
     /// A class that represents the root node for a computation graph
     /// </summary>
-    internal sealed class InputNode : IComputationGraphNode
+    internal sealed class InputNode : NodeBase
     {
-        /// <inheritdoc/>
-        public ComputationGraphNodeType Type { get; } = ComputationGraphNodeType.Input;
-
-        /// <inheritdoc/>
-        public IReadOnlyList<IComputationGraphNode> Children { get; }
-
-        public InputNode([NotNull, ItemNotNull] IReadOnlyList<IComputationGraphNode> children) => Children = children;
+        public InputNode() : base(ComputationGraphNodeType.Input) { }
     }
 }
