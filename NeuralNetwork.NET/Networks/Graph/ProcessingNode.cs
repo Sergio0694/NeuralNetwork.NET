@@ -26,5 +26,13 @@ namespace NeuralNetworkNET.Networks.Graph
             Layer = layer;
             Parent = parent;
         }
+
+        /// <inheritdoc/>
+        public override bool Equals(IComputationGraphNode other)
+        {
+            return base.Equals(other) &&
+                   other is ProcessingNode processing &&
+                   processing.Layer.Equals(Layer);
+        }
     }
 }

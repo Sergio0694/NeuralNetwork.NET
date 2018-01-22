@@ -25,5 +25,14 @@ namespace NeuralNetworkNET.Networks.Graph
         }
 
         protected NodeBase(ComputationGraphNodeType type) => Type = type;
+
+        /// <inheritdoc/>
+        public virtual bool Equals(IComputationGraphNode other)
+        {
+            if (other == null) return false;
+            if (other == this) return true;
+            return other.GetType() == GetType() &&
+                   other.Type == Type;
+        }
     }
 }

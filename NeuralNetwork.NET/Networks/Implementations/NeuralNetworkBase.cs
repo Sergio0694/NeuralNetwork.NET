@@ -305,18 +305,16 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public bool Equals(INeuralNetwork other)
+        public virtual bool Equals(INeuralNetwork other)
         {
             // Compare general features
-            if (other.GetType() == GetType() &&
-                other.InputInfo == InputInfo &&
-                other.OutputInfo == OutputInfo &&
-                other.Layers.Count == Layers.Count)
-            {
-                // Compare the individual layers
-                return Layers.Zip(other.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
-            }
-            return false;
+            if (other == null) return false;
+            if (other == this) return true;
+            return other.GetType() == GetType() &&
+                   other.InputInfo == InputInfo &&
+                   other.OutputInfo == OutputInfo &&
+                   other.Layers.Count == Layers.Count &&
+                   other.Parameters == Parameters;
         }
 
         /// <inheritdoc/>

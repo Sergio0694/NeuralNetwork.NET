@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.Networks.Graph
     /// <summary>
     /// A graph of <see cref="INetworkLayer"/> instances, with O(1) pre-order access time for nodes
     /// </summary>
-    internal sealed class ComputationGraph
+    internal sealed class ComputationGraph : IEquatable<ComputationGraph>
     {
         #region Parameters
 
@@ -160,5 +160,51 @@ namespace NeuralNetworkNET.Networks.Graph
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        public bool Equals(ComputationGraph other)
+        {
+            // Setup
+            if (other == null) return false;
+            if (other == this) return true;
+            if (Nodes.Count != other.Nodes.Count) return false;
+
+            // Function to extract the indexes of the child nodes for a target node
+            int[] GetIndexes(IEnumerable<IComputationGraphNode> nodes, IReadOnlyList<IComputationGraphNode> list)
+            {
+                List<int> indexes = new List<int>();
+                foreach (IComputationGraphNode node in nodes)
+                    for (int i = 0; i < list.Count; i++)
+                        if (list[i] == node)
+                        {
+                            indexes.Add(i);
+                            break;
+                        }
+                return indexes.ToArray();
+            }
+
+            // Perform the actual comparison
+            for (int i = 0; i < Nodes.Count; i++)
+            {
+                IComputationGraphNode n1 = Nodes[i], n2 = other.Nodes[i];
+                if (!n1.Equals(n2) ||
+                    !GetIndexes(n1.Children, Nodes).SequenceEqual(GetIndexes(n2.Children, other.Nodes))) return false;
+                switch (n1)
+                {
+                    case MergeNode merge:
+                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, MergeNode>().Parents, other.Nodes))) return false;
+                        break;
+                    case ProcessingNode processing:
+                        if (Nodes.IndexOf(processing.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
+                        break;
+                    case TrainingNode split:
+                        if (Nodes.IndexOf(split.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
+                        break;
+                    case InputNode _: break;
+                    default: throw new InvalidOperationException("The graph contains an invalid node");
+                }
+            }
+            return true;
+        }
     }
 }

@@ -203,6 +203,25 @@ namespace NeuralNetworkNET.Extensions
         [Pure, CanBeNull]
         internal static IProgress<T> AsIProgress<T>([CanBeNull] this Action<T> action) => action == null ? null : new Progress<T>(action);
 
+        /// <summary>
+        /// Gets the index of the target item (by reference) in the source sequence
+        /// </summary>
+        /// <typeparam name="T">The type of items in the input sequence</typeparam>
+        /// <param name="sequence">The input sequence</param>
+        /// <param name="value">The item to look for</param>
+        [Pure]
+        public static int IndexOf<T>([NotNull] this IEnumerable<T> sequence, T value) where T : class
+        {
+            int index = 0;
+            foreach (T item in sequence)
+            {
+                if (item == value)
+                    return index;
+                index++;
+            }
+            return -1;
+        }
+
         #endregion
     }
 }
