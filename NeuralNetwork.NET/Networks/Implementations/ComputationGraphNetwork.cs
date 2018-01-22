@@ -55,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         #region Implementation
 
         /// <inheritdoc/>
-        protected override unsafe void Forward(in Tensor x, out Tensor yHat)
+        protected override void Forward(in Tensor x, out Tensor yHat)
         {
             // Local mapping
             using (TensorMap<IComputationGraphNode> aMap = new TensorMap<IComputationGraphNode>())
@@ -75,18 +75,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 Forward(processing.Children[i]);
                             break;
                         case MergeNode merge:
-
-                            // Prepare the inputs
-                            Tensor* xs = stackalloc Tensor[merge.Parents.Count];
-                            for (int i = 0; i < merge.Parents.Count; i++)
-                                if (!aMap.TryGetValue(merge.Parents[i], out xs[i])) break;
-                            Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
-
-                            // Forward through the merge node
-                            Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
-                            if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
-                            else if (merge.Type == ComputationGraphNodeType.DepthConcatenation) CpuDnn.DepthConcatenationForward(inputs, m);
-                            else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+                            if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
                             aMap[merge] = m;
                             for (int i = 0; i < merge.Children.Count; i++)
                                 Forward(merge.Children[i]);
@@ -148,18 +137,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 }
                                 break;
                             case MergeNode merge:
-
-                                // Prepare the inputs
-                                Tensor* xs = stackalloc Tensor[merge.Parents.Count];
-                                for (int i = 0; i < merge.Parents.Count; i++)
-                                    if (!aMap.TryGetValue(merge.Parents[i], out xs[i])) break;
-                                Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
-
-                                // Forward through the merge node
-                                Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
-                                if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
-                                else if (merge.Type == ComputationGraphNodeType.DepthConcatenation) CpuDnn.DepthConcatenationForward(inputs, m);
-                                else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+                                if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
                                 aMap[merge] = m;
                                 break;
                             case TrainingNode split: 
@@ -287,6 +265,38 @@ namespace NeuralNetworkNET.Networks.Implementations
             }
         }
 
+        // Executes the forward pass on a merge node, if possible
+        private static unsafe bool TryExecuteMergeForward([NotNull] TensorMap<IComputationGraphNode> map, [NotNull] MergeNode merge, out Tensor y)
+        {
+            // Prepare the inputs
+            Tensor* xs = stackalloc Tensor[merge.Parents.Count];
+            for (int i = 0; i < merge.Parents.Count; i++)
+            {
+                if (!map.TryGetValue(merge.Parents[i], out xs[i]))
+                {
+                    y = Tensor.Null;
+                    return false;
+                }
+            }
+            Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
+
+            // Forward through the merge node
+            if (merge.Type == ComputationGraphNodeType.Sum)
+            {
+                Tensor.New(xs[0].Entities, xs[0].Length, out y);
+                CpuBlas.Sum(inputs, y);
+            }
+            else if (merge.Type == ComputationGraphNodeType.DepthConcatenation)
+            {
+                int l = 0;
+                for (int i = 0; i < inputs.Length; i++) l += inputs[i].Length;
+                Tensor.New(xs[0].Entities, l, out y);
+                CpuDnn.DepthConcatenationForward(inputs, y);
+            }
+            else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+            return true;
+        }
+
         #endregion
 
         #region Features extraction
@@ -324,18 +334,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     Forward(node.Children[i]);
                                 break;
                             case MergeNode merge:
-
-                                // Prepare the inputs
-                                Tensor* xs = stackalloc Tensor[merge.Parents.Count];
-                                for (int i = 0; i < merge.Parents.Count; i++)
-                                    if (!aMap.TryGetValue(merge.Parents[i], out xs[i])) break;
-                                Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
-
-                                // Forward through the merge node
-                                Tensor.New(xs[0].Entities, xs[0].Length, out Tensor m);
-                                if (merge.Type == ComputationGraphNodeType.Sum) CpuBlas.Sum(inputs, m);
-                                else if (merge.Type == ComputationGraphNodeType.DepthConcatenation) CpuDnn.DepthConcatenationForward(inputs, m);
-                                else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+                                if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
                                 aMap[merge] = m;
                                 for (int i = 0; i < node.Children.Count; i++)
                                     Forward(node.Children[i]);
