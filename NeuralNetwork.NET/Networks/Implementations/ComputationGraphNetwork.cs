@@ -87,7 +87,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
 
                 // Manually start the forward pass on the first input branches
-                foreach (IComputationGraphNode child in Graph.Root.Children) Forward(child);
+                for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
 
                 // Collect the outputs and return
                 yHat = aMap[Graph.OutputNode];
@@ -152,7 +152,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     }
 
                     // Manually start the forward pass on the first input branches
-                    foreach (IComputationGraphNode child in Graph.Root.Children) Forward(child);
+                    for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
 
                     #endregion
 
@@ -170,13 +170,23 @@ namespace NeuralNetworkNET.Networks.Implementations
 
                         // Prepare the output error delta
                         Tensor dy;
-                        if (node.Children.Count == 1) dy = dMap[node.Children[0]];
+                        if (node.Children.Count == 1) dMap[node.Children[0]].Duplicate(out dy);
                         else if (node.Children.Count > 1)
                         {
                             Tensor* dyt = stackalloc Tensor[node.Children.Count];
+                            bool* links = stackalloc bool[node.Children.Count];
                             for (int i = 0; i < node.Children.Count; i++)
                             {
-                                if (!dMap.ContainsKey(node.Children[i])) return; // Stop if not all deltas are available yet
+                                // Stop if not all deltas are available yet
+                                if (!dMap.ContainsKey(node.Children[i]))
+                                {
+                                    for (int j = 0; j < i; j++)
+                                        if (!dyt[j].IsNull && !links[j])
+                                            dyt[j].Free();
+                                    return;
+                                }
+
+                                // Extract the tensor slice from a depth concatenation layer
                                 if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthConcatenation)
                                 {
                                     int offset = 0, length = -1;
@@ -189,10 +199,17 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     Tensor.New(x.Entities, length, out dyt[i]);
                                     CpuDnn.DepthConcatenationBackward(dMap[merge], offset, dyt[i]);
                                 }
-                                else dyt[i] = dMap[node.Children[i]];
+                                else
+                                {
+                                    dyt[i] = dMap[node.Children[i]];
+                                    links[i] = true;
+                                }
                             }
                             Tensor.Like(*dyt, out dy);
                             CpuBlas.Sum(new Span<Tensor>(dyt, node.Children.Count), dy);
+                            for (int i = 0; i < node.Children.Count; i++)
+                                if (!links[i])
+                                    dyt[i].Free();
                         }
                         else dy = Tensor.Null; // Null when the current node is an output node
 
@@ -230,6 +247,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     dJdbMap[node] = dJdb;
                                 }
                                 else throw new InvalidOperationException("Invalid backpropagation node");
+                                dy.TryFree();
                                 Backward(processing.Parent);
                                 break;
                             case MergeNode merge:
@@ -241,14 +259,13 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 dMap[node] = dy;
                                 Backward(split.Parent);
                                 break;
-                            case InputNode _: return;
                             default:
                                 throw new ArgumentException("The node type is not supported", nameof(node));
                         }
                     }
 
                     // Backpropagate from the training and inference outputs
-                    foreach (ProcessingNode output in Graph.TrainingOutputNodes) Backward(output);
+                    for (int i = 0; i < Graph.TrainingOutputNodes.Count; i++) Backward(Graph.TrainingOutputNodes[i]);
                     Backward(Graph.OutputNode);
 
                     /* ================
@@ -346,7 +363,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     }
 
                     // Manually start the forward pass on the first input branches
-                    foreach (IComputationGraphNode child in Graph.Root.Children) Forward(child);
+                    for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
 
                     // Return the extracted features
                     return Graph.Nodes.Where(node => zMap.ContainsKey(node) || aMap.ContainsKey(node)).Select(node =>
