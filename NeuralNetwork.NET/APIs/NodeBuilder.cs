@@ -41,23 +41,25 @@ namespace NeuralNetworkNET.APIs
         }
 
         // Static constructor for a node with multiple parents
-        private static NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory, params NodeBuilder[] inputs)
+        private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory, [NotNull, ItemNotNull] params NodeBuilder[] inputs)
         {
-            if (inputs.Length < 2) throw new ArgumentException("The inputs must be at least two", nameof(inputs));
-            NodeBuilder @this = new NodeBuilder(type, factory);
+            if (inputs.Length < 1) throw new ArgumentException("The inputs must be at least two", nameof(inputs));
+            NodeBuilder next = new NodeBuilder(type, factory);
+            Children.Add(next);
             foreach (NodeBuilder input in inputs)
-                input.Children.Add(@this);
-            @this.Parents.AddRange(inputs);
-            return @this;
+                input.Children.Add(next);
+            next.Parents.Add(this);
+            next.Parents.AddRange(inputs);
+            return next;
         }
 
         // Constructor for a node with a single parent
         private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
         {
-            NodeBuilder @this = new NodeBuilder(type, factory);
-            Children.Add(@this);
-            @this.Parents.Add(this);
-            return @this;
+            NodeBuilder next = new NodeBuilder(type, factory);
+            Children.Add(next);
+            next.Parents.Add(this);
+            return next;
         }
 
         /// <summary>
@@ -75,30 +77,30 @@ namespace NeuralNetworkNET.APIs
         /// </summary>
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
-        [Pure, NotNull]
-        public static NodeBuilder Sum(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, null, inputs);
+        [MustUseReturnValue, NotNull]
+        public NodeBuilder Sum(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, null, inputs);
 
         /// <summary>
         /// Creates a new depth concatenation node that merges multiple input nodes with the same output shape
         /// </summary>
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
-        [Pure, NotNull]
-        public static NodeBuilder DepthConcatenation(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.DepthConcatenation, null, inputs);
+        [MustUseReturnValue, NotNull]
+        public NodeBuilder DepthConcatenation(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.DepthConcatenation, null, inputs);
 
         /// <summary>
         /// Creates a new node that will host a network layer to process its inputs
         /// </summary>
         /// <param name="factory">The <see cref="LayerFactory"/> instance used to create the network layer</param>
         [PublicAPI]
-        [Pure, NotNull]
+        [MustUseReturnValue, NotNull]
         public NodeBuilder Layer(LayerFactory factory) => New(ComputationGraphNodeType.Processing, factory);
 
         /// <summary>
         /// Creates a new node that will route its inputs to a training sug-graph
         /// </summary>
         [PublicAPI]
-        [Pure, NotNull]
+        [MustUseReturnValue, NotNull]
         public NodeBuilder TrainingBranch() => New(ComputationGraphNodeType.TrainingBranch, null);
 
         #endregion
