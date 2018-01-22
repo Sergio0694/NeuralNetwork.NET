@@ -6,7 +6,7 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Extensions;
 
-namespace NeuralNetworkNET.Networks.Graph
+namespace NeuralNetworkNET.Networks.Graph.Nodes
 {
     /// <summary>
     /// A base class for all the available node types

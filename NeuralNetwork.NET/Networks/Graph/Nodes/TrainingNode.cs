@@ -2,7 +2,7 @@
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 
-namespace NeuralNetworkNET.Networks.Graph
+namespace NeuralNetworkNET.Networks.Graph.Nodes
 {
     /// <summary>
     /// A class that represents the root node for a training sub-graph
@@ -15,9 +15,6 @@ namespace NeuralNetworkNET.Networks.Graph
         [NotNull]
         public IComputationGraphNode Parent { get; }
 
-        public TrainingNode([NotNull] IComputationGraphNode root) : base(ComputationGraphNodeType.TrainingBranch)
-        {
-            Parent = root;
-        }
+        public TrainingNode([NotNull] IComputationGraphNode root) : base(ComputationGraphNodeType.TrainingBranch) => Parent = root;
     }
 }

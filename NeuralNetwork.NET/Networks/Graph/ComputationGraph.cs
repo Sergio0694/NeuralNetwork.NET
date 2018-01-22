@@ -9,6 +9,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Graph.Nodes;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 
 namespace NeuralNetworkNET.Networks.Graph

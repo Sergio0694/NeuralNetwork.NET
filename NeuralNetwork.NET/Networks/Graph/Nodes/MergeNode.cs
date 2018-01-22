@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 
-namespace NeuralNetworkNET.Networks.Graph
+namespace NeuralNetworkNET.Networks.Graph.Nodes
 {
     /// <summary>
     /// A class representing a junction node in a computation graph

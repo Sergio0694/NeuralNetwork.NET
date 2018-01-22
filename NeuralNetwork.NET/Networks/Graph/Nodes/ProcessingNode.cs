@@ -5,7 +5,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 
-namespace NeuralNetworkNET.Networks.Graph
+namespace NeuralNetworkNET.Networks.Graph.Nodes
 {
     /// <summary>
     /// A class representing a single node in a computation graph
