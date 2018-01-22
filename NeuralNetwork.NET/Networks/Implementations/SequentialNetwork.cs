@@ -241,6 +241,13 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #region Deserialization and misc
 
+        /// <inheritdoc/>
+        protected override void Serialize(Stream stream)
+        {
+            foreach (NetworkLayerBase layer in Layers.Cast<NetworkLayerBase>()) 
+                layer.Serialize(stream);
+        }
+
         /// <summary>
         /// Tries to deserialize a new <see cref="SequentialNetwork"/> from the input <see cref="Stream"/>
         /// </summary>

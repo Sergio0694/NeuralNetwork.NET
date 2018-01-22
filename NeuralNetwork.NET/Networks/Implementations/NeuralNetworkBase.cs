@@ -299,10 +299,15 @@ namespace NeuralNetworkNET.Networks.Implementations
             using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal, true))
             {
                 gzip.Write(NetworkType);
-                foreach (NetworkLayerBase layer in Layers.Cast<NetworkLayerBase>()) 
-                    layer.Serialize(gzip);
+                Serialize(gzip);
             }
         }
+
+        /// <summary>
+        /// Writes the current network data to the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the network data</param>
+        protected abstract void Serialize(Stream stream);
 
         /// <inheritdoc/>
         public virtual bool Equals(INeuralNetwork other)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
@@ -161,6 +162,8 @@ namespace NeuralNetworkNET.Networks.Graph
 
         #endregion
 
+        #region Tools
+
         /// <inheritdoc/>
         public bool Equals(ComputationGraph other)
         {
@@ -206,5 +209,50 @@ namespace NeuralNetworkNET.Networks.Graph
             }
             return true;
         }
+
+        /// <summary>
+        /// Writes the current graph to the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the graph data</param>
+        public void Serialize([NotNull] Stream stream)
+        {
+            // Write the graph nodes
+            stream.Write(Nodes.Count);
+            Dictionary<IComputationGraphNode, Guid> map = Nodes.ToDictionary(n => n, _ => Guid.NewGuid());
+            foreach (NodeBase node in Nodes.Cast<NodeBase>())
+            {
+                stream.Write(map[node]);
+                node.Serialize(stream);
+            }
+
+            // Write the neighbours of each node
+            foreach (IComputationGraphNode node in Nodes)
+            {
+                stream.Write(map[node]);
+                stream.Write(node.Children.Count);
+                foreach (IComputationGraphNode child in node.Children)
+                    stream.Write(map[child]);
+                switch (node)
+                {
+                    case ProcessingNode processing:
+                        stream.Write(1);
+                        stream.Write(map[processing.Parent]);
+                        break;
+                    case MergeNode merge:
+                        stream.Write(merge.Parents.Count);
+                        foreach (IComputationGraphNode parent in merge.Parents)
+                        stream.Write(map[parent]);
+                        break;
+                    case TrainingNode split:
+                        stream.Write(1);
+                        stream.Write(map[split.Parent]);
+                        break;
+                    case InputNode _: break;
+                    default: throw new InvalidOperationException("Invalid graph node type");
+                }
+            }
+        }
+
+        #endregion
     }
 }

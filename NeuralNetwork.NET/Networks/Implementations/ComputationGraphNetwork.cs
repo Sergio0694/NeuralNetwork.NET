@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -382,6 +384,9 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         /// <inheritdoc/>
         public override bool Equals(INeuralNetwork other) => base.Equals(other) && other is ComputationGraphNetwork network && Graph.Equals(network.Graph);
+
+        /// <inheritdoc/>
+        protected override void Serialize(Stream stream) => Graph.Serialize(stream);
 
         /// <inheritdoc/>
         public override INeuralNetwork Clone()
