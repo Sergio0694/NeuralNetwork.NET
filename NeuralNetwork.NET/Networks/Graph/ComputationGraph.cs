@@ -6,6 +6,7 @@ using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 
@@ -81,7 +82,7 @@ namespace NeuralNetworkNET.Networks.Graph
                 // Node check
                 if (map.TryGetValue(node, out var value))
                 {
-                    if (value.Id != id) throw new ArgumentException("The training branch can't cross other graph branches");
+                    if (value.Id != id) throw new ComputationGraphBuildException("The training branch can't cross other graph branches");
                     return;
                 }
 
@@ -90,41 +91,41 @@ namespace NeuralNetworkNET.Networks.Graph
                 switch (node.NodeType)
                 {
                     case ComputationGraphNodeType.Input:
-                        if (node.Parents.Count > 0) throw new ArgumentException("An input node can't haave any parent nodes");
-                        if (node.Children.Count == 0) throw new ArgumentException("An input node can't have 0 child nodes");
+                        if (node.Parents.Count > 0) throw new ComputationGraphBuildException("An input node can't haave any parent nodes");
+                        if (node.Children.Count == 0) throw new ComputationGraphBuildException("An input node can't have 0 child nodes");
                         iNode = new InputNode();
                         map[node] = (iNode, input, id);
                         break;
                     case ComputationGraphNodeType.Processing:
-                        if (node.Factory == null) throw new InvalidOperationException("Missing layer factory");
+                        if (node.Factory == null) throw new ComputationGraphBuildException("Missing layer factory");
                         INetworkLayer layer = node.Factory(map[node.Parents[0]].Info);
                         ProcessingNode processing = new ProcessingNode(layer, map[node.Parents[0]].Node);
                         if (layer is OutputLayerBase)
                         {
-                            if (output != null) throw new ArgumentException("The graph can only have a single inference output node");
-                            if (node.Children.Count > 0) throw new ArgumentException("An output node can't have any child nodes");
+                            if (output != null) throw new ComputationGraphBuildException("The graph can only have a single inference output node");
+                            if (node.Children.Count > 0) throw new ComputationGraphBuildException("An output node can't have any child nodes");
                             if (id != default)
                             {
                                 if (map.Values.Any(entry => entry.Node is ProcessingNode p && p.Layer is OutputLayerBase && entry.Id == id))
-                                    throw new ArgumentException("Each training branch can have a single output node");
+                                    throw new ComputationGraphBuildException("Each training branch can have a single output node");
                                 trainingOutputs.Add(processing);
                             }
                             output = processing;
                         }
-                        if (node.Children.Count == 0) throw new ArgumentException("A processing node can't have 0 child nodes");
+                        else if (node.Children.Count == 0) throw new ComputationGraphBuildException("A processing node can't have 0 child nodes");
                         iNode = processing;
                         map[node] = (iNode, layer.OutputInfo, id);
                         break;
                     case ComputationGraphNodeType.TrainingBranch:
-                        if (id != default) throw new ArgumentException("A training branch can't contain secondary training branches");
-                        if (node.Children.Count == 0) throw new ArgumentException("A training branch node can't have 0 child nodes");
+                        if (id != default) throw new ComputationGraphBuildException("A training branch can't contain secondary training branches");
+                        if (node.Children.Count == 0) throw new ComputationGraphBuildException("A training branch node can't have 0 child nodes");
                         iNode = new TrainingNode(map[node.Parents[0]].Node);
                         map[node] = (iNode, map[node.Parents[0]].Info, id);
                         id = Guid.NewGuid();
                         break;
                     case ComputationGraphNodeType.DepthConcatenation:
                     case ComputationGraphNodeType.Sum:
-                        if (node.Children.Count == 0) throw new ArgumentException("A merge node can't have 0 child nodes");
+                        if (node.Children.Count == 0) throw new ComputationGraphBuildException("A merge node can't have 0 child nodes");
 
                         // Gather the parent nodes
                         var parents = new (NodeBase Node, TensorInfo Info, Guid)[node.Parents.Count];
@@ -140,7 +141,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         map[node] = (iNode, shape, id);
                         break;
                     default:
-                        throw new ArgumentException($"Invalid node type: {node.NodeType}", nameof(root));
+                        throw new ComputationGraphBuildException($"Invalid node type: {node.NodeType}");
                 }
                 nodes.Add(iNode);
                 foreach (NodeBuilder child in node.Children)
@@ -149,7 +150,8 @@ namespace NeuralNetworkNET.Networks.Graph
 
             // Build the graph and bind the child nodes
             BuildMap(root, default);
-            if (output == null) throw new ArgumentException("The input graph doesn't have a valid output node");
+            if (output == null) throw new ComputationGraphBuildException("The input graph doesn't have a valid output node");
+            if (trainingOutputs.Any(node => node.Layer.OutputInfo != output.Layer.OutputInfo)) throw new ComputationGraphBuildException("The training outputs must match the main output tensor shape");
             foreach (KeyValuePair<NodeBuilder, (NodeBase Node, TensorInfo Info, Guid _)> pair in map)
             {
                 pair.Value.Node.Children = pair.Key.Children.Select(child => map[child].Node).ToArray();

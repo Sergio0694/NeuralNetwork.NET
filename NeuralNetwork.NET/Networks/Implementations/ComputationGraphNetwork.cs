@@ -193,7 +193,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         // Prepare the output error delta
                         Tensor dy;
                         if (node.Children.Count == 1) dy = dMap[node.Children[0]];
-                        else
+                        else if (node.Children.Count > 1)
                         {
                             Tensor* dyt = stackalloc Tensor[node.Children.Count];
                             for (int i = 0; i < node.Children.Count; i++)
@@ -216,6 +216,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             Tensor.Like(*dyt, out dy);
                             CpuBlas.Sum(new Span<Tensor>(dyt, node.Children.Count), dy);
                         }
+                        else dy = Tensor.Null; // Null when the current node is an output node
 
                         // Process the current node
                         switch (node)
@@ -277,9 +278,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                      * ================
                      * Edit the network weights according to the computed gradients */
                     int samples = batch.X.GetLength(0);
-                    Parallel.For(0, Graph.ProcessingNodes.Count, i =>
+                    Parallel.For(0, WeightedLayersIndexes.Length, i =>
                     {
-                        ProcessingNode node = Graph.ProcessingNodes[i];
+                        ProcessingNode node = Graph.ProcessingNodes[WeightedLayersIndexes[i]];
                         updater(i, dJdwMap[node], dJdbMap[node], samples, node.Layer.To<INetworkLayer, WeightedLayerBase>());
                     }).AssertCompleted();
                 }
