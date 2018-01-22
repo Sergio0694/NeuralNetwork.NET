@@ -9,6 +9,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
+using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
@@ -53,16 +54,20 @@ namespace NeuralNetworkNET.Networks.Implementations
         internal SequentialNetwork([NotNull, ItemNotNull] params INetworkLayer[] layers) : base(NetworkType.Sequential)
         {
             // Input check
-            if (layers.Length < 2) throw new ArgumentOutOfRangeException(nameof(layers), "The network must have at least two layers");
+            if (layers.Length < 2) throw new NetworkBuildException("The network must have at least two layers", nameof(layers));
             foreach ((NetworkLayerBase layer, int i) in layers.Select((l, i) => (l as NetworkLayerBase, i)))
             {
-                if (i != layers.Length - 1 && layer is OutputLayerBase) throw new ArgumentException("The output layer must be the last layer in the network");
-                if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new ArgumentException("The last layer must be an output layer");
+                if (i != layers.Length - 1 && layer is OutputLayerBase) throw new NetworkBuildException("The output layer must be the last layer in the network");
+                if (i == layers.Length - 1 && !(layer is OutputLayerBase)) throw new NetworkBuildException("The last layer must be an output layer");
                 if (i > 0 && layers[i - 1].OutputInfo.Size != layer.InputInfo.Size)
-                    throw new ArgumentException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
+                    throw new NetworkBuildException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
                 if (i > 0 && layer is PoolingLayer && 
                     layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationFunctionType != ActivationFunctionType.Identity)
-                    throw new ArgumentException("A convolutional layer followed by a pooling layer must use the Identity activation function");
+                    throw new NetworkBuildException("A convolutional layer followed by a pooling layer must use the Identity activation function. " +
+                                                    "In order to apply any activation function after the convolutional layer, just assign it to the pooling layer that follows. " +
+                                                    "This is done for optimization purposes: the result will be the same that would be achieved by using the activation function " +
+                                                    "after the convolution operation, without any activation after the pooling layer, but moving the activation after the pooling layer " +
+                                                    "make it so that it is applied on a smaller tensor, to reduce the CPU/GPU usage during the forward/backward passes.");
             }
 
             // Parameters setup

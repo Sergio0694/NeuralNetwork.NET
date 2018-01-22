@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 
 namespace NeuralNetworkNET.Extensions
 {
@@ -176,7 +177,7 @@ namespace NeuralNetworkNET.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void AssertCompleted(in this ParallelLoopResult result)
         {
-            if (!result.IsCompleted) throw new InvalidOperationException("Error while performing the parallel loop");
+            if (!result.IsCompleted) throw new ParallelLoopExecutionException();
         }
 
         /// <summary>
