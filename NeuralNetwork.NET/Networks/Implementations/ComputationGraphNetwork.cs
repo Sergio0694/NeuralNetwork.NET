@@ -172,22 +172,28 @@ namespace NeuralNetworkNET.Networks.Implementations
 
                         // Prepare the output error delta
                         Tensor dy;
-                        if (node.Children.Count == 1) dMap[node.Children[0]].Duplicate(out dy);
+                        bool linked = false;
+                        if (node.Children.Count == 1)
+                        {
+                            if (node.Type == ComputationGraphNodeType.Processing)
+                            {
+                                dy = dMap[node.Children[0]];
+                                linked = true; // Just use a shallow copy, but mark it as non-disposable
+                            }
+                            else dMap[node.Children[0]].Duplicate(out dy);
+                        }
                         else if (node.Children.Count > 1)
                         {
+                            // Ensure the required tensors are present
+                            for (int i = 0; i < node.Children.Count; i++)
+                                if (!dMap.ContainsKey(node.Children[i]))
+                                    return;
+
+                            // Extract the dy tensor
                             Tensor* dyt = stackalloc Tensor[node.Children.Count];
                             bool* links = stackalloc bool[node.Children.Count];
                             for (int i = 0; i < node.Children.Count; i++)
                             {
-                                // Stop if not all deltas are available yet
-                                if (!dMap.ContainsKey(node.Children[i]))
-                                {
-                                    for (int j = 0; j < i; j++)
-                                        if (!dyt[j].IsNull && !links[j])
-                                            dyt[j].Free();
-                                    return;
-                                }
-
                                 // Extract the tensor slice from a depth concatenation layer
                                 if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthConcatenation)
                                 {
@@ -249,7 +255,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     dJdbMap[node] = dJdb;
                                 }
                                 else throw new InvalidOperationException("Invalid backpropagation node");
-                                dy.TryFree();
+                                if (!linked) dy.TryFree();
                                 Backward(processing.Parent);
                                 break;
                             case MergeNode merge:
