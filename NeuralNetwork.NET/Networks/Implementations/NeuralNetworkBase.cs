@@ -54,7 +54,11 @@ namespace NeuralNetworkNET.Networks.Implementations
         public abstract IReadOnlyList<INetworkLayer> Layers { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Parameters), Order = 4)]
+        [JsonProperty(nameof(Size), Order = 4)]
+        public abstract int Size { get; }
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(Parameters), Order = 5)]
         public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
 
         /// <summary>
@@ -63,7 +67,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public int[] WeightedLayersIndexes { get; protected set; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(IsInNumericOverflow), Order = 5)]
+        [JsonProperty(nameof(IsInNumericOverflow), Order = 6)]
         public bool IsInNumericOverflow
         {
             get

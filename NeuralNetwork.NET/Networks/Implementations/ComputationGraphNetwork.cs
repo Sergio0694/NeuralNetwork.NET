@@ -39,11 +39,14 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <inheritdoc/>
         protected override OutputLayerBase OutputLayer { get; }
 
+        /// <inheritdoc/>
+        public override int Size => Graph.Nodes.Count;
+
         /// <summary>
         /// The underlying layers graph for the network
         /// </summary>
         [NotNull]
-        [JsonProperty(nameof(Graph), Order = 6)]
+        [JsonProperty(nameof(Graph), Order = 7)]
         private readonly ComputationGraph Graph;
         
         #endregion

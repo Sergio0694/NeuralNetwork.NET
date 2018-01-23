@@ -424,8 +424,12 @@ namespace NeuralNetworkNET.Networks.Graph
             }).ToList();
 
             // Serialize the graph
-            JObject jObj = new JObject();
-            jObj.AddFirst(new JProperty("Nodes", new JArray(nodes)));
+            JObject jObj = new JObject
+            {
+                ["Size"] = graph.Nodes.Count,
+                ["Auxiliary classifiers"] = graph.TrainingOutputNodes.Count,
+                ["Nodes"] = new JArray(nodes)
+            };
             jObj.WriteTo(writer);
         }
 

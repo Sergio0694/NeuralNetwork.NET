@@ -35,7 +35,10 @@ namespace NeuralNetworkNET.Networks.Implementations
         public override ref readonly TensorInfo OutputInfo => ref Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Layers), Order = 6)]
+        public override int Size => Layers.Count;
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(Layers), Order = 7)]
         public override IReadOnlyList<INetworkLayer> Layers => _Layers;
 
         /// <inheritdoc/>
