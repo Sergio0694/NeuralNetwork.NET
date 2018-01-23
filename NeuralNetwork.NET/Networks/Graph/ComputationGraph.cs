@@ -89,14 +89,14 @@ namespace NeuralNetworkNET.Networks.Graph
                 }
 
                 // Process the current node
-                NodeBase iNode;
+                NodeBase next;
                 switch (node.NodeType)
                 {
                     case ComputationGraphNodeType.Input:
                         if (node.Parents.Count > 0) throw new ComputationGraphBuildException("An input node can't haave any parent nodes");
                         if (node.Children.Count == 0) throw new ComputationGraphBuildException("An input node can't have 0 child nodes");
-                        iNode = new InputNode();
-                        map[node] = (iNode, input, id);
+                        next = new InputNode();
+                        map[node] = (next, input, id);
                         break;
                     case ComputationGraphNodeType.Processing:
                         if (node.Factory == null) throw new ComputationGraphBuildException("Missing layer factory");
@@ -104,7 +104,6 @@ namespace NeuralNetworkNET.Networks.Graph
                         ProcessingNode processing = new ProcessingNode(layer, map[node.Parents[0]].Node);
                         if (layer is OutputLayerBase)
                         {
-                            if (output != null) throw new ComputationGraphBuildException("The graph can only have a single inference output node");
                             if (node.Children.Count > 0) throw new ComputationGraphBuildException("An output node can't have any child nodes");
                             if (id != default)
                             {
@@ -112,17 +111,18 @@ namespace NeuralNetworkNET.Networks.Graph
                                     throw new ComputationGraphBuildException("Each training branch can have a single output node");
                                 trainingOutputs.Add(processing);
                             }
-                            output = processing;
+                            else if (output == null)  output = processing;
+                            else throw new ComputationGraphBuildException("The graph can only have a single inference output node");
                         }
                         else if (node.Children.Count == 0) throw new ComputationGraphBuildException("A processing node can't have 0 child nodes");
-                        iNode = processing;
-                        map[node] = (iNode, layer.OutputInfo, id);
+                        next = processing;
+                        map[node] = (next, layer.OutputInfo, id);
                         break;
                     case ComputationGraphNodeType.TrainingBranch:
                         if (id != default) throw new ComputationGraphBuildException("A training branch can't contain secondary training branches");
                         if (node.Children.Count == 0) throw new ComputationGraphBuildException("A training branch node can't have 0 child nodes");
-                        iNode = new TrainingNode(map[node.Parents[0]].Node);
-                        map[node] = (iNode, map[node.Parents[0]].Info, id);
+                        next = new TrainingNode(map[node.Parents[0]].Node);
+                        map[node] = (next, map[node.Parents[0]].Info, id);
                         id = Guid.NewGuid();
                         break;
                     case ComputationGraphNodeType.DepthConcatenation:
@@ -139,13 +139,13 @@ namespace NeuralNetworkNET.Networks.Graph
                         TensorInfo shape = node.NodeType == ComputationGraphNodeType.Sum 
                             ? parents[0].Info 
                             : TensorInfo.Volume(parents[0].Info.Height, parents[0].Info.Width, parents.Sum(p => p.Info.Channels));
-                        iNode = new MergeNode(node.NodeType, parents.Select(t => t.Node).ToArray());
-                        map[node] = (iNode, shape, id);
+                        next = new MergeNode(node.NodeType, parents.Select(t => t.Node).ToArray());
+                        map[node] = (next, shape, id);
                         break;
                     default:
                         throw new ComputationGraphBuildException($"Invalid node type: {node.NodeType}");
                 }
-                nodes.Add(iNode);
+                nodes.Add(next);
                 foreach (NodeBuilder child in node.Children)
                     BuildMap(child, id);
             }
