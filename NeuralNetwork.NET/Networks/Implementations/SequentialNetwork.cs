@@ -256,6 +256,15 @@ namespace NeuralNetworkNET.Networks.Implementations
         [MustUseReturnValue, CanBeNull]
         public static INeuralNetwork Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
         {
+            /* =================
+             * Data structure
+             * =================
+             * A linear list of serialized layers, where each layer data is made
+             * up of the layer type, its input and outputs, the optional weights and
+             * biases and eventually other parameters that will be handled by the
+             * corresponding deserialization method. Since the layers don't have any
+             * particular spatial organization, they can be serialized and deserialized
+             * without the need of a particular file structure. */
             List<INetworkLayer> layers = new List<INetworkLayer>();
             while (stream.TryRead(out LayerType type))
             {

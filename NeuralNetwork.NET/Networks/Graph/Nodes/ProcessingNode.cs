@@ -1,9 +1,6 @@
-﻿using System.IO;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Layers.Abstract;
 
 namespace NeuralNetworkNET.Networks.Graph.Nodes
 {
@@ -36,13 +33,6 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
             return base.Equals(other) &&
                    other is ProcessingNode processing &&
                    processing.Layer.Equals(Layer);
-        }
-
-        /// <inheritdoc/>
-        public override void Serialize(Stream stream)
-        {
-            base.Serialize(stream);
-            Layer.To<INetworkLayer, NetworkLayerBase>().Serialize(stream);
         }
     }
 }

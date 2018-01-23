@@ -383,10 +383,27 @@ namespace NeuralNetworkNET.Networks.Implementations
         #endregion
 
         /// <inheritdoc/>
-        public override bool Equals(INeuralNetwork other) => base.Equals(other) && other is ComputationGraphNetwork network && Graph.Equals(network.Graph);
+        protected override void Serialize(Stream stream)
+        {
+            stream.Write(InputInfo);
+            Graph.Serialize(stream);
+        }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="ComputationGraphNetwork"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
+        /// <param name="preference">The layers deserialization preference</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INeuralNetwork Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        {
+            if (!stream.TryRead(out TensorInfo inputs)) return null;
+            Func<TensorInfo, ComputationGraph> f = ComputationGraph.Deserialize(stream, preference);
+            return f == null ? null : new ComputationGraphNetwork(f(inputs));
+        }
 
         /// <inheritdoc/>
-        protected override void Serialize(Stream stream) => Graph.Serialize(stream);
+        public override bool Equals(INeuralNetwork other) => base.Equals(other) && other is ComputationGraphNetwork network && Graph.Equals(network.Graph);
 
         /// <inheritdoc/>
         public override INeuralNetwork Clone()

@@ -32,7 +32,7 @@ namespace NeuralNetworkNET.APIs
         [NotNull, ItemNotNull]
         internal List<NodeBuilder> Children { get; } = new List<NodeBuilder>();
 
-        private NodeBuilder(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
+        internal NodeBuilder(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
         {
             if (type == ComputationGraphNodeType.Processing && factory == null)
                 throw new InvalidOperationException("Invalid node initialization");

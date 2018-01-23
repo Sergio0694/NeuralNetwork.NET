@@ -217,13 +217,30 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="stream">The target <see cref="Stream"/> to use to write the graph data</param>
         public void Serialize([NotNull] Stream stream)
         {
-            // Write the graph nodes
+            /* =================
+             * Data structure
+             * =================
+             * The input stream will contain the data needed to rebuild an identical computation
+             * graph. It is not possible to directly rebuild each graaph node, since the
+             * constructor method for each node type takes the list of parent nodes, which wouldn't
+             * be available while the data deserialization is still being performed.
+             * The approach used in this case is to divide the resulting data stream into two sections:
+             * 1:   A unique Guid is assigned to each node, and the linear list of in-order nodes
+             *      is serialized as a series of (Guid, node) serialized pairs. For processing
+             *      nodes, the underlying network layer is serialized as well.
+             * 2:   A list of parent and child nodes for each node, using the previously
+             *      assigned Guid to identify each serialized node.
+             * When deserializing the graph, a NodeBuilder instance is created for each (Guid, node)
+             * pair, then the data from the second section is used to reconstruct the right spatial
+             * relations for each node. Finally, a new graph is built from the resulting nodes. */
             stream.Write(Nodes.Count);
             Dictionary<IComputationGraphNode, Guid> map = Nodes.ToDictionary(n => n, _ => Guid.NewGuid());
             foreach (NodeBase node in Nodes.Cast<NodeBase>())
             {
                 stream.Write(map[node]);
-                node.Serialize(stream);
+                stream.Write(node.Type);
+                if (node is ProcessingNode layered)
+                    layered.Layer.To<INetworkLayer, NetworkLayerBase>().Serialize(stream);
             }
 
             // Write the neighbours of each node
@@ -252,6 +269,55 @@ namespace NeuralNetworkNET.Networks.Graph
                     default: throw new InvalidOperationException("Invalid graph node type");
                 }
             }
+        }
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="ComputationGraph"/> from the input <see cref="Stream"/> and returns a <see cref="Func{TIn, TResult}"/> to rebuild it
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
+        /// <param name="preference">The layers deserialization preference</param>
+        [MustUseReturnValue, CanBeNull]
+        public static Func<TensorInfo, ComputationGraph> Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        {
+            // Prepare the node builders with the appropriate nodes
+            if (!stream.TryRead(out int count)) return null;
+            Dictionary<Guid, NodeBuilder> map = new Dictionary<Guid, NodeBuilder>();
+            for (int i = 0; i < count; i++)
+            {
+                if (!stream.TryRead(out Guid id)) return null;
+                if (!stream.TryRead(out ComputationGraphNodeType type)) return null;
+                if (type == ComputationGraphNodeType.Processing)
+                {
+                    if (stream.TryRead(out LayerType layerType)) return null;
+                    INetworkLayer layer = null;
+                    if (preference == LayersLoadingPreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
+                    if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, layerType);
+                    if (layer == null) return null;
+                    map[id] = new NodeBuilder(type, _ => layer);
+                }
+                else map[id] = new NodeBuilder(type, null);
+            }
+
+            // Assign the neighbours
+            while (stream.TryRead(out Guid id))
+            {
+                // Children
+                if (!stream.TryRead(out int children)) return null;
+                for (int i = 0; i < children; i++)
+                {
+                    if (!stream.TryRead(out Guid child)) return null;
+                    map[child].Children.Add(map[id]);
+                }
+
+                // Parents
+                if (!stream.TryRead(out int parents)) return null;
+                for (int i = 0; i < parents; i++)
+                {
+                    if (!stream.TryRead(out Guid parent)) return null;
+                    map[id].Parents.Add(map[parent]);
+                }
+            }
+            return t => New(t, map.Values.First(node => node.NodeType == ComputationGraphNodeType.Input));
         }
 
         #endregion

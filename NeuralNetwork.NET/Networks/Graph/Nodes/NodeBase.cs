@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
-using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Networks.Graph.Nodes
 {
@@ -36,11 +34,5 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
             return other.GetType() == GetType() &&
                    other.Type == Type;
         }
-
-        /// <summary>
-        /// Writes the current node to the input <see cref="Stream"/>
-        /// </summary>
-        /// <param name="stream">The target <see cref="Stream"/> to use to write the node data</param>
-        public virtual void Serialize([NotNull] Stream stream) => stream.Write(Type);
     }
 }

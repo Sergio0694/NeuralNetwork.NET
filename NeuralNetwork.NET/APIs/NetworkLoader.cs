@@ -61,6 +61,7 @@ namespace NeuralNetworkNET.APIs
                     switch (model)
                     {
                         case NetworkType.Sequential: return SequentialNetwork.Deserialize(gzip, preference);
+                        case NetworkType.ComputationGraph: return ComputationGraphNetwork.Deserialize(gzip, preference);
                         default: return null;
                     }
                 }
