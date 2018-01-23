@@ -17,6 +17,7 @@ using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
@@ -34,6 +35,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public override ref readonly TensorInfo OutputInfo => ref Layers[Layers.Count - 1].OutputInfo;
 
         /// <inheritdoc/>
+        [JsonProperty(nameof(Layers), Order = 6)]
         public override IReadOnlyList<INetworkLayer> Layers => _Layers;
 
         /// <inheritdoc/>

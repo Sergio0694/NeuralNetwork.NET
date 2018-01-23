@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -126,6 +127,30 @@ namespace NeuralNetworkNET.Unit
             graph.Backpropagate(batch, 0, WeightsUpdaters.StochasticGradientDescent(TrainingAlgorithms.StochasticGradientDescent(0.1f)));
             Assert.IsTrue(seq.Layers[0].Equals(graph.Layers[0]));
             Assert.IsTrue(seq.Layers[1].Equals(graph.Layers[1]));
+        }
+
+        #endregion
+
+        #region Misc
+
+        [TestMethod]
+        public void JsonMetadataSerialization1()
+        {
+            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+
+                var stack = _1x1.DepthConcatenation(_3x3);
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10));
+            });
+            String json = network.SerializeMetadataAsJson();
+            Assert.IsTrue(json != null);
         }
 
         #endregion

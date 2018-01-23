@@ -16,6 +16,7 @@ using NeuralNetworkNET.Networks.Graph.Nodes;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
+using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Implementations
 {
@@ -42,6 +43,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// The underlying layers graph for the network
         /// </summary>
         [NotNull]
+        [JsonProperty(nameof(Graph), Order = 6)]
         private readonly ComputationGraph Graph;
         
         #endregion
@@ -388,6 +390,8 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         #endregion
 
+        #region Misc
+
         /// <inheritdoc/>
         protected override void Serialize(Stream stream)
         {
@@ -413,5 +417,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
         /// <inheritdoc/>
         public override INeuralNetwork Clone() => new ComputationGraphNetwork(Graph.GetCloneFactory()(InputInfo));
+
+        #endregion
     }
 }

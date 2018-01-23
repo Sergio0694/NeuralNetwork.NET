@@ -51,7 +51,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         public abstract ref readonly TensorInfo OutputInfo { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Layers), Order = 6)]
         public abstract IReadOnlyList<INetworkLayer> Layers { get; }
 
         /// <inheritdoc/>
