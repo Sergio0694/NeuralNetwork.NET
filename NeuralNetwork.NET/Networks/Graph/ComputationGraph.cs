@@ -163,53 +163,7 @@ namespace NeuralNetworkNET.Networks.Graph
 
         #endregion
 
-        #region Tools
-
-        /// <inheritdoc/>
-        public bool Equals(ComputationGraph other)
-        {
-            // Setup
-            if (other == null) return false;
-            if (other == this) return true;
-            if (Nodes.Count != other.Nodes.Count) return false;
-
-            // Function to extract the indexes of the child nodes for a target node
-            int[] GetIndexes(IEnumerable<IComputationGraphNode> nodes, IReadOnlyList<IComputationGraphNode> list)
-            {
-                List<int> indexes = new List<int>();
-                foreach (IComputationGraphNode node in nodes)
-                    for (int i = 0; i < list.Count; i++)
-                        if (list[i] == node)
-                        {
-                            indexes.Add(i);
-                            break;
-                        }
-                return indexes.ToArray();
-            }
-
-            // Perform the actual comparison
-            for (int i = 0; i < Nodes.Count; i++)
-            {
-                IComputationGraphNode n1 = Nodes[i], n2 = other.Nodes[i];
-                if (!n1.Equals(n2) ||
-                    !GetIndexes(n1.Children, Nodes).SequenceEqual(GetIndexes(n2.Children, other.Nodes))) return false;
-                switch (n1)
-                {
-                    case MergeNode merge:
-                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, MergeNode>().Parents, other.Nodes))) return false;
-                        break;
-                    case ProcessingNode processing:
-                        if (Nodes.IndexOf(processing.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
-                        break;
-                    case TrainingNode split:
-                        if (Nodes.IndexOf(split.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
-                        break;
-                    case InputNode _: break;
-                    default: throw new InvalidOperationException("The graph contains an invalid node");
-                }
-            }
-            return true;
-        }
+        #region Serialization
 
         /// <summary>
         /// Writes the current graph to the input <see cref="Stream"/>
@@ -306,7 +260,8 @@ namespace NeuralNetworkNET.Networks.Graph
                 for (int i = 0; i < children; i++)
                 {
                     if (!stream.TryRead(out Guid child)) return null;
-                    map[child].Children.Add(map[id]);
+                    map[id].Children.Add(map[child]);
+                    map[child].Parents.Add(map[id]);
                 }
 
                 // Parents
@@ -315,6 +270,108 @@ namespace NeuralNetworkNET.Networks.Graph
                 {
                     if (!stream.TryRead(out Guid parent)) return null;
                     map[id].Parents.Add(map[parent]);
+                    map[parent].Children.Add(map[id]);
+                }
+            }
+            return t => New(t, map.Values.First(node => node.NodeType == ComputationGraphNodeType.Input));
+        }
+
+        #endregion
+
+        #region Tools
+
+        /// <inheritdoc/>
+        public bool Equals(ComputationGraph other)
+        {
+            // Setup
+            if (other == null) return false;
+            if (other == this) return true;
+            if (Nodes.Count != other.Nodes.Count) return false;
+
+            // Function to extract the indexes of the child nodes for a target node
+            int[] GetIndexes(IEnumerable<IComputationGraphNode> nodes, IReadOnlyList<IComputationGraphNode> list)
+            {
+                List<int> indexes = new List<int>();
+                foreach (IComputationGraphNode node in nodes)
+                    for (int i = 0; i < list.Count; i++)
+                        if (list[i] == node)
+                        {
+                            indexes.Add(i);
+                            break;
+                        }
+                return indexes.ToArray();
+            }
+
+            // Perform the actual comparison
+            for (int i = 0; i < Nodes.Count; i++)
+            {
+                IComputationGraphNode n1 = Nodes[i], n2 = other.Nodes[i];
+                if (!n1.Equals(n2) ||
+                    !GetIndexes(n1.Children, Nodes).SequenceEqual(GetIndexes(n2.Children, other.Nodes))) return false;
+                switch (n1)
+                {
+                    case MergeNode merge:
+                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, MergeNode>().Parents, other.Nodes))) return false;
+                        break;
+                    case ProcessingNode processing:
+                        if (Nodes.IndexOf(processing.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
+                        break;
+                    case TrainingNode split:
+                        if (Nodes.IndexOf(split.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
+                        break;
+                    case InputNode _: break;
+                    default: throw new InvalidOperationException("The graph contains an invalid node");
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Func{TIn, TResult}"/> to clone the current instance, given the input <see cref="TensorInfo"/>
+        /// </summary>
+        [Pure, NotNull]
+        public Func<TensorInfo, ComputationGraph> GetCloneFactory()
+        {
+            // Build the node mapping
+            Dictionary<IComputationGraphNode, NodeBuilder> map = Nodes.ToDictionary(n => n, n =>
+            {
+                switch (n)
+                {
+                    case ProcessingNode processing: return new NodeBuilder(n.Type, _ => processing.Layer.Clone());
+                    case MergeNode _:
+                    case TrainingNode _:
+                    case InputNode _: return new NodeBuilder(n.Type, null);
+                    default: throw new InvalidOperationException("Invalid graph node type");
+                }
+            });
+
+            // Write the neighbours of each node
+            foreach (IComputationGraphNode node in Nodes)
+            {
+                foreach (IComputationGraphNode child in node.Children)
+                {
+                    map[node].Children.Add(map[child]);
+                    map[child].Parents.Add(map[node]);
+                }
+                switch (node)
+                {
+                    case ProcessingNode processing:
+                        map[node].Parents.Add(map[processing.Parent]);
+                        map[processing.Parent].Children.Add(map[node]);
+                        break;
+                    case MergeNode merge:
+                        foreach (IComputationGraphNode parent in merge.Parents)
+                        {
+                            map[node].Parents.Add(map[parent]);
+                            map[parent].Children.Add(map[node]);
+                        }
+                        break;
+                    case TrainingNode split:
+                        map[node].Parents.Add(map[split.Parent]);
+                        map[split.Parent].Children.Add(map[node]);
+                        break;
+                    case InputNode _: break;
+                    default: throw new InvalidOperationException("Invalid graph node type");
                 }
             }
             return t => New(t, map.Values.First(node => node.NodeType == ComputationGraphNodeType.Input));

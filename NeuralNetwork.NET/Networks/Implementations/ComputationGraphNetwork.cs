@@ -406,9 +406,6 @@ namespace NeuralNetworkNET.Networks.Implementations
         public override bool Equals(INeuralNetwork other) => base.Equals(other) && other is ComputationGraphNetwork network && Graph.Equals(network.Graph);
 
         /// <inheritdoc/>
-        public override INeuralNetwork Clone()
-        {
-            throw new NotImplementedException();
-        }
+        public override INeuralNetwork Clone() => new ComputationGraphNetwork(Graph.GetCloneFactory()(InputInfo));
     }
 }
