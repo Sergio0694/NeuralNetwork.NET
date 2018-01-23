@@ -103,7 +103,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         {
             fixed (float* px = batch.X, py = batch.Y)
             {
-                Tensor.Reshape(px, batch.X.GetLength(0), batch.Y.GetLength(1), out Tensor x);
+                Tensor.Reshape(px, batch.X.GetLength(0), batch.X.GetLength(1), out Tensor x);
                 Tensor.Reshape(py, batch.Y.GetLength(0), batch.Y.GetLength(1), out Tensor y);
 
                 // Local mapping

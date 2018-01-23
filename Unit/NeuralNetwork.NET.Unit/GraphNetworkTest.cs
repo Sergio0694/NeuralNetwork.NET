@@ -1,10 +1,15 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Exceptions;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.SupervisedLearning.Data;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.Unit
@@ -16,6 +21,8 @@ namespace NeuralNetworkNET.Unit
     [TestCategory(nameof(GraphNetworkTest))]
     public class GraphNetworkTest
     {
+        #region Initialization
+
         [TestMethod]
         public void GraphNetworkInitialization1()
         {
@@ -68,5 +75,59 @@ namespace NeuralNetworkNET.Unit
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
         }
+
+        #endregion
+
+        #region Processing
+
+        [TestMethod]
+        public void ForwardTest1()
+        {
+            SequentialNetwork seq = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(12, 12),
+                NetworkLayers.FullyConnected(20, ActivationFunctionType.Sigmoid, biasMode: BiasInitializationMode.Gaussian),
+                NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
+            ComputationGraphNetwork graph = NetworkManager.NewGraph(seq.InputInfo, root =>
+            {
+                var fc = root.Layer(_ => seq.Layers[0].Clone());
+                fc.Layer(_ => seq.Layers[1].Clone());
+            }).To<INeuralNetwork, ComputationGraphNetwork>();
+            float[,] x = new float[125, 12 * 12];
+            for (int i = 0; i < x.GetLength(0); i++)
+                for (int j = 0; j < x.GetLength(1); j++)
+                    x[i, j] = ThreadSafeRandom.NextFloat();
+            float[,]
+                ys = seq.Forward(x),
+                yg = graph.Forward(x);
+            Assert.IsTrue(ys.ContentEquals(yg));
+        }
+
+        [TestMethod]
+        public void BackwardTest1()
+        {
+            SequentialNetwork seq = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(12, 12),
+                NetworkLayers.FullyConnected(20, ActivationFunctionType.Sigmoid, biasMode: BiasInitializationMode.Gaussian),
+                NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
+            ComputationGraphNetwork graph = NetworkManager.NewGraph(seq.InputInfo, root =>
+            {
+                var fc = root.Layer(_ => seq.Layers[0].Clone());
+                fc.Layer(_ => seq.Layers[1].Clone());
+            }).To<INeuralNetwork, ComputationGraphNetwork>();
+            float[,]
+                x = new float[125, 12 * 12],
+                y = new float[125, 10];
+            for (int i = 0; i < x.GetLength(0); i++)
+            {
+                for (int j = 0; j < x.GetLength(1); j++)
+                    x[i, j] = ThreadSafeRandom.NextFloat();
+                y[i, ThreadSafeRandom.NextInt(max: 10)] = 1;
+            }
+            SamplesBatch batch = new SamplesBatch(x, y);
+            seq.Backpropagate(batch, 0, WeightsUpdaters.StochasticGradientDescent(TrainingAlgorithms.StochasticGradientDescent(0.1f)));
+            graph.Backpropagate(batch, 0, WeightsUpdaters.StochasticGradientDescent(TrainingAlgorithms.StochasticGradientDescent(0.1f)));
+            Assert.IsTrue(seq.Layers[0].Equals(graph.Layers[0]));
+            Assert.IsTrue(seq.Layers[1].Equals(graph.Layers[1]));
+        }
+
+        #endregion
     }
 }
