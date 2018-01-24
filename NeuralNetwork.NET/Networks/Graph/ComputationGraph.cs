@@ -194,7 +194,7 @@ namespace NeuralNetworkNET.Networks.Graph
              * 1:   A unique Guid is assigned to each node, and the linear list of in-order nodes
              *      is serialized as a series of (Guid, node) serialized pairs. For processing
              *      nodes, the underlying network layer is serialized as well.
-             * 2:   A list of parent and child nodes for each node, using the previously
+             * 2:   A list of child nodes for each node, using the previously
              *      assigned Guid to identify each serialized node.
              * When deserializing the graph, a NodeBuilder instance is created for each (Guid, node)
              * pair, then the data from the second section is used to reconstruct the right spatial
@@ -204,9 +204,7 @@ namespace NeuralNetworkNET.Networks.Graph
             foreach (NodeBase node in Nodes.Cast<NodeBase>())
             {
                 stream.Write(map[node]);
-                stream.Write(node.Type);
-                if (node is ProcessingNode layered)
-                    layered.Layer.To<INetworkLayer, NetworkLayerBase>().Serialize(stream);
+                node.Serialize(stream);
             }
 
             // Write the neighbours of each node
@@ -216,24 +214,6 @@ namespace NeuralNetworkNET.Networks.Graph
                 stream.Write(node.Children.Count);
                 foreach (IComputationGraphNode child in node.Children)
                     stream.Write(map[child]);
-                switch (node)
-                {
-                    case ProcessingNode processing:
-                        stream.Write(1);
-                        stream.Write(map[processing.Parent]);
-                        break;
-                    case DepthConcatenationNode merge:
-                        stream.Write(merge.Parents.Count);
-                        foreach (IComputationGraphNode parent in merge.Parents)
-                        stream.Write(map[parent]);
-                        break;
-                    case TrainingNode split:
-                        stream.Write(1);
-                        stream.Write(map[split.Parent]);
-                        break;
-                    case InputNode _: break;
-                    default: throw new InvalidOperationException("Invalid graph node type");
-                }
             }
         }
 
@@ -252,37 +232,35 @@ namespace NeuralNetworkNET.Networks.Graph
             {
                 if (!stream.TryRead(out Guid id)) return null;
                 if (!stream.TryRead(out ComputationGraphNodeType type)) return null;
-                if (type == ComputationGraphNodeType.Processing)
+                switch (type)
                 {
-                    if (stream.TryRead(out LayerType layerType)) return null;
-                    INetworkLayer layer = null;
-                    if (preference == ExecutionModePreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
-                    if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, layerType);
-                    if (layer == null) return null;
-                    map[id] = new NodeBuilder(type, new LayerFactory(_ => layer));
+                    case ComputationGraphNodeType.Processing:
+                        if (!stream.TryRead(out LayerType layerType)) return null;
+                        INetworkLayer layer = null;
+                        if (preference == ExecutionModePreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
+                        if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, layerType);
+                        if (layer == null) return null;
+                        map[id] = new NodeBuilder(type, new LayerFactory(_ => layer));
+                        break;
+                    case ComputationGraphNodeType.Sum:
+                        if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+                        map[id] = new NodeBuilder(type, (activation, preference));
+                        break;
+                    default:
+                        map[id] = new NodeBuilder(type, null);
+                        break;
                 }
-                else map[id] = new NodeBuilder(type, null);
             }
 
             // Assign the neighbours
             while (stream.TryRead(out Guid id))
             {
-                // Children
                 if (!stream.TryRead(out int children)) return null;
                 for (int i = 0; i < children; i++)
                 {
                     if (!stream.TryRead(out Guid child)) return null;
                     map[id].Children.Add(map[child]);
                     map[child].Parents.Add(map[id]);
-                }
-
-                // Parents
-                if (!stream.TryRead(out int parents)) return null;
-                for (int i = 0; i < parents; i++)
-                {
-                    if (!stream.TryRead(out Guid parent)) return null;
-                    map[id].Parents.Add(map[parent]);
-                    map[parent].Children.Add(map[id]);
                 }
             }
             return t => New(t, map.Values.First(node => node.NodeType == ComputationGraphNodeType.Input));

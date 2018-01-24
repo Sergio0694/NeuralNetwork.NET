@@ -8,6 +8,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.cuDNN;
+using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
@@ -152,5 +153,12 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        public override void Serialize(System.IO.Stream stream)
+        {
+            base.Serialize(stream);
+            stream.Write(ActivationFunctionType);
+        }
     }
 }

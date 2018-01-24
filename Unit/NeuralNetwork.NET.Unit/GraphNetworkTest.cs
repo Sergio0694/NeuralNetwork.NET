@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
@@ -174,6 +175,49 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(network.Equals(copy));
             copy.Layers[0].To<INetworkLayer, ConvolutionalLayer>().Weights[0] += 0.1f;
             Assert.IsFalse(network.Equals(copy));
+        }
+
+        [TestMethod]
+        public void SaveTest1()
+        {
+            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
+            {
+                var fc1 = root.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc2 = fc1.Layer(NetworkLayers.FullyConnected(40, ActivationFunctionType.Sigmoid));
+                fc2.Layer(NetworkLayers.Softmax(10));
+            });
+            String path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
+            Directory.CreateDirectory(path);
+            FileInfo file = new FileInfo(Path.Combine(path, "graph2.nnet"));
+            network.Save(file);
+            INeuralNetwork loaded = NetworkLoader.TryLoad(file, ExecutionModePreference.Cpu);
+            Assert.IsTrue(loaded != null);
+            Assert.IsTrue(network.Equals(loaded));
+        }
+
+        [TestMethod]
+        public void SaveTest2()
+        {
+            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+
+                var stack = _1x1.DepthConcatenation(_3x3);
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10));
+            });
+            String path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
+            Directory.CreateDirectory(path);
+            FileInfo file = new FileInfo(Path.Combine(path, "graph2.nnet"));
+            network.Save(file);
+            INeuralNetwork loaded = NetworkLoader.TryLoad(file, ExecutionModePreference.Cpu);
+            Assert.IsTrue(loaded != null);
+            Assert.IsTrue(network.Equals(loaded));
         }
 
         #endregion
