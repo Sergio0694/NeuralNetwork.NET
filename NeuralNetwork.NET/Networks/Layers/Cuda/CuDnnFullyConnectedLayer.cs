@@ -1,14 +1,13 @@
-﻿using Alea;
+﻿using System;
+using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
@@ -46,31 +45,32 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
+        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
             using (DeviceMemory<float>
-                delta_1_gpu = DnnInstance.Gpu.AllocateDevice(dy),
-                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                z_gpu = DnnInstance.Gpu.AllocateDevice(z))
+                dy_gpu = DnnInstance.Gpu.AllocateDevice(dy),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights), // Shared for the weights and dJdw, for better efficiency
+                y_gpu = DnnInstance.Gpu.AllocateDevice(y),
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
             {
-                DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, delta_1_gpu.Ptr, w_gpu.Ptr, activationPrime);
-                z_gpu.CopyTo(z);
-            }
-        }
+                // Backpropagation
+                DnnInstance.ActivationBackward(y.Entities, y.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
+                if (!dx.IsNull)
+                {
+                    using (DeviceMemory<float> dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size))
+                    {
+                        DnnInstance.FullyConnectedBackwardData(y.Entities, InputInfo.Size, OutputInfo.Size, dy_gpu.Ptr, w_gpu.Ptr, dx_gpu.Ptr);
+                        dx_gpu.CopyTo(dx);
+                    }
+                }
 
-        /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
-            using (DeviceMemory<float>
-                a_gpu = DnnInstance.Gpu.AllocateDevice(a),
-                delta_gpu = DnnInstance.Gpu.AllocateDevice(delta),
-                w_gpu = DnnInstance.Gpu.AllocateDevice<float>(a.Length * delta.Length))
-            {
-                DnnInstance.FullyConnectedBackwardFilter(a.Entities, a.Length, delta.Length, a_gpu.Ptr, delta_gpu.Ptr, w_gpu.Ptr);
+                // Gradient
+                DnnInstance.FullyConnectedBackwardFilter(x.Entities, x.Length, dy.Length, x_gpu.Ptr, dy_gpu.Ptr, w_gpu.Ptr);
                 w_gpu.CopyToHost(1, Weights.Length, out dJdw);
+                DnnInstance.FullyConnectedBackwardBias(dy.Entities, dy.Length, dy_gpu.Ptr, dJdb_gpu.Ptr); // Doing this on CPU is generally faster than launching the kernels
+                dJdb_gpu.CopyToHost(1, Biases.Length, out dJdb);
             }
-            Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.FullyConnectedBackwardBias(delta, dJdb); // Doing this on CPU is generally faster than launching the kernels
         }
 
         #endregion
@@ -91,5 +91,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             float[] biases = stream.ReadUnshuffled(bLength);
             return new CuDnnFullyConnectedLayer(input, output.Size, weights, biases, activation);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnFullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);
     }
 }

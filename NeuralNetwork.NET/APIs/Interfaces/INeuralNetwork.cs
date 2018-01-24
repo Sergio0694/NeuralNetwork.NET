@@ -37,6 +37,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         IReadOnlyList<INetworkLayer> Layers { get; }
 
         /// <summary>
+        /// Gets the number of units in the current network (layers or graph nodes)
+        /// </summary>
+        int Size { get; }
+
+        /// <summary>
         /// Gets the total number of parameters in the current network layer
         /// </summary>
         int Parameters { get; }

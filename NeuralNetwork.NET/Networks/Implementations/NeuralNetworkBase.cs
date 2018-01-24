@@ -51,11 +51,14 @@ namespace NeuralNetworkNET.Networks.Implementations
         public abstract ref readonly TensorInfo OutputInfo { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Layers), Order = 6)]
         public abstract IReadOnlyList<INetworkLayer> Layers { get; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(Parameters), Order = 4)]
+        [JsonProperty(nameof(Size), Order = 4)]
+        public abstract int Size { get; }
+
+        /// <inheritdoc/>
+        [JsonProperty(nameof(Parameters), Order = 5)]
         public int Parameters => Layers.Sum(l => l is WeightedLayerBase weighted ? weighted.Weights.Length + weighted.Biases.Length : 0);
 
         /// <summary>
@@ -64,7 +67,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         public int[] WeightedLayersIndexes { get; protected set; }
 
         /// <inheritdoc/>
-        [JsonProperty(nameof(IsInNumericOverflow), Order = 5)]
+        [JsonProperty(nameof(IsInNumericOverflow), Order = 6)]
         public bool IsInNumericOverflow
         {
             get
@@ -299,24 +302,27 @@ namespace NeuralNetworkNET.Networks.Implementations
             using (GZipStream gzip = new GZipStream(stream, CompressionLevel.Optimal, true))
             {
                 gzip.Write(NetworkType);
-                foreach (NetworkLayerBase layer in Layers.Cast<NetworkLayerBase>()) 
-                    layer.Serialize(gzip);
+                Serialize(gzip);
             }
         }
 
+        /// <summary>
+        /// Writes the current network data to the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The target <see cref="Stream"/> to use to write the network data</param>
+        protected abstract void Serialize(Stream stream);
+
         /// <inheritdoc/>
-        public bool Equals(INeuralNetwork other)
+        public virtual bool Equals(INeuralNetwork other)
         {
             // Compare general features
-            if (other.GetType() == GetType() &&
-                other.InputInfo == InputInfo &&
-                other.OutputInfo == OutputInfo &&
-                other.Layers.Count == Layers.Count)
-            {
-                // Compare the individual layers
-                return Layers.Zip(other.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
-            }
-            return false;
+            if (other == null) return false;
+            if (other == this) return true;
+            return other.GetType() == GetType() &&
+                   other.InputInfo == InputInfo &&
+                   other.OutputInfo == OutputInfo &&
+                   other.Layers.Count == Layers.Count &&
+                   other.Parameters == Parameters;
         }
 
         /// <inheritdoc/>

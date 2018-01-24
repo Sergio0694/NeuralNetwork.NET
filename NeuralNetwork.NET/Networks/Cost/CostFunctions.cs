@@ -154,14 +154,16 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="y">The expected results for the dataset</param>
         /// <param name="z">The activity on the last network layer</param>
         /// <param name="activationPrime">The activation pime function for the last network layer</param>
-        public static unsafe void QuadraticCostPrime(in Tensor yHat, in Tensor y, in Tensor z, ActivationFunction activationPrime)
+        /// <param name="dx">The backpropagated error</param>
+        public static unsafe void QuadraticCostPrime(in Tensor yHat, in Tensor y, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
         {
             // Detect the size of the inputs
             int h = yHat.Entities, w = yHat.Length;
-            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two tensors must have the same shape");
+            if (h != dx.Entities || w != dx.Length) throw new ArgumentException("The output tensor must have the same shape as the inputs");
 
             // Calculate (yHat - y) * activation'(z)
-            float* pyHat = yHat, py = y, pz = z;
+            float* pyHat = yHat, py = y, pz = z, pdx = dx;
             void Kernel(int i)
             {
                 // Save the index and iterate for each column
@@ -173,7 +175,7 @@ namespace NeuralNetworkNET.Networks.Cost
                         difference = pyHat[index] - py[index],
                         zPrime = activationPrime(pz[index]),
                         hProduct = difference * zPrime;
-                    pyHat[index] = hProduct;
+                    pdx[index] = hProduct;
                 }
             }
             Parallel.For(0, h, Kernel).AssertCompleted();
@@ -186,14 +188,16 @@ namespace NeuralNetworkNET.Networks.Cost
         /// <param name="y">The expected results for the dataset</param>
         /// <param name="z">The activity on the last network layer</param>
         /// <param name="activationPrime">The activation pime function for the last network layer</param>
-        public static void CrossEntropyCostPrime(in Tensor yHat, in Tensor y, in Tensor z, ActivationFunction activationPrime)
+        /// <param name="dx">The backpropagated error</param>
+        public static void CrossEntropyCostPrime(in Tensor yHat, in Tensor y, in Tensor z, ActivationFunction activationPrime, in Tensor dx)
         {
             // Detect the size of the inputs
             int h = yHat.Entities, w = yHat.Length;
-            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two matrices must have the same size");
+            if (h != y.Entities || w != y.Length) throw new ArgumentException("The two tensors must have the same shape");
+            if (h != dx.Entities || w != dx.Length) throw new ArgumentException("The output tensor must have the same shape as the inputs");
 
             // Calculate (yHat - y)
-            CpuBlas.Subtract(yHat, y, yHat);
+            CpuBlas.Subtract(yHat, y, dx);
         }
 
         #endregion

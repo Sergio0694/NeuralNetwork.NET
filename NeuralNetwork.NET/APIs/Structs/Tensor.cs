@@ -48,7 +48,6 @@ namespace NeuralNetworkNET.APIs.Structs
         /// </summary>
         public bool IsNull
         {
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Ptr == IntPtr.Zero;
         }
@@ -59,7 +58,6 @@ namespace NeuralNetworkNET.APIs.Structs
         public unsafe ref float Ref
         {
             [PublicAPI]
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => ref Unsafe.AsRef<float>(this);
         }
@@ -300,6 +298,31 @@ namespace NeuralNetworkNET.APIs.Structs
         {
             if (Ptr != IntPtr.Zero)
                 Marshal.FreeHGlobal(Ptr);
+        }
+
+        /// <summary>
+        /// Frees the input sequence of <see cref="Tensor"/> instances
+        /// </summary>
+        /// <param name="tensors">The tensors to free</param>
+        /// <remarks>The <see langword="params"/> usage in the method arguments will cause a heap allocation
+        /// when this method is called. Manually calling <see cref="Free()"/> on each target <see cref="Tensor"/>
+        /// should have a slightly better performance. The same is true for the <see cref="TryFree(Tensor[])"/> method as well.</remarks>
+        public static unsafe void Free([NotNull] params Tensor[] tensors)
+        {
+            fixed (Tensor* p = tensors)
+                for (int i = 0; i < tensors.Length; i++)
+                    p[i].Free();
+        }
+
+        /// <summary>
+        /// Frees the input sequence of <see cref="Tensor"/> instances, if possible
+        /// </summary>
+        /// <param name="tensors">The tensors to free</param>
+        public static unsafe void TryFree([NotNull] params Tensor[] tensors)
+        {
+            fixed (Tensor* p = tensors)
+                for (int i = 0; i < tensors.Length; i++)
+                    p[i].TryFree();
         }
 
         /// <summary>

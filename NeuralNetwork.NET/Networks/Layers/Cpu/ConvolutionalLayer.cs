@@ -8,7 +8,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 using Newtonsoft.Json;
@@ -95,26 +94,27 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
+        public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            fixed (float* pw = Weights)
+            // Backpropagation
+            Tensor.Like(dy, out Tensor dy_copy);
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
+            if (!dx.IsNull)
             {
-                Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
-                Tensor.New(z.Entities, InputInfo.Size, out Tensor dx);
-                CpuDnn.ConvolutionBackwardData(dy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
-                CpuDnn.ActivationBackward(z, dx, activationPrime, z);
-                dx.Free();
+                fixed (float* pw = Weights)
+                {
+                    Tensor.Reshape(pw, OutputInfo.Channels, KernelInfo.Size, out Tensor wTensor);
+                    CpuDnn.ConvolutionBackwardData(dy_copy, OutputInfo, wTensor, KernelInfo, dx, InputInfo);
+                }
             }
-        }
 
-        /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
+            // Gradient
             Tensor.New(OutputInfo.Channels, KernelInfo.Size, out Tensor dw);
-            CpuDnn.ConvolutionBackwardFilter(a, InputInfo, delta, OutputInfo, dw, KernelInfo);
+            CpuDnn.ConvolutionBackwardFilter(x, InputInfo, dy_copy, OutputInfo, dw, KernelInfo);
             dw.Reshape(1, Weights.Length, out dJdw);
             Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.ConvolutionBackwardBias(delta, OutputInfo, dJdb);
+            CpuDnn.ConvolutionBackwardBias(dy_copy, OutputInfo, dJdb);
+            dy_copy.Free();
         }
 
         #endregion

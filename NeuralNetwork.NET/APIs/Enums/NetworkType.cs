@@ -8,6 +8,11 @@
         /// <summary>
         /// The classic network model, consisting in a linear stack of connected layers
         /// </summary>
-        Sequential
+        Sequential,
+
+        /// <summary>
+        /// A network with a custom computation graph used to process its inputs
+        /// </summary>
+        ComputationGraph
     }
 }

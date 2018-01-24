@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the network
         /// </summary>
-        public (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions { get; }
+        protected readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
         #endregion
 
@@ -71,15 +71,6 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <param name="z">The output activity on the current layer</param>
         /// <param name="a">The output activation on the current layer</param>
         public abstract void Forward(in Tensor x, out Tensor z, out Tensor a);
-
-        /// <summary>
-        /// Backpropagates the error to compute the delta for the inputs of the layer
-        /// </summary>
-        /// <param name="x">The input <see cref="Tensor"/> used in the forward pass</param>
-        /// <param name="dy">The output error delta</param>
-        /// <param name="z">The activity on the inputs of the layer. It will be modified to become the computed delta</param>
-        /// <param name="activationPrime">The activation prime function performed by the previous layer</param>
-        public abstract void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime);
 
         #region Equality check
 
