@@ -3,8 +3,8 @@
 
 # What is it?
 
-**NeuralNetwork.NET** is a .NET Standard 2.0 library that implements a Convolutional Neural Network with customizable layers, built from scratch with C#.
-It provides simple APIs to define a CNN structure and to train the network using Stochastic Gradient Descent, as well as methods to save/load a network and its metadata and more.
+**NeuralNetwork.NET** is a .NET Standard 2.0 library that implements sequential and computation graph neural networks with customizable layers, built from scratch with C#.
+It provides simple APIs designed for quick prototyping to define and train models using stochastic gradient descent, as well as methods to save/load a network model and its metadata and more.
 
 The library also exposes CUDA-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
@@ -14,6 +14,7 @@ The library also exposes CUDA-accelerated layers with more advanced features tha
 - [Quick start](#quick-start)
   - [Supervised learning](#supervised-learning) 
   - [GPU acceleration](#gpu-acceleration)
+  - [Computation graphs](#computation-graphs)
   - [Library settings](#library-settings)
   - [Serialization and deserialization](#serialization-and-deserialization)
   - [Built-in datasets](#built\-in-datasets)
@@ -104,6 +105,28 @@ LayerFactory inception = CuDnnNetworkLayers.Inception(InceptionInfo.New(
 These `LayerFactory` instances can be used to create a new network just like in the CPU example.
 
 **NOTE:** in order to use this feature, the CUDA and cuDNN toolkits must be installed on the current system, a CUDA-enabled nVidia GeForce/Quadro GPU must be available and the **Alea** NuGet package must be installed in the application using the **NeuralNetwork.NET** library as well. Additional info are available [here](http://www.aleagpu.com/release/3_0_4/doc/installation.html#deployment_considerations).
+
+## Computation graphs
+
+Some complex network structures, like residual networks or inception modules , cannot be expressed as a simple sequential network structure: this is where computation graph networks come into play. Instead of forwarding the inputs through a linear stack of layers, a computation graph has a specific spatial structure that allows different nodes to be connected together. For example, it is possible to channel data through different parallel pipelines that are merged later on in the graph, or to have auxiliary classifiers that contribute to the gradient backpropagation during the training phase.
+
+Computation graph networks are created using the `NetworkManager.NewGraph` API, here's an example:
+
+```C#
+INeuralNetwork residual = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
+{
+    var conv1 = root.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.Identity));
+    var pool1 = conv1.Layer(CuDnnNetworkLayers.Pooling(ActivationFunctionType.ReLU));
+
+    var conv2 = pool1.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ReLU));
+    var conv3 = conv2.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ReLU));
+    var res = conv3.Sum(pool1);
+
+    var pool2 = res.Layer(CuDnnNetworkLayers.Pooling(ActivationFunctionType.ReLU));
+    var fc = res.Layer(CuDnnNetworkLayers.FullyConnected(100, ActivationFunctionType.Tanh));
+    _ = fc.Layer(CuDnnNetworkLayers.Softmax(10));
+});
+```
 
 ## Library settings
 
