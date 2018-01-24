@@ -23,10 +23,10 @@ namespace DigitsCudaTest
         {
             // Create the network
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 40, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
+                CuDnnNetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
+                CuDnnNetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
                 CuDnnNetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
                 CuDnnNetworkLayers.Softmax(10));
 
