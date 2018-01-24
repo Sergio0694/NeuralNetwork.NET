@@ -24,5 +24,26 @@ namespace NeuralNetworkNET.Helpers
             foreach (Tensor tensor in Values)
                 tensor.Free();
         }
+
+        #if DEBUG
+
+        /// <summary>
+        /// Gets or sets a unique value for the input key
+        /// </summary>
+        /// <param name="key">The key to use to read/data from the map</param>
+        /// <exception cref="InvalidOperationException">The key already exists in the map</exception>
+        public new Tensor this[T key]
+        {
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+            get => base[key];
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (ContainsKey(key)) throw new InvalidOperationException("The map already contains a value for the current key");
+                base[key] = value;
+            }
+        }
+
+        #endif
     }
 }

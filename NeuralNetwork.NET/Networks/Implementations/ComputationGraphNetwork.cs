@@ -105,7 +105,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                 }
 
                 // Manually start the forward pass on the first input branches
-                for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
+                for (int i = 0; i < Graph.Root.Children.Count; i++)
+                    if (!aMap.ContainsKey(Graph.Root.Children[i]))
+                        Forward(Graph.Root.Children[i]);
 
                 // Collect the outputs and return
                 yHat = aMap[Graph.OutputNode];
@@ -180,7 +182,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                     }
 
                     // Manually start the forward pass on the first input branches
-                    for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
+                    for (int i = 0; i < Graph.Root.Children.Count; i++)
+                        if (!aMap.ContainsKey(Graph.Root.Children[i]))
+                            Forward(Graph.Root.Children[i]);
 
                     #endregion
 
@@ -239,13 +243,15 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     links[i] = true;
                                 }
                             }
+
+                            // Sum the output deltas
                             Tensor.Like(*dyt, out dy);
                             CpuBlas.Sum(new Span<Tensor>(dyt, node.Children.Count), dy);
                             for (int i = 0; i < node.Children.Count; i++)
                                 if (!links[i])
                                     dyt[i].Free();
                         }
-                        else dy = Tensor.Null; // Null when the current node is an output node
+                        else dy = Tensor.Null; // The current node is an output node
 
                         // Process the current node
                         switch (node)
@@ -293,6 +299,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             {
                                 Tensor.Like(zMap[node], out Tensor dx);
                                 sum.Backpropagate(zMap[node], dy, dx);
+                                dy.Free();
                                 dMap[node] = dx;
                                 for (int i = 0; i < sum.Parents.Count; i++)
                                     Backward(sum.Parents[i]);
@@ -428,7 +435,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                     }
 
                     // Manually start the forward pass on the first input branches
-                    for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
+                    for (int i = 0; i < Graph.Root.Children.Count; i++)
+                        if (!aMap.ContainsKey(Graph.Root.Children[i]))
+                            Forward(Graph.Root.Children[i]);
 
                     // Return the extracted features
                     aMap.Remove(Graph.Root);
