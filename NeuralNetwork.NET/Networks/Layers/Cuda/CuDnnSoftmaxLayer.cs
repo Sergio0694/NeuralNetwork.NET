@@ -9,6 +9,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Layers.Abstract;
+using System;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
@@ -86,5 +87,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             if (!stream.TryRead(out CostFunctionType cost) && cost == CostFunctionType.LogLikelyhood) return null;
             return new CuDnnSoftmaxLayer(input, output.Size, weights, biases);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnSoftmaxLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy());
     }
 }

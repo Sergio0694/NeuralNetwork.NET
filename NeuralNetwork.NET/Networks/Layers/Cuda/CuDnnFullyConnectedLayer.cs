@@ -1,4 +1,5 @@
-﻿using Alea;
+﻿using System;
+using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
@@ -90,5 +91,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             float[] biases = stream.ReadUnshuffled(bLength);
             return new CuDnnFullyConnectedLayer(input, output.Size, weights, biases, activation);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnFullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);
     }
 }

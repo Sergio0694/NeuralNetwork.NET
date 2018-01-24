@@ -674,9 +674,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         #region Misc
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnInceptionLayer(InputInfo, OperationInfo, Weights, Biases);
-
-        /// <inheritdoc/>
         public override void Serialize(System.IO.Stream stream)
         {
             base.Serialize(stream);
@@ -700,6 +697,9 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             if (!stream.TryRead(out InceptionInfo info)) return null;
             return new CuDnnInceptionLayer(input, info, weights, biases);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnInceptionLayer(InputInfo, OperationInfo, Weights, Biases);
 
         #endregion
 

@@ -78,9 +78,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             }
         }
 
-        /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnPoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
-
         /// <summary>
         /// Tries to deserialize a new <see cref="CuDnnPoolingLayer"/> from the input <see cref="System.IO.Stream"/>
         /// </summary>
@@ -94,5 +91,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             if (!stream.TryRead(out PoolingInfo operation)) return null;
             return new CuDnnPoolingLayer(input, operation, activation);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnPoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
     }
 }
