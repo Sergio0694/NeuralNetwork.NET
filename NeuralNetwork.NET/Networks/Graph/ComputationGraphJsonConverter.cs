@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Networks.Graph.Nodes;
-using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -37,8 +36,12 @@ namespace NeuralNetworkNET.Networks.Graph
                         jNode.Add("Parent", map[processing.Parent]);
                         jNode.Add("Layer", JToken.FromObject(processing.Layer));
                         break;
-                    case MergeNodeBase merge:
-                        jNode.Add("Parents", new JArray(merge.Parents.Select(child => map[child]).ToList()));
+                    case DepthConcatenationNode concatenation:
+                        jNode.Add("Parents", new JArray(concatenation.Parents.Select(child => map[child]).ToList()));
+                        break;
+                    case SumNode sum:
+                        jNode.Add("Parents", new JArray(sum.Parents.Select(child => map[child]).ToList()));
+                        jNode.Add("ActivationFunctionType", sum.ActivationFunctionType.ToString());
                         break;
                     case TrainingNode split:
                         jNode.Add("Parent", map[split.Parent]);

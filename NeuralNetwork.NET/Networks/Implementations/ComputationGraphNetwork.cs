@@ -409,7 +409,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
         /// <param name="preference">The layers deserialization preference</param>
         [MustUseReturnValue, CanBeNull]
-        public static INeuralNetwork Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        public static INeuralNetwork Deserialize([NotNull] Stream stream, ExecutionModePreference preference)
         {
             if (!stream.TryRead(out TensorInfo inputs)) return null;
             Func<TensorInfo, ComputationGraph> f = ComputationGraph.Deserialize(stream, preference);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.Extensions;
@@ -76,7 +77,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <typeparam name="T">The target parameter type</typeparam>
         [Pure]
         internal T GetParameter<T>() => Parameter != null && Parameter.GetType() == typeof(T)
-            ? MiscExtensions.To<object, T>(Parameter)
+            ? Parameter.To<object, T>()
             : throw new InvalidOperationException("Invalid parameter type");
 
         #endregion
@@ -98,7 +99,23 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
         [MustUseReturnValue, NotNull]
-        public NodeBuilder Sum(ActivationFunctionType activation, params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, activation, inputs);
+        public NodeBuilder Sum(ActivationFunctionType activation, params NodeBuilder[] inputs)
+        {
+            var parameter = (activation, CuDnnNetworkLayers.IsCudaSupportAvailable
+                ? ExecutionModePreference.Cuda
+                : ExecutionModePreference.Cpu);
+            return New(ComputationGraphNodeType.Sum, parameter, inputs);
+        }
+
+        /// <summary>
+        /// Creates a new linear sum node that merges multiple input nodes
+        /// </summary>
+        /// <param name="activation">The activation function to use in the sum layer</param>
+        /// <param name="mode">The desired execution preference for the activation function</param>
+        /// <param name="inputs">The sequence of parent nodes for the new instance</param>
+        [PublicAPI]
+        [MustUseReturnValue, NotNull]
+        public NodeBuilder Sum(ActivationFunctionType activation, ExecutionModePreference mode, params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, (activation, mode), inputs);
 
         /// <summary>
         /// Creates a new depth concatenation node that merges multiple input nodes with the same output shape

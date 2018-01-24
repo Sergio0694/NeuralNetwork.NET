@@ -259,7 +259,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
         /// <param name="preference">The layers deserialization preference</param>
         [MustUseReturnValue, CanBeNull]
-        public static INeuralNetwork Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        public static INeuralNetwork Deserialize([NotNull] Stream stream, ExecutionModePreference preference)
         {
             /* =================
              * Data structure
@@ -275,7 +275,7 @@ namespace NeuralNetworkNET.Networks.Implementations
             {
                 // Deserialization attempt
                 INetworkLayer layer = null;
-                if (preference == LayersLoadingPreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, type);
+                if (preference == ExecutionModePreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, type);
                 if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, type);
                 if (layer == null) return null;
 

@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 network.Save(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                INeuralNetwork copy = NetworkLoader.TryLoad(stream, LayersLoadingPreference.Cuda);
+                INeuralNetwork copy = NetworkLoader.TryLoad(stream, ExecutionModePreference.Cuda);
                 Assert.IsTrue(network.Equals(copy));
             }
         }

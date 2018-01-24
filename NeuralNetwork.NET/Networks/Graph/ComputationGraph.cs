@@ -10,6 +10,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Graph.Nodes;
 using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 using NeuralNetworkNET.Networks.Layers.Abstract;
@@ -143,7 +144,8 @@ namespace NeuralNetworkNET.Networks.Graph
                         if (node.NodeType == ComputationGraphNodeType.Sum)
                         {
                             shape = parents[0].Info;
-                            next = new SumNode(parents.Select(t => t.Node).ToArray());
+                            (ExecutionModePreference mode, ActivationFunctionType activation) = node.GetParameter<(ExecutionModePreference, ActivationFunctionType)>();
+                            next = SumNode.New(mode, activation, parents.Select(t => t.Node).ToArray());
                         }
                         else
                         {
@@ -241,7 +243,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
         /// <param name="preference">The layers deserialization preference</param>
         [MustUseReturnValue, CanBeNull]
-        public static Func<TensorInfo, ComputationGraph> Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        public static Func<TensorInfo, ComputationGraph> Deserialize([NotNull] Stream stream, ExecutionModePreference preference)
         {
             // Prepare the node builders with the appropriate nodes
             if (!stream.TryRead(out int count)) return null;
@@ -254,7 +256,7 @@ namespace NeuralNetworkNET.Networks.Graph
                 {
                     if (stream.TryRead(out LayerType layerType)) return null;
                     INetworkLayer layer = null;
-                    if (preference == LayersLoadingPreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
+                    if (preference == ExecutionModePreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
                     if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, layerType);
                     if (layer == null) return null;
                     map[id] = new NodeBuilder(type, new LayerFactory(_ => layer));
