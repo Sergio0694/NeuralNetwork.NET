@@ -58,6 +58,11 @@ namespace NeuralNetworkNET.APIs.Structs
         public static ConvolutionInfo Default { get; } = new ConvolutionInfo(ConvolutionMode.Convolution, 0, 0, 1, 1);
 
         /// <summary>
+        /// Gets the default cross correlation mode, with no padding and a stride of 1 in both directions
+        /// </summary>
+        public static ConvolutionInfo CrossCorrelation { get; } = new ConvolutionInfo(ConvolutionMode.CrossCorrelation, 0, 0, 1, 1);
+
+        /// <summary>
         /// Creates a new convolution operation description with the input parameters
         /// </summary>
         /// <param name="mode">The desired convolution mode to use</param>
