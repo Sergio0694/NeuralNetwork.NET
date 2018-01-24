@@ -261,7 +261,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 {
                                     if (processing.Parent is InputNode)
                                     {
-                                        if (!linked) dy.TryFree();
+                                        if (!linked) dMap[node] = dy; // Notify other branches, if present
                                         return; // No backpropagation required
                                     }
                                     Tensor.New(x.Entities, constant.InputInfo.Size, out Tensor dx);
