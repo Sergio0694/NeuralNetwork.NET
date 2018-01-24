@@ -13,7 +13,6 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Graph;
 using NeuralNetworkNET.Networks.Graph.Nodes;
-using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
@@ -75,6 +74,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     switch (node)
                     {
                         case ProcessingNode processing:
+                        {
                             processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? xc : aMap[processing.Parent], out Tensor z, out Tensor a);
                             z.Free();
                             aMap[processing] = a;
@@ -82,12 +82,22 @@ namespace NeuralNetworkNET.Networks.Implementations
                             for (int i = 0; i < processing.Children.Count; i++)
                                 Forward(processing.Children[i]);
                             break;
-                        case MergeNodeBase merge:
-                            if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
-                            aMap[merge] = m;
-                            for (int i = 0; i < merge.Children.Count; i++)
-                                Forward(merge.Children[i]);
+                        }
+                        case DepthConcatenationNode concatenation:
+                            if (!TryExecuteMergeForward(aMap, concatenation, out Tensor m)) return;
+                            aMap[concatenation] = m;
+                            for (int i = 0; i < concatenation.Children.Count; i++)
+                                Forward(concatenation.Children[i]);
                             break;
+                        case SumNode sum:
+                        {
+                            if (!TryExecuteMergeForward(aMap, sum, out Tensor z, out Tensor a)) return;
+                            z.Free();
+                            aMap[sum] = a;
+                            for (int i = 0; i < sum.Children.Count; i++)
+                                Forward(sum.Children[i]);
+                            break;
+                        }
                         case TrainingNode _: return;
                         default:
                             throw new ArgumentException("The node type is not supported", nameof(node));
@@ -134,6 +144,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         switch (node)
                         {
                             case ProcessingNode processing:
+                            {
                                 processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? x : aMap[processing.Parent], out Tensor z, out Tensor a);
                                 zMap[processing] = z;
                                 aMap[processing] = a;
@@ -144,10 +155,18 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     dropMap[processing] = mask;
                                 }
                                 break;
-                            case MergeNodeBase merge:
-                                if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
-                                aMap[merge] = m;
+                            }
+                            case DepthConcatenationNode concatenation:
+                                if (!TryExecuteMergeForward(aMap, concatenation, out Tensor m)) return;
+                                aMap[concatenation] = m;
                                 break;
+                            case SumNode sum:
+                            {
+                                if (!TryExecuteMergeForward(aMap, sum, out Tensor z, out Tensor a)) return;
+                                zMap[sum] = z;
+                                aMap[sum] = a;
+                                break;
+                            }
                             case TrainingNode split: 
                                 aMap[split.Parent].Duplicate(out Tensor copy);
                                 aMap[node] = copy;
@@ -264,11 +283,18 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 if (!linked) dy.TryFree();
                                 Backward(processing.Parent);
                                 break;
-                            case MergeNodeBase merge:
+                            case DepthConcatenationNode concatenation:
                                 dMap[node] = dy; // Pass-through the error delta with no changes
-                                for (int i = 0; i < merge.Parents.Count; i++)
-                                    Backward(merge.Parents[i]);
+                                for (int i = 0; i < concatenation.Parents.Count; i++)
+                                    Backward(concatenation.Parents[i]);
                                 break;
+                            case SumNode sum:
+                            {
+                                Tensor.Like(zMap[node], out Tensor dx);
+                                sum.Backpropagate(zMap[node], dy, dx);
+                                dMap[node] = dx;
+                                break;
+                            }
                             case TrainingNode split:
                                 dMap[node] = dy;
                                 Backward(split.Parent);
@@ -297,34 +323,44 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         // Executes the forward pass on a merge node, if possible
-        private static unsafe bool TryExecuteMergeForward([NotNull] TensorMap<IComputationGraphNode> map, [NotNull] MergeNodeBase merge, out Tensor y)
+        private static unsafe bool TryExecuteMergeForward([NotNull] TensorMap<IComputationGraphNode> map, [NotNull] SumNode sum, out Tensor z, out Tensor a)
         {
             // Prepare the inputs
-            Tensor* xs = stackalloc Tensor[merge.Parents.Count];
-            for (int i = 0; i < merge.Parents.Count; i++)
+            Tensor* xs = stackalloc Tensor[sum.Parents.Count];
+            for (int i = 0; i < sum.Parents.Count; i++)
             {
-                if (!map.TryGetValue(merge.Parents[i], out xs[i]))
+                if (!map.TryGetValue(sum.Parents[i], out xs[i]))
                 {
-                    y = Tensor.Null;
+                    z = a = default;
                     return false;
                 }
             }
-            Span<Tensor> inputs = new Span<Tensor>(xs, merge.Parents.Count);
 
             // Forward through the merge node
-            if (merge.Type == ComputationGraphNodeType.Sum)
+            sum.Forward(new Span<Tensor>(xs, sum.Parents.Count), out z, out a);
+            return true;
+        }
+
+        // Executes the forward pass on a depth concatenation node, if possible
+        private static unsafe bool TryExecuteMergeForward([NotNull] TensorMap<IComputationGraphNode> map, [NotNull] DepthConcatenationNode concatenation, out Tensor y)
+        {
+            // Prepare the inputs
+            Tensor* xs = stackalloc Tensor[concatenation.Parents.Count];
+            for (int i = 0; i < concatenation.Parents.Count; i++)
             {
-                Tensor.New(xs[0].Entities, xs[0].Length, out y);
-                CpuBlas.Sum(inputs, y);
+                if (!map.TryGetValue(concatenation.Parents[i], out xs[i]))
+                {
+                    y = default;
+                    return false;
+                }
             }
-            else if (merge.Type == ComputationGraphNodeType.DepthConcatenation)
-            {
-                int l = 0;
-                for (int i = 0; i < inputs.Length; i++) l += inputs[i].Length;
-                Tensor.New(xs[0].Entities, l, out y);
-                CpuDnn.DepthConcatenationForward(inputs, y);
-            }
-            else throw new ArgumentOutOfRangeException(nameof(merge.Type), "Unsupported node type");
+            Span<Tensor> inputs = new Span<Tensor>(xs, concatenation.Parents.Count);
+
+            // Forward through the merge node
+            int l = 0;
+            for (int i = 0; i < inputs.Length; i++) l += inputs[i].Length;
+            Tensor.New(xs[0].Entities, l, out y);
+            CpuDnn.DepthConcatenationForward(inputs, y);
             return true;
         }
 
@@ -358,18 +394,29 @@ namespace NeuralNetworkNET.Networks.Implementations
                         switch (node)
                         {
                             case ProcessingNode processing:
+                            {
                                 processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? xc : aMap[processing.Parent], out Tensor z, out Tensor a);
                                 zMap[processing] = z;
                                 aMap[processing] = a;
                                 for (int i = 0; i < node.Children.Count; i++)
                                     Forward(node.Children[i]);
                                 break;
-                            case MergeNodeBase merge:
-                                if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
-                                aMap[merge] = m;
+                            }
+                            case DepthConcatenationNode concatenation:
+                                if (!TryExecuteMergeForward(aMap, concatenation, out Tensor m)) return;
+                                aMap[concatenation] = m;
                                 for (int i = 0; i < node.Children.Count; i++)
                                     Forward(node.Children[i]);
                                 break;
+                            case SumNode sum:
+                            {
+                                if (!TryExecuteMergeForward(aMap, sum, out Tensor z, out Tensor a)) return;
+                                zMap[sum] = z;
+                                aMap[sum] = a;
+                                for (int i = 0; i < node.Children.Count; i++)
+                                    Forward(node.Children[i]);
+                                break;
+                            }
                             case TrainingNode _: return;
                             default:
                                 throw new ArgumentException("The node type is not supported", nameof(node));
