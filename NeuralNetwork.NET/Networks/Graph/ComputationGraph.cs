@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
@@ -102,8 +103,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         map[node] = (next, input, id);
                         break;
                     case ComputationGraphNodeType.Processing:
-                        if (node.Factory == null) throw new ComputationGraphBuildException("Missing layer factory");
-                        INetworkLayer layer = node.Factory(map[node.Parents[0]].Info);
+                        INetworkLayer layer = node.GetParameter<LayerFactory>()(map[node.Parents[0]].Info);
                         ProcessingNode processing = new ProcessingNode(layer, map[node.Parents[0]].Node);
                         if (layer is OutputLayerBase)
                         {
@@ -257,7 +257,7 @@ namespace NeuralNetworkNET.Networks.Graph
                     if (preference == LayersLoadingPreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
                     if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, layerType);
                     if (layer == null) return null;
-                    map[id] = new NodeBuilder(type, _ => layer);
+                    map[id] = new NodeBuilder(type, new LayerFactory(_ => layer));
                 }
                 else map[id] = new NodeBuilder(type, null);
             }
@@ -347,7 +347,7 @@ namespace NeuralNetworkNET.Networks.Graph
             {
                 switch (n)
                 {
-                    case ProcessingNode processing: return new NodeBuilder(n.Type, _ => processing.Layer.Clone());
+                    case ProcessingNode processing: return new NodeBuilder(n.Type, new LayerFactory(_ => processing.Layer.Clone()));
                     case DepthConcatenationNode _:
                     case TrainingNode _:
                     case InputNode _: return new NodeBuilder(n.Type, null);

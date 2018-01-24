@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Activations;
 
-namespace NeuralNetworkNET.APIs
+namespace NeuralNetworkNET.Networks.Graph
 {
     /// <summary>
     /// A class that represents a declaration for a graph node to build
@@ -13,9 +15,9 @@ namespace NeuralNetworkNET.APIs
     {
         #region Fields and initializaation
 
-        // The factory for a node with an underlying network layer
+        // The optional parameters for the node to build
         [CanBeNull]
-        internal LayerFactory Factory { get; }
+        private object Parameter { get; }
 
         // The instance node type
         internal ComputationGraphNodeType NodeType { get; }
@@ -32,19 +34,19 @@ namespace NeuralNetworkNET.APIs
         [NotNull, ItemNotNull]
         internal List<NodeBuilder> Children { get; } = new List<NodeBuilder>();
 
-        internal NodeBuilder(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
+        internal NodeBuilder(ComputationGraphNodeType type, [CanBeNull] object parameter)
         {
-            if (type == ComputationGraphNodeType.Processing && factory == null)
+            if (type == ComputationGraphNodeType.Processing && !(parameter is LayerFactory))
                 throw new InvalidOperationException("Invalid node initialization");
             NodeType = type;
-            Factory = factory;
+            Parameter = parameter;
         }
 
         // Static constructor for a node with multiple parents
-        private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory, [NotNull, ItemNotNull] params NodeBuilder[] inputs)
+        private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] object parameter, [NotNull, ItemNotNull] params NodeBuilder[] inputs)
         {
             if (inputs.Length < 1) throw new ArgumentException("The inputs must be at least two", nameof(inputs));
-            NodeBuilder next = new NodeBuilder(type, factory);
+            NodeBuilder next = new NodeBuilder(type, parameter);
             Children.Add(next);
             foreach (NodeBuilder input in inputs)
                 input.Children.Add(next);
@@ -54,9 +56,9 @@ namespace NeuralNetworkNET.APIs
         }
 
         // Constructor for a node with a single parent
-        private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] LayerFactory factory)
+        private NodeBuilder New(ComputationGraphNodeType type, [CanBeNull] object parameter)
         {
-            NodeBuilder next = new NodeBuilder(type, factory);
+            NodeBuilder next = new NodeBuilder(type, parameter);
             Children.Add(next);
             next.Parents.Add(this);
             return next;
@@ -68,6 +70,15 @@ namespace NeuralNetworkNET.APIs
         [Pure, NotNull]
         internal static NodeBuilder Input() => new NodeBuilder(ComputationGraphNodeType.Input, null);
 
+        /// <summary>
+        /// Extracts the node parameter
+        /// </summary>
+        /// <typeparam name="T">The target parameter type</typeparam>
+        [Pure]
+        internal T GetParameter<T>() => Parameter != null && Parameter.GetType() == typeof(T)
+            ? MiscExtensions.To<object, T>(Parameter)
+            : throw new InvalidOperationException("Invalid parameter type");
+
         #endregion
 
         #region APIs
@@ -78,7 +89,16 @@ namespace NeuralNetworkNET.APIs
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
         [MustUseReturnValue, NotNull]
-        public NodeBuilder Sum(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, null, inputs);
+        public NodeBuilder Sum(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, ActivationFunctionType.Identity, inputs);
+
+        /// <summary>
+        /// Creates a new linear sum node that merges multiple input nodes
+        /// </summary>
+        /// <param name="activation">The activation function to use in the sum layer</param>
+        /// <param name="inputs">The sequence of parent nodes for the new instance</param>
+        [PublicAPI]
+        [MustUseReturnValue, NotNull]
+        public NodeBuilder Sum(ActivationFunctionType activation, params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, activation, inputs);
 
         /// <summary>
         /// Creates a new depth concatenation node that merges multiple input nodes with the same output shape
