@@ -42,11 +42,11 @@ namespace NeuralNetworkNET.cuDNN
         /// <param name="dnn">The current <see cref="Dnn"/> instance being used</param>
         /// <param name="n">The number of samples in the input tensor</param>
         /// <param name="w">The size of each sample to process</param>
-        /// <param name="x">A pointer to the input memory area</param>
+        /// <param name="y">A pointer to the memory area with the forward pass outputs</param>
         /// <param name="dy">The delta memory area</param>
         /// <param name="f">The activation function to use</param>
         /// <param name="dx">The backpropagated error</param>
-        public static void ActivationBackward([NotNull] this Dnn dnn, int n, int w, deviceptr<float> x, deviceptr<float> dy, [NotNull] ActivationFunction f, deviceptr<float> dx)
+        public static void ActivationBackward([NotNull] this Dnn dnn, int n, int w, deviceptr<float> y, deviceptr<float> dy, [NotNull] ActivationFunction f, deviceptr<float> dx)
         {
             void Kernel(int i)
             {
@@ -54,7 +54,7 @@ namespace NeuralNetworkNET.cuDNN
                 for (int j = 0; j < w; j++)
                 {
                     int target = offset + j;
-                    dx[target] = f(x[target]) * dy[target];
+                    dx[target] = f(y[target]) * dy[target];
                 }
             }
             dnn.Gpu.For(0, n, Kernel);
