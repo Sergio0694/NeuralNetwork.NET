@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 
-namespace NeuralNetworkNET.Networks.Graph.Nodes
+namespace NeuralNetworkNET.Networks.Graph.Nodes.Abstract
 {
     /// <summary>
     /// A base class for all the available node types

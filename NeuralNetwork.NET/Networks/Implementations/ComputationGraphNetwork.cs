@@ -13,6 +13,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Graph;
 using NeuralNetworkNET.Networks.Graph.Nodes;
+using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
@@ -81,7 +82,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             for (int i = 0; i < processing.Children.Count; i++)
                                 Forward(processing.Children[i]);
                             break;
-                        case MergeNode merge:
+                        case MergeNodeBase merge:
                             if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
                             aMap[merge] = m;
                             for (int i = 0; i < merge.Children.Count; i++)
@@ -143,7 +144,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     dropMap[processing] = mask;
                                 }
                                 break;
-                            case MergeNode merge:
+                            case MergeNodeBase merge:
                                 if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
                                 aMap[merge] = m;
                                 break;
@@ -200,7 +201,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                             for (int i = 0; i < node.Children.Count; i++)
                             {
                                 // Extract the tensor slice from a depth concatenation layer
-                                if (node.Children[i] is MergeNode merge && merge.Type == ComputationGraphNodeType.DepthConcatenation)
+                                if (node.Children[i] is DepthConcatenationNode merge)
                                 {
                                     int offset = 0, length = -1;
                                     for (int j = 0; j < merge.Parents.Count; j++)
@@ -263,7 +264,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 if (!linked) dy.TryFree();
                                 Backward(processing.Parent);
                                 break;
-                            case MergeNode merge:
+                            case MergeNodeBase merge:
                                 dMap[node] = dy; // Pass-through the error delta with no changes
                                 for (int i = 0; i < merge.Parents.Count; i++)
                                     Backward(merge.Parents[i]);
@@ -296,7 +297,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         // Executes the forward pass on a merge node, if possible
-        private static unsafe bool TryExecuteMergeForward([NotNull] TensorMap<IComputationGraphNode> map, [NotNull] MergeNode merge, out Tensor y)
+        private static unsafe bool TryExecuteMergeForward([NotNull] TensorMap<IComputationGraphNode> map, [NotNull] MergeNodeBase merge, out Tensor y)
         {
             // Prepare the inputs
             Tensor* xs = stackalloc Tensor[merge.Parents.Count];
@@ -363,7 +364,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 for (int i = 0; i < node.Children.Count; i++)
                                     Forward(node.Children[i]);
                                 break;
-                            case MergeNode merge:
+                            case MergeNodeBase merge:
                                 if (!TryExecuteMergeForward(aMap, merge, out Tensor m)) return;
                                 aMap[merge] = m;
                                 for (int i = 0; i < node.Children.Count; i++)
