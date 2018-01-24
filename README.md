@@ -159,10 +159,10 @@ As multiple layer types have different implementations across the available libr
 
 ```C#
 FileInfo file = new FileInfo(@"C:\...\MySavedNetwork.nnet");
-INeuralNetwork network = NetworkLoader.TryLoad(file, LayersLoadingPreference.Cuda);
+INeuralNetwork network = NetworkLoader.TryLoad(file, ExecutionModePreference.Cuda);
 ```
 
-**Note:** the `LayersLoadingPreference` option indicates the desired type of layers to deserialize whenever possible. For example, using `LayersLoadingPreference.Cpu`, the loaded network will only have CPU-powered layers, if supported.
+**Note:** the `ExecutionModePreference` option indicates the desired type of layers to deserialize whenever possible. For example, using `ExecutionModePreference.Cpu`, the loaded network will only have CPU-powered layers, if supported.
 
 There's also an additional `SaveMetadataAsJson` method to export the metadata of an `INeuralNetwork` instance.
 

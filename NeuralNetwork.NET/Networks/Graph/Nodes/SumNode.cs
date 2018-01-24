@@ -47,11 +47,11 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// <summary>
         /// Creates a new <see cref="SumNode"/> with the given parameters
         /// </summary>
-        /// <param name="mode">The desired execution mode</param>
         /// <param name="activation">The sum node activation function</param>
+        /// <param name="mode">The desired execution mode</param>
         /// <param name="parents">The parent nodes for the new sum mode to create</param>
         [Pure, NotNull]
-        public static SumNode New(ExecutionModePreference mode, ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents)
+        public static SumNode New(ActivationFunctionType activation, ExecutionModePreference mode, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents)
         {
             if (mode == ExecutionModePreference.Cpu) return new CpuSumNode(activation, parents);
             return new CudaSumNode(activation, parents);

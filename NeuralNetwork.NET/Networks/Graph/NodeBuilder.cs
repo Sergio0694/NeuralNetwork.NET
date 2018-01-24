@@ -90,7 +90,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
         [MustUseReturnValue, NotNull]
-        public NodeBuilder Sum(params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, ActivationFunctionType.Identity, inputs);
+        public NodeBuilder Sum(params NodeBuilder[] inputs) => Sum(ActivationFunctionType.Identity, inputs);
 
         /// <summary>
         /// Creates a new linear sum node that merges multiple input nodes
@@ -101,10 +101,10 @@ namespace NeuralNetworkNET.Networks.Graph
         [MustUseReturnValue, NotNull]
         public NodeBuilder Sum(ActivationFunctionType activation, params NodeBuilder[] inputs)
         {
-            var parameter = (activation, CuDnnNetworkLayers.IsCudaSupportAvailable
+            ExecutionModePreference mode = CuDnnNetworkLayers.IsCudaSupportAvailable
                 ? ExecutionModePreference.Cuda
-                : ExecutionModePreference.Cpu);
-            return New(ComputationGraphNodeType.Sum, parameter, inputs);
+                : ExecutionModePreference.Cpu;
+            return New(ComputationGraphNodeType.Sum, (activation, mode), inputs);
         }
 
         /// <summary>

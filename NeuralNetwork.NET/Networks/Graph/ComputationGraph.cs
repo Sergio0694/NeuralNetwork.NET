@@ -144,8 +144,8 @@ namespace NeuralNetworkNET.Networks.Graph
                         if (node.NodeType == ComputationGraphNodeType.Sum)
                         {
                             shape = parents[0].Info;
-                            (ExecutionModePreference mode, ActivationFunctionType activation) = node.GetParameter<(ExecutionModePreference, ActivationFunctionType)>();
-                            next = SumNode.New(mode, activation, parents.Select(t => t.Node).ToArray());
+                            (ActivationFunctionType activation, ExecutionModePreference mode) = node.GetParameter<(ActivationFunctionType, ExecutionModePreference)>();
+                            next = SumNode.New(activation, mode, parents.Select(t => t.Node).ToArray());
                         }
                         else
                         {
