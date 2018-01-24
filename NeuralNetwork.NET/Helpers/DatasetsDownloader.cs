@@ -161,7 +161,7 @@ namespace NeuralNetworkNET.Helpers
         [Pure, NotNull]
         private static String GetFilename([NotNull] String url)
         {
-            using (HashAlgorithm md5 = MD5.Create())
+            using (MD5 md5 = MD5.Create())
             {
                 // Hash and compress the url
                 byte[]

@@ -13,8 +13,8 @@ namespace NeuralNetworkNET.Cuda.Unit
     /// Test class for the cuDNN layers serialization methods
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(SerializationTest))]
-    public class SerializationTest
+    [TestCategory(nameof(CuDnnSerializationTest))]
+    public class CuDnnSerializationTest
     {
         [TestMethod]
         public void NetworkSerialization()
@@ -33,7 +33,7 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 network.Save(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                INeuralNetwork copy = NetworkLoader.TryLoad(stream, LayersLoadingPreference.Cuda);
+                INeuralNetwork copy = NetworkLoader.TryLoad(stream, ExecutionModePreference.Cuda);
                 Assert.IsTrue(network.Equals(copy));
             }
         }

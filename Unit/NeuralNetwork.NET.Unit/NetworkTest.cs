@@ -26,15 +26,17 @@ namespace NeuralNetworkNET.Unit
     public class NetworkTest
     {
         // Gets the target assets subfolder
-        [Pure, NotNull]
-        private static String GetAssetsPath()
+        [NotNull]
+        public static String DllPath
         {
-            String
-                code = Assembly.GetExecutingAssembly().Location,
-                dll = Path.GetFullPath(code),
-                root = Path.GetDirectoryName(dll),
-                path = Path.Combine(root, "Assets");
-            return path;
+            get
+            {
+                String
+                    code = Assembly.GetExecutingAssembly().Location,
+                    dll = Path.GetFullPath(code),
+                    root = Path.GetDirectoryName(dll);
+                return root;
+            }
         }
 
         private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset(int training = 50_000, int test = 10_000)
@@ -43,7 +45,7 @@ namespace NeuralNetworkNET.Unit
             const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
             const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
             const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
-            String path = GetAssetsPath();
+            String path = Path.Combine(DllPath, "Assets");
             (float[,], float[,]) ParseSamples(String valuePath, String labelsPath, int count)
             {
                 float[,] 

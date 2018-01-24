@@ -24,9 +24,9 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
     internal static class NetworkTrainer
     {
         /// <summary>
-        /// Trains the target <see cref="SequentialNetwork"/> with the given parameters and data
+        /// Trains the target <see cref="NeuralNetworkBase"/> instance with the given parameters and data
         /// </summary>
-        /// <param name="network">The target <see cref="SequentialNetwork"/> to train</param>
+        /// <param name="network">The target <see cref="NeuralNetworkBase"/> to train</param>
         /// <param name="batches">The training baatches for the current session</param>
         /// <param name="epochs">The desired number of training epochs to run</param>
         /// <param name="dropout">Indicates the dropout probability for neurons in a <see cref="LayerType.FullyConnected"/> layer</param>
@@ -38,7 +38,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <param name="token">The <see cref="CancellationToken"/> for the training session</param>
         [NotNull]
         public static TrainingSessionResult TrainNetwork(
-            [NotNull] SequentialNetwork network, [NotNull] BatchesCollection batches,
+            [NotNull] NeuralNetworkBase network, [NotNull] BatchesCollection batches,
             int epochs, float dropout,
             [NotNull] ITrainingAlgorithmInfo algorithm,
             [CanBeNull] IProgress<BatchProgress> batchProgress,
@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// </summary>
         [NotNull]
         private static TrainingSessionResult Optimize(
-            SequentialNetwork network,
+            NeuralNetworkBase network,
             BatchesCollection miniBatches,
             int epochs, float dropout,
             [NotNull] WeightsUpdater updater,
@@ -131,12 +131,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                     batchMonitor?.NotifyCompletedBatch(miniBatches.Batches[j].X.GetLength(0));
                 }
                 batchMonitor?.Reset();
-
-                // Check for overflows
-                if (!Parallel.For(0, network._Layers.Length, (j, state) =>
-                {
-                    if (network._Layers[j] is WeightedLayerBase layer && !layer.ValidateWeights()) state.Break();
-                }).IsCompleted) return PrepareResult(TrainingStopReason.NumericOverflow, i);
+                if (network.IsInNumericOverflow) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 
                 // Check the training progress
                 if (trainingProgress != null)

@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
@@ -6,6 +8,7 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -21,7 +24,7 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void StructSerialize()
         {
-            PoolingInfo info = PoolingInfo.New(PoolingMode.AverageIncludingPadding, 3, 3, 1, 1, 2, 2);
+            PoolingInfo info = PoolingInfo.New(PoolingMode.AverageIncludingPadding, 3, 3, 1, 1);
             using (MemoryStream stream = new MemoryStream())
             {
                 stream.Write(info);
@@ -74,9 +77,28 @@ namespace NeuralNetworkNET.Unit
             {
                 network.Save(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                INeuralNetwork copy = NetworkLoader.TryLoad(stream, LayersLoadingPreference.Cpu);
+                INeuralNetwork copy = NetworkLoader.TryLoad(stream, ExecutionModePreference.Cpu);
                 Assert.IsTrue(network.Equals(copy));
             }
+        }
+
+        [TestMethod]
+        public void JsonMetadataSerialization()
+        {
+            INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Rgb24>(120, 120),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.AbsoluteReLU),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ELU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
+                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
+                NetworkLayers.FullyConnected(125, ActivationFunctionType.Tanh),
+                NetworkLayers.Softmax(133));
+            String metadata1 = network.SerializeMetadataAsJson();
+            Assert.IsTrue(metadata1.Length > 0);
+            Assert.IsTrue(metadata1.Equals(network.Clone().SerializeMetadataAsJson()));
+            network.Layers.First().To<INetworkLayer, ConvolutionalLayer>().Weights[0] += 0.1f;
+            Assert.IsFalse(metadata1.Equals(network.SerializeMetadataAsJson()));
         }
     }
 }

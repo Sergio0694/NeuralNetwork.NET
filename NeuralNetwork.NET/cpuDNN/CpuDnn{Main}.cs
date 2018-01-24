@@ -51,8 +51,7 @@ namespace NeuralNetworkNET.cpuDNN
             // Setup
             if (!x.MatchShape(y)) throw new ArgumentException("The input tensor doesn't have the same shape as the output tensor");
             int n = x.Entities, l = x.Length;
-            Tensor.New(1, n, out Tensor partials);
-            float* pp = partials, px = x, py = y;
+            float* px = x, py = y;
 
             // Activation
             void ActivationWithAggregate(int i)
@@ -66,38 +65,28 @@ namespace NeuralNetworkNET.cpuDNN
                     py[target] = value;
                     sum += value;
                 }
-                pp[i] = sum;
+                for (int j = 0; j < l; j++)
+                    py[offset + j] /= sum;
             }
             Parallel.For(0, n, ActivationWithAggregate).AssertCompleted();
-
-            // Normalization of the tensor values
-            void NormalizationKernel(int i)
-            {
-                int offset = i * l;
-                float factor = pp[i];
-                for (int j = 0; j < l; j++)
-                    py[offset + j] /= factor;
-            }
-            Parallel.For(0, n, NormalizationKernel).AssertCompleted();
-            partials.Free();
         }
 
         /// <summary>
         /// Executes the backward activation function on the target <see cref="Tensor"/>, with the given error delta
         /// </summary>
-        /// <param name="x">The activity on the input layer</param>
+        /// <param name="y">The activity computed in the forwaard pass</param>
         /// <param name="dy">The current error delta to backpropagate</param>
         /// <param name="f_">The derivative of the activation function used in the forward pass</param>
         /// <param name="dx">The resulting input error delta - it can be the same as the input <see cref="Tensor"/></param>
-        public static unsafe void ActivationBackward(in Tensor x, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
+        public static unsafe void ActivationBackward(in Tensor y, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
         {
             // Check
-            if (!dy.MatchShape(x)) throw new ArgumentException("The input tensors must have the same shape", nameof(dy));
-            if (!dx.MatchShape(x)) throw new ArgumentException("The output tensor must have the same shape as the input", nameof(dy));
+            if (!dy.MatchShape(y)) throw new ArgumentException("The input tensors must have the same shape", nameof(dy));
+            if (!dx.MatchShape(y)) throw new ArgumentException("The output tensor must have the same shape as the input", nameof(dy));
             int
-                n = x.Entities,
-                l = x.Length;
-            float* px = x, pdy = dy, pdx = dx;
+                n = y.Entities,
+                l = y.Length;
+            float* px = y, pdy = dy, pdx = dx;
 
             // Loop in parallel
             void Kernel(int i)
@@ -157,16 +146,13 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Executes the backward pass on a fully connected layer
         /// </summary>
-        /// <param name="x">The activity on the layer inputs</param>
         /// <param name="w">The layer weights</param>
         /// <param name="dy">The output error delta</param>
-        /// <param name="f_">The derivative of the activation function used in the forward pass</param>
         /// <param name="dx">The resulting input error delta</param>
-        public static unsafe void FullyConnectedBackwardData(in Tensor x, in Tensor w, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
+        public static unsafe void FullyConnectedBackwardData(in Tensor w, in Tensor dy, in Tensor dx)
         {
-            if (w.Entities != x.Length) throw new ArgumentException("The weights tensor doesn't have a valid shape", nameof(w));
-            if (!x.MatchShape(dy.Entities, w.Entities)) throw new ArgumentException("The input tensor doesn't have the right shape", nameof(x));
-            if (!dx.MatchShape(x)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(dx));
+            if (w.Length != dy.Length) throw new ArgumentException("The weights tensor doesn't have a valid shape", nameof(w));
+            if (!dx.MatchShape(dy.Entities, w.Entities)) throw new ArgumentException("The input tensor doesn't have the right shape", nameof(dx));
             Tensor.New(w.Length, w.Entities, out Tensor wt);
             CpuBlas.Transpose(w, wt);
 
@@ -175,7 +161,7 @@ namespace NeuralNetworkNET.cpuDNN
                 h = dy.Entities,
                 l = dy.Length,
                 k = wt.Length;
-            float* pdx = dx, px = x, pdy = dy, pwt = wt;
+            float* pdx = dx, pdy = dy, pwt = wt;
 
             // Execute the multiplication in parallel
             void Kernel(int i)
@@ -192,8 +178,7 @@ namespace NeuralNetworkNET.cpuDNN
                     }
 
                     // res has now the tensor multiplication result for position [i, j]
-                    int zIndex = i * k + j;
-                    pdx[zIndex] = f_(px[zIndex]) * res;
+                    pdx[i * k + j] = res;
                 }
             }
             Parallel.For(0, h, Kernel).AssertCompleted();
@@ -238,6 +223,74 @@ namespace NeuralNetworkNET.cpuDNN
                 pdb[j] = sum;
             }
             Parallel.For(0, l, Kernel).AssertCompleted();
+        }
+
+        #endregion
+
+        #region Depth concatenation
+
+        /// <summary>
+        /// Executes the forward pass on a depth stacking layer
+        /// </summary>
+        /// <param name="inputs">A <see cref="Span{T}"/> containing the input <see cref="Tensor"/> instances to stack</param>
+        /// <param name="y">The output <see cref="Tensor"/></param>
+        public static unsafe void DepthConcatenationForward(Span<Tensor> inputs, in Tensor y)
+        {
+            // Checks and offsets computation
+            if (inputs.Length == 0) throw new ArgumentException("The inputs can't be empty", nameof(inputs));
+            int
+                n = y.Entities,
+                count = 0;
+            int* offsets = stackalloc int[inputs.Length];
+            fixed (Tensor* p = &inputs.DangerousGetPinnableReference())
+            {
+                for (int i = 0; i < inputs.Length; i++)
+                {
+                    offsets[i] = count;
+                    count += p[i].Length;
+                    if (p[i].Entities != y.Entities) throw new ArgumentException("The number of samples must be the same for all tensors");
+                }
+            }
+            if (y.Length != count) throw new ArgumentException("The target tensor doesn't have the right size", nameof(y));
+
+            // Concatenate the tensors in parallel
+            float* py = y;
+            void Kernel(int i)
+            {
+                float*
+                    psource = inputs[i],
+                    ptarget = py + offsets[i];
+                int l = inputs[i].Length;
+                long bytes = sizeof(float) * l;
+                for (int j = 0; j < n; j++, psource += l, ptarget += count)
+                    Buffer.MemoryCopy(psource, ptarget, bytes, bytes);
+            }
+            Parallel.For(0, inputs.Length, Kernel).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Executes the backward pass on a depth stacking layer
+        /// </summary>
+        /// <param name="dy">The input <see cref="Tensor"/> with the error delta to backpropagate</param>
+        /// <param name="offset">The left offset for the <see cref="Tensor"/> instance to extract</param>
+        /// <param name="dx">A <see cref="Span{T}"/> with the target <see cref="Tensor"/> instances</param>
+        public static unsafe void DepthConcatenationBackward(in Tensor dy, int offset, in Tensor dx)
+        {
+            // Checks and offsets computation
+            if (dx.Length == 0) throw new ArgumentException("The result span can't be empty", nameof(dx));
+            if (dy.Entities != dx.Entities) throw new ArgumentException("The number of samples must be the same for both tensors");
+            if (dy.Length - offset < dx.Length) throw new ArgumentException("Invalid offset value");
+
+            // Backpropagate in parallel
+            float* pdy = dy, pdx = dx;
+            int
+                l = dx.Length,
+                pitch = dy.Length,
+                left = sizeof(float) * offset,
+                dyRowSize = sizeof(float) * pitch,
+                dxRowSize = sizeof(float) * l;
+            void Kernel(int i) => Buffer.MemoryCopy(pdy + dyRowSize * i + left,pdx + i * dxRowSize, dxRowSize, dxRowSize);
+            Parallel.For(0, dy.Entities, Kernel);
         }
 
         #endregion

@@ -29,7 +29,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// </summary>
         /// <param name="x">The batch data</param>
         /// <param name="y">The batch expected results</param>
-        private SamplesBatch([NotNull] float[,] x, [NotNull] float[,] y)
+        public SamplesBatch([NotNull] float[,] x, [NotNull] float[,] y)
         {
             if (x.GetLength(0) != y.GetLength(0)) throw new ArgumentException("The number of samples in the data and results must be the same");
             X = x;

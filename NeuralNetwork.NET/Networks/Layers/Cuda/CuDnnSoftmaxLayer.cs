@@ -4,13 +4,12 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
-using NeuralNetworkNET.Networks.Activations.Delegates;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Layers.Abstract;
+using System;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
@@ -69,34 +68,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             }
         }
 
-        /// <inheritdoc/>
-        public override void Backpropagate(in Tensor x, in Tensor dy, in Tensor z, ActivationFunction activationPrime)
-        {
-            using (DeviceMemory<float>
-                delta_1_gpu = DnnInstance.Gpu.AllocateDevice(dy),
-                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights),
-                z_gpu = DnnInstance.Gpu.AllocateDevice(z))
-            {
-                DnnInstance.FullyConnectedBackwardData(z.Entities, InputInfo.Size, OutputInfo.Size, z_gpu.Ptr, delta_1_gpu.Ptr, w_gpu.Ptr, activationPrime);
-                z_gpu.CopyTo(z);
-            }
-        }
-
-        /// <inheritdoc/>
-        public override void ComputeGradient(in Tensor a, in Tensor delta, out Tensor dJdw, out Tensor dJdb)
-        {
-            using (DeviceMemory<float>
-                a_gpu = DnnInstance.Gpu.AllocateDevice(a),
-                delta_gpu = DnnInstance.Gpu.AllocateDevice(delta),
-                w_gpu = DnnInstance.Gpu.AllocateDevice<float>(a.Length * delta.Length))
-            {
-                DnnInstance.FullyConnectedBackwardFilter(a.Entities, a.Length, delta.Length, a_gpu.Ptr, delta_gpu.Ptr, w_gpu.Ptr);
-                w_gpu.CopyToHost(1, Weights.Length, out dJdw);
-            }
-            Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.FullyConnectedBackwardBias(delta, dJdb); // Doing this on CPU is generally faster than launching the kernels
-        }
-
         #endregion
 
         /// <summary>
@@ -116,5 +87,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             if (!stream.TryRead(out CostFunctionType cost) && cost == CostFunctionType.LogLikelyhood) return null;
             return new CuDnnSoftmaxLayer(input, output.Size, weights, biases);
         }
+
+        /// <inheritdoc/>
+        public override INetworkLayer Clone() => new CuDnnSoftmaxLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy());
     }
 }

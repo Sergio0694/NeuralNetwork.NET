@@ -29,10 +29,18 @@ namespace NeuralNetworkNET.APIs
         /// <returns>The deserialized network, or <see langword="null"/> if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
-        public static INeuralNetwork TryLoad([NotNull] FileInfo file, LayersLoadingPreference preference)
+        public static INeuralNetwork TryLoad([NotNull] FileInfo file, ExecutionModePreference preference)
         {
-            using (FileStream stream = file.OpenRead())
-                return TryLoad(stream, preference);
+            try
+            {
+                using (FileStream stream = file.OpenRead())
+                    return TryLoad(stream, preference);
+            }
+            catch (FileNotFoundException)
+            {
+                // Just keep going
+                return null;
+            }
         }
 
         /// <summary>
@@ -43,7 +51,7 @@ namespace NeuralNetworkNET.APIs
         /// <returns>The deserialized network, or <see langword="null"/> if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
-        public static INeuralNetwork TryLoad([NotNull] Stream stream, LayersLoadingPreference preference)
+        public static INeuralNetwork TryLoad([NotNull] Stream stream, ExecutionModePreference preference)
         {
             try
             {
@@ -53,6 +61,7 @@ namespace NeuralNetworkNET.APIs
                     switch (model)
                     {
                         case NetworkType.Sequential: return SequentialNetwork.Deserialize(gzip, preference);
+                        case NetworkType.ComputationGraph: return ComputationGraphNetwork.Deserialize(gzip, preference);
                         default: return null;
                     }
                 }

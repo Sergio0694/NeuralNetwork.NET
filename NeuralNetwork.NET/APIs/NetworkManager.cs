@@ -10,6 +10,7 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Graph;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
@@ -39,6 +40,21 @@ namespace NeuralNetworkNET.APIs
                 l.Add(layer);
                 return l;
             }).ToArray());
+        }
+
+        /// <summary>
+        /// Creates a computational graph network with a custom structure
+        /// </summary>
+        /// <param name="input">The input <see cref="TensorInfo"/> description</param>
+        /// <param name="builder">An <see cref="Action{T}"/> used to build the graph from the input <see cref="NodeBuilder"/> node</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static INeuralNetwork NewGraph(TensorInfo input, [NotNull] Action<NodeBuilder> builder)
+        {
+            NodeBuilder root = NodeBuilder.Input();
+            builder(root);
+            ComputationGraph graph = ComputationGraph.New(input, root);
+            return new ComputationGraphNetwork(graph);
         }
 
         #region Training APIs
@@ -126,7 +142,7 @@ namespace NeuralNetworkNET.APIs
 
             // Start the training
             return NetworkTrainer.TrainNetwork(
-                network as SequentialNetwork ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
+                network as NeuralNetworkBase ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
                 epochs, dropout, algorithm, batchProgress, trainingProgress, 
                 validationDataset as ValidationDataset,

@@ -98,6 +98,47 @@ namespace NeuralNetworkNET.cpuDNN
         }
 
         /// <summary>
+        /// Sums a series of input <see cref="Tensor"/> instances
+        /// </summary>
+        /// <param name="inputs">A <see cref="Span{T}"/> containing the input <see cref="Tensor"/> instances to sum</param>
+        /// <param name="y">The output <see cref="Tensor"/></param>
+        public static unsafe void Sum(Span<Tensor> inputs, in Tensor y)
+        {
+            if (inputs.Length == 0) throw new ArgumentException("The inputs can't be empty", nameof(inputs));
+            int
+                count = inputs.Length,
+                n = y.Entities,
+                l = y.Length;
+            fixed (Tensor * p = &inputs.DangerousGetPinnableReference())
+            {
+                // Initial checks
+                float** ps = stackalloc float*[count];
+                for (int i = 0; i < count; i++)
+                {
+                    if (p[i].Entities != n || p[i].Length != l)
+                        throw new ArgumentException("The input tensors must have the same size as the output tensor", nameof(inputs));
+                    ps[i] = p[i];
+                }
+
+                // Sum the tensors in parallel
+                float* py = y;
+                void Kernel(int i)
+                {
+                    int offset = i * l;
+                    for (int j = 0; j < l; j++)
+                    {
+                        int target = offset + j;
+                        py[target] = 0;
+                        for (int z = 0; z < count; z++)
+                            py[target] += ps[z][target];
+                    }
+
+                }
+                Parallel.For(0, n, Kernel).AssertCompleted();
+            }
+        }
+
+        /// <summary>
         /// Subtracts two <see cref="Tensor"/> instances, element wise
         /// </summary>
         /// <param name="x1">The first <see cref="Tensor"/></param>
@@ -123,31 +164,6 @@ namespace NeuralNetworkNET.cpuDNN
                 }
             }
             Parallel.For(0, n, Kernel).AssertCompleted();
-        }
-
-        /// <summary>
-        /// Compresses a <see cref="Tensor"/> into a row by summing the components column by column
-        /// </summary>
-        /// <param name="x">The <see cref="Tensor"/> to compress</param>
-        /// <param name="y">The resulting <see cref="Tensor"/></param>
-        public static unsafe void CompressVertically(in Tensor x, in Tensor y)
-        {
-            // Preliminary checks and declarations
-            int
-                n = x.Entities,
-                l = x.Length;
-            if (!y.MatchShape(1, x.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(y));
-            float* px = x, py = y;
-
-            // Compress the tensor
-            void Kernel(int j)
-            {
-                float sum = 0;
-                for (int i = 0; i < n; i++)
-                    sum += px[i * l + j];
-                py[j] = sum;
-            }
-            Parallel.For(0, l, Kernel).AssertCompleted();
         }
     }
 }

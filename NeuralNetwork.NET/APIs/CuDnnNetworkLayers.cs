@@ -20,7 +20,6 @@ namespace NeuralNetworkNET.APIs
         /// </summary>
         public static bool IsCudaSupportAvailable
         {
-            [Pure]
             get
             {
                 try
@@ -66,6 +65,20 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a convolutional layer with the desired number of kernels
         /// </summary>
+        /// <param name="kernel">The volume information of the kernels used in the layer</param>
+        /// <param name="kernels">The number of convolution kernels to apply to the input volume</param>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        /// <param name="biasMode">Indicates the desired initialization mode to use for the layer bias values</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static LayerFactory Convolutional(
+            (int X, int Y) kernel, int kernels, ActivationFunctionType activation,
+            BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
+            => input => new CuDnnConvolutionalLayer(input, ConvolutionInfo.Default, kernel, kernels, activation, biasMode);
+
+        /// <summary>
+        /// Creates a convolutional layer with the desired number of kernels
+        /// </summary>
         /// <param name="info">The info on the convolution operation to perform</param>
         /// <param name="kernel">The volume information of the kernels used in the layer</param>
         /// <param name="kernels">The number of convolution kernels to apply to the input volume</param>
@@ -80,6 +93,14 @@ namespace NeuralNetworkNET.APIs
 
         /// <summary>
         /// Creates a pooling layer with a window of size 2 and a stride of 2
+        /// </summary>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static LayerFactory Pooling(ActivationFunctionType activation) => input => new CuDnnPoolingLayer(input, PoolingInfo.Default, activation);
+
+        /// <summary>
+        /// Creates a pooling layer with a custom mode, window size and stride
         /// </summary>
         /// <param name="info">The info on the pooling operation to perform</param>
         /// <param name="activation">The desired activation function to use in the network layer</param>

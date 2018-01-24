@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Exceptions;
 
 namespace NeuralNetworkNET.Extensions
 {
@@ -27,6 +28,21 @@ namespace NeuralNetworkNET.Extensions
             where TIn : class
             where TOut : TIn
             => (TOut)item;
+
+        /// <summary>
+        /// Returns a reference according to the input flag
+        /// </summary>
+        /// <typeparam name="T">The reference type to return</typeparam>
+        /// <param name="flag">The switch flag</param>
+        /// <param name="left">The first option</param>
+        /// <param name="right">The second option</param>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T SwitchRef<T>(this bool flag, ref T left, ref T right)
+        {
+            if (flag) return ref left;
+            return ref right;
+        }
 
         /// <summary>
         /// Returns the maximum value between two numbers
@@ -102,6 +118,22 @@ namespace NeuralNetworkNET.Extensions
             return n;
         }
 
+        /// <summary>
+        /// Filters the input sequence by only choosing the items of type <typeparamref name="TOut"/>
+        /// </summary>
+        /// <typeparam name="TIn">The base type of the sequence items</typeparam>
+        /// <typeparam name="TOut">The type of the items to select</typeparam>
+        /// <param name="enumerable">The source sequence</param>
+        [Pure, NotNull, ItemNotNull]
+        public static IEnumerable<TOut> Pick<TIn, TOut>([NotNull, ItemNotNull] this IEnumerable<TIn> enumerable)
+            where TOut : TIn 
+            where TIn : class
+        {
+            foreach (TIn entry in enumerable)
+                if (entry is TOut pick)
+                    yield return pick;
+        }
+
         #endregion
 
         #region Internal extensions
@@ -145,7 +177,7 @@ namespace NeuralNetworkNET.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void AssertCompleted(in this ParallelLoopResult result)
         {
-            if (!result.IsCompleted) throw new InvalidOperationException("Error while performing the parallel loop");
+            if (!result.IsCompleted) throw new ParallelLoopExecutionException();
         }
 
         /// <summary>
@@ -170,6 +202,25 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="action">The input <see cref="Action{T}"/> to convert</param>
         [Pure, CanBeNull]
         internal static IProgress<T> AsIProgress<T>([CanBeNull] this Action<T> action) => action == null ? null : new Progress<T>(action);
+
+        /// <summary>
+        /// Gets the index of the target item (by reference) in the source sequence
+        /// </summary>
+        /// <typeparam name="T">The type of items in the input sequence</typeparam>
+        /// <param name="sequence">The input sequence</param>
+        /// <param name="value">The item to look for</param>
+        [Pure]
+        public static int IndexOf<T>([NotNull] this IEnumerable<T> sequence, T value) where T : class
+        {
+            int index = 0;
+            foreach (T item in sequence)
+            {
+                if (item == value)
+                    return index;
+                index++;
+            }
+            return -1;
+        }
 
         #endregion
     }
