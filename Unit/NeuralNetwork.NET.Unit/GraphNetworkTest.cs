@@ -9,6 +9,7 @@ using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
+using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
 using SixLabors.ImageSharp.PixelFormats;
@@ -151,6 +152,28 @@ namespace NeuralNetworkNET.Unit
             });
             String json = network.SerializeMetadataAsJson();
             Assert.IsTrue(json != null);
+        }
+
+        [TestMethod]
+        public void CloneTest()
+        {
+            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+
+                var stack = _1x1.DepthConcatenation(_3x3);
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10));
+            });
+            INeuralNetwork copy = network.Clone();
+            Assert.IsTrue(network.Equals(copy));
+            copy.Layers[0].To<INetworkLayer, ConvolutionalLayer>().Weights[0] += 0.1f;
+            Assert.IsFalse(network.Equals(copy));
         }
 
         #endregion

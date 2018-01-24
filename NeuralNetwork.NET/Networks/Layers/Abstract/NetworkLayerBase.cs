@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the network
         /// </summary>
-        public (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions { get; }
+        protected readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
         #endregion
 

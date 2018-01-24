@@ -350,6 +350,7 @@ namespace NeuralNetworkNET.Networks.Graph
                 switch (n)
                 {
                     case ProcessingNode processing: return new NodeBuilder(n.Type, new LayerFactory(_ => processing.Layer.Clone()));
+                    case SumNode sum: return new NodeBuilder(ComputationGraphNodeType.Sum, (sum.ActivationFunctionType, sum.ExecutionMode));
                     case DepthConcatenationNode _:
                     case TrainingNode _:
                     case InputNode _: return new NodeBuilder(n.Type, null);
@@ -364,26 +365,6 @@ namespace NeuralNetworkNET.Networks.Graph
                 {
                     map[node].Children.Add(map[child]);
                     map[child].Parents.Add(map[node]);
-                }
-                switch (node)
-                {
-                    case ProcessingNode processing:
-                        map[node].Parents.Add(map[processing.Parent]);
-                        map[processing.Parent].Children.Add(map[node]);
-                        break;
-                    case DepthConcatenationNode merge:
-                        foreach (IComputationGraphNode parent in merge.Parents)
-                        {
-                            map[node].Parents.Add(map[parent]);
-                            map[parent].Children.Add(map[node]);
-                        }
-                        break;
-                    case TrainingNode split:
-                        map[node].Parents.Add(map[split.Parent]);
-                        map[split.Parent].Children.Add(map[node]);
-                        break;
-                    case InputNode _: break;
-                    default: throw new InvalidOperationException("Invalid graph node type");
                 }
             }
             return t => New(t, map.Values.First(node => node.NodeType == ComputationGraphNodeType.Input));

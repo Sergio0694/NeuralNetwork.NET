@@ -29,10 +29,16 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the sum node
         /// </summary>
-        public (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions { get; }
+        private (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
-        protected SumNode(ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) : base(ComputationGraphNodeType.Sum, parents)
+        /// <summary>
+        /// Gets the execution mode set for this <see cref="SumNode"/> instance
+        /// </summary>
+        public ExecutionModePreference ExecutionMode { get; }
+
+        protected SumNode(ExecutionModePreference mode, ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) : base(ComputationGraphNodeType.Sum, parents)
         {
+            ExecutionMode = mode;
             ActivationFunctionType = activation;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(activation);
         }
@@ -76,7 +82,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         private sealed class CpuSumNode : SumNode
         {
             public CpuSumNode(ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) 
-                : base(activation, parents) { }
+                : base(ExecutionModePreference.Cpu, activation, parents) { }
 
             /// <inheritdoc/>
             public override void Forward(Span<Tensor> inputs, out Tensor z, out Tensor a)
@@ -108,7 +114,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
             private readonly Dnn DnnInstance = CuDnnService.Instance;
 
             public CudaSumNode(ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) 
-                : base(activation, parents) { }
+                : base(ExecutionModePreference.Cuda, activation, parents) { }
 
             /// <inheritdoc/>
             public override unsafe void Forward(Span<Tensor> inputs, out Tensor z, out Tensor a)
