@@ -144,6 +144,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         if (node.NodeType == ComputationGraphNodeType.Sum)
                         {
                             shape = parents[0].Info;
+                            if (parents.Skip(1).Any(p => p.Info != shape)) throw new ComputationGraphBuildException("The inputs of a sum node must all have the same shape");
                             (ActivationFunctionType activation, ExecutionModePreference mode) = node.GetParameter<(ActivationFunctionType, ExecutionModePreference)>();
                             next = SumNode.New(activation, mode, parents.Select(t => t.Node).ToArray());
                         }

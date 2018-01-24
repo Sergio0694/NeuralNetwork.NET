@@ -65,7 +65,7 @@ namespace NeuralNetworkNET.Networks.Implementations
         protected override void Forward(in Tensor x, out Tensor yHat)
         {
             // Local mapping
-            using (TensorMap<IComputationGraphNode> aMap = new TensorMap<IComputationGraphNode>())
+            using (TensorMap<IComputationGraphNode> aMap = new TensorMap<IComputationGraphNode> { [Graph.Root] = x })
             {
                 // Recursive forward function
                 Tensor xc = x; // Local copy for closure
@@ -109,6 +109,7 @@ namespace NeuralNetworkNET.Networks.Implementations
 
                 // Collect the outputs and return
                 yHat = aMap[Graph.OutputNode];
+                aMap.Remove(Graph.Root);
                 aMap.Remove(Graph.OutputNode); // Remove yHat from the map to keep it allocated
             }
         }
@@ -125,7 +126,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 // Local mapping
                 using (TensorMap<IComputationGraphNode> 
                     zMap = new TensorMap<IComputationGraphNode>(),
-                    aMap = new TensorMap<IComputationGraphNode>(),
+                    aMap = new TensorMap<IComputationGraphNode> { [Graph.Root] = x }, // Input tensor to remove before disposal
                     dropMap = new TensorMap<IComputationGraphNode>(),
                     dMap = new TensorMap<IComputationGraphNode>(),
                     dJdwMap = new TensorMap<IComputationGraphNode>(),
@@ -293,6 +294,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                                 Tensor.Like(zMap[node], out Tensor dx);
                                 sum.Backpropagate(zMap[node], dy, dx);
                                 dMap[node] = dx;
+                                for (int i = 0; i < sum.Parents.Count; i++)
+                                    Backward(sum.Parents[i]);
                                 break;
                             }
                             case TrainingNode split:
@@ -318,6 +321,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         ProcessingNode node = Graph.ProcessingNodes[WeightedLayersIndexes[i]];
                         updater(i, dJdwMap[node], dJdbMap[node], samples, node.Layer.To<INetworkLayer, WeightedLayerBase>());
                     }).AssertCompleted();
+                    aMap.Remove(Graph.Root); // Remove the input tensor
                 }
             }
         }
@@ -387,7 +391,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 Tensor.Reshape(px, x.GetLength(0), x.GetLength(1), out Tensor xc);
                 using (TensorMap<IComputationGraphNode> 
                     zMap = new TensorMap<IComputationGraphNode>(),
-                    aMap = new TensorMap<IComputationGraphNode>())
+                    aMap = new TensorMap<IComputationGraphNode> { [Graph.Root] = xc })
                 {
                     void Forward(IComputationGraphNode node)
                     {
@@ -427,6 +431,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                     for (int i = 0; i < Graph.Root.Children.Count; i++) Forward(Graph.Root.Children[i]);
 
                     // Return the extracted features
+                    aMap.Remove(Graph.Root);
                     return Graph.Nodes.Where(node => zMap.ContainsKey(node) || aMap.ContainsKey(node)).Select(node =>
                     {
                         aMap.TryGetValue(node, out Tensor at);
