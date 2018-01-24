@@ -1,4 +1,5 @@
 ﻿using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 
 namespace NeuralNetworkNET.Networks.Graph.Nodes
 {

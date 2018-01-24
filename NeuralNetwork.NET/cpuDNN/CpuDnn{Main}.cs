@@ -74,19 +74,19 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Executes the backward activation function on the target <see cref="Tensor"/>, with the given error delta
         /// </summary>
-        /// <param name="x">The activity on the input layer</param>
+        /// <param name="y">The activity computed in the forwaard pass</param>
         /// <param name="dy">The current error delta to backpropagate</param>
         /// <param name="f_">The derivative of the activation function used in the forward pass</param>
         /// <param name="dx">The resulting input error delta - it can be the same as the input <see cref="Tensor"/></param>
-        public static unsafe void ActivationBackward(in Tensor x, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
+        public static unsafe void ActivationBackward(in Tensor y, in Tensor dy, [NotNull] ActivationFunction f_, in Tensor dx)
         {
             // Check
-            if (!dy.MatchShape(x)) throw new ArgumentException("The input tensors must have the same shape", nameof(dy));
-            if (!dx.MatchShape(x)) throw new ArgumentException("The output tensor must have the same shape as the input", nameof(dy));
+            if (!dy.MatchShape(y)) throw new ArgumentException("The input tensors must have the same shape", nameof(dy));
+            if (!dx.MatchShape(y)) throw new ArgumentException("The output tensor must have the same shape as the input", nameof(dy));
             int
-                n = x.Entities,
-                l = x.Length;
-            float* px = x, pdy = dy, pdx = dx;
+                n = y.Entities,
+                l = y.Length;
+            float* px = y, pdy = dy, pdx = dx;
 
             // Loop in parallel
             void Kernel(int i)

@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
+using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 
 namespace NeuralNetworkNET.Networks.Graph.Nodes
 {

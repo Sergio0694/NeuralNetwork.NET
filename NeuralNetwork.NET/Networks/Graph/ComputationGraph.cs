@@ -4,15 +4,17 @@ using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Graph.Nodes;
+using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace NeuralNetworkNET.Networks.Graph
 {
@@ -102,8 +104,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         map[node] = (next, input, id);
                         break;
                     case ComputationGraphNodeType.Processing:
-                        if (node.Factory == null) throw new ComputationGraphBuildException("Missing layer factory");
-                        INetworkLayer layer = node.Factory(map[node.Parents[0]].Info);
+                        INetworkLayer layer = node.GetParameter<LayerFactory>()(map[node.Parents[0]].Info);
                         ProcessingNode processing = new ProcessingNode(layer, map[node.Parents[0]].Node);
                         if (layer is OutputLayerBase)
                         {
@@ -139,10 +140,18 @@ namespace NeuralNetworkNET.Networks.Graph
                                 return;
 
                         // Calculate the output tensor size
-                        TensorInfo shape = node.NodeType == ComputationGraphNodeType.Sum 
-                            ? parents[0].Info 
-                            : TensorInfo.Volume(parents[0].Info.Height, parents[0].Info.Width, parents.Sum(p => p.Info.Channels));
-                        next = new MergeNode(node.NodeType, parents.Select(t => t.Node).ToArray());
+                        TensorInfo shape;
+                        if (node.NodeType == ComputationGraphNodeType.Sum)
+                        {
+                            shape = parents[0].Info;
+                            (ExecutionModePreference mode, ActivationFunctionType activation) = node.GetParameter<(ExecutionModePreference, ActivationFunctionType)>();
+                            next = SumNode.New(mode, activation, parents.Select(t => t.Node).ToArray());
+                        }
+                        else
+                        {
+                            shape = TensorInfo.Volume(parents[0].Info.Height, parents[0].Info.Width, parents.Sum(p => p.Info.Channels));
+                            next = new DepthConcatenationNode(parents.Select(t => t.Node).ToArray());
+                        }
                         map[node] = (next, shape, id);
                         break;
                     default:
@@ -213,7 +222,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         stream.Write(1);
                         stream.Write(map[processing.Parent]);
                         break;
-                    case MergeNode merge:
+                    case DepthConcatenationNode merge:
                         stream.Write(merge.Parents.Count);
                         foreach (IComputationGraphNode parent in merge.Parents)
                         stream.Write(map[parent]);
@@ -234,7 +243,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="stream">The input <see cref="Stream"/> to use to read the network data</param>
         /// <param name="preference">The layers deserialization preference</param>
         [MustUseReturnValue, CanBeNull]
-        public static Func<TensorInfo, ComputationGraph> Deserialize([NotNull] Stream stream, LayersLoadingPreference preference)
+        public static Func<TensorInfo, ComputationGraph> Deserialize([NotNull] Stream stream, ExecutionModePreference preference)
         {
             // Prepare the node builders with the appropriate nodes
             if (!stream.TryRead(out int count)) return null;
@@ -247,10 +256,10 @@ namespace NeuralNetworkNET.Networks.Graph
                 {
                     if (stream.TryRead(out LayerType layerType)) return null;
                     INetworkLayer layer = null;
-                    if (preference == LayersLoadingPreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
+                    if (preference == ExecutionModePreference.Cuda) layer = NetworkLoader.CuDnnLayerDeserialize(stream, layerType);
                     if (layer == null) layer = NetworkLoader.CpuLayerDeserialize(stream, layerType);
                     if (layer == null) return null;
-                    map[id] = new NodeBuilder(type, _ => layer);
+                    map[id] = new NodeBuilder(type, new LayerFactory(_ => layer));
                 }
                 else map[id] = new NodeBuilder(type, null);
             }
@@ -313,8 +322,8 @@ namespace NeuralNetworkNET.Networks.Graph
                     !GetIndexes(n1.Children, Nodes).SequenceEqual(GetIndexes(n2.Children, other.Nodes))) return false;
                 switch (n1)
                 {
-                    case MergeNode merge:
-                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, MergeNode>().Parents, other.Nodes))) return false;
+                    case DepthConcatenationNode merge:
+                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, DepthConcatenationNode>().Parents, other.Nodes))) return false;
                         break;
                     case ProcessingNode processing:
                         if (Nodes.IndexOf(processing.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
@@ -340,8 +349,8 @@ namespace NeuralNetworkNET.Networks.Graph
             {
                 switch (n)
                 {
-                    case ProcessingNode processing: return new NodeBuilder(n.Type, _ => processing.Layer.Clone());
-                    case MergeNode _:
+                    case ProcessingNode processing: return new NodeBuilder(n.Type, new LayerFactory(_ => processing.Layer.Clone()));
+                    case DepthConcatenationNode _:
                     case TrainingNode _:
                     case InputNode _: return new NodeBuilder(n.Type, null);
                     default: throw new InvalidOperationException("Invalid graph node type");
@@ -362,7 +371,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         map[node].Parents.Add(map[processing.Parent]);
                         map[processing.Parent].Children.Add(map[node]);
                         break;
-                    case MergeNode merge:
+                    case DepthConcatenationNode merge:
                         foreach (IComputationGraphNode parent in merge.Parents)
                         {
                             map[node].Parents.Add(map[parent]);
@@ -381,63 +390,5 @@ namespace NeuralNetworkNET.Networks.Graph
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// A simple class that handles the Json srializaation of the metadata of aa given <see cref="ComputationGraph"/> instance
-    /// </summary>
-    internal sealed class ComputationGraphJsonConverter : JsonConverter
-    {
-        /// <inheritdoc/>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            // Extract the nodes info
-            if (!(value is ComputationGraph graph)) throw new InvalidOperationException("Invalid value to serialize");
-            Dictionary<IComputationGraphNode, int> map = graph.Nodes.Select((n, i) => (Node: n, Index: i)).ToDictionary(p => p.Node, p => p.Index);
-            IList<JObject> nodes = graph.Nodes.Select(node =>
-            {
-                // Base properties
-                JObject jNode = new JObject
-                {
-                    ["Id"] = map[node],
-                    ["Type"] = node.Type.ToString(),
-                    ["Children"] = new JArray(node.Children.Select(child => map[child]).ToList())
-                };
-
-                // Node-specific properties
-                switch (node)
-                {
-                    case ProcessingNode processing:
-                        jNode.Add("Parent", map[processing.Parent]);
-                        jNode.Add("Layer", JToken.FromObject(processing.Layer));
-                        break;
-                    case MergeNode merge:
-                        jNode.Add("Parents", new JArray(merge.Parents.Select(child => map[child]).ToList()));
-                        break;
-                    case TrainingNode split:
-                        jNode.Add("Parent", map[split.Parent]);
-                        break;
-                    case InputNode _: break;
-                    default: throw new ArgumentException("Invalid node type to serialize");
-                }
-                return jNode;
-            }).ToList();
-
-            // Serialize the graph
-            JObject jObj = new JObject
-            {
-                ["Size"] = graph.Nodes.Count,
-                ["Auxiliary classifiers"] = graph.TrainingOutputNodes.Count,
-                ["Nodes"] = new JArray(nodes)
-            };
-            jObj.WriteTo(writer);
-        }
-
-        /// <inheritdoc/>
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            => throw new NotSupportedException();
-
-        /// <inheritdoc/>
-        public override bool CanConvert(Type objectType) => objectType == typeof(ComputationGraph);
     }
 }

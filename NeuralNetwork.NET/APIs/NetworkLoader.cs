@@ -29,7 +29,7 @@ namespace NeuralNetworkNET.APIs
         /// <returns>The deserialized network, or <see langword="null"/> if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
-        public static INeuralNetwork TryLoad([NotNull] FileInfo file, LayersLoadingPreference preference)
+        public static INeuralNetwork TryLoad([NotNull] FileInfo file, ExecutionModePreference preference)
         {
             try
             {
@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.APIs
         /// <returns>The deserialized network, or <see langword="null"/> if the operation fails</returns>
         [PublicAPI]
         [Pure, CanBeNull]
-        public static INeuralNetwork TryLoad([NotNull] Stream stream, LayersLoadingPreference preference)
+        public static INeuralNetwork TryLoad([NotNull] Stream stream, ExecutionModePreference preference)
         {
             try
             {
