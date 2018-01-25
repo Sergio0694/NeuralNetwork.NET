@@ -107,8 +107,8 @@ namespace NeuralNetworkNET.Networks.Implementations
                         Forward(Graph.Root.Children[i]);
 
                 // Collect the outputs and return
-                yHat = aMap[Graph.OutputNode];
                 aMap.Remove(Graph.Root);
+                yHat = aMap[Graph.OutputNode];
                 aMap.Remove(Graph.OutputNode); // Remove yHat from the map to keep it allocated
             }
         }
@@ -186,19 +186,33 @@ namespace NeuralNetworkNET.Networks.Implementations
 
                     #endregion
 
-                    /* ===========================================
-                     * Calculate delta(L), DJDw(L) and DJDb(L)
-                     * ===========================================
-                     * Perform the sigmoid prime of zL, the activity on the last layer
-                     * Calculate the gradient of C with respect to a
-                     * Compute d(L), the Hadamard product of the gradient and the sigmoid prime for L.
-                     * NOTE: for some cost functions (eg. log-likelyhood) the sigmoid prime and the Hadamard product
-                     *       with the first part of the formula are skipped as that factor is simplified during the calculation of the output delta */
+                    /* ===================
+                     * Backpropagation
+                     * ===================
+                     * Propagate the output error delta through the graph network
+                     * and compute the gradients for all the weighted layers in the graph.
+                     * For each auxiliary classifier, backpropagate the error delta from that branch
+                     * as well, and merge it back into the main graph when the training branch parent
+                     * node is reached. This can help reducing the vanishing gradient problem. */
                     void Backward(IComputationGraphNode node)
                     {
                         if (node is InputNode) return;
 
-                        // Prepare the output error delta
+                        #region Output delta extraction
+
+                        /* ==============
+                         * Extract dy
+                         * ==============
+                         * For each graph node, calculate the output error delta from the previous node
+                         * in the backpropagation path. Different cases are present here:
+                         * 1:   The current node has a single child node. In this case, either use a shallow
+                         *      copy of the previous dy tensor (as processing nodes are guaranteed not to edit
+                         *      their dy parameter) or duplicate the previous dy (for paass-through nodes)
+                         * 2:   The current node has multiple children. First, check if all the required dy
+                         *      tensors are available. If not, stop here and wait for another branch to reach
+                         *      this position. If they are available, extract the useful data and sum the
+                         *      dy parameters together to be used in the current node.
+                         * 3:   The current node is an output layer, so no dy tensor is needed. */
                         Tensor dy;
                         bool linked = false;
                         if (node.Children.Count == 1)
@@ -251,7 +265,15 @@ namespace NeuralNetworkNET.Networks.Implementations
                         }
                         else dy = Tensor.Null; // The current node is an output node
 
-                        // Process the current node
+                        #endregion
+
+                        /* ==================
+                         * Node processing
+                         * ==================
+                         * Execute the backpropagation pass on the current node and calculate the
+                         * weights and biases gradient if necessary.
+                         * As with all the other implementation methods here, the network graph structure
+                         * is assumed to be already verified and valid. */
                         switch (node)
                         {
                             case ProcessingNode processing:

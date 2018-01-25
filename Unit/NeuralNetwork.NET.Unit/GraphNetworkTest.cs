@@ -174,8 +174,60 @@ namespace NeuralNetworkNET.Unit
                 fct.Layer(NetworkLayers.Softmax(10));
 
                 var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
-                var sum = fct.Sum(fc1);
+                var sum = fct.Sum(fc1); // Training branch merged back into main graph
                 sum.Layer(NetworkLayers.Softmax(10));
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail7()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var sum = fc0.Sum(fc0); // Duplicate input nodes for a merge node
+                sum.Layer(NetworkLayers.Softmax(10));
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail8()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var output = fc0.Layer(NetworkLayers.Softmax(10));
+                output.Layer(NetworkLayers.Softmax(10)); // Output node with a child node
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail9()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                fc0.Layer(NetworkLayers.Softmax(10));
+                var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10)); // Two main output nodes
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail10()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var split0 = fc0.TrainingBranch();
+                split0.Layer(NetworkLayers.Softmax(10));
+                var split1 = fc0.TrainingBranch();
+                split1.Layer(NetworkLayers.Softmax(10));
+                fc0.Layer(NetworkLayers.Softmax(10));
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
         }

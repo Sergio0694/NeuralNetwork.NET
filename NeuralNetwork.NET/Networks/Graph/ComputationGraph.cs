@@ -143,6 +143,7 @@ namespace NeuralNetworkNET.Networks.Graph
                             if (!map.TryGetValue(parent, out parents[i]))
                                 return;
                         if (parents.Skip(1).Any(p => p.Id != parents[0].Id)) throw new ComputationGraphBuildException("Can't merge a training branch back into the main graph");
+                        if (parents.Select(p => p.Node).Distinct().Count() != parents.Length) throw new ComputationGraphBuildException("The input nodes for a merge node must all be unique");
 
                         // Calculate the output tensor size
                         TensorInfo shape;
@@ -164,6 +165,8 @@ namespace NeuralNetworkNET.Networks.Graph
                         throw new ComputationGraphBuildException($"Invalid node type: {node.NodeType}");
                 }
                 nodes.Add(next);
+                if (node.Children.Count(child => child.NodeType == ComputationGraphNodeType.TrainingBranch) > 1) 
+                    throw new ComputationGraphBuildException("Two training branches can't start from the same parent node");
                 foreach (NodeBuilder child in node.Children)
                     BuildMap(child, id);
             }
