@@ -104,6 +104,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         map[node] = (next, input, id);
                         break;
                     case ComputationGraphNodeType.Processing:
+                        if (node.Parents.Count != 1) throw new ComputationGraphBuildException("A processing node must have a single parent node");
                         INetworkLayer layer = node.GetParameter<LayerFactory>()(map[node.Parents[0]].Info);
                         ProcessingNode processing = new ProcessingNode(layer, map[node.Parents[0]].Node);
                         if (layer is OutputLayerBase)
@@ -125,19 +126,23 @@ namespace NeuralNetworkNET.Networks.Graph
                     case ComputationGraphNodeType.TrainingBranch:
                         if (id != default) throw new ComputationGraphBuildException("A training branch can't contain secondary training branches");
                         if (node.Children.Count == 0) throw new ComputationGraphBuildException("A training branch node can't have 0 child nodes");
+                        if (node.Parents.Count != 1) throw new ComputationGraphBuildException("A training branch node must have a single parent node");
+                        if (node.Parents[0].NodeType == ComputationGraphNodeType.Input) throw new ComputationGraphBuildException("A training branch can't start right from an input node");
                         next = new TrainingNode(map[node.Parents[0]].Node);
                         map[node] = (next, map[node.Parents[0]].Info, id);
                         id = Guid.NewGuid();
                         break;
                     case ComputationGraphNodeType.DepthConcatenation:
                     case ComputationGraphNodeType.Sum:
+                        if (node.Parents.Count < 2) throw new ComputationGraphBuildException("A merge node must have at least 2 parent nodes");
                         if (node.Children.Count == 0) throw new ComputationGraphBuildException("A merge node can't have 0 child nodes");
 
                         // Gather the parent nodes
-                        var parents = new (NodeBase Node, TensorInfo Info, Guid)[node.Parents.Count];
+                        var parents = new (NodeBase Node, TensorInfo Info, Guid Id)[node.Parents.Count];
                         foreach ((NodeBuilder parent, int i) in node.Parents.Select((p, i) => (p, i)))
                             if (!map.TryGetValue(parent, out parents[i]))
                                 return;
+                        if (parents.Skip(1).Any(p => p.Id != parents[0].Id)) throw new ComputationGraphBuildException("Can't merge a training branch back into the main graph");
 
                         // Calculate the output tensor size
                         TensorInfo shape;

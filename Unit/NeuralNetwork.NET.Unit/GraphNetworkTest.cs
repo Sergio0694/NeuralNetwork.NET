@@ -27,7 +27,7 @@ namespace NeuralNetworkNET.Unit
         #region Initialization
 
         [TestMethod]
-        public void GraphNetworkInitialization1()
+        public void Initialization1()
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
@@ -46,7 +46,7 @@ namespace NeuralNetworkNET.Unit
         }
 
         [TestMethod]
-        public void GraphNetworkInitialization2()
+        public void Initialization2()
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
@@ -61,8 +61,12 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(network != null);
         }
 
+        #endregion
+
+        #region Initializaation errors
+
         [TestMethod]
-        public void GraphNetworkInitializationFail1()
+        public void InitializationFail1()
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
@@ -74,7 +78,104 @@ namespace NeuralNetworkNET.Unit
                 var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid)); // Missing output node
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail2()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+
+                var split = conv1.TrainingBranch();
+                split.Layer(NetworkLayers.Softmax(11)); // Output layer not matching the main output layer
+
+                var fc1 = conv1.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10));
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail3()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+
+                var sum = _1x1.Sum(pool1); // Sum node inputs with different shapes
+                var fc = sum.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc.Layer(NetworkLayers.Softmax(10));
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail4()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+
+                var split = root.TrainingBranch(); // Training branch starting from the input node
+                split.Layer(NetworkLayers.Softmax(10));
+
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+
+                var stack = _1x1.DepthConcatenation(_3x3);
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10));
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail5()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+
+                var stack = _1x1.DepthConcatenation(_3x3);
+                var split = stack.TrainingBranch();
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var split2 = fct.TrainingBranch();
+                split2.Layer(NetworkLayers.Softmax(10)); // Nested training branch
+                fct.Layer(NetworkLayers.Softmax(10));
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fc1.Layer(NetworkLayers.Softmax(10));
+            });
+            Assert.ThrowsException<ComputationGraphBuildException>(F);
+        }
+
+        [TestMethod]
+        public void InitializationFail6()
+        {
+            INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            {
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+
+                var split = fc0.TrainingBranch();
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                fct.Layer(NetworkLayers.Softmax(10));
+
+                var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var sum = fct.Sum(fc1);
+                sum.Layer(NetworkLayers.Softmax(10));
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
         }
