@@ -311,14 +311,14 @@ namespace NeuralNetworkNET.Networks.Graph
                     !GetIndexes(n1.Children, Nodes).SequenceEqual(GetIndexes(n2.Children, other.Nodes))) return false;
                 switch (n1)
                 {
-                    case DepthConcatenationNode merge:
-                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, DepthConcatenationNode>().Parents, other.Nodes))) return false;
+                    case MergeNodeBase merge:
+                        if (!GetIndexes(merge.Parents, Nodes).SequenceEqual(GetIndexes(n2.To<IComputationGraphNode, MergeNodeBase>().Parents, other.Nodes))) return false;
                         break;
                     case ProcessingNode processing:
                         if (Nodes.IndexOf(processing.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
                         break;
                     case TrainingNode split:
-                        if (Nodes.IndexOf(split.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, ProcessingNode>().Parent)) return false;
+                        if (Nodes.IndexOf(split.Parent) != other.Nodes.IndexOf(n2.To<IComputationGraphNode, TrainingNode>().Parent)) return false;
                         break;
                     case InputNode _: break;
                     default: throw new InvalidOperationException("The graph contains an invalid node");
