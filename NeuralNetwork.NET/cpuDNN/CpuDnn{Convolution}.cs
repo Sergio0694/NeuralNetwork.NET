@@ -35,7 +35,6 @@ namespace NeuralNetworkNET.cpuDNN
                 kSize = kw / wInfo.Channels,
                 kHeight = wInfo.Height,
                 kWidth = wInfo.Width;
-            if (kHeight < 2 || kWidth < 2) throw new ArgumentException("The kernel must be at least 2x2", nameof(w));
             int
                 n = x.Entities,
                 l = x.Length,
@@ -130,7 +129,6 @@ namespace NeuralNetworkNET.cpuDNN
                 kHeight = wInfo.Height,
                 kWidth = wInfo.Width,
                 kDepth = wInfo.Channels;
-            if (kHeight < 2 || kWidth < 2) throw new ArgumentException("The kernel must be at least 2x2", nameof(w));
             int
                 n = dy.Entities,
                 l = dy.Length,
@@ -229,7 +227,6 @@ namespace NeuralNetworkNET.cpuDNN
                 kSize = kw / dyInfo.Channels,
                 kHeight = dyInfo.Height,
                 kWidth = dyInfo.Width;
-            if (kHeight < 2 || kWidth < 2) throw new ArgumentException(nameof(dy), "The kernel must be at least 2x2");
             int
                 n = x.Entities,
                 l = x.Length,
