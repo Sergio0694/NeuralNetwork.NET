@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Enums;
@@ -26,6 +27,25 @@ namespace NeuralNetworkNET.Unit
     {
         #region Initialization
 
+        // Tries to process a random batch through the network (this method should just not crash)
+        private static void ValidateGraph([NotNull] INeuralNetwork network)
+        {
+            float[,]
+                x = new float[200, network.InputInfo.Size],
+                y = new float[200, network.OutputInfo.Size];
+            for (int i = 0; i < 200; i++)
+            {
+                for (int j = 0; j < x.GetLength(1); j++)
+                    x[i, j] = ThreadSafeRandom.NextFloat();
+                y[i, ThreadSafeRandom.NextInt(max: y.GetLength(1))] = 1;
+            }
+            _ = network.Forward(x);
+            SamplesBatch batch = new SamplesBatch(x, y);
+            ComputationGraphNetwork graph = network.To<INeuralNetwork, ComputationGraphNetwork>();
+            graph.Backpropagate(batch, 0.5f, WeightsUpdaters.AdaDelta(TrainingAlgorithms.AdaDelta(), graph));
+            _ = network.ExtractDeepFeatures(x);
+        }
+
         [TestMethod]
         public void Initialization1()
         {
@@ -39,29 +59,22 @@ namespace NeuralNetworkNET.Unit
                 _ = fc.Layer(NetworkLayers.Softmax(10));
             });
             Assert.IsTrue(network != null);
+            ValidateGraph(network);
         }
 
         [TestMethod]
         public void Initialization2()
         {
-            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
+            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var _1x1 = root.Layer(NetworkLayers.Convolutional((1, 1), 2, ActivationFunctionType.ReLU));
+                var _1x1_2 = root.Layer(NetworkLayers.Convolutional((1, 1), 2, ActivationFunctionType.ReLU));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-
-                var split = _3x3.TrainingBranch();
-                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh));
-                _ = fct.Layer(NetworkLayers.Softmax(10));
-
-                var stack = _1x1.DepthConcatenation(_3x3);
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
-                _ = fc1.Layer(NetworkLayers.Softmax(10));
+                var stack = _1x1.DepthConcatenation(_1x1_2);
+                _ = stack.Layer(NetworkLayers.Softmax(10));
             });
             Assert.IsTrue(network != null);
+            ValidateGraph(network);
         }
 
         [TestMethod]
@@ -78,11 +91,12 @@ namespace NeuralNetworkNET.Unit
                 fc1.Layer(NetworkLayers.Softmax(10));
             });
             Assert.IsTrue(network != null);
+            ValidateGraph(network);
         }
 
         #endregion
 
-        #region Initializaation errors
+        #region Initialization errors
 
         [TestMethod]
         public void InitializationFail1()
