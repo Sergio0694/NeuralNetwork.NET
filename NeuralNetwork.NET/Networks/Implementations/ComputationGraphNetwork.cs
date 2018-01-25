@@ -68,14 +68,13 @@ namespace NeuralNetworkNET.Networks.Implementations
             using (TensorMap<IComputationGraphNode> aMap = new TensorMap<IComputationGraphNode> { [Graph.Root] = x })
             {
                 // Recursive forward function
-                Tensor xc = x; // Local copy for closure
                 void Forward(IComputationGraphNode node)
                 {
                     switch (node)
                     {
                         case ProcessingNode processing:
                         {
-                            processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? xc : aMap[processing.Parent], out Tensor z, out Tensor a);
+                            processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(aMap[processing.Parent], out Tensor z, out Tensor a);
                             z.Free();
                             aMap[processing] = a;
                             if (processing == Graph.OutputNode) return;
@@ -145,7 +144,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         {
                             case ProcessingNode processing:
                             {
-                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? x : aMap[processing.Parent], out Tensor z, out Tensor a);
+                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(aMap[processing.Parent], out Tensor z, out Tensor a);
                                 zMap[processing] = z;
                                 aMap[processing] = a;
                                 if (processing.Layer.LayerType == LayerType.FullyConnected && dropout > 0)
@@ -242,9 +241,9 @@ namespace NeuralNetworkNET.Networks.Implementations
                                     int offset = 0, length = -1;
                                     for (int j = 0; j < merge.Parents.Count; j++)
                                     {
+                                        length = aMap[merge.Parents[j]].Length;
                                         if (merge.Parents[j] == node) break;
                                         offset += j == 0 ? 0 : aMap[merge.Parents[j - 1]].Length;
-                                        length = aMap[merge.Parents[j]].Length;
                                     }
                                     Tensor.New(x.Entities, length, out dyt[i]);
                                     CpuDnn.DepthConcatenationBackward(dMap[merge], offset, dyt[i]);
@@ -434,7 +433,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                         {
                             case ProcessingNode processing:
                             {
-                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(processing.Parent is InputNode ? xc : aMap[processing.Parent], out Tensor z, out Tensor a);
+                                processing.Layer.To<INetworkLayer, NetworkLayerBase>().Forward(aMap[processing.Parent], out Tensor z, out Tensor a);
                                 zMap[processing] = z;
                                 aMap[processing] = a;
                                 break;

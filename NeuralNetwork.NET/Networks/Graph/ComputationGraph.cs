@@ -156,6 +156,8 @@ namespace NeuralNetworkNET.Networks.Graph
                         }
                         else
                         {
+                            if (parents.Skip(1).Any(p => p.Info.Height != parents[0].Info.Height || p.Info.Width != parents[0].Info.Width))
+                                throw new ComputationGraphBuildException("The inputs of a depth concatenation node must all have the same height and width");
                             shape = TensorInfo.Volume(parents[0].Info.Height, parents[0].Info.Width, parents.Sum(p => p.Info.Channels));
                             next = new DepthConcatenationNode(parents.Select(t => t.Node).ToArray());
                         }
