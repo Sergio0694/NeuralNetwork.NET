@@ -40,12 +40,12 @@ The first step is to create a custom network structure. Here is an example with 
 
 ```C#
 INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-    NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
-    NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-    NetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
-    NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-    NetworkLayers.FullyConnected(125, ActivationFunctionType.LeakyReLU),
-    NetworkLayers.FullyConnected(64, ActivationFunctionType.LeakyReLU),
+    NetworkLayers.Convolutional((5, 5), 20, ActivationType.Identity),
+    NetworkLayers.Pooling(ActivationType.LeakyReLU),
+    NetworkLayers.Convolutional((3, 3), 40, ActivationType.Identity),
+    NetworkLayers.Pooling(ActivationType.LeakyReLU),
+    NetworkLayers.FullyConnected(125, ActivationType.LeakyReLU),
+    NetworkLayers.FullyConnected(64, ActivationType.LeakyReLU),
     NetworkLayers.Softmax(10));
 ```
 
@@ -74,7 +74,7 @@ TrainingSessionResult result = NetworkManager.TrainNetwork(
     60,                                     // The expected number of training epochs to run
     0.5f,                                   // Dropout probability
     p => ...,                               // Optional training epoch progress callback
-    null,                                   // Optional callback to monitor the accuracy on the training dataset
+    null,                                   // Optional callback to monitor the training dataset accuracy
     null,                                   // Optional validation dataset
     test,                                   // Test dataset
     token);                                 // Cancellation token for the training
@@ -91,8 +91,8 @@ Some of the cuDNN-powered layers support additional options than the default lay
 ```C#
 // A cuDNN convolutional layer, with custom mode, padding and stride
 LayerFactory convolutional = CuDnnNetworkLayers.Convolutional(
-    ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 2, 2),
-    (5, 5), 20, ActivationFunctionType.ReLU);
+    ConvolutionInfo.New(ConvolutionMode.CrossCorrelation, 3, 3, 2, 2),
+    (7, 7), 20, ActivationType.ReLU);
     
 // An inception module, from the design of the GoogLeNet network
 LayerFactory inception = CuDnnNetworkLayers.Inception(InceptionInfo.New(
@@ -113,18 +113,19 @@ Some complex network structures, like residual networks or inception modules , c
 Computation graph networks are created using the `NetworkManager.NewGraph` API, here's an example:
 
 ```C#
-INeuralNetwork residual = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
+INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
 {
-    var conv1 = root.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.Identity));
-    var pool1 = conv1.Layer(CuDnnNetworkLayers.Pooling(ActivationFunctionType.ReLU));
+    var conv1 = root.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationType.Identity));
+    var pool1 = conv1.Layer(CuDnnNetworkLayers.Pooling(ActivationType.ReLU));
 
-    var conv2 = pool1.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ReLU));
-    var conv3 = conv2.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ReLU));
-    var res = conv3.Sum(pool1);
+    var conv2 = pool1.Layer(CuDnnNetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+    var conv3 = conv2.Layer(CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Same(), (5, 5), 40, ActivationType.ReLU));
+    var conv4 = conv3.Layer(CuDnnNetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+    var sum = conv4.Sum(pool1);
 
-    var pool2 = res.Layer(CuDnnNetworkLayers.Pooling(ActivationFunctionType.ReLU));
-    var fc = res.Layer(CuDnnNetworkLayers.FullyConnected(100, ActivationFunctionType.Tanh));
-    _ = fc.Layer(CuDnnNetworkLayers.Softmax(10));
+    var fc1 = sum.Layer(CuDnnNetworkLayers.FullyConnected(250, ActivationType.LeCunTanh));
+    var fc2 = fc1.Layer(CuDnnNetworkLayers.FullyConnected(125, ActivationType.LeCunTanh));
+    _ = fc2.Layer(CuDnnNetworkLayers.Softmax(10));
 });
 ```
 
