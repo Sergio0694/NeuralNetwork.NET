@@ -74,12 +74,13 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Tensor.Like(x, out Tensor dx1);
                 Tensor.Like(x, out Tensor dx2);
                 cpu.Forward(x, out Tensor z_cpu, out Tensor a_cpu);
+                gpu.Forward(x, out Tensor z_gpu, out Tensor a_gpu);
                 cpu.Backpropagate(x, a_cpu, yTensor, z_cpu, dx1, out Tensor dJdw_cpu, out Tensor dJdb_cpu);
                 gpu.Backpropagate(x, a_cpu, yTensor, z_cpu, dx2, out Tensor dJdw_gpu, out Tensor dJdb_gpu);
                 Assert.IsTrue(dx1.ContentEquals(dx2));
                 Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
                 Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f));
-                Tensor.Free(x, dy, dx1, dx2, z_cpu, a_cpu, dJdw_cpu, dJdw_gpu, dJdb_cpu, dJdb_gpu);
+                Tensor.Free(x, dy, dx1, dx2, z_cpu, a_cpu, z_gpu, a_gpu, dJdw_cpu, dJdw_gpu, dJdb_cpu, dJdb_gpu);
             }
         }
 

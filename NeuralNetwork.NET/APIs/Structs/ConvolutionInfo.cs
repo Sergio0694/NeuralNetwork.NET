@@ -92,6 +92,7 @@ namespace NeuralNetworkNET.APIs.Structs
             int
                 h = (input.Height - field.X + 2 * VerticalPadding) / VerticalStride + 1,
                 w = (input.Width - field.Y + 2 * HorizontalPadding) / HorizontalStride + 1;
+            if (h <= 0 || w <= 0) throw new InvalidOperationException("The input convolution kernels can't be applied to the input tensor shape");
             return new TensorInfo(h, w, kernels);
         }
 

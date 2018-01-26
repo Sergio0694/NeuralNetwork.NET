@@ -82,6 +82,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             dw.Reshape(1, dw.Size, out dJdw); // Flatten the result
             Tensor.New(1, Biases.Length, out dJdb);
             CpuDnn.FullyConnectedBackwardBias(dy, dJdb);
+            dy.Free();
         }
 
         /// <summary>

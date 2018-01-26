@@ -244,28 +244,30 @@ namespace NeuralNetworkNET.cpuDNN
             int* offsets = stackalloc int[inputs.Length];
             fixed (Tensor* p = &inputs.DangerousGetPinnableReference())
             {
+                // Extract input info
                 for (int i = 0; i < inputs.Length; i++)
                 {
                     offsets[i] = count;
                     count += p[i].Length;
                     if (p[i].Entities != y.Entities) throw new ArgumentException("The number of samples must be the same for all tensors");
                 }
-            }
-            if (y.Length != count) throw new ArgumentException("The target tensor doesn't have the right size", nameof(y));
+                if (y.Length != count) throw new ArgumentException("The target tensor doesn't have the right size", nameof(y));
 
-            // Concatenate the tensors in parallel
-            float* py = y;
-            void Kernel(int i)
-            {
-                float*
-                    psource = inputs[i],
-                    ptarget = py + offsets[i];
-                int l = inputs[i].Length;
-                long bytes = sizeof(float) * l;
-                for (int j = 0; j < n; j++, psource += l, ptarget += count)
-                    Buffer.MemoryCopy(psource, ptarget, bytes, bytes);
+                // Concatenate the tensors in parallel
+                float* py = y;
+                Tensor* pf = p; // Local copy for closure
+                void Kernel(int i)
+                {
+                    float*
+                        psource = pf[i],
+                        ptarget = py + offsets[i];
+                    int l = pf[i].Length;
+                    long bytes = sizeof(float) * l;
+                    for (int j = 0; j < n; j++, psource += l, ptarget += count)
+                        Buffer.MemoryCopy(psource, ptarget, bytes, bytes);
+                }
+                Parallel.For(0, inputs.Length, Kernel).AssertCompleted();
             }
-            Parallel.For(0, inputs.Length, Kernel).AssertCompleted();
         }
 
         /// <summary>
@@ -284,12 +286,10 @@ namespace NeuralNetworkNET.cpuDNN
             // Backpropagate in parallel
             float* pdy = dy, pdx = dx;
             int
-                l = dx.Length,
-                pitch = dy.Length,
-                left = sizeof(float) * offset,
-                dyRowSize = sizeof(float) * pitch,
-                dxRowSize = sizeof(float) * l;
-            void Kernel(int i) => Buffer.MemoryCopy(pdy + dyRowSize * i + left,pdx + i * dxRowSize, dxRowSize, dxRowSize);
+                xl = dx.Length,
+                yl = dy.Length,
+                bytes = sizeof(float) * xl;
+            void Kernel(int i) => Buffer.MemoryCopy(pdy + yl * i + offset, pdx + i * xl, bytes, bytes);
             Parallel.For(0, dy.Entities, Kernel);
         }
 

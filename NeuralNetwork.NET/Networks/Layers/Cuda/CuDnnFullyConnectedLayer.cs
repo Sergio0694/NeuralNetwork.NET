@@ -68,7 +68,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 // Gradient
                 DnnInstance.FullyConnectedBackwardFilter(x.Entities, x.Length, dy.Length, x_gpu.Ptr, dy_gpu.Ptr, w_gpu.Ptr);
                 w_gpu.CopyToHost(1, Weights.Length, out dJdw);
-                DnnInstance.FullyConnectedBackwardBias(dy.Entities, dy.Length, dy_gpu.Ptr, dJdb_gpu.Ptr); // Doing this on CPU is generally faster than launching the kernels
+                DnnInstance.FullyConnectedBackwardBias(dy.Entities, dy.Length, dy_gpu.Ptr, dJdb_gpu.Ptr);
                 dJdb_gpu.CopyToHost(1, Biases.Length, out dJdb);
             }
         }
