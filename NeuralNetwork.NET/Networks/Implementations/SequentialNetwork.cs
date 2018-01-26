@@ -12,7 +12,6 @@ using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -67,7 +66,7 @@ namespace NeuralNetworkNET.Networks.Implementations
                 if (i > 0 && layers[i - 1].OutputInfo.Size != layer.InputInfo.Size)
                     throw new NetworkBuildException($"The inputs of layer #{i} don't match with the outputs of the previous layer");
                 if (i > 0 && layer is PoolingLayer && 
-                    layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationFunctionType != ActivationFunctionType.Identity)
+                    layers[i - 1] is ConvolutionalLayer convolutional && convolutional.ActivationType != ActivationType.Identity)
                     throw new NetworkBuildException("A convolutional layer followed by a pooling layer must use the Identity activation function. " +
                                                     "In order to apply any activation function after the convolutional layer, just assign it to the pooling layer that follows. " +
                                                     "This is done for optimization purposes: the result will be the same that would be achieved by using the activation function " +

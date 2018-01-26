@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
@@ -57,13 +56,13 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
 
         public CuDnnConvolutionalLayer(
             in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels,
-            ActivationFunctionType activation, BiasInitializationMode biasMode)
+            ActivationType activation, BiasInitializationMode biasMode)
             : base(input, operation, kernelSize, kernels, activation, biasMode)
             => SetupCuDnnInfo();
 
         public CuDnnConvolutionalLayer(
             in TensorInfo input, in ConvolutionInfo operation, TensorInfo kernels, TensorInfo output,
-            [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            [NotNull] float[] weights, [NotNull] float[] biases, ActivationType activation)
             : base(input, operation, kernels, output, weights, biases, activation)
             => SetupCuDnnInfo();
 
@@ -97,7 +96,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 z_gpu.CopyToHost(x.Entities, OutputInfo.Size, out z);
 
                 // Activation
-                if (ActivationFunctionType == ActivationFunctionType.Identity) z.Duplicate(out a);
+                if (ActivationType == ActivationType.Identity) z.Duplicate(out a);
                 else
                 {
                     DnnInstance.ActivationForward(z.Entities, z.Length, z_gpu.Ptr, z_gpu.Ptr, ActivationFunctions.Activation);
@@ -156,7 +155,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo output)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
             if (!stream.TryRead(out int wLength)) return null;
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;
@@ -167,7 +166,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new CuDnnConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
 
         #endregion
     }

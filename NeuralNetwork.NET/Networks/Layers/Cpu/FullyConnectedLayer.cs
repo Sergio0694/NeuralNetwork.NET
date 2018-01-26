@@ -6,7 +6,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 
@@ -20,12 +19,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.FullyConnected;
 
-        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, ActivationType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
             : base(input, TensorInfo.Linear(neurons),
                   WeightsProvider.NewFullyConnectedWeights(input, neurons, weightsMode),
                   WeightsProvider.NewBiases(neurons, biasMode), activation) { }
 
-        public FullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+        public FullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationType activation)
             : base(input, TensorInfo.Linear(neurons), weights, biases, activation)
         {
             if (neurons != biases.Length)
@@ -75,7 +74,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         #endregion
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
 
         /// <summary>
         /// Tries to deserialize a new <see cref="FullyConnectedLayer"/> from the input <see cref="Stream"/>
@@ -86,7 +85,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo output)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
             if (!stream.TryRead(out int wLength)) return null;
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;

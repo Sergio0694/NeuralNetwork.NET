@@ -2,7 +2,6 @@
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 
@@ -23,7 +22,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory FullyConnected(
-            int neurons, ActivationFunctionType activation, 
+            int neurons, ActivationType activation, 
             WeightsInitializationMode weightsMode = WeightsInitializationMode.GlorotUniform, BiasInitializationMode biasMode = BiasInitializationMode.Zero)
             => input => new FullyConnectedLayer(input, neurons, activation, weightsMode, biasMode);
 
@@ -38,7 +37,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory FullyConnected(
-            int neurons, ActivationFunctionType activation, CostFunctionType cost,
+            int neurons, ActivationType activation, CostFunctionType cost,
             WeightsInitializationMode weightsMode = WeightsInitializationMode.GlorotUniform, BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new OutputLayer(input, neurons, activation, cost, weightsMode, biasMode);
 
@@ -65,7 +64,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory Convolutional(
-            (int X, int Y) kernel, int kernels, ActivationFunctionType activation, 
+            (int X, int Y) kernel, int kernels, ActivationType activation, 
             BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new ConvolutionalLayer(input, ConvolutionInfo.Default, kernel, kernels, activation, biasMode);
 
@@ -75,6 +74,6 @@ namespace NeuralNetworkNET.APIs
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static LayerFactory Pooling(ActivationFunctionType activation) => input => new PoolingLayer(input, PoolingInfo.Default, activation);
+        public static LayerFactory Pooling(ActivationType activation) => input => new PoolingLayer(input, PoolingInfo.Default, activation);
     }
 }

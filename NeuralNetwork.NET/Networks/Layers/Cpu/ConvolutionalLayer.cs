@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 using Newtonsoft.Json;
@@ -58,7 +57,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
 
         #endregion
 
-        public ConvolutionalLayer(in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, ActivationFunctionType activation, BiasInitializationMode biasMode)
+        public ConvolutionalLayer(in TensorInfo input, in ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, ActivationType activation, BiasInitializationMode biasMode)
             : base(input, operation.GetForwardOutputTensorInfo(input, kernelSize, kernels),
                   WeightsProvider.NewConvolutionalKernels(input, kernelSize.X, kernelSize.Y, kernels),
                   WeightsProvider.NewBiases(kernels, biasMode), activation)
@@ -69,7 +68,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
 
         public ConvolutionalLayer(
             in TensorInfo input, in ConvolutionInfo operation, in TensorInfo kernels, in TensorInfo output,
-            [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation)
+            [NotNull] float[] weights, [NotNull] float[] biases, ActivationType activation)
             : base(input, output, weights, biases, activation)
         {
             _OperationInfo = operation;
@@ -88,7 +87,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                 Tensor.New(x.Entities, OutputInfo.Size, out z);
                 CpuDnn.ConvolutionForward(x, InputInfo, w, KernelInfo, b, z);
                 Tensor.New(z.Entities, z.Length, out a);
-                if (ActivationFunctionType == ActivationFunctionType.Identity) a.Overwrite(z);
+                if (ActivationType == ActivationType.Identity) a.Overwrite(z);
                 else CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
             }
         }
@@ -130,7 +129,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)
@@ -149,7 +148,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo output)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
             if (!stream.TryRead(out int wLength)) return null;
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;

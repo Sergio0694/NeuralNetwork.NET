@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
@@ -20,10 +19,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         [NotNull]
         private readonly Dnn DnnInstance = CuDnnService.Instance;
 
-        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, ActivationFunctionType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, ActivationType activation, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) 
             : base(input, neurons, activation, weightsMode, biasMode) { }
 
-        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation) 
+        public CuDnnFullyConnectedLayer(in TensorInfo input, int neurons, [NotNull] float[] weights, [NotNull] float[] biases, ActivationType activation) 
             : base(input, neurons, weights, biases, activation) { }
 
         #region Implementation
@@ -84,7 +83,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo output)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
             if (!stream.TryRead(out int wLength)) return null;
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;
@@ -93,6 +92,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnFullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationFunctionType);
+        public override INetworkLayer Clone() => new CuDnnFullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
     }
 }

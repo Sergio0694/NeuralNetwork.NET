@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Datasets;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.SupervisedLearning.Progress;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -18,9 +18,9 @@ namespace DigitsTest
         {
             // Create the network
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-                NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.LeakyReLU),
+                NetworkLayers.FullyConnected(100, ActivationType.LeCunTanh),
                 NetworkLayers.Softmax(10));
 
             // Prepare the dataset

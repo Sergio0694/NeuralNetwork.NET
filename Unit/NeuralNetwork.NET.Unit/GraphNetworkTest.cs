@@ -9,7 +9,6 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -51,11 +50,11 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.Identity));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU));
-                var conv2 = pool1.Layer(NetworkLayers.Convolutional((3, 3), 10, ActivationFunctionType.Identity));
-                var pool2 = conv2.Layer(NetworkLayers.Pooling(ActivationFunctionType.ReLU));
-                var fc = pool2.Layer(NetworkLayers.FullyConnected(64, ActivationFunctionType.LeCunTanh));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.Identity));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.LeakyReLU));
+                var conv2 = pool1.Layer(NetworkLayers.Convolutional((3, 3), 10, ActivationType.Identity));
+                var pool2 = conv2.Layer(NetworkLayers.Pooling(ActivationType.ReLU));
+                var fc = pool2.Layer(NetworkLayers.FullyConnected(64, ActivationType.LeCunTanh));
                 _ = fc.Layer(NetworkLayers.Softmax(10));
             });
             Assert.IsTrue(network != null);
@@ -67,8 +66,8 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
             {
-                var _1x1 = root.Layer(NetworkLayers.Convolutional((1, 1), 2, ActivationFunctionType.ReLU));
-                var _1x1_2 = root.Layer(NetworkLayers.Convolutional((1, 1), 2, ActivationFunctionType.ReLU));
+                var _1x1 = root.Layer(NetworkLayers.Convolutional((1, 1), 2, ActivationType.ReLU));
+                var _1x1_2 = root.Layer(NetworkLayers.Convolutional((1, 1), 2, ActivationType.ReLU));
 
                 var stack = _1x1.DepthConcatenation(_1x1_2);
                 _ = stack.Layer(NetworkLayers.Softmax(10));
@@ -82,12 +81,12 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
 
                 var split = conv1.TrainingBranch();
                 split.Layer(NetworkLayers.Softmax(10));
 
-                var fc1 = conv1.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = conv1.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc1.Layer(NetworkLayers.Softmax(10));
             });
             Assert.IsTrue(network != null);
@@ -103,15 +102,15 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationType.ReLU));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid)); // Missing output node
+                stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid)); // Missing output node
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
         }
@@ -121,12 +120,12 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
 
                 var split = conv1.TrainingBranch();
                 split.Layer(NetworkLayers.Softmax(11)); // Output layer not matching the main output layer
 
-                var fc1 = conv1.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = conv1.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc1.Layer(NetworkLayers.Softmax(10));
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
@@ -137,13 +136,13 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
 
                 var sum = _1x1.Sum(pool1); // Sum node inputs with different shapes
-                var fc = sum.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc = sum.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc.Layer(NetworkLayers.Softmax(10));
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
@@ -154,18 +153,18 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
                 var split = root.TrainingBranch(); // Training branch starting from the input node
                 split.Layer(NetworkLayers.Softmax(10));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationType.ReLU));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc1.Layer(NetworkLayers.Softmax(10));
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
@@ -176,20 +175,20 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((3, 3), 20, ActivationType.ReLU));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
                 var split = stack.TrainingBranch();
-                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 var split2 = fct.TrainingBranch();
                 split2.Layer(NetworkLayers.Softmax(10)); // Nested training branch
                 fct.Layer(NetworkLayers.Softmax(10));
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc1.Layer(NetworkLayers.Softmax(10));
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
@@ -200,13 +199,13 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationType.Sigmoid));
 
                 var split = fc0.TrainingBranch();
-                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fct.Layer(NetworkLayers.Softmax(10));
 
-                var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 var sum = fct.Sum(fc1); // Training branch merged back into main graph
                 sum.Layer(NetworkLayers.Softmax(10));
             });
@@ -218,7 +217,7 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationType.Sigmoid));
                 var sum = fc0.Sum(fc0); // Duplicate input nodes for a merge node
                 sum.Layer(NetworkLayers.Softmax(10));
             });
@@ -230,7 +229,7 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationType.Sigmoid));
                 var output = fc0.Layer(NetworkLayers.Softmax(10));
                 output.Layer(NetworkLayers.Softmax(10)); // Output node with a child node
             });
@@ -242,9 +241,9 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationType.Sigmoid));
                 fc0.Layer(NetworkLayers.Softmax(10));
-                var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = fc0.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc1.Layer(NetworkLayers.Softmax(10)); // Two main output nodes
             });
             Assert.ThrowsException<ComputationGraphBuildException>(F);
@@ -255,7 +254,7 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork F() => NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationFunctionType.Sigmoid));
+                var fc0 = root.Layer(NetworkLayers.FullyConnected(200, ActivationType.Sigmoid));
                 var split0 = fc0.TrainingBranch();
                 split0.Layer(NetworkLayers.Softmax(10));
                 var split1 = fc0.TrainingBranch();
@@ -273,7 +272,7 @@ namespace NeuralNetworkNET.Unit
         public void ForwardTest1()
         {
             SequentialNetwork seq = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(12, 12),
-                NetworkLayers.FullyConnected(20, ActivationFunctionType.Sigmoid, biasMode: BiasInitializationMode.Gaussian),
+                NetworkLayers.FullyConnected(20, ActivationType.Sigmoid, biasMode: BiasInitializationMode.Gaussian),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
             ComputationGraphNetwork graph = NetworkManager.NewGraph(seq.InputInfo, root =>
             {
@@ -294,7 +293,7 @@ namespace NeuralNetworkNET.Unit
         public void BackwardTest1()
         {
             SequentialNetwork seq = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(12, 12),
-                NetworkLayers.FullyConnected(20, ActivationFunctionType.Sigmoid, biasMode: BiasInitializationMode.Gaussian),
+                NetworkLayers.FullyConnected(20, ActivationType.Sigmoid, biasMode: BiasInitializationMode.Gaussian),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
             ComputationGraphNetwork graph = NetworkManager.NewGraph(seq.InputInfo, root =>
             {
@@ -326,19 +325,19 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
 
                 var split = _3x3.TrainingBranch();
-                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh));
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationType.LeCunTanh));
                 _ = fct.Layer(NetworkLayers.Softmax(10));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 _ = fc1.Layer(NetworkLayers.Softmax(10));
             });
             String json = network.SerializeMetadataAsJson();
@@ -350,19 +349,19 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
 
                 var split = _3x3.TrainingBranch();
-                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh));
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationType.LeCunTanh));
                 _ = fct.Layer(NetworkLayers.Softmax(10));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 _ = fc1.Layer(NetworkLayers.Softmax(10));
             });
             INeuralNetwork copy = network.Clone();
@@ -376,8 +375,8 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
             {
-                var fc1 = root.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
-                var fc2 = fc1.Layer(NetworkLayers.FullyConnected(40, ActivationFunctionType.Sigmoid));
+                var fc1 = root.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
+                var fc2 = fc1.Layer(NetworkLayers.FullyConnected(40, ActivationType.Sigmoid));
                 fc2.Layer(NetworkLayers.Softmax(10));
             });
             String path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
@@ -394,19 +393,19 @@ namespace NeuralNetworkNET.Unit
         {
             INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(60, 60), root =>
             {
-                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationFunctionType.ReLU));
-                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationFunctionType.Sigmoid));
+                var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
+                var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationFunctionType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
 
                 var split = _3x3.TrainingBranch();
-                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh));
+                var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationType.LeCunTanh));
                 _ = fct.Layer(NetworkLayers.Softmax(10));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 _ = fc1.Layer(NetworkLayers.Softmax(10));
             });
             String path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));

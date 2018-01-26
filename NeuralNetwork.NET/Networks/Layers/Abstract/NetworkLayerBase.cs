@@ -47,8 +47,8 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <summary>
         /// Gets the activation type used in the current layer
         /// </summary>
-        [JsonProperty(nameof(ActivationFunctionType), Order = 4)]
-        public ActivationFunctionType ActivationFunctionType { get; }
+        [JsonProperty(nameof(ActivationType), Order = 4)]
+        public ActivationType ActivationType { get; }
 
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the network
@@ -57,11 +57,11 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
 
         #endregion
 
-        protected NetworkLayerBase(in TensorInfo input, in TensorInfo output, ActivationFunctionType activation)
+        protected NetworkLayerBase(in TensorInfo input, in TensorInfo output, ActivationType activation)
         {
             _InputInfo = input.IsEmptyOrInvalid ? throw new ArgumentException("The layer input info is not valid", nameof(input)) : input;
             _OutputInfo = output.IsEmptyOrInvalid ? throw new ArgumentException("The layer output info is not valid", nameof(output)) : output;
-            ActivationFunctionType = activation;
+            ActivationType = activation;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(activation);
         }
 
@@ -84,7 +84,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             return other is NetworkLayerBase layer &&
                    InputInfo == layer.InputInfo &&
                    OutputInfo == layer.OutputInfo &&
-                   ActivationFunctionType == layer.ActivationFunctionType;
+                   ActivationType == layer.ActivationType;
         }
 
         #endregion
@@ -101,7 +101,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             stream.Write(LayerType);
             stream.Write(InputInfo);
             stream.Write(OutputInfo);
-            stream.Write(ActivationFunctionType);
+            stream.Write(ActivationType);
         }
     }
 }

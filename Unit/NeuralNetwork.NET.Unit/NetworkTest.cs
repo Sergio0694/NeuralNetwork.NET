@@ -10,7 +10,6 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
@@ -92,7 +91,7 @@ namespace NeuralNetworkNET.Unit
             (var trainingSet, var testSet) = ParseMnistDataset();
             BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
             SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid),
+                NetworkLayers.FullyConnected(100, ActivationType.Sigmoid),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
             TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, epochs, 0, info, null, null, null, null, default);
             Assert.IsTrue(result.StopReason == TrainingStopReason.EpochsCompleted);
@@ -128,11 +127,11 @@ namespace NeuralNetworkNET.Unit
             (var trainingSet, var testSet) = ParseMnistDataset(5000);
             BatchesCollection batches = BatchesCollection.From(trainingSet, 100);
             SequentialNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-                NetworkLayers.Convolutional((3, 3), 40, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.LeakyReLU),
-                NetworkLayers.FullyConnected(125, ActivationFunctionType.LeCunTanh),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.LeakyReLU),
+                NetworkLayers.Convolutional((3, 3), 40, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.LeakyReLU),
+                NetworkLayers.FullyConnected(125, ActivationType.LeCunTanh),
                 NetworkLayers.Softmax(10)).To<INeuralNetwork, SequentialNetwork>();
             ITrainingAlgorithmInfo info = TrainingAlgorithms.AdaMax();
             TrainingSessionResult result = NetworkTrainer.TrainNetwork(network, batches, 1, 0, info, null, null, null, null, default);

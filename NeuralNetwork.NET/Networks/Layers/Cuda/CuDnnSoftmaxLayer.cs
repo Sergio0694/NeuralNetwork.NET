@@ -6,7 +6,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using System;
@@ -36,10 +35,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         #endregion
 
         public CuDnnSoftmaxLayer(in TensorInfo input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
-            : base(input, outputs, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood, weightsMode, biasMode) { }
+            : base(input, outputs, ActivationType.Softmax, CostFunctionType.LogLikelyhood, weightsMode, biasMode) { }
 
         public CuDnnSoftmaxLayer(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases)
-            : base(input, outputs, weights, biases, ActivationFunctionType.Softmax, CostFunctionType.LogLikelyhood) { }
+            : base(input, outputs, weights, biases, ActivationType.Softmax, CostFunctionType.LogLikelyhood) { }
 
         #region Implementation
 
@@ -103,7 +102,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo output)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation) && activation == ActivationFunctionType.Softmax) return null;
+            if (!stream.TryRead(out ActivationType activation) && activation == ActivationType.Softmax) return null;
             if (!stream.TryRead(out int wLength)) return null;
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;

@@ -25,7 +25,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// <summary>
         /// Gets the activation type used in the current node
         /// </summary>
-        public ActivationFunctionType ActivationFunctionType { get; }
+        public ActivationType ActivationType { get; }
 
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the sum node
@@ -37,10 +37,10 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// </summary>
         public ExecutionModePreference ExecutionMode { get; }
 
-        protected SumNode(ExecutionModePreference mode, ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) : base(ComputationGraphNodeType.Sum, parents)
+        protected SumNode(ExecutionModePreference mode, ActivationType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) : base(ComputationGraphNodeType.Sum, parents)
         {
             ExecutionMode = mode;
-            ActivationFunctionType = activation;
+            ActivationType = activation;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(activation);
         }
 
@@ -51,7 +51,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// <param name="mode">The desired execution mode</param>
         /// <param name="parents">The parent nodes for the new sum mode to create</param>
         [Pure, NotNull]
-        public static SumNode New(ActivationFunctionType activation, ExecutionModePreference mode, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents)
+        public static SumNode New(ActivationType activation, ExecutionModePreference mode, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents)
         {
             if (mode == ExecutionModePreference.Cpu) return new CpuSumNode(activation, parents);
             return new CudaSumNode(activation, parents);
@@ -82,7 +82,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// </summary>
         private sealed class CpuSumNode : SumNode
         {
-            public CpuSumNode(ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) 
+            public CpuSumNode(ActivationType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) 
                 : base(ExecutionModePreference.Cpu, activation, parents) { }
 
             /// <inheritdoc/>
@@ -114,7 +114,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
             [NotNull]
             private readonly Dnn DnnInstance = CuDnnService.Instance;
 
-            public CudaSumNode(ActivationFunctionType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) 
+            public CudaSumNode(ActivationType activation, [NotNull] [ItemNotNull] IReadOnlyList<IComputationGraphNode> parents) 
                 : base(ExecutionModePreference.Cuda, activation, parents) { }
 
             /// <inheritdoc/>
@@ -158,7 +158,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         public override void Serialize(System.IO.Stream stream)
         {
             base.Serialize(stream);
-            stream.Write(ActivationFunctionType);
+            stream.Write(ActivationType);
         }
     }
 }

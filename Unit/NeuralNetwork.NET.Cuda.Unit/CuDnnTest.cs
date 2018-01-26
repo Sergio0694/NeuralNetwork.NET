@@ -81,7 +81,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public unsafe void FullyConnectedForward()
         {
-            FullyConnectedLayer fc = new FullyConnectedLayer(TensorInfo.Linear(231), 125, ActivationFunctionType.Sigmoid, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Gaussian);
+            FullyConnectedLayer fc = new FullyConnectedLayer(TensorInfo.Linear(231), 125, ActivationType.Sigmoid, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Gaussian);
             Tensor x = CreateRandomTensor(400, fc.InputInfo.Size);
             fixed (float* pw = fc.Weights, pb = fc.Biases)
             {
@@ -107,7 +107,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public unsafe void FullyConnectedBackwardData()
         {
-            FullyConnectedLayer fc = new FullyConnectedLayer(TensorInfo.Linear(231), 125, ActivationFunctionType.Sigmoid, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Gaussian);
+            FullyConnectedLayer fc = new FullyConnectedLayer(TensorInfo.Linear(231), 125, ActivationType.Sigmoid, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Gaussian);
             Tensor dy = CreateRandomTensor(400, fc.OutputInfo.Size);
             fixed (float* pw = fc.Weights, pb = fc.Biases)
             {
@@ -132,7 +132,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         [TestMethod]
         public void FullyConnectedBackwardFilter()
         {
-            FullyConnectedLayer fc = new FullyConnectedLayer(TensorInfo.Linear(231), 125, ActivationFunctionType.Sigmoid, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Gaussian);
+            FullyConnectedLayer fc = new FullyConnectedLayer(TensorInfo.Linear(231), 125, ActivationType.Sigmoid, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Gaussian);
             Tensor
                 x = CreateRandomTensor(400, fc.InputInfo.Size),
                 dy = CreateRandomTensor(x.Entities, fc.OutputInfo.Size);
