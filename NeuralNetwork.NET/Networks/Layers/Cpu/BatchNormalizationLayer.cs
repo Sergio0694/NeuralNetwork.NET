@@ -14,8 +14,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
     /// <summary>
     /// A batch normalization layer, used to improve the convergence speed of a neural network
     /// </summary>
-    internal sealed class BatchNormalizationLayer : WeightedLayerBase
+    internal sealed class BatchNormalizationLayer : WeightedLayerBase, IDisposable
     {
+        private Tensor _Mu;
+
+        private Tensor _Sigma2;
+
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.BatchNormalization;
 
@@ -33,13 +37,15 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             // Prepare the mu and sigma2 tensors
-            Tensor.New(1, OutputInfo.Size, out Tensor mu);
-            Tensor.Like(mu, out Tensor sigma2);
+            _Mu.TryFree();
+            Tensor.New(1, OutputInfo.Size, out _Mu);
+            _Sigma2.TryFree();
+            Tensor.Like(_Mu, out _Sigma2);
             int
                 n = x.Entities,
                 l = x.Length;
-            float* px = x, pmu = mu, psigma2 = sigma2;
-            Parallel.For(0, mu.Length, i =>
+            float* px = x, pmu = _Mu, psigma2 = _Sigma2;
+            Parallel.For(0, _Mu.Length, i =>
             {
                 // Mean
                 float mi = 0;
@@ -69,7 +75,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                     int offset = i * l;
                     for (int j = 0; j < l; j++)
                     {
-                        float hat = (x[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                        float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
                         pz[offset + j] = pw[j] * hat + pb[j];
                     }
                 }).AssertCompleted();
@@ -85,14 +91,79 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
+        public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
-            throw new NotImplementedException();
+            // Activation backward
+            int
+                n = x.Entities,
+                l = x.Length;
+            Tensor.Like(dy, out Tensor dy_copy);
+            CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
+            
+            // Gamma gradient
+            Tensor.New(1, l, out dJdw);
+            float* px = x, pdy = dy_copy, pdJdw = dJdw, pmu = _Mu, psigma2 = _Sigma2;
+            Parallel.For(0, l, j =>
+            {
+                float sum = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    float hat = (px[i * l + i] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                    sum += pdy[i * l + j] * hat;
+                }
+                pdJdw[j] = sum;
+            }).AssertCompleted();
+
+            // Beta gradient
+            Tensor.New(1, l, out dJdb);
+            CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb); // Same as fully connected, vertical sum
+
+            // Input error delta
+            fixed (float* pw0 = Weights)
+            {
+                float* pdx = dx, pw = pw0;
+                Parallel.For(0, n, i =>
+                {
+                    for (int j = 0; j < l; j++)
+                    {
+                        float
+                            left = 1f / n * pw[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
+                            _1st = n * pdy[i * l + j],
+                            _2nd = 0,
+                            _3rdLeft = (px[i * l + j] - pmu[j]) * 1f / (psigma2[j] + float.Epsilon),
+                            _3rdRight = 0;
+                        for (int k = 0; k < n; k++)
+                        {
+                            float pdykj = pdy[k * l + j];
+                            _2nd += pdykj;
+                            _3rdRight += pdykj * (px[k * l + j] - pmu[j]);
+                        }
+                        pdx[i * l + j] = left * _1st - _2nd - _3rdLeft * _3rdRight;
+                    }
+                }).AssertCompleted();
+            }
+            dy_copy.Free();
         }
 
         #endregion
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, OutputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy());
+        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
+
+        #region IDisposable
+
+        ~BatchNormalizationLayer() => Dispose();
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose() => Dispose();
+
+        // Disposes the temporary tensors
+        private void Dispose()
+        {
+            _Mu.TryFree();
+            _Sigma2.TryFree();
+        }
+
+        #endregion
     }
 }
