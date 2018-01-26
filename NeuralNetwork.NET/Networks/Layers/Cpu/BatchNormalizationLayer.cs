@@ -61,15 +61,19 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
 
             // Apply the batch normalization pass
             Tensor.Like(x, out z);
-            float* pz = z;
-            Parallel.For(0, n, i =>
+            fixed (float* pw0 = Weights, pb0 = Biases)
             {
-                int offset = i * l;
-                for (int j = 0; j < l; j++)
+                float* pz = z, pw = pw0, pb = pb0; // Pointers for closure
+                Parallel.For(0, n, i =>
                 {
-                    pz[offset + j] = (x[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
-                }
-            }).AssertCompleted();
+                    int offset = i * l;
+                    for (int j = 0; j < l; j++)
+                    {
+                        float hat = (x[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                        pz[offset + j] = pw[j] * hat + pb[j];
+                    }
+                }).AssertCompleted();
+            }
 
             // Activation
             if (ActivationType == ActivationType.Identity) z.Duplicate(out a);
