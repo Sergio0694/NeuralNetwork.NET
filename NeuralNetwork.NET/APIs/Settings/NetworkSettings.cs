@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Delegates;
 
-namespace NeuralNetworkNET.APIs
+namespace NeuralNetworkNET.APIs.Settings
 {
     /// <summary>
     /// A static class with some shared settings for the library

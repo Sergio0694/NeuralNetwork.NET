@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using SixLabors.ImageSharp.PixelFormats;
