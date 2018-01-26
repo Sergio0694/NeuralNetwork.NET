@@ -10,7 +10,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Exceptions;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Graph.Nodes;
 using NeuralNetworkNET.Networks.Graph.Nodes.Abstract;
 using NeuralNetworkNET.Networks.Layers.Abstract;
@@ -151,7 +150,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         {
                             shape = parents[0].Info;
                             if (parents.Skip(1).Any(p => p.Info != shape)) throw new ComputationGraphBuildException("The inputs of a sum node must all have the same shape");
-                            (ActivationFunctionType activation, ExecutionModePreference mode) = node.GetParameter<(ActivationFunctionType, ExecutionModePreference)>();
+                            (ActivationType activation, ExecutionModePreference mode) = node.GetParameter<(ActivationType, ExecutionModePreference)>();
                             next = SumNode.New(activation, mode, parents.Select(t => t.Node).ToArray());
                         }
                         else
@@ -254,7 +253,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         map[id] = new NodeBuilder(type, new LayerFactory(_ => layer));
                         break;
                     case ComputationGraphNodeType.Sum:
-                        if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+                        if (!stream.TryRead(out ActivationType activation)) return null;
                         map[id] = new NodeBuilder(type, (activation, preference));
                         break;
                     default:
@@ -339,7 +338,7 @@ namespace NeuralNetworkNET.Networks.Graph
                 switch (n)
                 {
                     case ProcessingNode processing: return new NodeBuilder(n.Type, new LayerFactory(_ => processing.Layer.Clone()));
-                    case SumNode sum: return new NodeBuilder(ComputationGraphNodeType.Sum, (sum.ActivationFunctionType, sum.ExecutionMode));
+                    case SumNode sum: return new NodeBuilder(ComputationGraphNodeType.Sum, (sum.ActivationType, sum.ExecutionMode));
                     case DepthConcatenationNode _:
                     case TrainingNode _:
                     case InputNode _: return new NodeBuilder(n.Type, null);

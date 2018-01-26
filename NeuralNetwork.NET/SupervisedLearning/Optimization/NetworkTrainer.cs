@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
-using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Services;
 using NeuralNetworkNET.SupervisedLearning.Algorithms.Info;
 using NeuralNetworkNET.SupervisedLearning.Data;

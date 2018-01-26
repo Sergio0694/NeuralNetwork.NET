@@ -4,7 +4,6 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.Networks.Layers.Cuda;
@@ -92,8 +91,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void FullyConnectedForward()
         {
             FullyConnectedLayer
-                cpu = new FullyConnectedLayer(TensorInfo.Linear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
+                cpu = new FullyConnectedLayer(TensorInfo.Linear(250), 127, ActivationType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
+                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationType);
             TestForward(cpu, gpu, 400);
         }
 
@@ -101,8 +100,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void FullyConnectedBackward()
         {
             FullyConnectedLayer
-                cpu = new FullyConnectedLayer(TensorInfo.Linear(250), 127, ActivationFunctionType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
+                cpu = new FullyConnectedLayer(TensorInfo.Linear(250), 127, ActivationType.LeCunTanh, WeightsInitializationMode.GlorotNormal, BiasInitializationMode.Gaussian),
+                gpu = new CuDnnFullyConnectedLayer(cpu.InputInfo, cpu.OutputInfo.Size, cpu.Weights, cpu.Biases, cpu.ActivationType);
             TestBackward(cpu, gpu, 400);
         }
 
@@ -139,8 +138,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void ConvolutionForward()
         {
             ConvolutionalLayer
-                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeakyReLU, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationFunctionType);
+                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationType.LeakyReLU, BiasInitializationMode.Gaussian),
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, cpu.ActivationType);
             TestForward(cpu, gpu, 127);
         }
 
@@ -148,8 +147,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void ConvolutionBackward()
         {
             ConvolutionalLayer
-                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.LeCunTanh, BiasInitializationMode.Gaussian),
-                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationFunctionType.LeCunTanh);
+                cpu = new ConvolutionalLayer(new TensorInfo(58, 58, 3), ConvolutionInfo.Default, (5, 5), 20, ActivationType.LeCunTanh, BiasInitializationMode.Gaussian),
+                gpu = new CuDnnConvolutionalLayer(cpu.InputInfo, ConvolutionInfo.Default, cpu.KernelInfo, cpu.OutputInfo, cpu.Weights, cpu.Biases, ActivationType.LeCunTanh);
             TestBackward(cpu, gpu, 127);
         }
 
@@ -161,8 +160,8 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void PoolingForward()
         {
             PoolingLayer
-                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationFunctionType.LeakyReLU);
+                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.Default, ActivationType.LeakyReLU),
+                gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationType.LeakyReLU);
             TestForward(cpu, gpu, 400);
         }
 
@@ -173,8 +172,8 @@ namespace NeuralNetworkNET.Cuda.Unit
             Tensor.New(400, 58 * 58 * 3, out Tensor x);
             KerasWeightsProvider.FillWithHeEtAlUniform(x, 10);
             PoolingLayer
-                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.Default, ActivationFunctionType.LeakyReLU),
-                gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationFunctionType.LeakyReLU);
+                cpu = new PoolingLayer(new TensorInfo(58, 58, 3), PoolingInfo.Default, ActivationType.LeakyReLU),
+                gpu = new CuDnnPoolingLayer(cpu.InputInfo, PoolingInfo.Default, ActivationType.LeakyReLU);
             gpu.Forward(x, out Tensor z, out Tensor a);
             a.Free();
             x.Duplicate(out Tensor x1);

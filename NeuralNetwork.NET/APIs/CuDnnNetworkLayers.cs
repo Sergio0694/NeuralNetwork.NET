@@ -5,7 +5,6 @@ using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Cuda;
 
 namespace NeuralNetworkNET.APIs
@@ -45,7 +44,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory FullyConnected(
-            int neurons, ActivationFunctionType activation,
+            int neurons, ActivationType activation,
             WeightsInitializationMode weightsMode = WeightsInitializationMode.GlorotUniform, BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new CuDnnFullyConnectedLayer(input, neurons, activation, weightsMode, biasMode);
 
@@ -72,7 +71,7 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory Convolutional(
-            (int X, int Y) kernel, int kernels, ActivationFunctionType activation,
+            (int X, int Y) kernel, int kernels, ActivationType activation,
             BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new CuDnnConvolutionalLayer(input, ConvolutionInfo.Default, kernel, kernels, activation, biasMode);
 
@@ -87,9 +86,24 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory Convolutional(
-            ConvolutionInfo info, (int X, int Y) kernel, int kernels, ActivationFunctionType activation,
+            ConvolutionInfo info, (int X, int Y) kernel, int kernels, ActivationType activation,
             BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new CuDnnConvolutionalLayer(input, info, kernel, kernels, activation, biasMode);
+
+        /// <summary>
+        /// Creates a convolutional layer with the desired number of kernels
+        /// </summary>
+        /// <param name="factory">The <see cref="ConvolutionInfoFactory"/> instance to create a <see cref="ConvolutionInfo"/> value to use</param>
+        /// <param name="kernel">The volume information of the kernels used in the layer</param>
+        /// <param name="kernels">The number of convolution kernels to apply to the input volume</param>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        /// <param name="biasMode">Indicates the desired initialization mode to use for the layer bias values</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static LayerFactory Convolutional(
+            [NotNull] ConvolutionInfoFactory factory, (int X, int Y) kernel, int kernels, ActivationType activation,
+            BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
+            => input => new CuDnnConvolutionalLayer(input, factory(input, kernel), kernel, kernels, activation, biasMode);
 
         /// <summary>
         /// Creates a pooling layer with a window of size 2 and a stride of 2
@@ -97,7 +111,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static LayerFactory Pooling(ActivationFunctionType activation) => input => new CuDnnPoolingLayer(input, PoolingInfo.Default, activation);
+        public static LayerFactory Pooling(ActivationType activation) => input => new CuDnnPoolingLayer(input, PoolingInfo.Default, activation);
 
         /// <summary>
         /// Creates a pooling layer with a custom mode, window size and stride
@@ -106,7 +120,7 @@ namespace NeuralNetworkNET.APIs
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static LayerFactory Pooling(PoolingInfo info, ActivationFunctionType activation) => input => new CuDnnPoolingLayer(input, info, activation);
+        public static LayerFactory Pooling(PoolingInfo info, ActivationType activation) => input => new CuDnnPoolingLayer(input, info, activation);
 
         /// <summary>
         /// Creates a new inception layer with the given features

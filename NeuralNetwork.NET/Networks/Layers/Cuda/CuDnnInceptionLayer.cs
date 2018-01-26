@@ -8,7 +8,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 
@@ -269,14 +268,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             : base(input, new TensorInfo(input.Height, input.Width, info.OutputChannels),
                   WeightsProvider.NewInceptionWeights(input, info),
                   WeightsProvider.NewBiases(info.ConvolutionKernels, biasMode),
-                  ActivationFunctionType.ReLU)
+                  ActivationType.ReLU)
         {
             _OperationInfo = info;
             SetupCuDnnInfo();
         }
 
         internal CuDnnInceptionLayer(in TensorInfo input, in InceptionInfo info, [NotNull] float[] w, [NotNull] float[] b) 
-            : base(input, new TensorInfo(input.Height, input.Width, info.OutputChannels), w, b, ActivationFunctionType.ReLU)
+            : base(input, new TensorInfo(input.Height, input.Width, info.OutputChannels), w, b, ActivationType.ReLU)
         {
             _OperationInfo = info;
             SetupCuDnnInfo();
@@ -689,7 +688,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead<TensorInfo>(out _)) return null;
-            if (!stream.TryRead<ActivationFunctionType>(out _)) return null;
+            if (!stream.TryRead<ActivationType>(out _)) return null;
             if (!stream.TryRead(out int wLength)) return null;
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;

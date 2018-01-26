@@ -6,7 +6,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Abstract;
 using Newtonsoft.Json;
 
@@ -33,7 +32,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             get => ref _OperationInfo;
         }
 
-        public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation)
+        public PoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationType activation)
             : base(input, operation.GetForwardOutputTensorInfo(input), activation)
             => _OperationInfo = operation;
 
@@ -56,7 +55,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
+        public override INetworkLayer Clone() => new PoolingLayer(InputInfo, OperationInfo, ActivationType);
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)
@@ -74,7 +73,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo _)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
             if (!stream.TryRead(out PoolingInfo operation) && operation.Equals(PoolingInfo.Default)) return null;
             return new PoolingLayer(input, operation, activation);
         }

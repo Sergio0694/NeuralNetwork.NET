@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.Extensions;
 
-namespace NeuralNetworkNET.APIs
+namespace NeuralNetworkNET.APIs.Settings
 {
     /// <summary>
     /// A static class exposing different <see cref="AccuracyTester"/> options to monitor the accuracy of a neural network
@@ -11,7 +11,7 @@ namespace NeuralNetworkNET.APIs
     public static class AccuracyTesters
     {
         /// <summary>
-        /// Gets an <see cref="AccuracyTester"/> <see lanfword="delegate"/> that can be used classification problems with mutually-exclusive classes
+        /// Gets an <see cref="AccuracyTester"/> <see langword="delegate"/> that can be used classification problems with mutually-exclusive classes
         /// </summary>
         [PublicAPI]
         [Pure, NotNull]

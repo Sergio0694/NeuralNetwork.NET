@@ -1,5 +1,5 @@
-﻿using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Networks.Activations;
+﻿using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.Networks.Layers.Abstract
 {
@@ -8,7 +8,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
     /// </summary>
     internal abstract class ConstantLayerBase : NetworkLayerBase
     {
-        protected ConstantLayerBase(in TensorInfo input, in TensorInfo output, ActivationFunctionType activation) 
+        protected ConstantLayerBase(in TensorInfo input, in TensorInfo output, ActivationType activation) 
             : base(in input, in output, activation) { }
 
         /// <summary>

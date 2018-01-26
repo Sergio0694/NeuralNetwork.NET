@@ -3,6 +3,7 @@ using NeuralNetworkNET.APIs.Enums;
 using Newtonsoft.Json;
 using System;
 using System.Runtime.CompilerServices;
+using NeuralNetworkNET.APIs.Delegates;
 
 namespace NeuralNetworkNET.APIs.Structs
 {
@@ -77,6 +78,28 @@ namespace NeuralNetworkNET.APIs.Structs
             int verticalPadding = 0, int horizontalPadding = 0,
             int verticalStride = 1, int horizontalStride = 1)
             => new ConvolutionInfo(mode, verticalPadding, horizontalPadding, verticalStride, horizontalStride);
+
+        /// <summary>
+        /// Creates a new <see cref="ConvolutionInfoFactory"/> instance that returns a <see cref="ConvolutionInfo"/> value
+        /// with the appropriate padding to keep the input size the same after the specified convolution operation
+        /// </summary>
+        /// <param name="mode">The desired convolution mode to use</param>
+        /// <param name="verticalStride">The convolution vertical stride size</param>
+        /// <param name="horizontalStride">The convolution horizontal stride size</param>
+        [PublicAPI]
+        [Pure]
+        public static ConvolutionInfoFactory Same(
+            ConvolutionMode mode = ConvolutionMode.Convolution,
+            int verticalStride = 1, int horizontalStride = 1)
+        {
+            return (input, kernels) =>
+            {
+                int
+                    verticalPadding = (input.Height * verticalStride - input.Height + kernels.X - verticalStride - 1) / 2 + 1,
+                    horizontalPadding = (input.Width * horizontalStride - input.Width + kernels.Y - horizontalStride - 1) / 2 + 1;
+                return new ConvolutionInfo(mode, verticalPadding, horizontalPadding, verticalStride, horizontalStride);
+            };
+        }
 
         #endregion
 

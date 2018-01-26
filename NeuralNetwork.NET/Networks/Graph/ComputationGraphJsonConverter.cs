@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.Networks.Graph
                         break;
                     case SumNode sum:
                         jNode.Add("Parents", new JArray(sum.Parents.Select(child => map[child]).ToList()));
-                        jNode.Add("ActivationFunctionType", sum.ActivationFunctionType.ToString());
+                        jNode.Add("ActivationFunctionType", sum.ActivationType.ToString());
                         break;
                     case TrainingNode split:
                         jNode.Add("Parent", map[split.Parent]);

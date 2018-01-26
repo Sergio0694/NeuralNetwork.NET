@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkNET.Networks.Graph
 {
@@ -90,7 +90,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
         [MustUseReturnValue, NotNull]
-        public NodeBuilder Sum(params NodeBuilder[] inputs) => Sum(ActivationFunctionType.Identity, inputs);
+        public NodeBuilder Sum(params NodeBuilder[] inputs) => Sum(ActivationType.Identity, inputs);
 
         /// <summary>
         /// Creates a new linear sum node that merges multiple input nodes
@@ -99,7 +99,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
         [MustUseReturnValue, NotNull]
-        public NodeBuilder Sum(ActivationFunctionType activation, params NodeBuilder[] inputs)
+        public NodeBuilder Sum(ActivationType activation, params NodeBuilder[] inputs)
         {
             ExecutionModePreference mode = CuDnnNetworkLayers.IsCudaSupportAvailable
                 ? ExecutionModePreference.Cuda
@@ -115,7 +115,7 @@ namespace NeuralNetworkNET.Networks.Graph
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>
         [PublicAPI]
         [MustUseReturnValue, NotNull]
-        public NodeBuilder Sum(ActivationFunctionType activation, ExecutionModePreference mode, params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, (activation, mode), inputs);
+        public NodeBuilder Sum(ActivationType activation, ExecutionModePreference mode, params NodeBuilder[] inputs) => New(ComputationGraphNodeType.Sum, (activation, mode), inputs);
 
         /// <summary>
         /// Creates a new depth concatenation node that merges multiple input nodes with the same output shape
@@ -132,6 +132,19 @@ namespace NeuralNetworkNET.Networks.Graph
         [PublicAPI]
         [MustUseReturnValue, NotNull]
         public NodeBuilder Layer(LayerFactory factory) => New(ComputationGraphNodeType.Processing, factory);
+
+        /// <summary>
+        /// Creates a pipeline that contains a sequence of network layers
+        /// </summary>
+        /// <param name="factories">The list of <see cref="LayerFactory"/> instances to use to create the pipeline nodes</param>
+        [PublicAPI]
+        [MustUseReturnValue, NotNull]
+        public NodeBuilder Pipeline([NotNull, ItemNotNull] params LayerFactory[] factories)
+        {
+            return factories.Length >= 2 
+                ? factories.Aggregate(this, (s, f) => s.Layer(f))
+                : throw new ArgumentException("A pipeline must contain at leaast two layers", nameof(factories));
+        }
 
         /// <summary>
         /// Creates a new node that will route its inputs to a training sug-graph

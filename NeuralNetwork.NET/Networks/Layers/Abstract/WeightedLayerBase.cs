@@ -2,10 +2,10 @@
 using System.IO;
 using System.Security.Cryptography;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Layers.Abstract
@@ -71,7 +71,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
 
         #endregion
 
-        protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[] w, [NotNull] float[] b, ActivationFunctionType activation) 
+        protected WeightedLayerBase(in TensorInfo input, in TensorInfo output, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
             : base(input, output, activation)
         {
             Weights = w;

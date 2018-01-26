@@ -152,7 +152,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
         /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
         /// <param name="threshold">The target threshold</param>
-        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
+        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.Settings.AccuracyTesters"/> class only</remarks>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         internal static unsafe bool MatchElementwiseThreshold(this Span<float> x1, Span<float> x2, float threshold)
@@ -171,7 +171,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="x1">The first <see cref="Span{T}"/> instance to check</param>
         /// <param name="x2">The second <see cref="Span{T}"/> instance to check</param>
         /// <param name="threshold">The target maximum distance</param>
-        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.AccuracyTesters"/> class only</remarks>
+        /// <remarks>This method is <see langword="internal"/> as it's meant to be exposed through the <see cref="APIs.Settings.AccuracyTesters"/> class only</remarks>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
         internal static unsafe bool IsCloseTo(this Span<float> x1, Span<float> x2, float threshold)

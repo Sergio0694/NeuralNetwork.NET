@@ -1,11 +1,11 @@
 ﻿using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.Networks.Layers.Cuda;
 using SixLabors.ImageSharp.PixelFormats;
@@ -36,13 +36,13 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             INeuralNetwork cpu = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
             {
-                var fc1 = root.Layer(NetworkLayers.FullyConnected(100, ActivationFunctionType.Sigmoid));
+                var fc1 = root.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 fc1.Layer(NetworkLayers.Softmax(10));
             });
             INeuralNetwork gpu = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
             {
                 var fc1l = cpu.Layers[0].To<INetworkLayer, FullyConnectedLayer>();
-                var fc1 = root.Layer(_ => new CuDnnFullyConnectedLayer(fc1l.InputInfo, 100, fc1l.Weights, fc1l.Biases, fc1l.ActivationFunctionType));
+                var fc1 = root.Layer(_ => new CuDnnFullyConnectedLayer(fc1l.InputInfo, 100, fc1l.Weights, fc1l.Biases, fc1l.ActivationType));
                 var sm1l = cpu.Layers[1].To<INetworkLayer, SoftmaxLayer>();
                 fc1.Layer(_ => new CuDnnSoftmaxLayer(sm1l.InputInfo, sm1l.OutputInfo.Size, sm1l.Weights, sm1l.Biases));
             });
@@ -53,12 +53,12 @@ namespace NeuralNetworkNET.Cuda.Unit
         public void ForwardTest2()
         {
             INeuralNetwork cpu = NetworkManager.NewSequential(TensorInfo.Image<Alpha8>(28, 28),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.ReLU),
-                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 20, ActivationFunctionType.Identity),
-                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationFunctionType.ReLU),
-                CuDnnNetworkLayers.FullyConnected(100, ActivationFunctionType.LeCunTanh),
-                CuDnnNetworkLayers.FullyConnected(50, ActivationFunctionType.LeCunTanh),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (5, 5), 20, ActivationType.Identity),
+                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationType.ReLU),
+                CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Default, (3, 3), 20, ActivationType.Identity),
+                CuDnnNetworkLayers.Pooling(PoolingInfo.Default, ActivationType.ReLU),
+                CuDnnNetworkLayers.FullyConnected(100, ActivationType.LeCunTanh),
+                CuDnnNetworkLayers.FullyConnected(50, ActivationType.LeCunTanh),
                 CuDnnNetworkLayers.Softmax(10));
             INeuralNetwork gpu = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
             {

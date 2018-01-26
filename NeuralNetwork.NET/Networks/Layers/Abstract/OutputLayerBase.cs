@@ -6,7 +6,6 @@ using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Cost;
 using NeuralNetworkNET.Networks.Cost.Delegates;
 using NeuralNetworkNET.Networks.Layers.Cpu;
@@ -35,14 +34,14 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
 
         #endregion
 
-        protected OutputLayerBase(in TensorInfo input, int outputs, ActivationFunctionType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
+        protected OutputLayerBase(in TensorInfo input, int outputs, ActivationType activation, CostFunctionType cost, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode)
             : base(input, outputs, activation, weightsMode, biasMode)
         {
             CostFunctionType = cost;
             CostFunctions = CostFunctionProvider.GetCostFunctions(cost);
         }
 
-        protected OutputLayerBase(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases, ActivationFunctionType activation, CostFunctionType cost)
+        protected OutputLayerBase(in TensorInfo input, int outputs, [NotNull] float[] weights, [NotNull] float[] biases, ActivationType activation, CostFunctionType cost)
             : base(input, outputs, weights, biases, activation)
         {
             CostFunctionType = cost;

@@ -7,7 +7,6 @@ using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 using SixLabors.ImageSharp.PixelFormats;
@@ -65,13 +64,13 @@ namespace NeuralNetworkNET.Unit
         public void NetworkSerialization()
         {
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Rgb24>(120, 120),
-                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.AbsoluteReLU),
-                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ELU),
-                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(125, ActivationFunctionType.Tanh),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationType.AbsoluteReLU),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationType.ELU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.ReLU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.ReLU),
+                NetworkLayers.FullyConnected(125, ActivationType.Tanh),
                 NetworkLayers.Softmax(133));
             using (MemoryStream stream = new MemoryStream())
             {
@@ -86,13 +85,13 @@ namespace NeuralNetworkNET.Unit
         public void JsonMetadataSerialization()
         {
             INeuralNetwork network = NetworkManager.NewSequential(TensorInfo.Image<Rgb24>(120, 120),
-                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.AbsoluteReLU),
-                NetworkLayers.Convolutional((5, 5), 20, ActivationFunctionType.ELU),
-                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
-                NetworkLayers.Convolutional((10, 10), 20, ActivationFunctionType.Identity),
-                NetworkLayers.Pooling(ActivationFunctionType.ReLU),
-                NetworkLayers.FullyConnected(125, ActivationFunctionType.Tanh),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationType.AbsoluteReLU),
+                NetworkLayers.Convolutional((5, 5), 20, ActivationType.ELU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.ReLU),
+                NetworkLayers.Convolutional((10, 10), 20, ActivationType.Identity),
+                NetworkLayers.Pooling(ActivationType.ReLU),
+                NetworkLayers.FullyConnected(125, ActivationType.Tanh),
                 NetworkLayers.Softmax(133));
             String metadata1 = network.SerializeMetadataAsJson();
             Assert.IsTrue(metadata1.Length > 0);

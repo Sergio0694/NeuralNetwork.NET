@@ -1,11 +1,11 @@
 ﻿using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
-using NeuralNetworkNET.Networks.Activations;
 using NeuralNetworkNET.Networks.Layers.Cpu;
 using Newtonsoft.Json;
 
@@ -39,9 +39,9 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
 
         #endregion
 
-        public CuDnnPoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationFunctionType activation) : base(input, operation, activation)
+        public CuDnnPoolingLayer(in TensorInfo input, in PoolingInfo operation, ActivationType activation) : base(input, operation, activation)
         {
-            PoolingDescription.Set2D((PoolingMode)operation.Mode, NanPropagation.PROPAGATE_NAN, operation.WindowHeight, operation.WindowWidth, operation.VerticalPadding, operation.HorizontalPadding, operation.VerticalStride, operation.HorizontalStride);
+            PoolingDescription.Set2D((Alea.cuDNN.PoolingMode)operation.Mode, NanPropagation.PROPAGATE_NAN, operation.WindowHeight, operation.WindowWidth, operation.VerticalPadding, operation.HorizontalPadding, operation.VerticalStride, operation.HorizontalStride);
         }
 
         /// <inheritdoc/>
@@ -87,12 +87,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         {
             if (!stream.TryRead(out TensorInfo input)) return null;
             if (!stream.TryRead(out TensorInfo _)) return null;
-            if (!stream.TryRead(out ActivationFunctionType activation)) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
             if (!stream.TryRead(out PoolingInfo operation)) return null;
             return new CuDnnPoolingLayer(input, operation, activation);
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnPoolingLayer(InputInfo, OperationInfo, ActivationFunctionType);
+        public override INetworkLayer Clone() => new CuDnnPoolingLayer(InputInfo, OperationInfo, ActivationType);
     }
 }
