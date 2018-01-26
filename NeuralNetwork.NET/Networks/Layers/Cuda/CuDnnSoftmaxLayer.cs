@@ -68,6 +68,30 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             }
         }
 
+        /// <inheritdoc/>
+        public override void Backpropagate(in Tensor x, in Tensor yHat, in Tensor y, in Tensor z, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
+        {
+            using (DeviceMemory<float>
+                yHat_gpu = DnnInstance.Gpu.AllocateDevice(yHat),
+                dy_gpu = DnnInstance.Gpu.AllocateDevice(y),
+                w_gpu = DnnInstance.Gpu.AllocateDevice(Weights), // Shared for the weights and dJdw, for better efficiency
+                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
+                dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
+                dJdb_gpu = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
+            {
+                // The derivative is just yHat - y
+                DnnInstance.AddTensor(1, SoftmaxInfo, yHat_gpu.Ptr, -1, SoftmaxInfo, dy_gpu.Ptr);
+                DnnInstance.FullyConnectedBackwardData(y.Entities, InputInfo.Size, OutputInfo.Size, dy_gpu.Ptr, w_gpu.Ptr, dx_gpu.Ptr);
+                dx_gpu.CopyTo(dx);
+
+                // Gradient
+                DnnInstance.FullyConnectedBackwardFilter(x.Entities, x.Length, y.Length, x_gpu.Ptr, dy_gpu.Ptr, w_gpu.Ptr);
+                w_gpu.CopyToHost(1, Weights.Length, out dJdw);
+                DnnInstance.FullyConnectedBackwardBias(y.Entities, y.Length, dy_gpu.Ptr, dJdb_gpu.Ptr); // Doing this on CPU is generally faster than launching the kernels
+                dJdb_gpu.CopyToHost(1, Biases.Length, out dJdb);
+            }
+        }
+
         #endregion
 
         /// <summary>
