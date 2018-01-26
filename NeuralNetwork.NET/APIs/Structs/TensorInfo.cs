@@ -40,7 +40,6 @@ namespace NeuralNetworkNET.APIs.Structs
         [JsonProperty(nameof(Size), Order = 4)]
         public int Size
         {
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Height * Width * Channels;
         }
@@ -50,9 +49,17 @@ namespace NeuralNetworkNET.APIs.Structs
         /// </summary>
         public int SliceSize
         {
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Height * Width;
+        }
+
+        /// <summary>
+        /// Gets whether the current <see cref="Tensor"/> instance is invalid (empty or with invalid parameters)
+        /// </summary>
+        public bool IsEmptyOrInvalid
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Height <= 0 || Width <= 0 || Channels <= 0;
         }
 
         #endregion
@@ -61,7 +68,8 @@ namespace NeuralNetworkNET.APIs.Structs
 
         internal TensorInfo(int height, int width, int channels)
         {
-            if (height * width <= 0) throw new ArgumentException("The height and width of the kernels must be positive values");
+            if (height <= 0 || width <= 0) throw new ArgumentException("The height and width of the kernels must be positive values");
+            if (channels <= 0) throw new ArgumentException("The number of channels must be positive");
             Height = height;
             Width = width;
             Channels = channels >= 1 ? channels :  throw new ArgumentOutOfRangeException(nameof(channels), "The number of channels must be at least equal to 1");

@@ -99,6 +99,7 @@ namespace NeuralNetworkNET.APIs.Structs
             int
                 h = (input.Height - WindowHeight + 2 * VerticalPadding) / VerticalStride + 1,
                 w = (input.Width - WindowWidth + 2 * HorizontalPadding) / HorizontalStride + 1;
+            if (h <= 0 || w <= 0) throw new InvalidOperationException("The input tensor shape is not valid to apply the current pooling operation");
             return new TensorInfo(h, w, input.Channels);
         }
 

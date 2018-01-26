@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
@@ -58,8 +59,8 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
 
         protected NetworkLayerBase(in TensorInfo input, in TensorInfo output, ActivationFunctionType activation)
         {
-            _InputInfo = input;
-            _OutputInfo = output;
+            _InputInfo = input.IsEmptyOrInvalid ? throw new ArgumentException("The layer input info is not valid", nameof(input)) : input;
+            _OutputInfo = output.IsEmptyOrInvalid ? throw new ArgumentException("The layer output info is not valid", nameof(output)) : output;
             ActivationFunctionType = activation;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(activation);
         }
