@@ -5,7 +5,10 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs;
 using NeuralNetworkNET.APIs.Delegates;
+using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.Unit
 {
@@ -87,6 +90,17 @@ namespace NeuralNetworkNET.Unit
             };
             String expected = lines.Skip(1).Aggregate(lines[0], (s, l) => $"{s}{Environment.NewLine}{l}") + Environment.NewLine;
             Assert.IsTrue(text.TrimVerbatim().Equals(expected));
+        }
+
+        [TestMethod]
+        public void ConvolutionInfoFactory()
+        {
+            ConvolutionInfo info = ConvolutionInfo.Same()(TensorInfo.Image<Alpha8>(28, 28), (3, 3));
+            Assert.IsTrue(info.VerticalPadding == 1 && info.HorizontalPadding == 1);
+            info = ConvolutionInfo.Same()(TensorInfo.Image<Alpha8>(28, 28), (5, 5));
+            Assert.IsTrue(info.VerticalPadding == 2 && info.HorizontalPadding == 2);
+            info = ConvolutionInfo.Same(ConvolutionMode.Convolution, 2, 2)(TensorInfo.Image<Alpha8>(10, 10), (3, 3));
+            Assert.IsTrue(info.VerticalPadding == 6 && info.HorizontalPadding == 6);
         }
     }
 }
