@@ -115,6 +115,21 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         }
 
         /// <summary>
+        /// Creates a new weights vector for a batch normalization layer
+        /// </summary>
+        /// <param name="shape">The layer inputs and ouputs</param>
+        [Pure, NotNull]
+        public static unsafe float[] NewBatchNormalizationWeights(in TensorInfo shape)
+        {
+            int l = shape.Size;
+            float[] weights = new float[l];
+            fixed (float* pw = weights)
+                for (int i = 0; i < l; i++)
+                    pw[i] = 1;
+            return weights;
+        }
+
+        /// <summary>
         /// Creates a vector of biases for a network layer
         /// </summary>
         /// <param name="length">The length of the vector</param>
