@@ -417,6 +417,29 @@ namespace NeuralNetworkNET.Unit
             Assert.IsTrue(network.Equals(loaded));
         }
 
+        [TestMethod]
+        public void PipelineEqualsTest()
+        {
+            INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
+            {
+                var conv1 = root.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var conv2 = conv1.Layer(NetworkLayers.Convolutional((5, 5), 40, ActivationType.ReLU));
+                var conv3 = conv2.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var fc = conv3.Layer(NetworkLayers.FullyConnected(250, ActivationType.LeCunTanh));
+                _ = fc.Layer(NetworkLayers.Softmax(10));
+            });
+            INeuralNetwork pipeline = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
+            {
+                var fc = root.Pipeline(
+                    _ => network.Layers[0],
+                    _ => network.Layers[1],
+                    _ => network.Layers[2],
+                    _ => network.Layers[3]);
+                _ = fc.Layer(_ => network.Layers[4]);
+            });
+            Assert.IsTrue(network.Equals(pipeline));
+        }
+
         #endregion
     }
 }
