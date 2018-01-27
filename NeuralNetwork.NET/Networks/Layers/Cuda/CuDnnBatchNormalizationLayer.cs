@@ -72,7 +72,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
+        public override void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
             using (DeviceMemory<float>
                 x_gpu = DnnInstance.Gpu.AllocateDevice(x),

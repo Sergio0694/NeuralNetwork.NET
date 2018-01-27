@@ -64,21 +64,21 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             // Activation backward
             Tensor.Like(dy, out Tensor dy_copy);
             CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
-            
-            // Gamma gradient
-            Tensor.New(1, Weights.Length, out dJdw);
-            CpuDnn.BatchNormalizationBackwardGamma(x, _Mu, _Sigma2, dy, dJdw);
-
-            // Beta gradient
-            Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb); // Same as fully connected, vertical sum
 
             // Input error delta
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
-                CpuDnn.BatchNormalizationBackwardData(x, _Mu, _Sigma2, w, dy, dx);
+                CpuDnn.BatchNormalizationBackwardData(x, _Mu, _Sigma2, w, dy_copy, dx);
             }
+            
+            // Gamma gradient
+            Tensor.New(1, Weights.Length, out dJdw);
+            CpuDnn.BatchNormalizationBackwardGamma(x, _Mu, _Sigma2, dy_copy, dJdw);
+
+            // Beta gradient
+            Tensor.New(1, Biases.Length, out dJdb);
+            CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb); // Same as fully connected, vertical sum
             dy_copy.Free();
         }
 

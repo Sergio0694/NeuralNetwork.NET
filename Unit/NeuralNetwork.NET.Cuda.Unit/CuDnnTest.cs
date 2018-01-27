@@ -153,5 +153,46 @@ namespace NeuralNetworkNET.Cuda.Unit
         }
 
         #endregion
+
+        #region Batch normalization
+
+        [TestMethod]
+        public unsafe void BatchNormalizationBackwardData()
+        {
+            // Forward
+            Tensor x = CreateRandomTensor(400, 250);
+            Tensor.New(1, 250, out Tensor mu);
+            Tensor.Like(mu, out Tensor sigma2);
+            Tensor.Like(x, out Tensor y);
+            float[]
+                gamma = new float[250],
+                beta = new float[250];
+            fixed (float* pw = gamma, pb = beta)
+            {
+                Tensor.Reshape(pw, 1, 250, out Tensor w);
+                Tensor.Reshape(pb, 1, 250, out Tensor b);
+                CpuDnn.BatchNormalizationForward(x, mu, sigma2, w, b, y);
+
+                // Backward
+                Tensor dy = CreateRandomTensor(400, 250);
+                Tensor.Like(x, out Tensor dx1);
+                CpuDnn.BatchNormalizationBackwardData(x, mu, sigma2, w, dy, dx1);
+                Gpu gpu = Gpu.Default;
+                using (DeviceMemory<float>
+                    x_gpu = gpu.AllocateDevice(x),
+                    mu_gpu = gpu.AllocateDevice(mu),
+                    sigma2_gpu = gpu.AllocateDevice(sigma2),
+                    gamma_gpu = gpu.AllocateDevice(w),
+                    dy_gpu = gpu.AllocateDevice(dy),
+                    dx_gpu = gpu.AllocateDevice<float>(x.Size))
+                {
+                    Dnn.Get(gpu).BatchNormalizationBackwardData(x.Entities, x.Length, x_gpu.Ptr, mu_gpu.Ptr, sigma2_gpu.Ptr, gamma_gpu.Ptr, dy_gpu.Ptr, dx_gpu.Ptr);
+                    dx_gpu.CopyToHost(x.Entities, x.Length, out Tensor dx2);
+                    Assert.IsTrue(dx1.ContentEquals(dx2));
+                }
+            }
+        }
+
+        #endregion
     }
 }

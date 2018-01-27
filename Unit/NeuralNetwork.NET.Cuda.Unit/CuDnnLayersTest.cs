@@ -154,6 +154,28 @@ namespace NeuralNetworkNET.Cuda.Unit
 
         #endregion
 
+        #region Batch normalization
+
+        [TestMethod]
+        public void BatchNormalizationForward()
+        {
+            WeightedLayerBase
+                cpu = new BatchNormalizationLayer(TensorInfo.Linear(250), ActivationType.ReLU),
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, cpu.Weights, cpu.Biases, cpu.ActivationType);
+            TestForward(cpu, gpu, 400);
+        }
+
+        [TestMethod]
+        public void BatchNormalizationBackward()
+        {
+            WeightedLayerBase
+                cpu = new BatchNormalizationLayer(TensorInfo.Linear(250), ActivationType.ReLU),
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, cpu.Weights, cpu.Biases, cpu.ActivationType);
+            TestBackward(cpu, gpu, 400);
+        }
+
+        #endregion
+
         #region Pooling
 
         [TestMethod]
