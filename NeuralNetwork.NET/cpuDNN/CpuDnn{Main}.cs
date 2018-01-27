@@ -227,6 +227,143 @@ namespace NeuralNetworkNET.cpuDNN
 
         #endregion
 
+        #region Batch normalization
+
+        /// <summary>
+        /// Executes the forward pass in a batch normalization layer
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
+        /// <param name="mu">A <see cref="Tensor"/> to use to store the temporary median values (used for backpropagation too)</param>
+        /// <param name="sigma2">A <see cref="Tensor"/> to use to store the temporary standard deviation values (used for backpropagation too)</param>
+        /// <param name="gamma">The layer gamma parameters</param>
+        /// <param name="beta">The layer beta parameters</param>
+        /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
+        public static unsafe void BatchNormalizationForward(in Tensor x, in Tensor mu, in Tensor sigma2, in Tensor gamma, in Tensor beta, in Tensor y)
+        {
+            // Checks
+            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+            if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
+            if (!gamma.MatchShape(1, x.Length)) throw new ArgumentException("The gamma tensor must have a value for each input feature", nameof(gamma));
+            if (!beta.MatchShape(1, x.Length)) throw new ArgumentException("The beta tensor must have a value for each input feature", nameof(beta));
+            if (!x.MatchShape(y)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(y));
+
+            // Prepare the mu and sigma2 tensors
+            int
+                n = x.Entities,
+                l = x.Length;
+            float* px = x, pmu = mu, psigma2 = sigma2;
+            Parallel.For(0, l, j =>
+            {
+                // Mean
+                float mi = 0;
+                for (int i = 0; i < n; i++)
+                    mi += px[i * l + j];
+                mi /= n;
+                pmu[j] = mi;
+
+                // Variance
+                float sl = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    float hm = px[i * l + j] - mi;
+                    sl += hm * hm;
+                }
+                psigma2[j] = sl / n;
+
+            }).AssertCompleted();
+
+            // Apply the batch normalization pass
+            float* py = y, pg = gamma, pb = beta;
+            Parallel.For(0, n, i =>
+            {
+                int offset = i * l;
+                for (int j = 0; j < l; j++)
+                {
+                    float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                    py[offset + j] = pg[j] * hat + pb[j];
+                }
+            }).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Executes the backward pass through a batch normalization layer
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
+        /// <param name="gamma">The layer gamma parameters</param>
+        /// <param name="mu">A <see cref="Tensor"/> with the temporary median values calculated in the forward pass</param>
+        /// <param name="sigma2">A <see cref="Tensor"/> with the temporary standard deviation values calculated in the forward pass</param>
+        /// <param name="dy">The output error delta <see cref="Tensor"/></param>
+        /// <param name="dx">The resulting backpropagated error delta <see cref="Tensor"/></param>
+        public static unsafe void BatchNormalizationBackwardData(in Tensor x, in Tensor gamma, in Tensor mu, in Tensor sigma2, in Tensor dy, in Tensor dx)
+        {
+            // Checks
+            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+            if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
+            if (!gamma.MatchShape(1, x.Length)) throw new ArgumentException("The gamma tensor must have a value for each input feature", nameof(gamma));
+            if (!x.MatchShape(dy)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(dy));
+            if (!x.MatchShape(dx)) throw new ArgumentException("The input the resulting error tensor must have the same shape", nameof(dx));
+
+            // Backpropagation
+            int
+                n = dx.Entities,
+                l = dx.Length;
+            float* px = x, pg = gamma, pmu = mu, psigma2 = sigma2, pdy = dy, pdx = dx;
+            Parallel.For(0, n, i =>
+            {
+                for (int j = 0; j < l; j++)
+                {
+                    float
+                        left = 1f / n * pg[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
+                        _1st = n * pdy[i * l + j],
+                        _2nd = 0,
+                        _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + float.Epsilon),
+                        _3rdRight = 0;
+                    for (int k = 0; k < n; k++)
+                    {
+                        float pdykj = pdy[k * l + j];
+                        _2nd += pdykj;
+                        _3rdRight += pdykj * (px[k * l + j] - pmu[j]);
+                    }
+                    pdx[i * l + j] = left * (_1st - _2nd - _3rdLeft * _3rdRight);
+                }
+            }).AssertCompleted();
+        }
+
+        /// <summary>
+        /// Calculates the gradient with respect to the gamma <see cref="Tensor"/> in a batch normalization layer
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/> used in the forward pass</param>
+        /// <param name="mu">A <see cref="Tensor"/> with the temporary median values calculated in the forward pass</param>
+        /// <param name="sigma2">A <see cref="Tensor"/> with the temporary standard deviation values calculated in the forward pass</param>
+        /// <param name="dy">The output <see cref="Tensor"/> error delta for the current layer</param>
+        /// <param name="dgamma">The resulting gamma gradient <see cref="Tensor"/></param>
+        public static unsafe void BatchNormalizationBackwardGamma(in Tensor x, in Tensor mu, in Tensor sigma2, in Tensor dy, in Tensor dgamma)
+        {
+            // Checks
+            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+            if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
+            if (!dgamma.MatchShape(1, x.Length)) throw new ArgumentException("The gamma gradient tensor must have a value for each input feature", nameof(dgamma));
+            if (!x.MatchShape(dy)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(dy));
+
+            // Gradient with respect to gamma
+            int
+                n = x.Entities,
+                l = x.Length;
+            float* px = x, pdy = dy, pdg = dgamma, pmu = mu, psigma2 = sigma2;
+            Parallel.For(0, x.Length, j =>
+            {
+                float sum = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    float hat = (px[i * l + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                    sum += pdy[i * l + j] * hat;
+                }
+                pdg[j] = sum;
+            }).AssertCompleted();
+        }
+
+        #endregion
+
         #region Depth concatenation
 
         /// <summary>

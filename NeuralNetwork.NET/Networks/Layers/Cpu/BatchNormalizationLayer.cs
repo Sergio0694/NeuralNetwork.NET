@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
@@ -40,48 +39,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
             // Prepare the mu and sigma2 tensors
-            _Mu.TryFree();
-            Tensor.New(1, OutputInfo.Size, out _Mu);
-            _Sigma2.TryFree();
-            Tensor.Like(_Mu, out _Sigma2);
-            int
-                n = x.Entities,
-                l = x.Length;
-            float* px = x, pmu = _Mu, psigma2 = _Sigma2;
-            Parallel.For(0, l, j =>
-            {
-                // Mean
-                float mi = 0;
-                for (int i = 0; i < n; i++)
-                    mi += px[i * l + j];
-                mi /= n;
-                pmu[j] = mi;
-
-                // Variance
-                float sl = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    float hm = px[i * l + j] - mi;
-                    sl += hm * hm;
-                }
-                psigma2[j] = sl / n;
-
-            }).AssertCompleted();
-
-            // Apply the batch normalization pass
+            if (_Mu.IsNull) Tensor.New(1, OutputInfo.Size, out _Mu);
+            if (_Sigma2.IsNull) Tensor.Like(_Mu, out _Sigma2);
             Tensor.Like(x, out z);
-            fixed (float* pw0 = Weights, pb0 = Biases)
+            fixed (float* pw = Weights, pb = Biases)
             {
-                float* pz = z, pw = pw0, pb = pb0; // Pointers for closure
-                Parallel.For(0, n, i =>
-                {
-                    int offset = i * l;
-                    for (int j = 0; j < l; j++)
-                    {
-                        float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
-                        pz[offset + j] = pw[j] * hat + pb[j];
-                    }
-                }).AssertCompleted();
+                Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
+                Tensor.Reshape(pb, 1, Biases.Length, out Tensor b);
+                CpuDnn.BatchNormalizationForward(x, _Mu, _Sigma2, w, b, z);
             }
 
             // Activation
@@ -97,53 +62,22 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public override unsafe void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb)
         {
             // Activation backward
-            int
-                n = x.Entities,
-                l = x.Length;
             Tensor.Like(dy, out Tensor dy_copy);
             CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
             
             // Gamma gradient
-            Tensor.New(1, l, out dJdw);
-            float* px = x, pdy = dy_copy, pdJdw = dJdw, pmu = _Mu, psigma2 = _Sigma2;
-            Parallel.For(0, l, j =>
-            {
-                float sum = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    float hat = (px[i * l + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
-                    sum += pdy[i * l + j] * hat;
-                }
-                pdJdw[j] = sum;
-            }).AssertCompleted();
+            Tensor.New(1, Weights.Length, out dJdw);
+            CpuDnn.BatchNormalizationBackwardGamma(x, _Mu, _Sigma2, dy, dJdw);
 
             // Beta gradient
-            Tensor.New(1, l, out dJdb);
+            Tensor.New(1, Biases.Length, out dJdb);
             CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb); // Same as fully connected, vertical sum
 
             // Input error delta
-            fixed (float* pw0 = Weights)
+            fixed (float* pw = Weights)
             {
-                float* pdx = dx, pw = pw0;
-                Parallel.For(0, n, i =>
-                {
-                    for (int j = 0; j < l; j++)
-                    {
-                        float
-                            left = 1f / n * pw[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
-                            _1st = n * pdy[i * l + j],
-                            _2nd = 0,
-                            _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + float.Epsilon),
-                            _3rdRight = 0;
-                        for (int k = 0; k < n; k++)
-                        {
-                            float pdykj = pdy[k * l + j];
-                            _2nd += pdykj;
-                            _3rdRight += pdykj * (px[k * l + j] - pmu[j]);
-                        }
-                        pdx[i * l + j] = left * (_1st - _2nd - _3rdLeft * _3rdRight);
-                    }
-                }).AssertCompleted();
+                Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
+                CpuDnn.BatchNormalizationBackwardData(x, w, _Mu, _Sigma2, dy, dx);
             }
             dy_copy.Free();
         }
