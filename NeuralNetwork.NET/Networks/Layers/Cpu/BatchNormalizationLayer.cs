@@ -77,7 +77,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
-                CpuDnn.BatchNormalizationBackwardData(x, w, _Mu, _Sigma2, dy, dx);
+                CpuDnn.BatchNormalizationBackwardData(x, _Mu, _Sigma2, w, dy, dx);
             }
             dy_copy.Free();
         }

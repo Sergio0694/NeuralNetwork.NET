@@ -289,12 +289,12 @@ namespace NeuralNetworkNET.cpuDNN
         /// Executes the backward pass through a batch normalization layer
         /// </summary>
         /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
-        /// <param name="gamma">The layer gamma parameters</param>
         /// <param name="mu">A <see cref="Tensor"/> with the temporary median values calculated in the forward pass</param>
         /// <param name="sigma2">A <see cref="Tensor"/> with the temporary standard deviation values calculated in the forward pass</param>
+        /// <param name="gamma">The layer gamma parameters</param>
         /// <param name="dy">The output error delta <see cref="Tensor"/></param>
         /// <param name="dx">The resulting backpropagated error delta <see cref="Tensor"/></param>
-        public static unsafe void BatchNormalizationBackwardData(in Tensor x, in Tensor gamma, in Tensor mu, in Tensor sigma2, in Tensor dy, in Tensor dx)
+        public static unsafe void BatchNormalizationBackwardData(in Tensor x, in Tensor mu, in Tensor sigma2, in Tensor gamma, in Tensor dy, in Tensor dx)
         {
             // Checks
             if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");

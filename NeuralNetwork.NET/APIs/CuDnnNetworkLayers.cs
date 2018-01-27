@@ -132,6 +132,14 @@ namespace NeuralNetworkNET.APIs
         public static LayerFactory Inception(InceptionInfo info, BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new CuDnnInceptionLayer(input, info, biasMode);
 
+        /// <summary>
+        /// Creates a per-activation batch normalization layer
+        /// </summary>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static LayerFactory BatchNormalization(ActivationType activation) => input => new CuDnnBatchNormalizationLayer(input, activation);
+
         #region Feature helper
 
         /// <summary>
