@@ -48,23 +48,23 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                 n = x.Entities,
                 l = x.Length;
             float* px = x, pmu = _Mu, psigma2 = _Sigma2;
-            Parallel.For(0, _Mu.Length, i =>
+            Parallel.For(0, l, j =>
             {
                 // Mean
                 float mi = 0;
-                for (int j = 0; j < n; j++)
-                    mi += px[j * l + i];
+                for (int i = 0; i < n; i++)
+                    mi += px[i * l + j];
                 mi /= n;
-                pmu[i] = mi;
+                pmu[j] = mi;
 
                 // Variance
                 float sl = 0;
-                for (int j = 0; j < n; j++)
+                for (int i = 0; i < n; i++)
                 {
-                    float hm = px[j * l + i] - mi;
+                    float hm = px[i * l + j] - mi;
                     sl += hm * hm;
                 }
-                psigma2[i] = sl / n;
+                psigma2[j] = sl / n;
 
             }).AssertCompleted();
 
@@ -111,7 +111,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                 float sum = 0;
                 for (int i = 0; i < n; i++)
                 {
-                    float hat = (px[i * l + i] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                    float hat = (px[i * l + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
                     sum += pdy[i * l + j] * hat;
                 }
                 pdJdw[j] = sum;
@@ -133,7 +133,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                             left = 1f / n * pw[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
                             _1st = n * pdy[i * l + j],
                             _2nd = 0,
-                            _3rdLeft = (px[i * l + j] - pmu[j]) * 1f / (psigma2[j] + float.Epsilon),
+                            _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + float.Epsilon),
                             _3rdRight = 0;
                         for (int k = 0; k < n; k++)
                         {
@@ -141,7 +141,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
                             _2nd += pdykj;
                             _3rdRight += pdykj * (px[k * l + j] - pmu[j]);
                         }
-                        pdx[i * l + j] = left * _1st - _2nd - _3rdLeft * _3rdRight;
+                        pdx[i * l + j] = left * (_1st - _2nd - _3rdLeft * _3rdRight);
                     }
                 }).AssertCompleted();
             }
