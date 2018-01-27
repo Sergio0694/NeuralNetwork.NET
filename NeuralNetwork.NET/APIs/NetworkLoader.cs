@@ -90,6 +90,7 @@ namespace NeuralNetworkNET.APIs
                 case LayerType.Pooling: return PoolingLayer.Deserialize(stream);
                 case LayerType.Output: return OutputLayer.Deserialize(stream);
                 case LayerType.Softmax: return SoftmaxLayer.Deserialize(stream);
+                case LayerType.BatchNormalization: return BatchNormalizationLayer.Deserialize(stream);
                 default: throw new ArgumentOutOfRangeException(nameof(type), $"The {type} layer type is not supported by the default deserializer");
             }
         }

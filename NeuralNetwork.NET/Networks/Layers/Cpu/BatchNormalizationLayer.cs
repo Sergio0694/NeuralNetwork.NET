@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
@@ -16,8 +17,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
     /// </summary>
     internal sealed class BatchNormalizationLayer : WeightedLayerBase, IDisposable
     {
+        // Cached mu tensor
         private Tensor _Mu;
 
+        // Cached sigma^2 tensor
         private Tensor _Sigma2;
 
         /// <inheritdoc/>
@@ -146,6 +149,23 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         #endregion
+
+        /// <summary>
+        /// Tries to deserialize a new <see cref="BatchNormalizationLayer"/> from the input <see cref="Stream"/>
+        /// </summary>
+        /// <param name="stream">The input <see cref="Stream"/> to use to read the layer data</param>
+        [MustUseReturnValue, CanBeNull]
+        public static INetworkLayer Deserialize([NotNull] Stream stream)
+        {
+            if (!stream.TryRead(out TensorInfo input)) return null;
+            if (!stream.TryRead(out TensorInfo output) || input != output) return null;
+            if (!stream.TryRead(out ActivationType activation)) return null;
+            if (!stream.TryRead(out int wLength)) return null;
+            float[] weights = stream.ReadUnshuffled(wLength);
+            if (!stream.TryRead(out int bLength)) return null;
+            float[] biases = stream.ReadUnshuffled(bLength);
+            return new BatchNormalizationLayer(input, weights, biases, activation);
+        }
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
