@@ -8,37 +8,25 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
-using NeuralNetworkNET.Networks.Layers.Initialization;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
     /// A cuDNN-powered batch normalization layer
     /// </summary>
-    internal sealed class CuDnnBatchNormalizationLayer : WeightedLayerBase, IDisposable
+    internal sealed class CuDnnBatchNormalizationLayer : BatchNormalizationLayerBase
     {
-        // Cached mu tensor
-        private Tensor _Mu;
-
-        // Cached sigma^2 tensor
-        private Tensor _Sigma2;
-
         /// <summary>
         /// Gets the <see cref="Dnn"/> instance for the current layer
         /// </summary>
         [NotNull]
         private readonly Dnn DnnInstance = CuDnnService.Instance;
 
-        /// <inheritdoc/>
-        public override LayerType LayerType { get; } = LayerType.BatchNormalization;
+        public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation) 
+            : base(shape, mode, activation) { }
 
-        public CuDnnBatchNormalizationLayer(in TensorInfo shape, ActivationType activation) 
-            : base(shape, shape, 
-                WeightsProvider.NewBatchNormalizationWeights(shape), 
-                WeightsProvider.NewBiases(shape.Size, BiasInitializationMode.Zero), activation) { }
-
-        public CuDnnBatchNormalizationLayer(in TensorInfo shape, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
-            : base(shape, shape, w, b, activation) { }
+        public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
+            : base(shape, mode, w, b, activation) { }
 
         #region Implementation
 
@@ -113,26 +101,11 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;
             float[] biases = stream.ReadUnshuffled(bLength);
-            return new CuDnnBatchNormalizationLayer(input, weights, biases, activation);
+            if (!stream.TryRead(out NormalizationMode mode)) return null;
+            return new CuDnnBatchNormalizationLayer(input, mode, weights, biases, activation);
         }
 
         /// <inheritdoc/>
         public override INetworkLayer Clone() => new CuDnnBatchNormalizationLayer(InputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
-
-        #region IDisposable
-
-        ~CuDnnBatchNormalizationLayer() => Dispose();
-
-        /// <inheritdoc/>
-        void IDisposable.Dispose() => Dispose();
-
-        // Disposes the temporary tensors
-        private void Dispose()
-        {
-            _Mu.TryFree();
-            _Sigma2.TryFree();
-        }
-
-        #endregion
     }
 }

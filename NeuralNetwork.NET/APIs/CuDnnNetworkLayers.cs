@@ -116,11 +116,13 @@ namespace NeuralNetworkNET.APIs
             => input => new CuDnnInceptionLayer(input, info, biasMode);
 
         /// <summary>
-        /// Creates a per-activation batch normalization layer
+        /// Creates a new batch normalization layer
         /// </summary>
+        /// <param name="mode">The normalization mode to use for the new layer</param>
         /// <param name="activation">The desired activation function to use in the network layer</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static LayerFactory BatchNormalization(ActivationType activation) => input => new CuDnnBatchNormalizationLayer(input, activation);
+        public static LayerFactory BatchNormalization(NormalizationMode mode, ActivationType activation) 
+            => input => new CuDnnBatchNormalizationLayer(input, mode, activation);
     }
 }

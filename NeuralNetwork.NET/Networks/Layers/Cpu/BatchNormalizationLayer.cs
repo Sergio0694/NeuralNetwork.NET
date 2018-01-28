@@ -7,31 +7,19 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cpuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Abstract;
-using NeuralNetworkNET.Networks.Layers.Initialization;
 
 namespace NeuralNetworkNET.Networks.Layers.Cpu
 {
     /// <summary>
     /// A batch normalization layer, used to improve the convergence speed of a neural network
     /// </summary>
-    internal sealed class BatchNormalizationLayer : WeightedLayerBase, IDisposable
+    internal sealed class BatchNormalizationLayer : BatchNormalizationLayerBase, IDisposable
     {
-        // Cached mu tensor
-        private Tensor _Mu;
+        public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation)
+            : base(shape, mode, activation) { }
 
-        // Cached sigma^2 tensor
-        private Tensor _Sigma2;
-
-        /// <inheritdoc/>
-        public override LayerType LayerType { get; } = LayerType.BatchNormalization;
-
-        public BatchNormalizationLayer(in TensorInfo shape, ActivationType activation) 
-            : base(shape, shape, 
-                WeightsProvider.NewBatchNormalizationWeights(shape), 
-                WeightsProvider.NewBiases(shape.Size, BiasInitializationMode.Zero), activation) { }
-
-        public BatchNormalizationLayer(in TensorInfo shape, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
-            : base(shape, shape, w, b, activation) { }
+        public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
+            : base(shape, mode, w, b, activation) { }
 
         #region Implementation
 
@@ -46,7 +34,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             {
                 Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
                 Tensor.Reshape(pb, 1, Biases.Length, out Tensor b);
-                CpuDnn.BatchNormalizationForward(x, _Mu, _Sigma2, w, b, z);
+                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, _Mu, _Sigma2, w, b, z);
             }
 
             // Activation
@@ -98,26 +86,11 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             float[] weights = stream.ReadUnshuffled(wLength);
             if (!stream.TryRead(out int bLength)) return null;
             float[] biases = stream.ReadUnshuffled(bLength);
-            return new BatchNormalizationLayer(input, weights, biases, activation);
+            if (!stream.TryRead(out NormalizationMode mode)) return null;
+            return new BatchNormalizationLayer(input, mode, weights, biases, activation);
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
-
-        #region IDisposable
-
-        ~BatchNormalizationLayer() => Dispose();
-
-        /// <inheritdoc/>
-        void IDisposable.Dispose() => Dispose();
-
-        // Disposes the temporary tensors
-        private void Dispose()
-        {
-            _Mu.TryFree();
-            _Sigma2.TryFree();
-        }
-
-        #endregion
+        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
     }
 }

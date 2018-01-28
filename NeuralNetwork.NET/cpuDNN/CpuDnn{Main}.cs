@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Activations;
@@ -232,57 +233,124 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Executes the forward pass in a batch normalization layer
         /// </summary>
+        /// <param name="mode">The desired normalization mode to apply</param>
+        /// <param name="info">The ifo on the input <see cref="Tensor"/> to process</param>
         /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
         /// <param name="mu">A <see cref="Tensor"/> to use to store the temporary median values (used for backpropagation too)</param>
         /// <param name="sigma2">A <see cref="Tensor"/> to use to store the temporary standard deviation values (used for backpropagation too)</param>
         /// <param name="gamma">The layer gamma parameters</param>
         /// <param name="beta">The layer beta parameters</param>
         /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
-        public static unsafe void BatchNormalizationForward(in Tensor x, in Tensor mu, in Tensor sigma2, in Tensor gamma, in Tensor beta, in Tensor y)
+        public static unsafe void BatchNormalizationForward(
+            NormalizationMode mode, in TensorInfo info, in Tensor x, 
+            in Tensor mu, in Tensor sigma2, 
+            in Tensor gamma, in Tensor beta, in Tensor y)
         {
             // Checks
-            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+            if (info.Size != x.Length) throw new ArgumentException("The tensor info doesn't match the length of the input tensor", nameof(x));
             if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
-            if (!gamma.MatchShape(1, x.Length)) throw new ArgumentException("The gamma tensor must have a value for each input feature", nameof(gamma));
-            if (!beta.MatchShape(1, x.Length)) throw new ArgumentException("The beta tensor must have a value for each input feature", nameof(beta));
+            if (!gamma.MatchShape(sigma2)) throw new ArgumentException("The gamma tensor must have a value for each input feature", nameof(gamma));
+            if (!beta.MatchShape(gamma)) throw new ArgumentException("The beta tensor must have a value for each input feature", nameof(beta));
             if (!x.MatchShape(y)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(y));
 
-            // Prepare the mu and sigma2 tensors
+            // Setup
             int
                 n = x.Entities,
                 l = x.Length;
-            float* px = x, pmu = mu, psigma2 = sigma2;
-            Parallel.For(0, l, j =>
+            float* px = x, pmu = mu, psigma2 = sigma2, py = y, pg = gamma, pb = beta;
+            switch (mode)
             {
-                // Mean
-                float mi = 0;
-                for (int i = 0; i < n; i++)
-                    mi += px[i * l + j];
-                mi /= n;
-                pmu[j] = mi;
+                case NormalizationMode.Spatial:
+                    if (!mu.MatchShape(1, info.Channels)) throw new ArgumentException("Invalid mu tensor size");
+                    int
+                        nhw = x.Entities * info.SliceSize,
+                        slice = info.SliceSize;
+                    Parallel.For(0, info.Channels, c =>
+                    {
+                        // Mu
+                        float mc = 0;
+                        float* start = px + slice * c;
+                        for (int i = 0; i < n; i++)
+                        {
+                            float* offset = start + i * l;
+                            for (int xy = 0; xy < slice; xy++)
+                                mc += offset[xy];
+                        }
+                        pmu[c] = mc /= nhw;
 
-                // Variance
-                float sl = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    float hm = px[i * l + j] - mi;
-                    sl += hm * hm;
-                }
-                psigma2[j] = sl / n;
+                        // Variance
+                        float sc = 0;
+                        for (int i = 0; i < n; i++)
+                        {
+                            float* offset = start + i * l;
+                            for (int xy = 0; xy < slice; xy++)
+                            {
+                                mc += offset[xy] - mc;
+                                sc += mc * mc;
+                            }
+                        }
+                        psigma2[c] = sc;
 
-            }).AssertCompleted();
+                    }).AssertCompleted();
 
-            // Apply the batch normalization pass
-            float* py = y, pg = gamma, pb = beta;
-            Parallel.For(0, n, i =>
-            {
-                int offset = i * l;
-                for (int j = 0; j < l; j++)
-                {
-                    float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
-                    py[offset + j] = pg[j] * hat + pb[j];
-                }
-            }).AssertCompleted();
+                    // Normalization
+                    Parallel.For(0, info.Channels, c =>
+                    {
+                        float
+                            gc = pg[c],
+                            bc = pb[c],
+                            mc = pmu[c],
+                            sqrt_1 = 1 / (float)Math.Sqrt(psigma2[c] + float.Epsilon);
+                        float*
+                            start = px + slice * c,
+                            end = py + slice * c;
+                        for (int i = 0; i < n; i++)
+                        {
+                            float*
+                                offset = start + i * l,
+                                target = end + i * l;
+                            for (int xy = 0; xy < slice; xy++)
+                            {
+                                float hat = (offset[xy] - mc) * sqrt_1;
+                                target[xy] = gc * hat + bc;
+                            }
+                        }
+                    }).AssertCompleted();
+                    break;
+                case NormalizationMode.PerActivation:
+                    if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+                    Parallel.For(0, l, j =>
+                    {
+                        // Mean
+                        float mi = 0;
+                        for (int i = 0; i < n; i++)
+                            mi += px[i * l + j];
+                        pmu[j] = mi /= n;
+
+                        // Variance
+                        float sl = 0;
+                        for (int i = 0; i < n; i++)
+                        {
+                            float hm = px[i * l + j] - mi;
+                            sl += hm * hm;
+                        }
+                        psigma2[j] = sl / n;
+
+                    }).AssertCompleted();
+
+                    // Apply the batch normalization pass
+                    Parallel.For(0, n, i =>
+                    {
+                        int offset = i * l;
+                        for (int j = 0; j < l; j++)
+                        {
+                            float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                            py[offset + j] = pg[j] * hat + pb[j];
+                        }
+                    }).AssertCompleted();
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
         }
 
         /// <summary>
