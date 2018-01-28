@@ -161,10 +161,12 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         [Pure, NotNull]
         public static float[] NewBetaParameters(in TensorInfo shape, NormalizationMode mode)
         {
-            int l;
-            if (mode == NormalizationMode.Spatial) l = shape.Channels;
-            else if (mode == NormalizationMode.PerActivation) l = shape.Size;
-            return NewBiases(l, BiasInitializationMode.Zero);
+            switch (mode)
+            {
+                case NormalizationMode.Spatial: return NewBiases(shape.Channels, BiasInitializationMode.Zero);
+                case NormalizationMode.PerActivation: return NewBiases(shape.Size, BiasInitializationMode.Zero);
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
         }
     }
 }

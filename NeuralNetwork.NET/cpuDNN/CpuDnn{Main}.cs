@@ -249,8 +249,8 @@ namespace NeuralNetworkNET.cpuDNN
             // Checks
             if (info.Size != x.Length) throw new ArgumentException("The tensor info doesn't match the length of the input tensor", nameof(x));
             if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
-            if (!gamma.MatchShape(sigma2)) throw new ArgumentException("The gamma tensor must have a value for each input feature", nameof(gamma));
-            if (!beta.MatchShape(gamma)) throw new ArgumentException("The beta tensor must have a value for each input feature", nameof(beta));
+            if (!gamma.MatchShape(sigma2)) throw new ArgumentException("The gamma tensor doesn't have the right shape", nameof(gamma));
+            if (!beta.MatchShape(gamma)) throw new ArgumentException("The beta tensor doesn't have the right shape", nameof(beta));
             if (!x.MatchShape(y)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(y));
 
             // Setup
@@ -260,6 +260,9 @@ namespace NeuralNetworkNET.cpuDNN
             float* px = x, pmu = mu, psigma2 = sigma2, py = y, pg = gamma, pb = beta;
             switch (mode)
             {
+                #region Spatial
+
+                // A single mu and variance value per input channel
                 case NormalizationMode.Spatial:
                     if (!mu.MatchShape(1, info.Channels)) throw new ArgumentException("Invalid mu tensor size");
                     int
@@ -317,6 +320,12 @@ namespace NeuralNetworkNET.cpuDNN
                         }
                     }).AssertCompleted();
                     break;
+
+                #endregion
+
+                #region Per activation
+
+                // Each individual activation has its own median and variance
                 case NormalizationMode.PerActivation:
                     if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
                     Parallel.For(0, l, j =>
@@ -349,6 +358,9 @@ namespace NeuralNetworkNET.cpuDNN
                         }
                     }).AssertCompleted();
                     break;
+
+                #endregion
+
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
             }
         }
@@ -356,13 +368,18 @@ namespace NeuralNetworkNET.cpuDNN
         /// <summary>
         /// Executes the backward pass through a batch normalization layer
         /// </summary>
+        /// <param name="mode">The desired normalization mode to apply</param>
+        /// <param name="info">The ifo on the input <see cref="Tensor"/> to process</param>
         /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
         /// <param name="mu">A <see cref="Tensor"/> with the temporary median values calculated in the forward pass</param>
         /// <param name="sigma2">A <see cref="Tensor"/> with the temporary standard deviation values calculated in the forward pass</param>
         /// <param name="gamma">The layer gamma parameters</param>
         /// <param name="dy">The output error delta <see cref="Tensor"/></param>
         /// <param name="dx">The resulting backpropagated error delta <see cref="Tensor"/></param>
-        public static unsafe void BatchNormalizationBackwardData(in Tensor x, in Tensor mu, in Tensor sigma2, in Tensor gamma, in Tensor dy, in Tensor dx)
+        public static unsafe void BatchNormalizationBackwardData(
+            NormalizationMode mode, in TensorInfo info, in Tensor x, 
+            in Tensor mu, in Tensor sigma2, in Tensor gamma, 
+            in Tensor dy, in Tensor dx)
         {
             // Checks
             if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
@@ -376,41 +393,87 @@ namespace NeuralNetworkNET.cpuDNN
                 n = dx.Entities,
                 l = dx.Length;
             float* px = x, pg = gamma, pmu = mu, psigma2 = sigma2, pdy = dy, pdx = dx;
-            Parallel.For(0, n, i =>
+            switch (mode)
             {
-                for (int j = 0; j < l; j++)
-                {
-                    float
-                        left = 1f / n * pg[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
-                        _1st = n * pdy[i * l + j],
-                        _2nd = 0,
-                        _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + float.Epsilon),
-                        _3rdRight = 0;
-                    for (int k = 0; k < n; k++)
+                case NormalizationMode.Spatial:
+                    if (!mu.MatchShape(1, info.Channels)) throw new ArgumentException("Invalid mu tensor size");
+                    int
+                        nhw = x.Entities * info.SliceSize,
+                        slice = info.SliceSize;
+                    Parallel.For(0, info.Channels, c =>
                     {
-                        float pdykj = pdy[k * l + j];
-                        _2nd += pdykj;
-                        _3rdRight += pdykj * (px[k * l + j] - pmu[j]);
-                    }
-                    pdx[i * l + j] = left * (_1st - _2nd - _3rdLeft * _3rdRight);
-                }
-            }).AssertCompleted();
+                        // Calculate the two summatories
+                        float
+                            mc = pmu[c],
+                            sc = psigma2[c],
+                            left = 1f / nhw * pg[c] / (float)Math.Sqrt(psigma2[c] + float.Epsilon),
+                            _2nd = 0,
+                            _3rdRight = 0;
+                        float*
+                            startdy = pdy + slice * c,
+                            startx = px + slice * c;
+                        for (int i = 0; i < n; i++, startdy += l, startx += l)
+                            for (int xy = 0; xy < slice; xy++)
+                            {
+                                float pdyicxy = startdy[xy];
+                                _2nd += pdyicxy;
+                                _3rdRight += pdyicxy * (startx[xy] - mc);
+                            }
+
+                        // Assign the backpropagated tensor
+                        float* startdx = pdx + slice * c;
+                        startdy = pdy + slice * c;
+                        startx = px + slice * c;
+                        for (int i = 0; i < n; i++, startdy += l, startx += l, startdx += l)
+                            for (int xy = 0; xy < slice; xy++)
+                                startdx[xy] = left * (nhw * startdy[xy] - _2nd - (startx[xy] - mc) / (sc + float.Epsilon) * _3rdRight);
+
+                    }).AssertCompleted();
+                    break;
+                case NormalizationMode.PerActivation:
+                    if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+                    Parallel.For(0, n, i =>
+                    {
+                        for (int j = 0; j < l; j++)
+                        {
+                            float
+                                left = 1f / n * pg[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
+                                _1st = n * pdy[i * l + j],
+                                _2nd = 0,
+                                _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + float.Epsilon),
+                                _3rdRight = 0;
+                            for (int k = 0; k < n; k++)
+                            {
+                                float pdykj = pdy[k * l + j];
+                                _2nd += pdykj;
+                                _3rdRight += pdykj * (px[k * l + j] - pmu[j]);
+                            }
+                            pdx[i * l + j] = left * (_1st - _2nd - _3rdLeft * _3rdRight);
+                        }
+                    }).AssertCompleted();
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
         }
 
         /// <summary>
         /// Calculates the gradient with respect to the gamma <see cref="Tensor"/> in a batch normalization layer
         /// </summary>
+        /// <param name="mode">The desired normalization mode to apply</param>
+        /// <param name="info">The ifo on the input <see cref="Tensor"/> to process</param>
         /// <param name="x">The input <see cref="Tensor"/> used in the forward pass</param>
         /// <param name="mu">A <see cref="Tensor"/> with the temporary median values calculated in the forward pass</param>
         /// <param name="sigma2">A <see cref="Tensor"/> with the temporary standard deviation values calculated in the forward pass</param>
         /// <param name="dy">The output <see cref="Tensor"/> error delta for the current layer</param>
         /// <param name="dgamma">The resulting gamma gradient <see cref="Tensor"/></param>
-        public static unsafe void BatchNormalizationBackwardGamma(in Tensor x, in Tensor mu, in Tensor sigma2, in Tensor dy, in Tensor dgamma)
+        public static unsafe void BatchNormalizationBackwardGamma(
+            NormalizationMode mode, in TensorInfo info, in Tensor x, 
+            in Tensor mu, in Tensor sigma2, 
+            in Tensor dy, in Tensor dgamma)
         {
             // Checks
-            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
             if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
-            if (!dgamma.MatchShape(1, x.Length)) throw new ArgumentException("The gamma gradient tensor must have a value for each input feature", nameof(dgamma));
+            if (!dgamma.MatchShape(sigma2)) throw new ArgumentException("Invalid gamma gradient tensor size", nameof(dgamma));
             if (!x.MatchShape(dy)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(dy));
 
             // Gradient with respect to gamma
@@ -418,16 +481,74 @@ namespace NeuralNetworkNET.cpuDNN
                 n = x.Entities,
                 l = x.Length;
             float* px = x, pdy = dy, pdg = dgamma, pmu = mu, psigma2 = sigma2;
-            Parallel.For(0, x.Length, j =>
+            switch (mode)
             {
-                float sum = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    float hat = (px[i * l + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
-                    sum += pdy[i * l + j] * hat;
-                }
-                pdg[j] = sum;
-            }).AssertCompleted();
+                case NormalizationMode.Spatial:
+                    if (!mu.MatchShape(1, info.Channels)) throw new ArgumentException("Invalid mu tensor size");
+                    int slice = info.SliceSize;
+                    Parallel.For(0, info.Channels, c =>
+                    {
+                        float gc = 0, sc = (float)Math.Sqrt(psigma2[c] + float.Epsilon);
+                        int offset = slice * c;
+                        for (int i = 0; i < n; i++, offset += l)
+                            for (int xy = 0; xy < slice; xy++)
+                                gc += pdy[offset + xy] * (px[offset + xy] - pmu[c]) / sc;
+                        pdg[c] = gc;
+                    }).AssertCompleted();
+                    break;
+                case NormalizationMode.PerActivation:
+                    if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+                    Parallel.For(0, x.Length, j =>
+                    {
+                        float sum = 0, sj = (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                        for (int i = 0; i < n; i++)
+                        {
+                            float hat = (px[i * l + j] - pmu[j]) / sj;
+                            sum += pdy[i * l + j] * hat;
+                        }
+                        pdg[j] = sum;
+                    }).AssertCompleted();
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
+        }
+
+        /// <summary>
+        /// Calculates the gradient with respect to the beta <see cref="Tensor"/> in a batch normalization layer
+        /// </summary>
+        /// <param name="mode">The desired normalization mode to apply</param>
+        /// <param name="info">The ifo on the input <see cref="Tensor"/> to process</param>
+        /// <param name="dy">The output <see cref="Tensor"/> error delta for the current layer</param>
+        /// <param name="dbeta">The resulting beta gradient <see cref="Tensor"/></param>
+        public static unsafe void BatchNormalizationBackwardBeta(
+            NormalizationMode mode, in TensorInfo info, in Tensor dy, in Tensor dbeta)
+        {
+            if (info.Size != dy.Length) throw new ArgumentException("The tensor shape doesn't match the input info", nameof(dy));
+            switch (mode)
+            {
+                case NormalizationMode.Spatial:
+                    if (!dbeta.MatchShape(1, info.Channels)) throw new ArgumentException("The beta tensor must have a value for each input channel", nameof(dbeta));
+                    int
+                        n = dy.Entities,
+                        slice = info.SliceSize,
+                        l = info.Size;
+                    float* pdy = dy, pdbeta = dbeta;
+                    Parallel.For(0, info.Channels, c =>
+                    {
+                        float bc = 0;
+                        float* start = pdy + c * slice;
+                        for (int i = 0; i < n; i++, start += l)
+                            for (int xy = 0; xy < slice; xy++)
+                                bc += start[xy];
+                        pdbeta[c] = bc;
+                    }).AssertCompleted();
+                    break;
+                case NormalizationMode.PerActivation: 
+                    if (!dbeta.MatchShape(1, dy.Length)) throw new ArgumentException("The beta tensor must have a value for output feature", nameof(dbeta));
+                    FullyConnectedBackwardBias(dy, dbeta); // Vertical compression
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
         }
 
         #endregion

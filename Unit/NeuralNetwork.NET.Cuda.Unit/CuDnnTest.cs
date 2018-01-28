@@ -171,12 +171,12 @@ namespace NeuralNetworkNET.Cuda.Unit
             {
                 Tensor.Reshape(pw, 1, 250, out Tensor w);
                 Tensor.Reshape(pb, 1, 250, out Tensor b);
-                CpuDnn.BatchNormalizationForward(x, mu, sigma2, w, b, y);
+                CpuDnn.BatchNormalizationForward(NormalizationMode.PerActivation, TensorInfo.Linear(250), x, mu, sigma2, w, b, y);
 
                 // Backward
                 Tensor dy = CreateRandomTensor(400, 250);
                 Tensor.Like(x, out Tensor dx1);
-                CpuDnn.BatchNormalizationBackwardData(x, mu, sigma2, w, dy, dx1);
+                CpuDnn.BatchNormalizationBackwardData(NormalizationMode.PerActivation, TensorInfo.Linear(250), x, mu, sigma2, w, dy, dx1);
                 Gpu gpu = Gpu.Default;
                 using (DeviceMemory<float>
                     x_gpu = gpu.AllocateDevice(x),

@@ -57,16 +57,16 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
-                CpuDnn.BatchNormalizationBackwardData(x, _Mu, _Sigma2, w, dy_copy, dx);
+                CpuDnn.BatchNormalizationBackwardData(NormalizationMode, InputInfo, x, _Mu, _Sigma2, w, dy_copy, dx);
             }
             
             // Gamma gradient
             Tensor.New(1, Weights.Length, out dJdw);
-            CpuDnn.BatchNormalizationBackwardGamma(x, _Mu, _Sigma2, dy_copy, dJdw);
+            CpuDnn.BatchNormalizationBackwardGamma(NormalizationMode, InputInfo, x, _Mu, _Sigma2, dy_copy, dJdw);
 
             // Beta gradient
             Tensor.New(1, Biases.Length, out dJdb);
-            CpuDnn.FullyConnectedBackwardBias(dy_copy, dJdb); // Same as fully connected, vertical sum
+            CpuDnn.BatchNormalizationBackwardBeta(NormalizationMode, InputInfo, dy_copy, dJdb);
             dy_copy.Free();
         }
 
