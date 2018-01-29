@@ -288,8 +288,8 @@ namespace NeuralNetworkNET.cpuDNN
                             float* offset = start + i * l;
                             for (int xy = 0; xy < slice; xy++)
                             {
-                                mc += offset[xy] - mc;
-                                sc += mc * mc;
+                                float sq = offset[xy] - mc;
+                                sc += sq * sq;
                             }
                         }
                         psigma2[c] = sc;
@@ -487,11 +487,11 @@ namespace NeuralNetworkNET.cpuDNN
                     int slice = info.SliceSize;
                     Parallel.For(0, info.Channels, c =>
                     {
-                        float gc = 0, sc = (float)Math.Sqrt(psigma2[c] + float.Epsilon);
+                        float gc = 0, mc = pmu[c], sc = (float)Math.Sqrt(psigma2[c] + float.Epsilon);
                         int offset = slice * c;
                         for (int i = 0; i < n; i++, offset += l)
                             for (int xy = 0; xy < slice; xy++)
-                                gc += pdy[offset + xy] * (px[offset + xy] - pmu[c]) / sc;
+                                gc += pdy[offset + xy] * (px[offset + xy] - mc) / sc;
                         pdg[c] = gc;
                     }).AssertCompleted();
                     break;
