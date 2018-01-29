@@ -51,6 +51,30 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             NormalizationMode = mode;
         }
 
+        /// <summary>
+        /// Ensures the temporary <see cref="_Mu"/> and <see cref="_Sigma2"/> tensors are initialized correctly and ready to be used
+        /// </summary>
+        protected void InitializeNormalizationTensors()
+        {
+            if (_Mu.IsNull)
+            {
+                if (!_Sigma2.IsNull) throw new InvalidOperationException();
+                switch (NormalizationMode)
+                {
+                    case NormalizationMode.Spatial:
+                        Tensor.New(1, InputInfo.Channels, out _Mu);
+                        Tensor.New(1, InputInfo.Channels, out _Sigma2);
+                        break;
+                    case NormalizationMode.PerActivation:
+                        Tensor.New(1, InputInfo.Size, out _Mu);
+                        Tensor.New(1, InputInfo.Size, out _Sigma2);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+
         /// <inheritdoc/>
         public override void Serialize(Stream stream)
         {

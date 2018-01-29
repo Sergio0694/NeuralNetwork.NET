@@ -33,21 +33,20 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
+            InitializeNormalizationTensors();
             using (DeviceMemory<float>
                 x_gpu = DnnInstance.Gpu.AllocateDevice(x),
                 y = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
                 gamma = DnnInstance.Gpu.AllocateDevice(Weights),
                 beta = DnnInstance.Gpu.AllocateDevice(Biases),
-                mu = DnnInstance.Gpu.AllocateDevice<float>(x.Length),
-                sigma2 = DnnInstance.Gpu.AllocateDevice<float>(x.Length))
+                mu = DnnInstance.Gpu.AllocateDevice<float>(_Mu.Size),
+                sigma2 = DnnInstance.Gpu.AllocateDevice<float>(_Sigma2.Size))
             {
                 // Normalization
                 DnnInstance.BatchNormalizationForward(x.Entities, x.Length, x_gpu.Ptr, mu.Ptr, sigma2.Ptr, gamma.Ptr, beta.Ptr, y.Ptr);
                 y.CopyToHost(x.Entities, x.Length, out z);
-                if (_Mu.IsNull) mu.CopyToHost(1, x.Length, out _Mu);
-                else mu.CopyTo(_Mu);
-                if (_Sigma2.IsNull) sigma2.CopyToHost(1, x.Length, out _Sigma2);
-                else sigma2.CopyTo(_Sigma2);
+                mu.CopyTo(_Mu);
+                sigma2.CopyTo(_Sigma2); 
 
                 // Activation
                 if (ActivationType == ActivationType.Identity) z.Duplicate(out a);

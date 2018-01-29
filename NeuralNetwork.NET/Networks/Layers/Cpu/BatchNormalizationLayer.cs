@@ -26,9 +26,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            // Prepare the mu and sigma2 tensors
-            if (_Mu.IsNull) Tensor.New(1, OutputInfo.Size, out _Mu);
-            if (_Sigma2.IsNull) Tensor.Like(_Mu, out _Sigma2);
+            InitializeNormalizationTensors();
             Tensor.Like(x, out z);
             fixed (float* pw = Weights, pb = Biases)
             {

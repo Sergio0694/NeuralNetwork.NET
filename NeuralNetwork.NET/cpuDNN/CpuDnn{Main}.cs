@@ -382,9 +382,8 @@ namespace NeuralNetworkNET.cpuDNN
             in Tensor dy, in Tensor dx)
         {
             // Checks
-            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
             if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
-            if (!gamma.MatchShape(1, x.Length)) throw new ArgumentException("The gamma tensor must have a value for each input feature", nameof(gamma));
+            if (!gamma.MatchShape(sigma2)) throw new ArgumentException("The gamma tensor doesn't have the right shape", nameof(gamma));
             if (!x.MatchShape(dy)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(dy));
             if (!x.MatchShape(dx)) throw new ArgumentException("The input the resulting error tensor must have the same shape", nameof(dx));
 
