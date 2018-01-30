@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Initialization;
@@ -14,15 +16,20 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
     /// </summary>
     internal abstract class BatchNormalizationLayerBase : WeightedLayerBase, IDisposable
     {
+        #region Fields and parameters
+
         /// <summary>
         /// The cached mu tensor
         /// </summary>
-        protected Tensor _Mu;
+        protected readonly Tensor Mu;
 
         /// <summary>
         /// The cached sigma^2 tensor
         /// </summary>
-        protected Tensor _Sigma2;
+        protected readonly Tensor Sigma2;
+
+        // The current iteration number (for the Cumulative Moving Average)
+        private int _Iteration;
 
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.BatchNormalization;
@@ -33,11 +40,26 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         [JsonProperty(nameof(NormalizationMode), Order = 6)]
         public NormalizationMode NormalizationMode { get; }
 
+        #endregion
+
         protected BatchNormalizationLayerBase(in TensorInfo shape, NormalizationMode mode, ActivationType activation) 
             : base(shape, shape, 
                 WeightsProvider.NewGammaParameters(shape, mode), 
                 WeightsProvider.NewBetaParameters(shape, mode), activation)
         {
+            switch (mode)
+            {
+                case NormalizationMode.Spatial:
+                    Tensor.New(1, InputInfo.Channels, out Mu);
+                    Tensor.New(1, InputInfo.Channels, out Sigma2);
+                    break;
+                case NormalizationMode.PerActivation:
+                    Tensor.New(1, InputInfo.Size, out Mu);
+                    Tensor.New(1, InputInfo.Size, out Sigma2);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
             NormalizationMode = mode;
         }
 
@@ -51,29 +73,29 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             NormalizationMode = mode;
         }
 
-        /// <summary>
-        /// Ensures the temporary <see cref="_Mu"/> and <see cref="_Sigma2"/> tensors are initialized correctly and ready to be used
-        /// </summary>
-        protected void InitializeNormalizationTensors()
+        /// <inheritdoc/>
+        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            if (_Mu.IsNull)
-            {
-                if (!_Sigma2.IsNull) throw new InvalidOperationException();
-                switch (NormalizationMode)
-                {
-                    case NormalizationMode.Spatial:
-                        Tensor.New(1, InputInfo.Channels, out _Mu);
-                        Tensor.New(1, InputInfo.Channels, out _Sigma2);
-                        break;
-                    case NormalizationMode.PerActivation:
-                        Tensor.New(1, InputInfo.Size, out _Mu);
-                        Tensor.New(1, InputInfo.Size, out _Sigma2);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
+            if (NetworkSettings.TrainingInProgress) ForwardTraining(1f / (1 + _Iteration++), x, out z, out a);
+            else ForwardInference(x, out z, out a);
         }
+
+        /// <summary>
+        /// Forwards the inputs through the batch normalization layer during an inference pass
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        /// <param name="z">The output activity on the current layer</param>
+        /// <param name="a">The output activation on the current layer</param>
+        public abstract void ForwardInference(in Tensor x, out Tensor z, out Tensor a);
+
+        /// <summary>
+        /// Forwards the inputs through the batch normalization layer during a training pass, updating the CMA mean and variance <see cref="Tensor"/> instances
+        /// </summary>
+        /// <param name="factor">The factor to use to update the cumulative moving average</param>
+        /// <param name="x">The input to process</param>
+        /// <param name="z">The output activity on the current layer</param>
+        /// <param name="a">The output activation on the current layer</param>
+        public abstract void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a);
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)
@@ -90,10 +112,11 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         void IDisposable.Dispose() => Dispose();
 
         // Disposes the temporary tensors
+        [SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
         private void Dispose()
         {
-            _Mu.TryFree();
-            _Sigma2.TryFree();
+            Mu.Free();
+            Sigma2.Free();
         }
 
         #endregion

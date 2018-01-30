@@ -13,7 +13,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
     /// <summary>
     /// A batch normalization layer, used to improve the convergence speed of a neural network
     /// </summary>
-    internal sealed class BatchNormalizationLayer : BatchNormalizationLayerBase, IDisposable
+    internal sealed class BatchNormalizationLayer : BatchNormalizationLayerBase
     {
         public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation)
             : base(shape, mode, activation) { }
@@ -23,25 +23,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
 
         #region Implementation
 
-        /// <inheritdoc/>
-        public override unsafe void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override void ForwardInference(in Tensor x, out Tensor z, out Tensor a)
         {
-            InitializeNormalizationTensors();
-            Tensor.Like(x, out z);
-            fixed (float* pw = Weights, pb = Biases)
-            {
-                Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
-                Tensor.Reshape(pb, 1, Biases.Length, out Tensor b);
-                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, _Mu, _Sigma2, w, b, z);
-            }
+            throw new NotImplementedException();
+        }
 
-            // Activation
-            if (ActivationType == ActivationType.Identity) z.Duplicate(out a);
-            else
-            {
-                Tensor.Like(z, out a);
-                CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
-            }
+        public override void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a)
+        {
+            throw new NotImplementedException();
         }
 
         /// <inheritdoc/>
@@ -55,12 +44,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             fixed (float* pw = Weights)
             {
                 Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
-                CpuDnn.BatchNormalizationBackwardData(NormalizationMode, InputInfo, x, _Mu, _Sigma2, w, dy_copy, dx);
+                CpuDnn.BatchNormalizationBackwardData(NormalizationMode, InputInfo, x, Mu, Sigma2, w, dy_copy, dx);
             }
             
             // Gamma gradient
             Tensor.New(1, Weights.Length, out dJdw);
-            CpuDnn.BatchNormalizationBackwardGamma(NormalizationMode, InputInfo, x, _Mu, _Sigma2, dy_copy, dJdw);
+            CpuDnn.BatchNormalizationBackwardGamma(NormalizationMode, InputInfo, x, Mu, Sigma2, dy_copy, dJdw);
 
             // Beta gradient
             Tensor.New(1, Biases.Length, out dJdb);

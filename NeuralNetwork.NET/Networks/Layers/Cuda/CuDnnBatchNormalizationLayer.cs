@@ -30,32 +30,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
 
         #region Implementation
 
-        /// <inheritdoc/>
-        public override void Forward(in Tensor x, out Tensor z, out Tensor a)
+        public override void ForwardInference(in Tensor x, out Tensor z, out Tensor a)
         {
-            InitializeNormalizationTensors();
-            using (DeviceMemory<float>
-                x_gpu = DnnInstance.Gpu.AllocateDevice(x),
-                y = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
-                gamma = DnnInstance.Gpu.AllocateDevice(Weights),
-                beta = DnnInstance.Gpu.AllocateDevice(Biases),
-                mu = DnnInstance.Gpu.AllocateDevice<float>(_Mu.Size),
-                sigma2 = DnnInstance.Gpu.AllocateDevice<float>(_Sigma2.Size))
-            {
-                // Normalization
-                DnnInstance.BatchNormalizationForward(x.Entities, x.Length, x_gpu.Ptr, mu.Ptr, sigma2.Ptr, gamma.Ptr, beta.Ptr, y.Ptr);
-                y.CopyToHost(x.Entities, x.Length, out z);
-                mu.CopyTo(_Mu);
-                sigma2.CopyTo(_Sigma2); 
+            throw new NotImplementedException();
+        }
 
-                // Activation
-                if (ActivationType == ActivationType.Identity) z.Duplicate(out a);
-                else
-                {
-                    DnnInstance.ActivationForward(x.Entities, x.Length, y.Ptr, y.Ptr, ActivationFunctions.Activation);
-                    y.CopyToHost(x.Entities, x.Length, out a);
-                }
-            }
+        public override void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a)
+        {
+            throw new NotImplementedException();
         }
 
         /// <inheritdoc/>
@@ -68,8 +50,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
                 gamma = DnnInstance.Gpu.AllocateDevice(Weights),
                 beta = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length),
-                mu = DnnInstance.Gpu.AllocateDevice(_Mu),
-                sigma2 = DnnInstance.Gpu.AllocateDevice(_Sigma2))
+                mu = DnnInstance.Gpu.AllocateDevice(Mu),
+                sigma2 = DnnInstance.Gpu.AllocateDevice(Sigma2))
             {
                 // Backpropagation
                 DnnInstance.ActivationBackward(x.Entities, x.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);

@@ -8,6 +8,7 @@ using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Graph;
@@ -141,13 +142,18 @@ namespace NeuralNetworkNET.APIs
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
 
             // Start the training
-            return NetworkTrainer.TrainNetwork(
+            NetworkSettings.TrainingInProgress = NetworkSettings.TrainingInProgress
+                ? throw new InvalidOperationException("Can't train two networks at the same time") // This would cause problems with cuDNN
+                : true;
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(
                 network as NeuralNetworkBase ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
                 epochs, dropout, algorithm, batchProgress, trainingProgress, 
                 validationDataset as ValidationDataset,
                 testDataset as TestDataset,
                 token);
+            NetworkSettings.TrainingInProgress = false;
+            return result;
         }
     }
 }
