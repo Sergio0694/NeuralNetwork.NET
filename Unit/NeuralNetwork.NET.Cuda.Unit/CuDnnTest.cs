@@ -195,9 +195,55 @@ namespace NeuralNetworkNET.Cuda.Unit
                 y_gpu.CopyToHost(x.Entities, x.Length, out Tensor y2);
                 run_mean.CopyToHost(1, 250, out Tensor runmean);
                 run_var.CopyToHost(1, 250, out Tensor runvar);
-                Assert.IsTrue(y1.ContentEquals(y2, 1e-5f));
 
                 // Tests
+                Assert.IsTrue(y1.ContentEquals(y2, 1e-5f));
+                Assert.IsTrue(mu.ContentEquals(runmean, 1e-5f));
+                Assert.IsTrue(sigma2.ContentEquals(runvar, 1e-5f));
+            }
+        }
+
+        [TestMethod]
+        public void SpatialBatchNormalizationForward()
+        {
+            // Setup
+            Tensor x = CreateRandomTensor(400, 24 * 24 * 13);
+            Tensor.NewZeroed(1, 13, out Tensor mu);
+            Tensor.LikeZeroed(mu, out Tensor sigma2);
+            Tensor.New(1, 13, out Tensor gamma);
+            Tensor.NewZeroed(1, 13, out Tensor beta);
+            for (int i = 0; i < 13; i++) gamma[i] = ThreadSafeRandom.NextFloat();
+
+            // Cpu
+            Tensor.Like(x, out Tensor y1);
+            CpuDnn.BatchNormalizationForward(NormalizationMode.Spatial, TensorInfo.Volume(24, 24, 13), x, mu, sigma2, gamma, beta, y1);
+
+            // Gpu
+            Gpu gpu = Gpu.Default;
+            using (DeviceMemory<float>
+                x_gpu = gpu.AllocateDevice(x),
+                y_gpu = gpu.AllocateDevice<float>(x.Size),
+                gamma_gpu = gpu.AllocateDevice(gamma),
+                beta_gpu = gpu.AllocateDevice(beta),
+                run_mean = gpu.AllocateDevice<float>(mu.Size),
+                run_var = gpu.AllocateDevice<float>(mu.Size))
+            {
+                TensorDescriptor desc = new TensorDescriptor();
+                desc.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, 13, 24, 24);
+                TensorDescriptor gammaBetadesc = new TensorDescriptor();
+                gammaBetadesc.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, 13, 1, 1);
+                Dnn.Get(gpu).BatchNormalizationForwardTraining(
+                    BatchNormMode.SPATIAL, 1, 0, 
+                    desc, x_gpu.Ptr, desc, y_gpu.Ptr, 
+                    gammaBetadesc, gamma_gpu.Ptr, beta_gpu.Ptr, 
+                    1, run_mean.Ptr, run_var.Ptr, CpuDnn.CUDNN_BN_MIN_EPSILON, 
+                    default, default);
+                y_gpu.CopyToHost(x.Entities, x.Length, out Tensor y2);
+                run_mean.CopyToHost(1, 13, out Tensor runmean);
+                run_var.CopyToHost(1, 13, out Tensor runvar);
+
+                // Tests
+                Assert.IsTrue(y1.ContentEquals(y2, 1e-5f, 1e-4f));
                 Assert.IsTrue(mu.ContentEquals(runmean, 1e-5f));
                 Assert.IsTrue(sigma2.ContentEquals(runvar, 1e-5f));
             }

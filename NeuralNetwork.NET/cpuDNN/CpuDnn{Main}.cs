@@ -297,7 +297,7 @@ namespace NeuralNetworkNET.cpuDNN
                                 sc += sq * sq;
                             }
                         }
-                        psigma2[c] = sc;
+                        psigma2[c] = sc / nhw;
 
                     }).AssertCompleted();
 
