@@ -80,6 +80,12 @@ namespace NeuralNetworkNET.Extensions
         public static float Abs(this float value) => value >= 0 ? value : -value;
 
         /// <summary>
+        /// Returns the minimum possible upper <see cref="float"/> approximation of the given <see cref="double"/> value
+        /// </summary>
+        /// <param name="value">The value to approximate</param>
+        public static float ToApproximatedFloat(this double value) => (float)value + (float)((value - (float)value) * 2);
+
+        /// <summary>
         /// Calculates if two values are within a given distance from one another
         /// </summary>
         /// <param name="value">The first value</param>

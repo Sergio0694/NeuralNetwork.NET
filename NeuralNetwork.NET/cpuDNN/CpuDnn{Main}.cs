@@ -231,6 +231,11 @@ namespace NeuralNetworkNET.cpuDNN
         #region Batch normalization
 
         /// <summary>
+        /// Gets the minimum epsilon allowed to be used in batch normalization methods
+        /// </summary>
+        internal static readonly float CUDNN_BN_MIN_EPSILON = 1e-5.ToApproximatedFloat();
+
+        /// <summary>
         /// Executes the forward pass in a batch normalization layer
         /// </summary>
         /// <param name="mode">The desired normalization mode to apply</param>
@@ -303,7 +308,7 @@ namespace NeuralNetworkNET.cpuDNN
                             gc = pg[c],
                             bc = pb[c],
                             mc = pmu[c],
-                            sqrt_1 = 1 / (float)Math.Sqrt(psigma2[c] + float.Epsilon);
+                            sqrt_1 = 1 / (float)Math.Sqrt(psigma2[c] + CUDNN_BN_MIN_EPSILON);
                         float*
                             start = px + slice * c,
                             end = py + slice * c;
@@ -353,7 +358,7 @@ namespace NeuralNetworkNET.cpuDNN
                         int offset = i * l;
                         for (int j = 0; j < l; j++)
                         {
-                            float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                            float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + CUDNN_BN_MIN_EPSILON);
                             py[offset + j] = pg[j] * hat + pb[j];
                         }
                     }).AssertCompleted();
@@ -405,7 +410,7 @@ namespace NeuralNetworkNET.cpuDNN
                         float
                             mc = pmu[c],
                             sc = psigma2[c],
-                            left = 1f / nhw * pg[c] / (float)Math.Sqrt(psigma2[c] + float.Epsilon),
+                            left = 1f / nhw * pg[c] / (float)Math.Sqrt(psigma2[c] + CUDNN_BN_MIN_EPSILON),
                             _2nd = 0,
                             _3rdRight = 0;
                         float*
@@ -425,7 +430,7 @@ namespace NeuralNetworkNET.cpuDNN
                         startx = px + slice * c;
                         for (int i = 0; i < n; i++, startdy += l, startx += l, startdx += l)
                             for (int xy = 0; xy < slice; xy++)
-                                startdx[xy] = left * (nhw * startdy[xy] - _2nd - (startx[xy] - mc) / (sc + float.Epsilon) * _3rdRight);
+                                startdx[xy] = left * (nhw * startdy[xy] - _2nd - (startx[xy] - mc) / (sc + CUDNN_BN_MIN_EPSILON) * _3rdRight);
 
                     }).AssertCompleted();
                     break;
@@ -436,10 +441,10 @@ namespace NeuralNetworkNET.cpuDNN
                         for (int j = 0; j < l; j++)
                         {
                             float
-                                left = 1f / n * pg[j] / (float)Math.Sqrt(psigma2[j] + float.Epsilon),
+                                left = 1f / n * pg[j] / (float)Math.Sqrt(psigma2[j] + CUDNN_BN_MIN_EPSILON),
                                 _1st = n * pdy[i * l + j],
                                 _2nd = 0,
-                                _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + float.Epsilon),
+                                _3rdLeft = (px[i * l + j] - pmu[j]) / (psigma2[j] + CUDNN_BN_MIN_EPSILON),
                                 _3rdRight = 0;
                             for (int k = 0; k < n; k++)
                             {
@@ -487,7 +492,7 @@ namespace NeuralNetworkNET.cpuDNN
                     int slice = info.SliceSize;
                     Parallel.For(0, info.Channels, c =>
                     {
-                        float gc = 0, mc = pmu[c], sc = (float)Math.Sqrt(psigma2[c] + float.Epsilon);
+                        float gc = 0, mc = pmu[c], sc = (float)Math.Sqrt(psigma2[c] + CUDNN_BN_MIN_EPSILON);
                         int offset = slice * c;
                         for (int i = 0; i < n; i++, offset += l)
                             for (int xy = 0; xy < slice; xy++)
@@ -499,7 +504,7 @@ namespace NeuralNetworkNET.cpuDNN
                     if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
                     Parallel.For(0, x.Length, j =>
                     {
-                        float sum = 0, sj = (float)Math.Sqrt(psigma2[j] + float.Epsilon);
+                        float sum = 0, sj = (float)Math.Sqrt(psigma2[j] + CUDNN_BN_MIN_EPSILON);
                         for (int i = 0; i < n; i++)
                         {
                             float hat = (px[i * l + j] - pmu[j]) / sj;
