@@ -83,7 +83,25 @@ namespace NeuralNetworkNET.Extensions
         /// Returns the minimum possible upper <see cref="float"/> approximation of the given <see cref="double"/> value
         /// </summary>
         /// <param name="value">The value to approximate</param>
-        public static float ToApproximatedFloat(this double value) => (float)value + (float)((value - (float)value) * 2);
+        public static unsafe float ToApproximatedFloat(this double value)
+        {
+            // Get the bit representation of the double value
+            ulong bits = *((ulong*)&value);
+
+            // Extract and re-bias the exponent field
+            ulong exponent = ((bits >> 52) & 0x7FF) - 1023 + 127;
+
+            // Extract the significand bits and truncate the excess
+            ulong significand = (bits >> 29) & 0x7FFFFF;
+
+            // Assemble the result in 32-bit unsigned integer format, then add 1
+            ulong converted = (((bits >> 32) & 0x80000000u)
+                               | (exponent << 23)
+                               | significand) + 1;
+
+            // Reinterpret the bit pattern as a float
+            return *((float*)&converted);
+        }
 
         /// <summary>
         /// Calculates if two values are within a given distance from one another
