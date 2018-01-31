@@ -19,6 +19,43 @@ namespace NeuralNetworkNET.cpuDNN
         /// <param name="mode">The desired normalization mode to apply</param>
         /// <param name="info">The ifo on the input <see cref="Tensor"/> to process</param>
         /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
+        /// <param name="factor">The factor for the cumulative moving average</param>
+        /// <param name="mu">A <see cref="Tensor"/> to use to store the temporary median values (used for backpropagation too)</param>
+        /// <param name="sigma2">A <see cref="Tensor"/> to use to store the temporary standard deviation values (used for backpropagation too)</param>
+        /// <param name="gamma">The layer gamma parameters</param>
+        /// <param name="beta">The layer beta parameters</param>
+        /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
+        public static void BatchNormalizationForward(
+            NormalizationMode mode, in TensorInfo info, in Tensor x, 
+            float factor, in Tensor mu, in Tensor sigma2, 
+            in Tensor gamma, in Tensor beta, in Tensor y)
+        {
+            if (info.Size != x.Length) throw new ArgumentException("The tensor info doesn't match the length of the input tensor", nameof(x));
+            if (!sigma2.MatchShape(mu)) throw new ArgumentException("Invalid standard deviation tensor shape", nameof(sigma2));
+            if (!gamma.MatchShape(sigma2)) throw new ArgumentException("The gamma tensor doesn't have the right shape", nameof(gamma));
+            if (!beta.MatchShape(gamma)) throw new ArgumentException("The beta tensor doesn't have the right shape", nameof(beta));
+            if (!x.MatchShape(y)) throw new ArgumentException("The input and output tensors must have the same shape", nameof(y));
+            switch (mode)
+            {
+                // A single mu and variance value per input channel
+                case NormalizationMode.Spatial:
+                    BatchNormalizationForward(info, x, factor, mu, sigma2, gamma, beta, y);
+                    break;
+
+                // Each individual activation has its own median and variance
+                case NormalizationMode.PerActivation:
+                    BatchNormalizationForward(x, factor, mu, sigma2, gamma, beta, y);
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
+        }
+
+        /// <summary>
+        /// Executes the forward pass in a batch normalization layer in inference mode
+        /// </summary>
+        /// <param name="mode">The desired normalization mode to apply</param>
+        /// <param name="info">The ifo on the input <see cref="Tensor"/> to process</param>
+        /// <param name="x">The input <see cref="Tensor"/> to normalize</param>
         /// <param name="mu">A <see cref="Tensor"/> to use to store the temporary median values (used for backpropagation too)</param>
         /// <param name="sigma2">A <see cref="Tensor"/> to use to store the temporary standard deviation values (used for backpropagation too)</param>
         /// <param name="gamma">The layer gamma parameters</param>
@@ -139,10 +176,10 @@ namespace NeuralNetworkNET.cpuDNN
 
         #region Spatial
 
-        // Spatial forward batch normalization
+        // Spatial forward training batch normalization
         private static unsafe void BatchNormalizationForward(
             in TensorInfo info, in Tensor x, 
-            in Tensor mu, in Tensor sigma2, 
+            float factor, in Tensor mu, in Tensor sigma2, 
             in Tensor gamma, in Tensor beta, in Tensor y)
         {
             // Setup
@@ -166,7 +203,7 @@ namespace NeuralNetworkNET.cpuDNN
                     for (int xy = 0; xy < slice; xy++)
                         mc += offset[xy];
                 }
-                pmu[c] = mc /= nhw;
+                pmu[c] = mc /= nhw * factor + pmu[c] * (1 - factor);
 
                 // Variance
                 float sc = 0;
@@ -179,11 +216,48 @@ namespace NeuralNetworkNET.cpuDNN
                         sc += sq * sq;
                     }
                 }
-                psigma2[c] = sc / nhw;
+                psigma2[c] = sc / nhw * factor + psigma2[c] * (1 - factor);
 
             }).AssertCompleted();
 
             // Normalization
+            Parallel.For(0, info.Channels, c =>
+            {
+                float
+                    gc = pg[c],
+                    bc = pb[c],
+                    mc = pmu[c],
+                    sqrt_1 = 1 / (float)Math.Sqrt(psigma2[c] + CUDNN_BN_MIN_EPSILON);
+                float*
+                    start = px + slice * c,
+                    end = py + slice * c;
+                for (int i = 0; i < n; i++)
+                {
+                    float*
+                        offset = start + i * l,
+                        target = end + i * l;
+                    for (int xy = 0; xy < slice; xy++)
+                    {
+                        float hat = (offset[xy] - mc) * sqrt_1;
+                        target[xy] = gc * hat + bc;
+                    }
+                }
+            }).AssertCompleted();
+        }
+
+        // Spatial forward inference batch normalization
+        private static unsafe void BatchNormalizationForward(
+            in TensorInfo info, in Tensor x, 
+            in Tensor mu, in Tensor sigma2, 
+            in Tensor gamma, in Tensor beta, in Tensor y)
+        {
+            // Setup
+            if (!mu.MatchShape(1, info.Channels)) throw new ArgumentException("Invalid mu tensor size");
+            int
+                n = x.Entities,
+                l = x.Length,
+                slice = info.SliceSize;
+            float* px = x, pmu = mu, psigma2 = sigma2, py = y, pg = gamma, pb = beta;
             Parallel.For(0, info.Channels, c =>
             {
                 float
@@ -302,10 +376,10 @@ namespace NeuralNetworkNET.cpuDNN
 
         #region Per activation
 
-        // Per-activation forward batch normalization
+        // Per-activation forward training batch normalization
         private static unsafe void BatchNormalizationForward(
             in Tensor x,
-            in Tensor mu, in Tensor sigma2, 
+            float factor, in Tensor mu, in Tensor sigma2, 
             in Tensor gamma, in Tensor beta, in Tensor y)
         {
             if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
@@ -319,7 +393,7 @@ namespace NeuralNetworkNET.cpuDNN
                 float mi = 0;
                 for (int i = 0; i < n; i++)
                     mi += px[i * l + j];
-                pmu[j] = mi /= n;
+                pmu[j] = mi /= n * factor + pmu[j] * (1 - factor);
 
                 // Variance
                 float sl = 0;
@@ -328,11 +402,33 @@ namespace NeuralNetworkNET.cpuDNN
                     float hm = px[i * l + j] - mi;
                     sl += hm * hm;
                 }
-                psigma2[j] = sl / n;
+                psigma2[j] = sl / n * factor + psigma2[j] * (1 - factor);
 
             }).AssertCompleted();
 
             // Apply the batch normalization pass
+            Parallel.For(0, n, i =>
+            {
+                int offset = i * l;
+                for (int j = 0; j < l; j++)
+                {
+                    float hat = (px[offset + j] - pmu[j]) / (float)Math.Sqrt(psigma2[j] + CUDNN_BN_MIN_EPSILON);
+                    py[offset + j] = pg[j] * hat + pb[j];
+                }
+            }).AssertCompleted();
+        }
+
+        // Per-activation forward inference batch normalization
+        private static unsafe void BatchNormalizationForward(
+            in Tensor x,
+            in Tensor mu, in Tensor sigma2, 
+            in Tensor gamma, in Tensor beta, in Tensor y)
+        {
+            if (!mu.MatchShape(1, x.Length)) throw new ArgumentException("Invalid mu tensor size");
+            int
+                n = x.Entities,
+                l = x.Length;
+            float* px = x, pmu = mu, psigma2 = sigma2, py = y, pg = gamma, pb = beta;
             Parallel.For(0, n, i =>
             {
                 int offset = i * l;

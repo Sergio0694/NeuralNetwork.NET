@@ -23,14 +23,32 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
 
         #region Implementation
 
-        public override void ForwardInference(in Tensor x, out Tensor z, out Tensor a)
+        /// <inheritdoc/>
+        public override unsafe void ForwardInference(in Tensor x, out Tensor z, out Tensor a)
         {
-            throw new NotImplementedException();
+            fixed (float* pw = Weights, pb = Biases)
+            {
+                Tensor.Reshape(pw, 1, Mu.Length, out Tensor gamma);
+                Tensor.Reshape(pb, 1, Mu.Length, out Tensor beta);
+                Tensor.Like(x, out z);
+                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, Mu, Sigma2, gamma, beta, z);
+                Tensor.Like(z, out a);
+                CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
+            }
         }
 
-        public override void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a)
+        /// <inheritdoc/>
+        public override unsafe void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a)
         {
-            throw new NotImplementedException();
+            fixed (float* pw = Weights, pb = Biases)
+            {
+                Tensor.Reshape(pw, 1, Mu.Length, out Tensor gamma);
+                Tensor.Reshape(pb, 1, Mu.Length, out Tensor beta);
+                Tensor.Like(x, out z);
+                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, factor, Mu, Sigma2, gamma, beta, z);
+                Tensor.Like(z, out a);
+                CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
+            }
         }
 
         /// <inheritdoc/>
