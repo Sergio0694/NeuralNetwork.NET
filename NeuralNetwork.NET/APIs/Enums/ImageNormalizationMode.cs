@@ -3,7 +3,7 @@
     /// <summary>
     /// Indicates the type of normalization to apply to a loaded image
     /// </summary>
-    public enum ImageNormalizationMode
+    public enum ImageNormalizationMode : byte
     {
         /// <summary>
         /// The individual pixel values are mapped in the [0,1] range

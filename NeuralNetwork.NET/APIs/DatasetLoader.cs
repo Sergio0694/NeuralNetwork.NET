@@ -67,8 +67,8 @@ namespace NeuralNetworkNET.APIs
             where TPixel : struct, IPixel<TPixel>
         {
             return BatchesCollection.From(modifiers.Length > 0 
-                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y))) 
-                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y)), size);
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, normalization, f), xy.Y))) 
+                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, normalization, null), xy.Y)), size);
         }
 
         /// <summary>
@@ -87,8 +87,8 @@ namespace NeuralNetworkNET.APIs
             where TPixel : struct, IPixel<TPixel>
         {
             return BatchesCollection.From(modifiers.Length > 0 
-                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y()))) 
-                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y())), size);
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, normalization, f), xy.Y()))) 
+                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, normalization, null), xy.Y())), size);
         }
 
         #endregion
@@ -149,8 +149,8 @@ namespace NeuralNetworkNET.APIs
             where TPixel : struct, IPixel<TPixel>
         {
             return Validation((modifiers.Length > 0
-                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y)))
-                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y))).AsParallel(), tolerance, epochs);
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, normalization, f), xy.Y)))
+                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, normalization, null), xy.Y))).AsParallel(), tolerance, epochs);
         }
 
         /// <summary>
@@ -172,8 +172,8 @@ namespace NeuralNetworkNET.APIs
             where TPixel : struct, IPixel<TPixel>
         {
             return Validation((modifiers.Length > 0
-                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y())))
-                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y()))).AsParallel(), tolerance, epochs);
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, normalization, f), xy.Y())))
+                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, normalization, null), xy.Y()))).AsParallel(), tolerance, epochs);
         }
 
         #endregion
@@ -230,8 +230,8 @@ namespace NeuralNetworkNET.APIs
             where TPixel : struct, IPixel<TPixel>
         {
             return Test((modifiers.Length > 0
-                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y)))
-                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y))).AsParallel(), progress);
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, normalization, f), xy.Y)))
+                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, normalization, null), xy.Y))).AsParallel(), progress);
         }
 
         /// <summary>
@@ -252,8 +252,8 @@ namespace NeuralNetworkNET.APIs
             where TPixel : struct, IPixel<TPixel>
         {
             return Test((modifiers.Length > 0
-                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y())))
-                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y()))).AsParallel(), progress);
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, normalization, f), xy.Y())))
+                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, normalization, null), xy.Y()))).AsParallel(), progress);
         }
 
         #endregion
