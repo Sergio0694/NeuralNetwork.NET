@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
@@ -56,13 +57,19 @@ namespace NeuralNetworkNET.APIs
         /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a vector with the expected outputs</param>
         /// <param name="size">The desired dataset batch size</param>
-        /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
+        /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
+        /// <param name="modifiers">The optional <see cref="Action{T}"/> instances to use to modify the loaded image. If no modifiers are provided, each loaded image will not me tweaked. If one or more
+        /// modifiers are passed to the method, a different image will be added to the dataset for each given modifier. This can be used to easily expand an image dataset.</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITrainingDataset Training<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, int size, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static ITrainingDataset Training<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, int size, ImageNormalizationMode normalization, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] modifiers)
             where TPixel : struct, IPixel<TPixel>
-            => BatchesCollection.From(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)), size);
+        {
+            return BatchesCollection.From(modifiers.Length > 0 
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y))) 
+                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y)), size);
+        }
 
         /// <summary>
         /// Creates a new <see cref="ITrainingDataset"/> instance to train a network from the input data, where each input sample is an image in a specified format
@@ -70,13 +77,19 @@ namespace NeuralNetworkNET.APIs
         /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a <see cref="Func{TResult}"/> returning a vector with the expected outputs</param>
         /// <param name="size">The desired dataset batch size</param>
-        /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
+        /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
+        /// <param name="modifiers">The optional <see cref="Action{T}"/> instances to use to modify the loaded image. If no modifiers are provided, each loaded image will not me tweaked. If one or more
+        /// modifiers are passed to the method, a different image will be added to the dataset for each given modifier. This can be used to easily expand an image dataset.</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITrainingDataset Training<TPixel>([NotNull] IEnumerable<(String X, Func<float[]> Y)> data, int size, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static ITrainingDataset Training<TPixel>([NotNull] IEnumerable<(String X, Func<float[]> Y)> data, int size, ImageNormalizationMode normalization, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] modifiers)
             where TPixel : struct, IPixel<TPixel>
-            => BatchesCollection.From(data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y())), size);
+        {
+            return BatchesCollection.From(modifiers.Length > 0 
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y()))) 
+                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y())), size);
+        }
 
         #endregion
 
@@ -124,13 +137,21 @@ namespace NeuralNetworkNET.APIs
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a vector with the expected outputs</param>
         /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
         /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
-        /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
+        /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
+        /// <param name="modifiers">The optional <see cref="Action{T}"/> instances to use to modify the loaded image. If no modifiers are provided, each loaded image will not me tweaked. If one or more
+        /// modifiers are passed to the method, a different image will be added to the dataset for each given modifier. This can be used to easily expand an image dataset.</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static IValidationDataset Validation<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, float tolerance = 1e-2f, int epochs = 5, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static IValidationDataset Validation<TPixel>(
+            [NotNull] IEnumerable<(String X, float[] Y)> data, float tolerance = 1e-2f, int epochs = 5, 
+            ImageNormalizationMode normalization = ImageNormalizationMode.Sigmoid, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] modifiers)
             where TPixel : struct, IPixel<TPixel>
-            => Validation(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)).AsParallel(), tolerance, epochs);
+        {
+            return Validation((modifiers.Length > 0
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y)))
+                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y))).AsParallel(), tolerance, epochs);
+        }
 
         /// <summary>
         /// Creates a new <see cref="IValidationDataset"/> instance to validate a network accuracy from the input collection
@@ -139,13 +160,21 @@ namespace NeuralNetworkNET.APIs
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a <see cref="Func{TResult}"/> returning a vector with the expected outputs</param>
         /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
         /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
-        /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
+        /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
+        /// <param name="modifiers">The optional <see cref="Action{T}"/> instances to use to modify the loaded image. If no modifiers are provided, each loaded image will not me tweaked. If one or more
+        /// modifiers are passed to the method, a different image will be added to the dataset for each given modifier. This can be used to easily expand an image dataset.</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static IValidationDataset Validation<TPixel>([NotNull] IEnumerable<(String X, Func<float[]> Y)> data, float tolerance = 1e-2f, int epochs = 5, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static IValidationDataset Validation<TPixel>(
+            [NotNull] IEnumerable<(String X, Func<float[]> Y)> data, float tolerance = 1e-2f, int epochs = 5, 
+            ImageNormalizationMode normalization = ImageNormalizationMode.Sigmoid, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] modifiers)
             where TPixel : struct, IPixel<TPixel>
-            => Validation(data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y())).AsParallel(), tolerance, epochs);
+        {
+            return Validation((modifiers.Length > 0
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y())))
+                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y()))).AsParallel(), tolerance, epochs);
+        }
 
         #endregion
 
@@ -189,13 +218,21 @@ namespace NeuralNetworkNET.APIs
         /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a vector with the expected outputs</param>
         /// <param name="progress">The optional progress callback to use</param>
-        /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
+        /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
+        /// <param name="modifiers">The optional <see cref="Action{T}"/> instances to use to modify the loaded image. If no modifiers are provided, each loaded image will not me tweaked. If one or more
+        /// modifiers are passed to the method, a different image will be added to the dataset for each given modifier. This can be used to easily expand an image dataset.</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, float[] Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static ITestDataset Test<TPixel>(
+            [NotNull] IEnumerable<(String X, float[] Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null
+            , ImageNormalizationMode normalization = ImageNormalizationMode.Sigmoid, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] modifiers)
             where TPixel : struct, IPixel<TPixel>
-            => Test(data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y)).AsParallel(), progress);
+        {
+            return Test((modifiers.Length > 0
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y)))
+                : data.Select<(String X, float[] Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y))).AsParallel(), progress);
+        }
 
         /// <summary>
         /// Creates a new <see cref="ITestDataset"/> instance to test a network from the input collection
@@ -203,13 +240,21 @@ namespace NeuralNetworkNET.APIs
         /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a <see cref="Func{TResult}"/> returning a vector with the expected outputs</param>
         /// <param name="progress">The optional progress callback to use</param>
-        /// <param name="modify">An optional <see cref="Action{T}"/> to modify each sample image when loading the dataset</param>
+        /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
+        /// <param name="modifiers">The optional <see cref="Action{T}"/> instances to use to modify the loaded image. If no modifiers are provided, each loaded image will not me tweaked. If one or more
+        /// modifiers are passed to the method, a different image will be added to the dataset for each given modifier. This can be used to easily expand an image dataset.</param>
         [PublicAPI]
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static ITestDataset Test<TPixel>([NotNull] IEnumerable<(String X, Func<float[]> Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify = null)
+        public static ITestDataset Test<TPixel>(
+            [NotNull] IEnumerable<(String X, Func<float[]> Y)> data, [CanBeNull] Action<TrainingProgressEventArgs> progress = null, 
+            ImageNormalizationMode normalization = ImageNormalizationMode.Sigmoid, [NotNull, ItemNotNull] params Action<IImageProcessingContext<TPixel>>[] modifiers)
             where TPixel : struct, IPixel<TPixel>
-            => Test(data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load(xy.X, modify), xy.Y())).AsParallel(), progress);
+        {
+            return Test((modifiers.Length > 0
+                ? data.SelectMany(xy => modifiers.Select<Action<IImageProcessingContext<TPixel>>, Func<(float[], float[])>>(f => () => (ImageLoader.Load(xy.X, f), xy.Y())))
+                : data.Select<(String X, Func<float[]> Y), Func<(float[], float[])>>(xy => () => (ImageLoader.Load<TPixel>(xy.X, null), xy.Y()))).AsParallel(), progress);
+        }
 
         #endregion
     }
