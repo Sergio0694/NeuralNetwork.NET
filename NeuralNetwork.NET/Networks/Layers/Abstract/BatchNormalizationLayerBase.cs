@@ -80,7 +80,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            if (NetworkSettings.TrainingInProgress) ForwardTraining(1f / (1 + _Iteration++), x, out z, out a);
+            if (NetworkSettings.BackpropagationInProgress) ForwardTraining(1f / (1 + _Iteration++), x, out z, out a);
             else ForwardInference(x, out z, out a);
         }
 
