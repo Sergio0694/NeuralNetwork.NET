@@ -86,28 +86,5 @@ namespace NeuralNetworkNET.Helpers
         }
 
         #endregion
-
-        [Pure, NotNull]
-        public static unsafe float[] Process<TPixel>([NotNull] float[] data, int width, int height, [NotNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
-        {
-            // Reconstruct the original image
-            byte[] pixels = new byte[data.Length];
-            fixed (float* pdata = data)
-            fixed (byte* px = pixels)
-            {
-                for (int i = 0; i < data.Length; i++)
-                    px[i] = (byte)(pdata[i] * 255);
-            }
-
-            // Edit the image and return the new processed sample
-            using (Image<TPixel> image = Image.LoadPixelData<TPixel>(pixels, width, height))
-            {
-                image.Mutate(modify);
-                if (typeof(TPixel) == typeof(Alpha8)) return Load(image as Image<Alpha8>);
-                if (typeof(TPixel) == typeof(Rgb24)) return Load(image as Image<Rgb24>);
-                if (typeof(TPixel) == typeof(Argb32)) return Load(image as Image<Argb32>);
-                throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
-            }
-        }
     }
 }
