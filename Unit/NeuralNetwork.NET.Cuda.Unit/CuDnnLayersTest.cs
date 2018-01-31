@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
@@ -46,6 +47,7 @@ namespace NeuralNetworkNET.Cuda.Unit
 
         private static void TestBackward(WeightedLayerBase cpu, WeightedLayerBase gpu, int samples)
         {
+            NetworkSettings.TrainingInProgress = true;
             Tensor
                 x = CreateRandomTensor(samples, cpu.InputInfo.Size),
                 dy = CreateRandomTensor(samples, cpu.OutputInfo.Size);
@@ -55,14 +57,16 @@ namespace NeuralNetworkNET.Cuda.Unit
             gpu.Forward(x, out Tensor z_gpu, out Tensor a_gpu);
             cpu.Backpropagate(x, z_cpu, dy, dx1, out Tensor dJdw_cpu, out Tensor dJdb_cpu);
             gpu.Backpropagate(x, z_gpu, dy, dx2, out Tensor dJdw_gpu, out Tensor dJdb_gpu);
-            Assert.IsTrue(dx1.ContentEquals(dx2));
-            Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu));
+            Assert.IsTrue(dx1.ContentEquals(dx2, 1e-5f, 1e-5f));
+            Assert.IsTrue(dJdw_cpu.ContentEquals(dJdw_gpu, 1e-4f, 1e-5f));
             Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f)); // The cuDNN ConvolutionBackwardBias is not always as precise as the CPU version
             Tensor.Free(x, dy, dx1, dx2, z_cpu, a_cpu, z_gpu, a_gpu, dJdw_cpu, dJdb_cpu, dJdw_gpu, dJdb_gpu);
+            NetworkSettings.TrainingInProgress = false;
         }
 
         private static unsafe void TestBackward(OutputLayerBase cpu, OutputLayerBase gpu, float[,] y)
         {
+            NetworkSettings.TrainingInProgress = true;
             int n = y.GetLength(0);
             fixed (float* p = y)
             {
@@ -81,6 +85,7 @@ namespace NeuralNetworkNET.Cuda.Unit
                 Assert.IsTrue(dJdb_cpu.ContentEquals(dJdb_gpu, 1e-4f, 1e-5f));
                 Tensor.Free(x, dy, dx1, dx2, z_cpu, a_cpu, z_gpu, a_gpu, dJdw_cpu, dJdw_gpu, dJdb_cpu, dJdb_gpu);
             }
+            NetworkSettings.TrainingInProgress = false;
         }
 
         #endregion
@@ -161,7 +166,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             WeightedLayerBase
                 cpu = new BatchNormalizationLayer(TensorInfo.Linear(250), NormalizationMode.PerActivation, ActivationType.ReLU),
-                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, cpu.ActivationType);
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, new float[250], new float[250], cpu.ActivationType);
             TestForward(cpu, gpu, 400);
         }
 
@@ -170,7 +175,25 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             WeightedLayerBase
                 cpu = new BatchNormalizationLayer(TensorInfo.Linear(250), NormalizationMode.PerActivation, ActivationType.ReLU),
-                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, cpu.ActivationType);
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, new float[250], new float[250], cpu.ActivationType);
+            TestBackward(cpu, gpu, 400);
+        }
+
+        [TestMethod]
+        public void SpatialBatchNormalizationForward()
+        {
+            WeightedLayerBase
+                cpu = new BatchNormalizationLayer(TensorInfo.Volume(12, 12, 13), NormalizationMode.Spatial, ActivationType.ReLU),
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.Spatial, cpu.Weights, cpu.Biases, new float[13], new float[13], cpu.ActivationType);
+            TestForward(cpu, gpu, 400);
+        }
+
+        [TestMethod]
+        public void SpatialBatchNormalizationBackward()
+        {
+            WeightedLayerBase
+                cpu = new BatchNormalizationLayer(TensorInfo.Volume(12, 12, 13), NormalizationMode.Spatial, ActivationType.ReLU),
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.Spatial, cpu.Weights, cpu.Biases, new float[13], new float[13], cpu.ActivationType);
             TestBackward(cpu, gpu, 400);
         }
 

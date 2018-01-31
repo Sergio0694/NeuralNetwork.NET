@@ -18,20 +18,22 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation)
             : base(shape, mode, activation) { }
 
-        public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
-            : base(shape, mode, w, b, activation) { }
+        public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
+            : base(shape, mode, w, b, mu, sigma2, activation) { }
 
         #region Implementation
 
         /// <inheritdoc/>
         public override unsafe void ForwardInference(in Tensor x, out Tensor z, out Tensor a)
         {
-            fixed (float* pw = Weights, pb = Biases)
+            fixed (float* pw = Weights, pb = Biases, pmu = Mu, ps2 = Sigma2)
             {
                 Tensor.Reshape(pw, 1, Mu.Length, out Tensor gamma);
                 Tensor.Reshape(pb, 1, Mu.Length, out Tensor beta);
+                Tensor.Reshape(pmu, 1, Mu.Length, out Tensor mu);
+                Tensor.Reshape(ps2, 1, Mu.Length, out Tensor sigma2);
                 Tensor.Like(x, out z);
-                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, Mu, Sigma2, gamma, beta, z);
+                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, mu, sigma2, gamma, beta, z);
                 Tensor.Like(z, out a);
                 CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
             }
@@ -40,12 +42,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         /// <inheritdoc/>
         public override unsafe void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a)
         {
-            fixed (float* pw = Weights, pb = Biases)
+            fixed (float* pw = Weights, pb = Biases, pmu = Mu, ps2 = Sigma2)
             {
                 Tensor.Reshape(pw, 1, Mu.Length, out Tensor gamma);
                 Tensor.Reshape(pb, 1, Mu.Length, out Tensor beta);
+                Tensor.Reshape(pmu, 1, Mu.Length, out Tensor mu);
+                Tensor.Reshape(ps2, 1, Mu.Length, out Tensor sigma2);
                 Tensor.Like(x, out z);
-                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, factor, Mu, Sigma2, gamma, beta, z);
+                CpuDnn.BatchNormalizationForward(NormalizationMode, InputInfo, x, factor, mu, sigma2, gamma, beta, z);
                 Tensor.Like(z, out a);
                 CpuDnn.ActivationForward(z, ActivationFunctions.Activation, a);
             }
@@ -59,15 +63,17 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             CpuDnn.ActivationBackward(y, dy, ActivationFunctions.ActivationPrime, dy_copy);
 
             // Input error delta
-            fixed (float* pw = Weights)
+            fixed (float* pw = Weights, pmu = Mu, ps2 = Sigma2)
             {
-                Tensor.Reshape(pw, 1, Weights.Length, out Tensor w);
-                CpuDnn.BatchNormalizationBackwardData(NormalizationMode, InputInfo, x, Mu, Sigma2, w, dy_copy, dx);
+                Tensor.Reshape(pw, 1, Mu.Length, out Tensor gamma);
+                Tensor.Reshape(pmu, 1, Mu.Length, out Tensor mu);
+                Tensor.Reshape(ps2, 1, Mu.Length, out Tensor sigma2);
+                CpuDnn.BatchNormalizationBackwardData(NormalizationMode, InputInfo, x, mu, sigma2, gamma, dy_copy, dx);
+
+                // Gamma gradient
+                Tensor.New(1, Weights.Length, out dJdw);
+                CpuDnn.BatchNormalizationBackwardGamma(NormalizationMode, InputInfo, x, mu, sigma2, dy_copy, dJdw);
             }
-            
-            // Gamma gradient
-            Tensor.New(1, Weights.Length, out dJdw);
-            CpuDnn.BatchNormalizationBackwardGamma(NormalizationMode, InputInfo, x, Mu, Sigma2, dy_copy, dJdw);
 
             // Beta gradient
             Tensor.New(1, Biases.Length, out dJdb);
@@ -92,10 +98,14 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             if (!stream.TryRead(out int bLength)) return null;
             float[] biases = stream.ReadUnshuffled(bLength);
             if (!stream.TryRead(out NormalizationMode mode)) return null;
-            return new BatchNormalizationLayer(input, mode, weights, biases, activation);
+            if (!stream.TryRead(out int mLength)) return null;
+            float[] mu = stream.ReadUnshuffled(mLength);
+            if (!stream.TryRead(out int sLength)) return null;
+            float[] sigma2 = stream.ReadUnshuffled(sLength);
+            return new BatchNormalizationLayer(input, mode, weights, biases, mu, sigma2, activation);
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), Mu.AsSpan().Copy(), Sigma2.AsSpan().Copy(), ActivationType);
     }
 }

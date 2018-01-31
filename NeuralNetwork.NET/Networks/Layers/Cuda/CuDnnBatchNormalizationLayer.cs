@@ -15,7 +15,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
     /// <summary>
     /// A cuDNN-powered batch normalization layer
     /// </summary>
-    internal sealed class CuDnnBatchNormalizationLayer : BatchNormalizationLayerBase
+    internal sealed class CuDnnBatchNormalizationLayer : BatchNormalizationLayerBase, IDisposable
     {
         // The NCHW tensor info for the layer inputs and outputs
         [NotNull]
@@ -24,6 +24,12 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         // The NCHW tensor info for the batch normalization parameters
         [NotNull]
         private readonly TensorDescriptor BatchNormalizationDescription = new TensorDescriptor();
+
+        // Cached mean tensor
+        private Tensor _Mean;
+
+        // Cached variance tensor
+        private Tensor _Variance;
 
         /// <summary>
         /// Gets the <see cref="Dnn"/> instance for the current layer
@@ -34,15 +40,15 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         // cuDNN fields setup
         private void SetupCuDnnInfo()
         {
-            BatchNormalizationDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, Mu.Size, 1, 1);
+            BatchNormalizationDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, 1, Mu.Length, 1, 1);
         }
 
         public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation)
             : base(shape, mode, activation)
             => SetupCuDnnInfo();
 
-        public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
-            : base(shape, mode, w, b, activation)
+        public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b,  [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
+            : base(shape, mode, w, b, mu, sigma2, activation)
             => SetupCuDnnInfo();
 
         #region Implementation
@@ -79,14 +85,20 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 beta_gpu = DnnInstance.Gpu.AllocateDevice(Biases),
                 mu_gpu = DnnInstance.Gpu.AllocateDevice(Mu),
                 sigma2_gpu = DnnInstance.Gpu.AllocateDevice(Sigma2),
-                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size))
+                y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
+                mean_gpu = DnnInstance.Gpu.AllocateDevice<float>(Mu.Length),
+                variance_gpu = DnnInstance.Gpu.AllocateDevice<float>(Mu.Length))
             {
                 if (NormalizationMode == NormalizationMode.PerActivation) DataDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, x.Length, 1, 1);
                 DataDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                 DnnInstance.BatchNormalizationForwardTraining(
                     (BatchNormMode)NormalizationMode, 1, 0, DataDescription, x_gpu.Ptr, DataDescription, y_gpu.Ptr,
                     BatchNormalizationDescription, gamma_gpu.Ptr, beta_gpu.Ptr, factor, mu_gpu.Ptr, sigma2_gpu.Ptr, CpuDnn.CUDNN_BN_MIN_EPSILON,
-                    default, default); // TODO: store cache
+                    mean_gpu.Ptr, variance_gpu.Ptr);
+                _Mean.TryFree();
+                _Variance.TryFree();
+                mean_gpu.CopyToHost(1, Mu.Length, out _Mean);
+                variance_gpu.CopyToHost(1, Mu.Length, out _Variance);
                 y_gpu.CopyToHost(x.Entities, x.Length, out z);
                 DnnInstance.ActivationForward(x.Entities, x.Length, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
                 y_gpu.CopyToHost(x.Entities, x.Length, out a);
@@ -103,7 +115,9 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 dx_gpu = DnnInstance.Gpu.AllocateDevice<float>(dx.Size),
                 gamma = DnnInstance.Gpu.AllocateDevice(Weights),
                 dgamma = DnnInstance.Gpu.AllocateDevice<float>(Weights.Length),
-                dbeta = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length))
+                dbeta = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length),
+                mean_gpu = DnnInstance.Gpu.AllocateDevice(_Mean),
+                variance_gpu = DnnInstance.Gpu.AllocateDevice(_Variance))
             {
                 // Backpropagation
                 DnnInstance.ActivationBackward(x.Entities, x.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
@@ -111,7 +125,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     (BatchNormMode)NormalizationMode, 1, 0, 1, 0,
                     DataDescription, x_gpu.Ptr, DataDescription, dy_gpu.Ptr, DataDescription, dx_gpu.Ptr,
                     BatchNormalizationDescription, gamma.Ptr, dgamma.Ptr, dbeta.Ptr,
-                    CpuDnn.CUDNN_BN_MIN_EPSILON, default, default); // TODO: use cache
+                    CpuDnn.CUDNN_BN_MIN_EPSILON, mean_gpu.Ptr, variance_gpu.Ptr);
                 dx_gpu.CopyTo(dx);
                 dgamma.CopyToHost(1, Weights.Length, out dJdw);
                 dbeta.CopyToHost(1, Biases.Length, out dJdb);
@@ -135,10 +149,30 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
             if (!stream.TryRead(out int bLength)) return null;
             float[] biases = stream.ReadUnshuffled(bLength);
             if (!stream.TryRead(out NormalizationMode mode)) return null;
-            return new CuDnnBatchNormalizationLayer(input, mode, weights, biases, activation);
+            if (!stream.TryRead(out int mLength)) return null;
+            float[] mu = stream.ReadUnshuffled(mLength);
+            if (!stream.TryRead(out int sLength)) return null;
+            float[] sigma2 = stream.ReadUnshuffled(sLength);
+            return new CuDnnBatchNormalizationLayer(input, mode, weights, biases, mu, sigma2, activation);
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnBatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new CuDnnBatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), Mu.AsSpan().Copy(), Sigma2.AsSpan().Copy(), ActivationType);
+
+        #region IDisposable
+
+        ~CuDnnBatchNormalizationLayer() => Dispose();
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose() => Dispose();
+
+        // Disposes the temporary tensors
+        private void Dispose()
+        {
+            _Mean.TryFree();
+            _Variance.TryFree();
+        }
+
+        #endregion
     }
 }

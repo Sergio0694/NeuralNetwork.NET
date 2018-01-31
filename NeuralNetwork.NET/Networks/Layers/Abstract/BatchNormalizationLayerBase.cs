@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
@@ -14,19 +13,21 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
     /// <summary>
     /// A base claass for a batch normalization layer
     /// </summary>
-    internal abstract class BatchNormalizationLayerBase : WeightedLayerBase, IDisposable
+    internal abstract class BatchNormalizationLayerBase : WeightedLayerBase
     {
         #region Fields and parameters
 
         /// <summary>
         /// The cached mu tensor
         /// </summary>
-        protected readonly Tensor Mu;
+        [NotNull]
+        protected float[] Mu;
 
         /// <summary>
         /// The cached sigma^2 tensor
         /// </summary>
-        protected readonly Tensor Sigma2;
+        [NotNull]
+        protected readonly float[] Sigma2;
 
         // The current iteration number (for the Cumulative Moving Average)
         private int _Iteration;
@@ -50,27 +51,30 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             switch (mode)
             {
                 case NormalizationMode.Spatial:
-                    Tensor.New(1, InputInfo.Channels, out Mu);
-                    Tensor.New(1, InputInfo.Channels, out Sigma2);
+                    Mu = new float[InputInfo.Channels];
+                    Sigma2 = new float[InputInfo.Channels];
                     break;
                 case NormalizationMode.PerActivation:
-                    Tensor.New(1, InputInfo.Size, out Mu);
-                    Tensor.New(1, InputInfo.Size, out Sigma2);
+                    Mu = new float[InputInfo.Size];
+                    Sigma2 = new float[InputInfo.Size];
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                default: throw new ArgumentOutOfRangeException("Invalid batch normalization mode");
             }
             NormalizationMode = mode;
         }
 
-        protected BatchNormalizationLayerBase(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, ActivationType activation) 
+        protected BatchNormalizationLayerBase(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
             : base(shape, shape, w, b, activation)
         {
             if (w.Length != b.Length) throw new ArgumentException("The size for both gamme and beta paarameters must be the same");
             if (mode == NormalizationMode.Spatial && w.Length != shape.Channels ||
                 mode == NormalizationMode.PerActivation && w.Length != shape.Size)
                 throw new ArgumentException("Invalid parameters size for the selected normalization mode");
+            if (mu.Length != w.Length || sigma2.Length != w.Length)
+                throw new ArgumentException("The mu and sigma2 parameters must match the shape of the gamma and beta parameters");
             NormalizationMode = mode;
+            Mu = mu;
+            Sigma2 = sigma2;
         }
 
         /// <inheritdoc/>
@@ -102,23 +106,10 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         {
             base.Serialize(stream);
             stream.Write(NormalizationMode);
+            stream.Write(Mu.Length);
+            stream.WriteShuffled(Mu);
+            stream.Write(Sigma2.Length);
+            stream.WriteShuffled(Sigma2);
         }
-
-        #region IDisposable
-
-        ~BatchNormalizationLayerBase() => Dispose();
-
-        /// <inheritdoc/>
-        void IDisposable.Dispose() => Dispose();
-
-        // Disposes the temporary tensors
-        [SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
-        private void Dispose()
-        {
-            Mu.Free();
-            Sigma2.Free();
-        }
-
-        #endregion
     }
 }
