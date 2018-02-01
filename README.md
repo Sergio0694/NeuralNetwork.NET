@@ -113,7 +113,7 @@ Some complex network structures, like residual networks or inception modules , c
 Computation graph networks are created using the `NetworkManager.NewGraph` API, here's an example:
 
 ```C#
-INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Alpha8>(28, 28), root =>
+INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Rgb24>(32,32), root =>
 {
     var conv1 = root.Layer(CuDnnNetworkLayers.Convolutional((5, 5), 20, ActivationType.Identity));
     var pool1 = conv1.Layer(CuDnnNetworkLayers.Pooling(ActivationType.ReLU));
