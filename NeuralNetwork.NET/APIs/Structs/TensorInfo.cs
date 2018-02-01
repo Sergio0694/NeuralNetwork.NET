@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.APIs.Structs
@@ -95,7 +96,7 @@ namespace NeuralNetworkNET.APIs.Structs
         {
             if (typeof(TPixel) == typeof(Alpha8)) return new TensorInfo(height, width, 1);
             if (typeof(TPixel) == typeof(Rgb24)) return new TensorInfo(height, width, 3);
-            if (typeof(TPixel) == typeof(Argb32)) return new TensorInfo(height, width, 4);
+            if (typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Rgba32)) return new TensorInfo(height, width, 4);
             throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
         }
 

@@ -25,6 +25,9 @@ namespace NeuralNetworkNET.APIs.Datasets
         // 32*32 RGB images
         private const int SampleSize = 3072;
 
+        // A single 32*32 image
+        private const int ImageSize = 1024;
+
         private const int CoarseLabels = 20;
 
         private const int FineLabels = 100;
@@ -123,8 +126,12 @@ namespace NeuralNetworkNET.APIs.Datasets
                         fixed (float* px = x)
                         {
                             stream.Read(temp, 0, SampleSize);
-                            for (int j = 0; j < SampleSize; j++)
+                            for (int j = 0; j < ImageSize; j++)
+                            {
                                 px[j] = ptemp[j] / 255f; // Normalized samples
+                                px[j] = ptemp[j + ImageSize] / 255f;
+                                px[j] = ptemp[j + 2 * ImageSize] / 255f;
+                            }
                         }
                         data[i] = (x, y);
                     }
