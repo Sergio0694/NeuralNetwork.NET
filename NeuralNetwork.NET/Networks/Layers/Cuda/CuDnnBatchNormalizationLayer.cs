@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Alea;
 using Alea.cuDNN;
 using JetBrains.Annotations;
@@ -26,10 +27,10 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         private readonly TensorDescriptor BatchNormalizationDescription = new TensorDescriptor();
 
         // Cached mean tensor
-        private Tensor _Mean;
+        private readonly Tensor SaveMean;
 
         // Cached variance tensor
-        private Tensor _Variance;
+        private readonly Tensor SaveInvVariance;
 
         /// <summary>
         /// Gets the <see cref="Dnn"/> instance for the current layer
@@ -45,11 +46,19 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
 
         public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation)
             : base(shape, mode, activation)
-            => SetupCuDnnInfo();
+        {
+            Tensor.NewZeroed(1, Mu.Length, out SaveMean);
+            Tensor.NewZeroed(1, Mu.Length, out SaveInvVariance);
+            SetupCuDnnInfo();
+        }
 
         public CuDnnBatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b,  [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
             : base(shape, mode, w, b, mu, sigma2, activation)
-            => SetupCuDnnInfo();
+        {
+            Tensor.NewZeroed(1, Mu.Length, out SaveMean);
+            Tensor.NewZeroed(1, Mu.Length, out SaveInvVariance);
+            SetupCuDnnInfo();
+        }
 
         #region Implementation
 
@@ -86,19 +95,17 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 mu_gpu = DnnInstance.Gpu.AllocateDevice(Mu),
                 sigma2_gpu = DnnInstance.Gpu.AllocateDevice(Sigma2),
                 y_gpu = DnnInstance.Gpu.AllocateDevice<float>(x.Size),
-                mean_gpu = DnnInstance.Gpu.AllocateDevice<float>(Mu.Length),
-                variance_gpu = DnnInstance.Gpu.AllocateDevice<float>(Mu.Length))
+                saveMean_gpu = DnnInstance.Gpu.AllocateDevice(SaveMean),
+                saveInvVariance_gpu = DnnInstance.Gpu.AllocateDevice(SaveInvVariance))
             {
                 if (NormalizationMode == NormalizationMode.PerActivation) DataDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, x.Length, 1, 1);
                 DataDescription.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, x.Entities, InputInfo.Channels, InputInfo.Height, InputInfo.Width);
                 DnnInstance.BatchNormalizationForwardTraining(
                     (BatchNormMode)NormalizationMode, 1, 0, DataDescription, x_gpu.Ptr, DataDescription, y_gpu.Ptr,
                     BatchNormalizationDescription, gamma_gpu.Ptr, beta_gpu.Ptr, factor, mu_gpu.Ptr, sigma2_gpu.Ptr, CpuDnn.CUDNN_BN_MIN_EPSILON,
-                    mean_gpu.Ptr, variance_gpu.Ptr);
-                _Mean.TryFree();
-                _Variance.TryFree();
-                mean_gpu.CopyToHost(1, Mu.Length, out _Mean);
-                variance_gpu.CopyToHost(1, Mu.Length, out _Variance);
+                    saveMean_gpu.Ptr, saveInvVariance_gpu.Ptr);
+                saveMean_gpu.CopyTo(SaveMean);
+                saveInvVariance_gpu.CopyTo(SaveInvVariance);
                 y_gpu.CopyToHost(x.Entities, x.Length, out z);
                 DnnInstance.ActivationForward(x.Entities, x.Length, y_gpu.Ptr, y_gpu.Ptr, ActivationFunctions.Activation);
                 y_gpu.CopyToHost(x.Entities, x.Length, out a);
@@ -116,8 +123,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                 gamma = DnnInstance.Gpu.AllocateDevice(Weights),
                 dgamma = DnnInstance.Gpu.AllocateDevice<float>(Weights.Length),
                 dbeta = DnnInstance.Gpu.AllocateDevice<float>(Biases.Length),
-                mean_gpu = DnnInstance.Gpu.AllocateDevice(_Mean),
-                variance_gpu = DnnInstance.Gpu.AllocateDevice(_Variance))
+                saveMean_gpu = DnnInstance.Gpu.AllocateDevice(SaveMean),
+                saveInvVariance_gpu = DnnInstance.Gpu.AllocateDevice(SaveInvVariance))
             {
                 // Backpropagation
                 DnnInstance.ActivationBackward(x.Entities, x.Length, y_gpu.Ptr, dy_gpu.Ptr, ActivationFunctions.ActivationPrime, dy_gpu.Ptr);
@@ -125,7 +132,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     (BatchNormMode)NormalizationMode, 1, 0, 1, 0,
                     DataDescription, x_gpu.Ptr, DataDescription, dy_gpu.Ptr, DataDescription, dx_gpu.Ptr,
                     BatchNormalizationDescription, gamma.Ptr, dgamma.Ptr, dbeta.Ptr,
-                    CpuDnn.CUDNN_BN_MIN_EPSILON, mean_gpu.Ptr, variance_gpu.Ptr);
+                    CpuDnn.CUDNN_BN_MIN_EPSILON, saveMean_gpu.Ptr, saveInvVariance_gpu.Ptr);
                 dx_gpu.CopyTo(dx);
                 dgamma.CopyToHost(1, Weights.Length, out dJdw);
                 dbeta.CopyToHost(1, Biases.Length, out dJdb);
@@ -167,10 +174,11 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         void IDisposable.Dispose() => Dispose();
 
         // Disposes the temporary tensors
+        [SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
         private void Dispose()
         {
-            _Mean.TryFree();
-            _Variance.TryFree();
+            SaveMean.Free();
+            SaveInvVariance.Free();
         }
 
         #endregion
