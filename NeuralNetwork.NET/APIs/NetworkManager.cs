@@ -140,6 +140,12 @@ namespace NeuralNetworkNET.APIs
             // Preliminary checks
             if (epochs < 1) throw new ArgumentOutOfRangeException(nameof(epochs), "The number of epochs must at be at least equal to 1");
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
+            if (validationDataset != null && (validationDataset.InputFeatures != dataset.InputFeatures || validationDataset.OutputFeatures != dataset.OutputFeatures))
+                throw new ArgumentException("The validation dataset doesn't match the training dataset", nameof(validationDataset));
+            if (testDataset != null && (testDataset.InputFeatures != dataset.InputFeatures || testDataset.OutputFeatures != dataset.OutputFeatures))
+                throw new ArgumentException("The test dataset doesn't match the training dataset", nameof(testDataset));
+            if (dataset.InputFeatures != network.InputInfo.Size || dataset.OutputFeatures != network.OutputInfo.Size)
+                throw new ArgumentException("The input dataset doesn't match the number of input and output features for the current network", nameof(dataset));
 
             // Start the training
             NetworkSettings.TrainingInProgress = NetworkSettings.TrainingInProgress
