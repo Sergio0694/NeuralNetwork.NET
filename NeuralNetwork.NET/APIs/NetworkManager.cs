@@ -60,6 +60,11 @@ namespace NeuralNetworkNET.APIs
         #region Training APIs
 
         /// <summary>
+        /// Gets whether or not a neural network is currently being trained
+        /// </summary>
+        public static bool TrainingInProgress { get; private set; }
+
+        /// <summary>
         /// Trains a neural network with the given parameters
         /// </summary>
         /// <param name="network">The existing <see cref="INeuralNetwork"/> to train with the given dataset(s)</param>
@@ -139,15 +144,26 @@ namespace NeuralNetworkNET.APIs
             // Preliminary checks
             if (epochs < 1) throw new ArgumentOutOfRangeException(nameof(epochs), "The number of epochs must at be at least equal to 1");
             if (dropout < 0 || dropout >= 1) throw new ArgumentOutOfRangeException(nameof(dropout), "The dropout probability is invalid");
+            if (validationDataset != null && (validationDataset.InputFeatures != dataset.InputFeatures || validationDataset.OutputFeatures != dataset.OutputFeatures))
+                throw new ArgumentException("The validation dataset doesn't match the training dataset", nameof(validationDataset));
+            if (testDataset != null && (testDataset.InputFeatures != dataset.InputFeatures || testDataset.OutputFeatures != dataset.OutputFeatures))
+                throw new ArgumentException("The test dataset doesn't match the training dataset", nameof(testDataset));
+            if (dataset.InputFeatures != network.InputInfo.Size || dataset.OutputFeatures != network.OutputInfo.Size)
+                throw new ArgumentException("The input dataset doesn't match the number of input and output features for the current network", nameof(dataset));
 
             // Start the training
-            return NetworkTrainer.TrainNetwork(
+            TrainingInProgress = TrainingInProgress
+                ? throw new InvalidOperationException("Can't train two networks at the same time") // This would cause problems with cuDNN
+                : true;
+            TrainingSessionResult result = NetworkTrainer.TrainNetwork(
                 network as NeuralNetworkBase ?? throw new ArgumentException("The input network instance isn't valid", nameof(network)), 
                 dataset as BatchesCollection ?? throw new ArgumentException("The input dataset instance isn't valid", nameof(dataset)),
                 epochs, dropout, algorithm, batchProgress, trainingProgress, 
                 validationDataset as ValidationDataset,
                 testDataset as TestDataset,
                 token);
+            TrainingInProgress = false;
+            return result;
         }
     }
 }

@@ -11,6 +11,9 @@ using NeuralNetworkNET.Networks.Layers.Cpu;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
+    /// <summary>
+    /// A cuDNN-powered fully connected layer
+    /// </summary>
     internal class CuDnnFullyConnectedLayer : FullyConnectedLayer
     {
         /// <summary>

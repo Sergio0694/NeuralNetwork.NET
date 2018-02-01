@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using JetBrains.Annotations;
+using NeuralNetworkNET.Extensions;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -44,7 +45,7 @@ namespace NeuralNetworkNET.Helpers
 
         // Local lazy instance of the singleton HttpClient in use
         [NotNull]
-        private static readonly Lazy<HttpClient> _Client = new Lazy<HttpClient>(() => new HttpClient());
+        private static readonly Lazy<HttpClient> _Client = new Lazy<HttpClient>(() => new HttpClient { Timeout = TimeSpan.FromMinutes(10) }); // Large timeout to download .tar.gz archives
 
         /// <summary>
         /// Gets the singleton <see cref="HttpClient"/> to use, since it is reentrant and thread-safe, see <a href="https://docs.microsoft.com/it-it/dotnet/api/system.net.http.httpclient">docs.microsoft.com/it-it/dotnet/api/system.net.http.httpclient</a>
@@ -68,9 +69,10 @@ namespace NeuralNetworkNET.Helpers
         /// Gets a <see cref="Func{TResult}"/> instance returning a <see cref="Stream"/> with the contents of the input URL
         /// </summary>
         /// <param name="url">The target URL to use to download the resources</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">A cancellation token for the operation</param>
         [MustUseReturnValue, ItemCanBeNull]
-        public static async Task<Func<Stream>> GetFileAsync([NotNull] String url, CancellationToken token)
+        public static async Task<Func<Stream>> GetFileAsync([NotNull] String url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token)
         {
             // Get the target filename
             String
@@ -84,13 +86,17 @@ namespace NeuralNetworkNET.Helpers
                 try
                 {
                     // Download from the input URL
-                    HttpResponseMessage result = await Client.GetAsync(url, token);
-                    if (!result.IsSuccessStatusCode || token.IsCancellationRequested) return null;
-                    byte[] data = await result.Content.ReadAsByteArrayAsync();
+                    using (Stream stream = await Client.GetAsync(url, callback, token))
+                    {
+                        if (stream == null || token.IsCancellationRequested) return null;
+                        byte[] data = new byte[stream.Length];
+                        if (await stream.ReadAsync(data, 0, data.Length, token) != data.Length ||
+                            token.IsCancellationRequested) return null;
 
-                    // Write the HTTP content
-                    using (FileStream stream = File.OpenWrite(path))
-                        await stream.WriteAsync(data, 0, data.Length, default); // Ensure the whole content is written to disk
+                        // Write the HTTP content
+                        using (FileStream file = File.OpenWrite(path))
+                            await file.WriteAsync(data, 0, data.Length, default); // Ensure the whole content is written to disk
+                    }
                 }
                 catch
                 {
@@ -105,9 +111,10 @@ namespace NeuralNetworkNET.Helpers
         /// Gets an <see cref="IDictionary{TKey,TValue}"/> with a collection of <see cref="Func{TResult}"/> instances for each file in the tar.gz archive pointed by the input URL
         /// </summary>
         /// <param name="url">The target URL to use to download the archive</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">A cancellation token for the operation</param>
         [MustUseReturnValue, ItemCanBeNull]
-        public static async Task<IReadOnlyDictionary<String, Func<Stream>>> GetArchiveAsync([NotNull] String url, CancellationToken token)
+        public static async Task<IReadOnlyDictionary<String, Func<Stream>>> GetArchiveAsync([NotNull] String url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token)
         {
             // Check if the archive is already present
             String folder = Path.Combine(DatasetsPath, GetFilename(url));
@@ -116,26 +123,25 @@ namespace NeuralNetworkNET.Helpers
                 {
                     try
                     {
-                        // Download from the input URL
-                        HttpResponseMessage result = await Client.GetAsync(url, token);
-                        if (!result.IsSuccessStatusCode || token.IsCancellationRequested) return null;
-                        
-                        // Extract the .tar.gz archive
-                        using (Stream stream = await result.Content.ReadAsStreamAsync())
-                        using (GZipInputStream gzip = new GZipInputStream(stream))
-                        using (TarArchive tar = TarArchive.CreateInputTarArchive(gzip))
+                        // Download and extract the .tar.gz archive
+                        using (Stream stream = await Client.GetAsync(url, callback, token))
                         {
-                            // Extract into the target dir (this will create a subfolder in this position)
-                            Directory.CreateDirectory(folder);
-                            tar.ExtractContents(folder);
+                            if (stream == null || token.IsCancellationRequested) return null;
+                            using (GZipInputStream gzip = new GZipInputStream(stream))
+                            using (TarArchive tar = TarArchive.CreateInputTarArchive(gzip))
+                            {
+                                // Extract into the target dir (this will create a subfolder in this position)
+                                Directory.CreateDirectory(folder);
+                                tar.ExtractContents(folder);
 
-                            // Move all the contents in the root directory
-                            foreach (String path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
-                                File.Move(path, Path.Combine(folder, Path.GetFileName(path)));
+                                // Move all the contents in the root directory
+                                foreach (String path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                                    File.Move(path, Path.Combine(folder, Path.GetFileName(path)));
 
-                            // Delete the subfolders
-                            foreach (String subdir in Directory.GetDirectories(folder))
-                                Directory.Delete(subdir);
+                                // Delete the subfolders
+                                foreach (String subdir in Directory.GetDirectories(folder))
+                                    Directory.Delete(subdir);
+                            }
                         }
                     }
                     catch

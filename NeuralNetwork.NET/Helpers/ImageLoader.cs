@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Enums;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
@@ -15,25 +18,27 @@ namespace NeuralNetworkNET.Helpers
         /// Loads the target image and applies the requested changes, then converts it to a dataset sample
         /// </summary>
         /// <param name="path">The path of the image to load</param>
+        /// <param name="normalization">The image normalization mode to apply</param>
         /// <param name="modify">The optional changes to apply to the image</param>
         [Pure, NotNull]
-        public static float[] Load<TPixel>([NotNull] String path, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
+        public static float[] Load<TPixel>([NotNull] String path, ImageNormalizationMode normalization, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
         {
             using (Image<TPixel> image = Image.Load<TPixel>(path))
             {
                 if (modify != null) image.Mutate(modify);
-                if (typeof(TPixel) == typeof(Alpha8)) return Load(image as Image<Alpha8>);
-                if (typeof(TPixel) == typeof(Rgb24)) return Load(image as Image<Rgb24>);
-                if (typeof(TPixel) == typeof(Argb32)) return Load(image as Image<Argb32>);
+                if (typeof(TPixel) == typeof(Alpha8)) return Load(image as Image<Alpha8>, normalization);
+                if (typeof(TPixel) == typeof(Rgb24)) return Load(image as Image<Rgb24>, normalization);
+                if (typeof(TPixel) == typeof(Argb32)) return Load(image as Image<Argb32>, normalization);
+                if (typeof(TPixel) == typeof(Rgba32)) return Load(image as Image<Rgba32>, normalization);
                 throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
             }
         }
 
         #region Loaders
 
-        // Loads an RGBA32 image
+        // Loads an ARGB32 image
         [Pure, NotNull]
-        private static unsafe float[] Load(Image<Argb32> image)
+        private static unsafe float[] Load(Image<Argb32> image, ImageNormalizationMode normalization)
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 4];
@@ -42,11 +47,32 @@ namespace NeuralNetworkNET.Helpers
             {
                 for (int i = 0; i < resolution; i++)
                 {
-                    Argb32* pxy = p0 + i;
-                    psample[i] = pxy->A / 255f;
-                    psample[i + resolution] = pxy->R / 255f;
-                    psample[i + 2 * resolution] = pxy->G / 255f;
-                    psample[i + 3 * resolution] = pxy->B / 255f;
+                    Vector4 pixels = p0[i].Normalize(normalization);
+                    psample[i] = pixels.W;
+                    psample[i + resolution] = pixels.X;
+                    psample[i + 2 * resolution] = pixels.Y;
+                    psample[i + 3 * resolution] = pixels.Z;
+                }
+            }
+            return sample;
+        }
+
+        // Loads an RGBA32 image
+        [Pure, NotNull]
+        private static unsafe float[] Load(Image<Rgba32> image, ImageNormalizationMode normalization)
+        {
+            int resolution = image.Height * image.Width;
+            float[] sample = new float[resolution * 4];
+            fixed (Rgba32* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+            fixed (float* psample = sample)
+            {
+                for (int i = 0; i < resolution; i++)
+                {
+                    Vector4 pixels = p0[i].Normalize(normalization);
+                    psample[i] = pixels.X;
+                    psample[i + resolution] = pixels.Y;
+                    psample[i + 2 * resolution] = pixels.Z;
+                    psample[i + 3 * resolution] = pixels.W;
                 }
             }
             return sample;
@@ -54,7 +80,7 @@ namespace NeuralNetworkNET.Helpers
 
         // Loads an RGBA24 image
         [Pure, NotNull]
-        private static unsafe float[] Load(Image<Rgb24> image)
+        private static unsafe float[] Load(Image<Rgb24> image, ImageNormalizationMode normalization)
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 3];
@@ -63,10 +89,10 @@ namespace NeuralNetworkNET.Helpers
             {
                 for (int i = 0; i < resolution; i++)
                 {
-                    Rgb24* pxy = p0 + i;
-                    psample[i] = pxy->R / 255f;
-                    psample[i + resolution] = pxy->G / 255f;
-                    psample[i + 2 * resolution] = pxy->B / 255f;
+                    Vector4 pixels = p0[i].Normalize(normalization);
+                    psample[i] = pixels.X;
+                    psample[i + resolution] = pixels.Y;
+                    psample[i + 2 * resolution] = pixels.Z;
                 }
             }
             return sample;
@@ -74,39 +100,43 @@ namespace NeuralNetworkNET.Helpers
 
         // Loads an ALPHA8 image
         [Pure, NotNull]
-        private static unsafe float[] Load(Image<Alpha8> image)
+        private static unsafe float[] Load(Image<Alpha8> image, ImageNormalizationMode normalization)
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution];
             fixed (Alpha8* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
             fixed (float* psample = sample)
                 for (int i = 0; i < resolution; i++)
-                    psample[i] = p0[i].PackedValue / 255f;
+                {
+                    switch (normalization)
+                    {
+                        case ImageNormalizationMode.Sigmoid: psample[i] = p0[i].PackedValue / 255f; break;
+                        case ImageNormalizationMode.Normal: psample[i] = p0[i].PackedValue * 2 / 255f - 1; break;
+                        case ImageNormalizationMode.None: psample[i] = p0[i].PackedValue; break;
+                        default: throw new ArgumentOutOfRangeException(nameof(normalization), "Invalid normalization mode");
+                    }
+                }
             return sample;
         }
 
         #endregion
 
-        [Pure, NotNull]
-        public static unsafe float[] Process<TPixel>([NotNull] float[] data, int width, int height, [NotNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
+        /// <summary>
+        /// Normalizes the input <see cref="IPixel"/> value using the specified mode
+        /// </summary>
+        /// <typeparam name="TPixel">Tye input pixel type</typeparam>
+        /// <param name="pixel">The input pixel to normalize</param>
+        /// <param name="normalization">The normalization mode to use</param>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector4 Normalize<TPixel>(this TPixel pixel, ImageNormalizationMode normalization) where TPixel : struct, IPixel<TPixel>
         {
-            // Reconstruct the original image
-            byte[] pixels = new byte[data.Length];
-            fixed (float* pdata = data)
-            fixed (byte* px = pixels)
+            switch (normalization)
             {
-                for (int i = 0; i < data.Length; i++)
-                    px[i] = (byte)(pdata[i] * 255);
-            }
-
-            // Edit the image and return the new processed sample
-            using (Image<TPixel> image = Image.LoadPixelData<TPixel>(pixels, width, height))
-            {
-                image.Mutate(modify);
-                if (typeof(TPixel) == typeof(Alpha8)) return Load(image as Image<Alpha8>);
-                if (typeof(TPixel) == typeof(Rgb24)) return Load(image as Image<Rgb24>);
-                if (typeof(TPixel) == typeof(Argb32)) return Load(image as Image<Argb32>);
-                throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
+                case ImageNormalizationMode.Sigmoid: return pixel.ToVector4(); // Already in the [0,1] range
+                case ImageNormalizationMode.Normal: return Vector4.Subtract(pixel.ToVector4() * 2, Vector4.One);
+                case ImageNormalizationMode.None: return pixel.ToVector4() * 255f; // Rescale in the [0,255] range
+                default: throw new ArgumentOutOfRangeException(nameof(normalization), "Invalid normalization mode");
             }
         }
     }

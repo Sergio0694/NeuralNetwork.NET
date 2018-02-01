@@ -7,14 +7,12 @@ using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Cpu;
-using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Layers.Cuda
 {
     /// <summary>
     /// A pooling layer running on cuDNN, with a custom pooling mode
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
     internal sealed class CuDnnPoolingLayer : PoolingLayer
     {
         #region cuDNN fields

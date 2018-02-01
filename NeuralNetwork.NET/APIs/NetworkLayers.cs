@@ -75,5 +75,15 @@ namespace NeuralNetworkNET.APIs
         [PublicAPI]
         [Pure, NotNull]
         public static LayerFactory Pooling(ActivationType activation) => input => new PoolingLayer(input, PoolingInfo.Default, activation);
+
+        /// <summary>
+        /// Creates a new batch normalization layer
+        /// </summary>
+        /// <param name="mode">The normalization mode to use for the new layer</param>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static LayerFactory BatchNormalization(NormalizationMode mode, ActivationType activation)
+            => input => new BatchNormalizationLayer(input, mode, activation);
     }
 }

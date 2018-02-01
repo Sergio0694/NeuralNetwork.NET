@@ -95,8 +95,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Creates a new instance with the specified shape
         /// </summary>
-        /// <param name="n">The height of the matrix</param>
-        /// <param name="chw">The width of the matrix</param>
+        /// <param name="n">The height of the <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the <see cref="Tensor"/></param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void New(int n, int chw, out Tensor tensor)
@@ -108,8 +108,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Creates a new instance with the specified shape and initializes the allocated memory to 0s
         /// </summary>
-        /// <param name="n">The height of the matrix</param>
-        /// <param name="chw">The width of the matrix</param>
+        /// <param name="n">The height of the <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the <see cref="Tensor"/></param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void NewZeroed(int n, int chw, out Tensor tensor)
@@ -124,8 +124,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// Creates a new instance by wrapping the input pointer
         /// </summary>
         /// <param name="p">The target memory area</param>
-        /// <param name="n">The height of the final matrix</param>
-        /// <param name="chw">The width of the final matrix</param>
+        /// <param name="n">The height of the final <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the final <see cref="Tensor"/></param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Reshape(float* p, int n, int chw, out Tensor tensor)
@@ -152,8 +152,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// Creates a new instance by copying the contents at the given memory location and reshaping it to the desired size
         /// </summary>
         /// <param name="p">The target memory area to copy</param>
-        /// <param name="n">The height of the final matrix</param>
-        /// <param name="chw">The width of the final matrix</param>
+        /// <param name="n">The height of the final <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the final <see cref="Tensor"/></param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void From(float* p, int n, int chw, out Tensor tensor)
@@ -179,8 +179,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// Creates a new instance by copying the contents of the input vector and reshaping it to the desired size
         /// </summary>
         /// <param name="v">The input vector to copy</param>
-        /// <param name="n">The height of the final matrix</param>
-        /// <param name="chw">The width of the final matrix</param>
+        /// <param name="n">The height of the final <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the final <see cref="Tensor"/></param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void From([NotNull] float[] v, int n, int chw, out Tensor tensor)
@@ -197,8 +197,8 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Creates a new instance by wrapping the current memory area
         /// </summary>
-        /// <param name="n">The height of the final matrix</param>
-        /// <param name="chw">The width of the final matrix</param>
+        /// <param name="n">The height of the final <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the final <see cref="Tensor"/></param>
         /// <param name="tensor">The resulting instance</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reshape(int n, int chw, out Tensor tensor)
@@ -223,19 +223,31 @@ namespace NeuralNetworkNET.APIs.Structs
         public bool MatchShape(int entities, int length) => Entities == entities && Length == length;
 
         /// <summary>
-        /// Overwrites the contents of the current matrix with the input matrix
+        /// Overwrites the contents of the current instance with the input <see cref="Tensor"/>
         /// </summary>
         /// <param name="tensor">The input <see cref="Tensor"/> to copy</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Overwrite(in Tensor tensor)
         {
-            if (tensor.Entities != Entities || tensor.Length != Length) throw new ArgumentException("The input matrix doesn't have the same size as the target");
+            if (tensor.Entities != Entities || tensor.Length != Length) throw new ArgumentException("The input tensor doesn't have the same size as the target");
             int bytes = sizeof(float) * Size;
             Buffer.MemoryCopy(tensor, this, bytes, bytes);
         }
 
         /// <summary>
-        /// Duplicates the current instance to an output <see cref="Tensor"/> matrix
+        /// Overwrites the contents of the current <see cref="Tensor"/> with the input array
+        /// </summary>
+        /// <param name="array">The input array to copy</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void Overwrite([NotNull] float[] array)
+        {
+            if (array.Length != Size) throw new ArgumentException("The input array doesn't have the same size as the target");
+            int bytes = sizeof(float) * Size;
+            fixed (float* p = array) Buffer.MemoryCopy(p, this, bytes, bytes);
+        }
+
+        /// <summary>
+        /// Duplicates the current instance to an output <see cref="Tensor"/>
         /// </summary>
         /// <param name="tensor">The output tensor</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -340,7 +352,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// A proxy type to debug instances of the <see cref="Tensor"/> <see langword="struct"/>
         /// </summary>
-        private struct _TensorProxy
+        private readonly struct _TensorProxy
         {
             /// <summary>
             /// Gets a preview of the underlying memory area wrapped by this instance
@@ -352,7 +364,7 @@ namespace NeuralNetworkNET.APIs.Structs
 
             private const int MaximumRowsCount = 10;
 
-            private const int MaximumItemsCount = 40000;
+            private const int MaximumItemsCount = 30000;
 
             [SuppressMessage("ReSharper", "UnusedMember.Local")]
             public _TensorProxy(Tensor obj)

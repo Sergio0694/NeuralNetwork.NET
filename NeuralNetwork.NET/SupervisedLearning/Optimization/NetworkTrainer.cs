@@ -83,6 +83,11 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         }
 
         /// <summary>
+        /// Gets whether or not a neural network is currently processing the training samples through backpropagation (as opposed to evaluating them)
+        /// </summary>
+        public static bool BackpropagationInProgress { get; private set; }
+
+        /// <summary>
         /// Trains the target <see cref="SequentialNetwork"/> using the input algorithm
         /// </summary>
         [NotNull]
@@ -122,12 +127,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 miniBatches.CrossShuffle();
 
                 // Gradient descent over the current batches
+                BackpropagationInProgress = true;
                 for (int j = 0; j < miniBatches.BatchesCount; j++)
                 {
-                    if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
+                    if (token.IsCancellationRequested)
+                    {
+                        BackpropagationInProgress = false;
+                        return PrepareResult(TrainingStopReason.TrainingCanceled, i);
+                    }
                     network.Backpropagate(miniBatches.Batches[j], dropout, updater);
                     batchMonitor?.NotifyCompletedBatch(miniBatches.Batches[j].X.GetLength(0));
                 }
+                BackpropagationInProgress = false;
                 batchMonitor?.Reset();
                 if (network.IsInNumericOverflow) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 

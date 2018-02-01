@@ -1,10 +1,8 @@
-﻿using System;
-using System.Linq;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
-using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.cuDNN;
 using NeuralNetworkNET.Networks.Layers.Cuda;
 
 namespace NeuralNetworkNET.APIs
@@ -17,22 +15,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Gets whether or not the Cuda acceleration is supported on the current system
         /// </summary>
-        public static bool IsCudaSupportAvailable
-        {
-            get
-            {
-                try
-                {
-                    // Calling this directly would could a crash in the <Module> loader due to the missing .dll files
-                    return CuDnnSupportHelper.IsGpuAccelerationSupported();
-                }
-                catch (TypeInitializationException)
-                {
-                    // Missing .dll file
-                    return false;
-                }
-            }
-        }
+        public static bool IsCudaSupportAvailable => CuDnnService.IsAvailable;
 
         /// <summary>
         /// Creates a new fully connected layer with the specified number of input and output neurons, and the given activation function
@@ -132,41 +115,14 @@ namespace NeuralNetworkNET.APIs
         public static LayerFactory Inception(InceptionInfo info, BiasInitializationMode biasMode = BiasInitializationMode.Zero) 
             => input => new CuDnnInceptionLayer(input, info, biasMode);
 
-        #region Feature helper
-
         /// <summary>
-        /// A private class that is used to create a new standalone type that contains the actual test method (decoupling is needed to &lt;Module&gt; loading crashes)
+        /// Creates a new batch normalization layer
         /// </summary>
-        private static class CuDnnSupportHelper
-        {
-            /// <summary>
-            /// Checks whether or not the Cuda features are currently supported
-            /// </summary>
-            public static bool IsGpuAccelerationSupported()
-            {
-                try
-                {
-                    // CUDA test
-                    Alea.Gpu gpu = Alea.Gpu.Default;
-                    if (gpu == null) return false;
-                    if (!Alea.cuDNN.Dnn.IsAvailable) return false; // cuDNN
-                    using (Alea.DeviceMemory<float> sample_gpu = gpu.AllocateDevice<float>(1024))
-                    {
-                        Alea.deviceptr<float> ptr = sample_gpu.Ptr;
-                        void Kernel(int i) => ptr[i] = i;
-                        Alea.Parallel.GpuExtension.For(gpu, 0, 1024, Kernel); // JIT test
-                        float[] sample = Alea.Gpu.CopyToHost(sample_gpu);
-                        return Enumerable.Range(0, 1024).Select<int, float>(i => i).ToArray().ContentEquals(sample);
-                    }
-                }
-                catch
-                {
-                    // Missing .dll or other errors
-                    return false;
-                }
-            }
-        }
-
-        #endregion
+        /// <param name="mode">The normalization mode to use for the new layer</param>
+        /// <param name="activation">The desired activation function to use in the network layer</param>
+        [PublicAPI]
+        [Pure, NotNull]
+        public static LayerFactory BatchNormalization(NormalizationMode mode, ActivationType activation) 
+            => input => new CuDnnBatchNormalizationLayer(input, mode, activation);
     }
 }

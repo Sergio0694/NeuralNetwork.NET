@@ -74,6 +74,22 @@ namespace NeuralNetworkNET.cuDNN
         }
 
         /// <summary>
+        /// Copies the contents of the input <see cref="DeviceMemory{T}"/> instance to the target host array
+        /// </summary>
+        /// <param name="source">The <see cref="DeviceMemory{T}"/> area to read</param>
+        /// <param name="destination">The destination array to write on</param>
+        public static unsafe void CopyTo([NotNull] this DeviceMemory<float> source, [NotNull] float[] destination)
+        {
+            if (destination.Length != source.Length) throw new ArgumentException("The target array doesn't have the same size as the source GPU memory");
+            fixed (void* p = destination)
+            {
+                CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy(new IntPtr(p), source.Handle, new IntPtr(sizeof(float) * destination.Length));
+                if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS)
+                    throw new InvalidOperationException($"Failed to copy the source data on the given destination, [CUDA ERROR] {result}");
+            }
+        }
+
+        /// <summary>
         /// Copies the source data into the target <see cref="Tensor"/>, splitting each individual entry into its own row
         /// </summary>
         /// <param name="source">The source memory area with the concatenated data for each entry</param>

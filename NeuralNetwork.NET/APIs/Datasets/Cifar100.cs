@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -9,6 +8,9 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Progress;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.APIs.Datasets
 {
@@ -19,22 +21,27 @@ namespace NeuralNetworkNET.APIs.Datasets
     {
         #region Constants
 
-        // The number of training samples in each extracted .bin file
-        private const int TrainingSamplesInBinFiles = 10000;
+        // The number of training samples in the training .bin file
+        private const int TrainingSamplesInBinFile = 50000;
+
+        // The number of test samples in the .bin file
+        private const int TestSamplesInBinFile = 10000;
 
         // 32*32 RGB images
         private const int SampleSize = 3072;
+
+        // A single 32*32 image
+        private const int ImageSize = 1024;
 
         private const int CoarseLabels = 20;
 
         private const int FineLabels = 100;
 
         private const String DatasetURL = "https://www.cs.toronto.edu/~kriz/cifar-100-binary.tar.gz";
-
-        [NotNull, ItemNotNull]
-        private static readonly IReadOnlyList<String> TrainingBinFilenames = Enumerable.Range(1, 5).Select(i => $"data_batch_{i}.bin").ToArray();
-
-        private const String TestBinFilename = "test_batch.bin";
+        
+        private const String TrainingBinFilename = "train.bin";
+        
+        private const String TestBinFilename = "test.bin";
 
         #endregion
 
@@ -43,16 +50,16 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// </summary>
         /// <param name="size">The desired dataset batch size</param>
         /// <param name="mode">The desired output mode for the dataset classes</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, CancellationToken token = default)
+        public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
-            IReadOnlyList<(float[], float[])>[] data = new IReadOnlyList<(float[], float[])>[TrainingBinFilenames.Count];
-            Parallel.For(0, TrainingBinFilenames.Count, i => data[i] = ParseSamples(map[TrainingBinFilenames[i]], TrainingSamplesInBinFiles, mode)).AssertCompleted();
-            return DatasetLoader.Training(data.Skip(1).Aggregate(data[0] as IEnumerable<(float[], float[])>, (s, l) => s.Concat(l)), size);
+            IReadOnlyList<(float[], float[])> data = ParseSamples(map[TrainingBinFilename], TrainingSamplesInBinFile, mode);
+            return DatasetLoader.Training(data, size);
         }
 
         /// <summary>
@@ -60,15 +67,41 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// </summary>
         /// <param name="progress">The optional progress callback to use</param>
         /// <param name="mode">The desired output mode for the dataset classes</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, CancellationToken token = default)
+        public static async Task<ITestDataset> GetTestDatasetAsync(
+            [CanBeNull] Action<TrainingProgressEventArgs> progress = null, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, 
+            [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
-            IReadOnlyList<(float[], float[])> data = ParseSamples(map[TestBinFilename], TrainingSamplesInBinFiles, mode);
+            IReadOnlyList<(float[], float[])> data = ParseSamples(map[TestBinFilename], TestSamplesInBinFile, mode);
             return DatasetLoader.Test(data, progress);
+        }
+
+        /// <summary>
+        /// Downloads and exports the full CIFAR-100 dataset (both training and test samples) to the target directory
+        /// </summary>
+        /// <param name="directory">The target directory</param>
+        /// <param name="token">The cancellation token for the operation</param>
+        [PublicAPI]
+        public static async Task<bool> ExportDatasetAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
+        {
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, null, token);
+            if (map == null) return false;
+            if (!directory.Exists) directory.Create();
+            ParallelLoopResult result = Parallel.ForEach(new (String Name, int Count)[]
+            {
+                (TrainingBinFilename, TrainingSamplesInBinFile),
+                (TestBinFilename, TestSamplesInBinFile)
+            }, (pair, state) =>
+            {
+                ExportSamples(directory, (pair.Name, map[pair.Name]), pair.Count, token);
+                if (token.IsCancellationRequested) state.Stop();
+            });
+            return result.IsCompleted && !token.IsCancellationRequested;
         }
 
         #region Tools
@@ -119,13 +152,51 @@ namespace NeuralNetworkNET.APIs.Datasets
                         fixed (float* px = x)
                         {
                             stream.Read(temp, 0, SampleSize);
-                            for (int j = 0; j < SampleSize; j++)
+                            for (int j = 0; j < ImageSize; j++)
+                            {
                                 px[j] = ptemp[j] / 255f; // Normalized samples
+                                px[j] = ptemp[j + ImageSize] / 255f;
+                                px[j] = ptemp[j + 2 * ImageSize] / 255f;
+                            }
                         }
                         data[i] = (x, y);
                     }
                 }
                 return data;
+            }
+        }
+
+        /// <summary>
+        /// Exports a CIFAR-100 .bin file
+        /// </summary>
+        /// <param name="folder">The target folder to use to save the images</param>
+        /// <param name="source">The source filename and a <see cref="Func{TResult}"/> that returns the <see cref="Stream"/> to read</param>
+        /// <param name="count">The number of samples to parse</param>
+        /// <param name="token">A token for the operation</param>
+        private static unsafe void ExportSamples([NotNull] DirectoryInfo folder, (String Name, Func<Stream> Factory) source, int count, CancellationToken token)
+        {
+            using (Stream stream = source.Factory())
+            {
+                byte[] temp = new byte[SampleSize];
+                fixed (byte* ptemp = temp)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (token.IsCancellationRequested) return;
+                        int
+                            coarse = stream.ReadByte(),
+                            fine = stream.ReadByte();
+                        stream.Read(temp, 0, SampleSize);
+                        using (Image<Rgb24> image = new Image<Rgb24>(32, 32))
+                            fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+                            {
+                                for (int j = 0; j < ImageSize; j++)
+                                    p0[j] = new Rgb24(ptemp[j], ptemp[j + ImageSize], ptemp[j + 2 * ImageSize]);
+                                using (FileStream file = File.OpenWrite(Path.Combine(folder.FullName, $"[{source.Name}][{i}][{coarse}][{fine}].bmp")))
+                                    image.SaveAsBmp(file);
+                            }
+                    }
+                }
             }
         }
 

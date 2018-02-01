@@ -8,6 +8,9 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Progress;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetworkNET.APIs.Datasets
 {
@@ -25,15 +28,15 @@ namespace NeuralNetworkNET.APIs.Datasets
         private const int TestSamples = 10000;
 
         private const int SampleSize = 784;
-
+        
         private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
-
+        
         private const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
-
+        
         private const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
-
+        
         private const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
-
+        
         private const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
 
         #endregion
@@ -48,8 +51,8 @@ namespace NeuralNetworkNET.APIs.Datasets
         public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, CancellationToken token = default)
         {
             Func<Stream>[] factories = await Task.WhenAll(
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", token), 
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetLabelsFilename}", token));
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", null, token), 
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetLabelsFilename}", null, token));
             if (factories.Any(s => s == null)) return null;
             (float[,] X, float[,] Y) data = ParseSamples((factories[0], factories[1]), TrainingSamples);
             return data.X == null || data.Y == null
@@ -67,13 +70,40 @@ namespace NeuralNetworkNET.APIs.Datasets
         public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
         {
             Func<Stream>[] factories = await Task.WhenAll(
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetValuesFilename}", token), 
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", token));
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetValuesFilename}", null, token), 
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", null, token));
             if (factories.Any(s => s == null)) return null;
             (float[,] X, float[,] Y) data = ParseSamples((factories[0], factories[1]), TestSamples);
             return data.X == null || data.Y == null
                 ? null
                 : DatasetLoader.Test(data, progress);
+        }
+
+        /// <summary>
+        /// Downloads and exports the full MNIST dataset (both training and test samples) to the target directory
+        /// </summary>
+        /// <param name="directory">The target directory</param>
+        /// <param name="token">The cancellation token for the operation</param>
+        [PublicAPI]
+        public static async Task<bool> ExportDatasetAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
+        {
+            Func<Stream>[] factories = await Task.WhenAll(
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", null, token), 
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetLabelsFilename}", null, token),
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetValuesFilename}", null, token), 
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", null, token));
+            if (factories.Any(s => s == null) || token.IsCancellationRequested) return false;
+            if (!directory.Exists) directory.Create();
+            ParallelLoopResult result = Parallel.ForEach(new (String Name, Func<Stream> X, Func<Stream> Y, int Count)[]
+            {
+                (TrainingSetValuesFilename, factories[0], factories[1], TrainingSamples),
+                (TestSetValuesFilename, factories[2], factories[3], TestSamples)
+            }, (tuple, state) =>
+            {
+                ExportSamples(directory, (tuple.Name, tuple.X, tuple.Y), tuple.Count, token);
+                if (token.IsCancellationRequested) state.Stop();
+            });
+            return result.IsCompleted && !token.IsCancellationRequested;
         }
 
         #region Tools
@@ -87,32 +117,68 @@ namespace NeuralNetworkNET.APIs.Datasets
         {
             // Input checks
             using (Stream inputs = factory.X(), labels = factory.Y())
+            using (GZipStream
+                xGzip = new GZipStream(inputs, CompressionMode.Decompress),
+                yGzip = new GZipStream(labels, CompressionMode.Decompress))
             {
-                using (GZipStream
-                    xGzip = new GZipStream(inputs, CompressionMode.Decompress),
-                    yGzip = new GZipStream(labels, CompressionMode.Decompress))
+                float[,]
+                    x = new float[count, SampleSize],
+                    y = new float[count, 10];
+                xGzip.Read(new byte[16], 0, 16);
+                yGzip.Read(new byte[8], 0, 8);
+                byte[] temp = new byte[SampleSize];
+                fixed (float* px = x, py = y)
+                fixed (byte* ptemp = temp)
                 {
-                    float[,]
-                        x = new float[count, SampleSize],
-                        y = new float[count, 10];
-                    xGzip.Read(new byte[16], 0, 16);
-                    yGzip.Read(new byte[8], 0, 8);
-                    byte[] temp = new byte[SampleSize];
-                    fixed (float* px = x, py = y)
-                    fixed (byte* ptemp = temp)
+                    for (int i = 0; i < count; i++)
                     {
-                        for (int i = 0; i < count; i++)
-                        {
-                            // Read the image pixel values
-                            xGzip.Read(temp, 0, SampleSize);
-                            int offset = i * SampleSize;
-                            for (int j = 0; j < SampleSize; j++)
-                                px[offset + j] = ptemp[j] / 255f;
+                        // Read the image pixel values
+                        xGzip.Read(temp, 0, SampleSize);
+                        int offset = i * SampleSize;
+                        for (int j = 0; j < SampleSize; j++)
+                            px[offset + j] = ptemp[j] / 255f;
 
-                            // Read the label
-                            py[i * 10 + yGzip.ReadByte()] = 1;
-                        }
-                        return (x, y);
+                        // Read the label
+                        py[i * 10 + yGzip.ReadByte()] = 1;
+                    }
+                    return (x, y);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Exports a MNIST dataset file
+        /// </summary>
+        /// <param name="folder">The target folder to use to save the images</param>
+        /// <param name="source">A pair of factories for the input <see cref="Stream"/> instances to read</param>
+        /// <param name="count">The number of samples to parse</param>
+        /// <param name="token">A token for the operation</param>
+        private static unsafe void ExportSamples([NotNull] DirectoryInfo folder, (String Name, Func<Stream> X, Func<Stream> Y) source, int count, CancellationToken token)
+        {
+            using (Stream inputs = source.X(), labels = source.Y())
+            using (GZipStream
+                xGzip = new GZipStream(inputs, CompressionMode.Decompress),
+                yGzip = new GZipStream(labels, CompressionMode.Decompress))
+            {
+                xGzip.Read(new byte[16], 0, 16);
+                yGzip.Read(new byte[8], 0, 8);
+                byte[] temp = new byte[SampleSize];
+                fixed (byte* ptemp = temp)
+                {
+                    if (token.IsCancellationRequested) return;
+                    for (int i = 0; i < count; i++)
+                    {
+                        // Read the image pixel values
+                        xGzip.Read(temp, 0, SampleSize);
+                        int label = yGzip.ReadByte();
+                        using (Image<Rgb24> image = new Image<Rgb24>(28, 28))
+                            fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+                            {
+                                for (int j = 0; j < SampleSize; j++)
+                                    p0[j] = new Rgb24(ptemp[j], ptemp[j], ptemp[j]);
+                                using (FileStream file = File.OpenWrite(Path.Combine(folder.FullName, $"[{source.Name}][{i}][{label}].bmp")))
+                                    image.SaveAsBmp(file);
+                            }
                     }
                 }
             }
