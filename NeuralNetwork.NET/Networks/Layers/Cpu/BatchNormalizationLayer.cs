@@ -18,8 +18,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, ActivationType activation)
             : base(shape, mode, activation) { }
 
-        public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
-            : base(shape, mode, w, b, mu, sigma2, activation) { }
+        public BatchNormalizationLayer(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, int iteration, [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
+            : base(shape, mode, w, b, iteration, mu, sigma2, activation) { }
 
         #region Implementation
 
@@ -98,14 +98,15 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
             if (!stream.TryRead(out int bLength)) return null;
             float[] biases = stream.ReadUnshuffled(bLength);
             if (!stream.TryRead(out NormalizationMode mode)) return null;
+            if (!stream.TryRead(out int iteration)) return null;
             if (!stream.TryRead(out int mLength)) return null;
             float[] mu = stream.ReadUnshuffled(mLength);
             if (!stream.TryRead(out int sLength)) return null;
             float[] sigma2 = stream.ReadUnshuffled(sLength);
-            return new BatchNormalizationLayer(input, mode, weights, biases, mu, sigma2, activation);
+            return new BatchNormalizationLayer(input, mode, weights, biases, iteration, mu, sigma2, activation);
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), Mu.AsSpan().Copy(), Sigma2.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), Iteration, Mu.AsSpan().Copy(), Sigma2.AsSpan().Copy(), ActivationType);
     }
 }

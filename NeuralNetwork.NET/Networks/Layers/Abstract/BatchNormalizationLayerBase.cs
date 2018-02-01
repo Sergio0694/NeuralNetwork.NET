@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
+using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Helpers;
@@ -30,14 +32,20 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         [NotNull]
         public float[] Sigma2 { get; }
 
-        // The current iteration number (for the Cumulative Moving Average)
-        private int _Iteration;
+        /// <summary>
+        /// Gets the current iteration number (for the Cumulative Moving Average)
+        /// </summary>
+        public int Iteration { get; private set; }
 
         /// <summary>
         /// Gets the current CMA factor used to update the <see cref="Mu"/> and <see cref="Sigma2"/> tensors
         /// </summary>
         [JsonProperty(nameof(CumulativeMovingAverageFactor), Order = 6)]
-        public float CumulativeMovingAverageFactor => 1f / (1 + _Iteration);
+        public float CumulativeMovingAverageFactor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => 1f / (1 + Iteration);
+        }
 
         /// <inheritdoc/>
         public override String Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases, Mu, Sigma2));
@@ -74,16 +82,18 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
             NormalizationMode = mode;
         }
 
-        protected BatchNormalizationLayerBase(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
+        protected BatchNormalizationLayerBase(in TensorInfo shape, NormalizationMode mode, [NotNull] float[] w, [NotNull] float[] b, int iteration, [NotNull] float[] mu, [NotNull] float[] sigma2, ActivationType activation) 
             : base(shape, shape, w, b, activation)
         {
             if (w.Length != b.Length) throw new ArgumentException("The size for both gamme and beta paarameters must be the same");
             if (mode == NormalizationMode.Spatial && w.Length != shape.Channels ||
                 mode == NormalizationMode.PerActivation && w.Length != shape.Size)
                 throw new ArgumentException("Invalid parameters size for the selected normalization mode");
+            if (iteration < 0) throw new ArgumentOutOfRangeException(nameof(iteration), "The iteration value must be aat least equal to 0");
             if (mu.Length != w.Length || sigma2.Length != w.Length)
                 throw new ArgumentException("The mu and sigma2 parameters must match the shape of the gamma and beta parameters");
             NormalizationMode = mode;
+            Iteration = iteration;
             Mu = mu;
             Sigma2 = sigma2;
         }
@@ -91,7 +101,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            if (NetworkTrainer.BackpropagationInProgress) ForwardTraining(1f / (1 + _Iteration++), x, out z, out a);
+            if (NetworkTrainer.BackpropagationInProgress) ForwardTraining(1f / (1 + Iteration++), x, out z, out a);
             else ForwardInference(x, out z, out a);
         }
 
@@ -113,10 +123,21 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         public abstract void ForwardTraining(float factor, in Tensor x, out Tensor z, out Tensor a);
 
         /// <inheritdoc/>
+        public override bool Equals(INetworkLayer other)
+        {
+            if (!base.Equals(other)) return false;
+            return other is BatchNormalizationLayerBase layer &&
+                   Iteration == layer.Iteration &&
+                   Mu.ContentEquals(layer.Mu) &&
+                   Sigma2.ContentEquals(layer.Sigma2);
+        }
+
+        /// <inheritdoc/>
         public override void Serialize(Stream stream)
         {
             base.Serialize(stream);
             stream.Write(NormalizationMode);
+            stream.Write(Iteration);
             stream.Write(Mu.Length);
             stream.WriteShuffled(Mu);
             stream.Write(Sigma2.Length);
