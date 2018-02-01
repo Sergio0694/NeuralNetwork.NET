@@ -48,8 +48,8 @@ namespace NeuralNetworkNET.APIs.Datasets
         public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, CancellationToken token = default)
         {
             Func<Stream>[] factories = await Task.WhenAll(
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", token), 
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetLabelsFilename}", token));
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", null, token), 
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetLabelsFilename}", null, token));
             if (factories.Any(s => s == null)) return null;
             (float[,] X, float[,] Y) data = ParseSamples((factories[0], factories[1]), TrainingSamples);
             return data.X == null || data.Y == null
@@ -67,8 +67,8 @@ namespace NeuralNetworkNET.APIs.Datasets
         public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
         {
             Func<Stream>[] factories = await Task.WhenAll(
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetValuesFilename}", token), 
-                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", token));
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetValuesFilename}", null, token), 
+                DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", null, token));
             if (factories.Any(s => s == null)) return null;
             (float[,] X, float[,] Y) data = ParseSamples((factories[0], factories[1]), TestSamples);
             return data.X == null || data.Y == null

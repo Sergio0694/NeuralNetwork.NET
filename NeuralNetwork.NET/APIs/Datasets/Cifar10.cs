@@ -38,12 +38,13 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// Downloads the CIFAR-10 training datasets and returns a new <see cref="ITestDataset"/> instance
         /// </summary>
         /// <param name="size">The desired dataset batch size</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, CancellationToken token = default)
+        public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
             IReadOnlyList<(float[], float[])>[] data = new IReadOnlyList<(float[], float[])>[TrainingBinFilenames.Count];
             Parallel.For(0, TrainingBinFilenames.Count, i => data[i] = ParseSamples(map[TrainingBinFilenames[i]], TrainingSamplesInBinFiles)).AssertCompleted();
@@ -54,12 +55,13 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// Downloads the CIFAR-10 test datasets and returns a new <see cref="ITestDataset"/> instance
         /// </summary>
         /// <param name="progress">The optional progress callback to use</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, CancellationToken token = default)
+        public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
             IReadOnlyList<(float[], float[])> data = ParseSamples(map[TestBinFilename], TrainingSamplesInBinFiles);
             return DatasetLoader.Test(data, progress);

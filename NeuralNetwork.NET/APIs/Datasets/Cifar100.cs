@@ -43,12 +43,13 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// </summary>
         /// <param name="size">The desired dataset batch size</param>
         /// <param name="mode">The desired output mode for the dataset classes</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, CancellationToken token = default)
+        public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
             IReadOnlyList<(float[], float[])>[] data = new IReadOnlyList<(float[], float[])>[TrainingBinFilenames.Count];
             Parallel.For(0, TrainingBinFilenames.Count, i => data[i] = ParseSamples(map[TrainingBinFilenames[i]], TrainingSamplesInBinFiles, mode)).AssertCompleted();
@@ -60,12 +61,15 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// </summary>
         /// <param name="progress">The optional progress callback to use</param>
         /// <param name="mode">The desired output mode for the dataset classes</param>
+        /// <param name="callback">The optional progress calback</param>
         /// <param name="token">An optional cancellation token for the operation</param>
         [PublicAPI]
         [Pure, ItemCanBeNull]
-        public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, CancellationToken token = default)
+        public static async Task<ITestDataset> GetTestDatasetAsync(
+            [CanBeNull] Action<TrainingProgressEventArgs> progress = null, Cifar100ClassificationMode mode = Cifar100ClassificationMode.Fine, 
+            [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, token);
+            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
             IReadOnlyList<(float[], float[])> data = ParseSamples(map[TestBinFilename], TrainingSamplesInBinFiles, mode);
             return DatasetLoader.Test(data, progress);
