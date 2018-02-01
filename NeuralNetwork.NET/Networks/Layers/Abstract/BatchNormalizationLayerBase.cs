@@ -2,10 +2,10 @@
 using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
-using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Layers.Initialization;
+using NeuralNetworkNET.SupervisedLearning.Optimization;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkNET.Networks.Layers.Abstract
@@ -21,13 +21,13 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// The cached mu tensor
         /// </summary>
         [NotNull]
-        protected float[] Mu;
+        public float[] Mu { get; }
 
         /// <summary>
         /// The cached sigma^2 tensor
         /// </summary>
         [NotNull]
-        protected readonly float[] Sigma2;
+        public float[] Sigma2 { get; }
 
         // The current iteration number (for the Cumulative Moving Average)
         private int _Iteration;
@@ -60,6 +60,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
                     break;
                 default: throw new ArgumentOutOfRangeException("Invalid batch normalization mode");
             }
+            Sigma2.AsSpan().Fill(1);
             NormalizationMode = mode;
         }
 
@@ -80,7 +81,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// <inheritdoc/>
         public override void Forward(in Tensor x, out Tensor z, out Tensor a)
         {
-            if (NetworkSettings.BackpropagationInProgress) ForwardTraining(1f / (1 + _Iteration++), x, out z, out a);
+            if (NetworkTrainer.BackpropagationInProgress) ForwardTraining(1f / (1 + _Iteration++), x, out z, out a);
             else ForwardInference(x, out z, out a);
         }
 

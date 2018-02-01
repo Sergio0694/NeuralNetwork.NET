@@ -8,7 +8,6 @@ using NeuralNetworkNET.APIs.Delegates;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
-using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Graph;
@@ -59,6 +58,11 @@ namespace NeuralNetworkNET.APIs
         }
 
         #region Training APIs
+
+        /// <summary>
+        /// Gets whether or not a neural network is currently being trained
+        /// </summary>
+        public static bool TrainingInProgress { get; private set; }
 
         /// <summary>
         /// Trains a neural network with the given parameters
@@ -148,7 +152,7 @@ namespace NeuralNetworkNET.APIs
                 throw new ArgumentException("The input dataset doesn't match the number of input and output features for the current network", nameof(dataset));
 
             // Start the training
-            NetworkSettings.TrainingInProgress = NetworkSettings.TrainingInProgress
+            TrainingInProgress = TrainingInProgress
                 ? throw new InvalidOperationException("Can't train two networks at the same time") // This would cause problems with cuDNN
                 : true;
             TrainingSessionResult result = NetworkTrainer.TrainNetwork(
@@ -158,7 +162,7 @@ namespace NeuralNetworkNET.APIs
                 validationDataset as ValidationDataset,
                 testDataset as TestDataset,
                 token);
-            NetworkSettings.TrainingInProgress = false;
+            TrainingInProgress = false;
             return result;
         }
     }
