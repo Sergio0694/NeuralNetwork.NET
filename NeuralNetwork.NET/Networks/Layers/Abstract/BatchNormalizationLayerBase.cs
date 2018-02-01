@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Layers.Initialization;
 using NeuralNetworkNET.SupervisedLearning.Optimization;
 using Newtonsoft.Json;
@@ -31,6 +32,15 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
 
         // The current iteration number (for the Cumulative Moving Average)
         private int _Iteration;
+
+        /// <summary>
+        /// Gets the current CMA factor used to update the <see cref="Mu"/> and <see cref="Sigma2"/> tensors
+        /// </summary>
+        [JsonProperty(nameof(CumulativeMovingAverageFactor), Order = 6)]
+        public float CumulativeMovingAverageFactor => 1f / (1 + _Iteration);
+
+        /// <inheritdoc/>
+        public override String Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases, Mu, Sigma2));
 
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.BatchNormalization;

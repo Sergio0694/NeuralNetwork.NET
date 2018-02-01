@@ -328,16 +328,17 @@ namespace NeuralNetworkNET.Unit
                 var conv1 = root.Layer(NetworkLayers.Convolutional((5, 5), 10, ActivationType.ReLU));
                 var pool1 = conv1.Layer(NetworkLayers.Pooling(ActivationType.Sigmoid));
 
-                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.Identity));
                 var _3x3reduce1x1 = pool1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
-                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
+                var _3x3 = _3x3reduce1x1.Layer(NetworkLayers.Convolutional((1, 1), 20, ActivationType.Identity));
 
                 var split = _3x3.TrainingBranch();
                 var fct = split.Layer(NetworkLayers.FullyConnected(100, ActivationType.LeCunTanh));
                 _ = fct.Layer(NetworkLayers.Softmax(10));
 
                 var stack = _1x1.DepthConcatenation(_3x3);
-                var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
+                var bn = stack.Layer(NetworkLayers.BatchNormalization(NormalizationMode.Spatial, ActivationType.ReLU));
+                var fc1 = bn.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 _ = fc1.Layer(NetworkLayers.Softmax(10));
             });
             String json = network.SerializeMetadataAsJson();

@@ -90,7 +90,8 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.Convolutional((10, 10), 20, ActivationType.Identity),
                 NetworkLayers.Pooling(ActivationType.ReLU),
                 NetworkLayers.Convolutional((10, 10), 20, ActivationType.Identity),
-                NetworkLayers.Pooling(ActivationType.ReLU),
+                NetworkLayers.Pooling(ActivationType.Identity),
+                NetworkLayers.BatchNormalization(NormalizationMode.Spatial, ActivationType.ReLU),
                 NetworkLayers.FullyConnected(125, ActivationType.Tanh),
                 NetworkLayers.Softmax(133));
             String metadata1 = network.SerializeMetadataAsJson();
