@@ -4,6 +4,7 @@ using System.Linq;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Networks.Graph.Nodes;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace NeuralNetworkNET.Networks.Graph
@@ -34,7 +35,8 @@ namespace NeuralNetworkNET.Networks.Graph
                 {
                     case ProcessingNode processing:
                         jNode.Add("Parent", map[processing.Parent]);
-                        jNode.Add("Layer", JToken.FromObject(processing.Layer));
+                        IList<JsonConverter> converters = new List<JsonConverter> { new StringEnumConverter() };
+                        jNode.Add("Layer", JToken.FromObject(processing.Layer, JsonSerializer.CreateDefault(new JsonSerializerSettings { Converters = converters })));
                         break;
                     case DepthConcatenationNode concatenation:
                         jNode.Add("Parents", new JArray(concatenation.Parents.Select(child => map[child]).ToList()));
