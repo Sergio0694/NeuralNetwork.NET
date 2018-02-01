@@ -29,9 +29,10 @@ namespace NeuralNetworkNET.Extensions
                 {
                     // Read and store the data
                     Stream result = new MemoryStream();
-                    long 
+                    long
                         totalRead = 0L,
-                        totalReads = 0L;
+                        totalReads = 0L,
+                        length = response.Content.Headers.ContentLength ?? 0;
                     byte[] buffer = new byte[8192];
                     bool isMoreToRead = true;
                     do
@@ -42,7 +43,8 @@ namespace NeuralNetworkNET.Extensions
                         {
                             await result.WriteAsync(buffer, 0, read, token);
                             totalRead += read;
-                            if (totalReads++ % 2000 == 0) callback?.Report(new HttpProgress(totalRead, totalRead * 100d / source.Length));
+                            if (totalReads++ % 2000 == 0) 
+                                callback?.Report(new HttpProgress(totalRead, length > 0 ? (int)(totalRead * 100 / length) : 0));
                         }
                     }
                     while (isMoreToRead && !token.IsCancellationRequested);
@@ -53,6 +55,7 @@ namespace NeuralNetworkNET.Extensions
                         result.Dispose();
                         return null;
                     }
+                    result.Seek(0, SeekOrigin.Begin); // Move the content stream back to the start
                     return result;
                 }
             }
@@ -72,9 +75,9 @@ namespace NeuralNetworkNET.Extensions
         /// <summary>
         /// Gets the current download percentage
         /// </summary>
-        public double Percentage { get; }
+        public int Percentage { get; }
 
-        internal HttpProgress(long bytes, double percentage)
+        internal HttpProgress(long bytes, int percentage)
         {
             DownloadedBytes = bytes;
             Percentage = percentage;
