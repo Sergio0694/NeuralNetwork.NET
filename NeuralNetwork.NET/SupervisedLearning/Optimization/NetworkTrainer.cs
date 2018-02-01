@@ -85,17 +85,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
         /// <summary>
         /// Gets whether or not a neural network is currently processing the training samples through backpropagation (as opposed to evaluating them)
         /// </summary>
-        public static bool BackpropagationInProgress
-        {
-            get;
-
-            // Switch from private to internal in DEBUG mode to allow for external handling in the Unit tests
-            #if DEBUG
-            set;
-            #else
-            private set;
-            #endif
-        }
+        public static bool BackpropagationInProgress { get; private set; }
 
         /// <summary>
         /// Trains the target <see cref="SequentialNetwork"/> using the input algorithm
