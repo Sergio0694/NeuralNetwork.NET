@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.APIs.Results;
+using NeuralNetworkNET.APIs.Settings;
 using NeuralNetworkNET.Extensions;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.Services;
@@ -122,12 +123,18 @@ namespace NeuralNetworkNET.SupervisedLearning.Optimization
                 miniBatches.CrossShuffle();
 
                 // Gradient descent over the current batches
+                NetworkSettings.BackpropagationInProgress = true;
                 for (int j = 0; j < miniBatches.BatchesCount; j++)
                 {
-                    if (token.IsCancellationRequested) return PrepareResult(TrainingStopReason.TrainingCanceled, i);
+                    if (token.IsCancellationRequested)
+                    {
+                        NetworkSettings.BackpropagationInProgress = true;
+                        return PrepareResult(TrainingStopReason.TrainingCanceled, i);
+                    }
                     network.Backpropagate(miniBatches.Batches[j], dropout, updater);
                     batchMonitor?.NotifyCompletedBatch(miniBatches.Batches[j].X.GetLength(0));
                 }
+                NetworkSettings.BackpropagationInProgress = true;
                 batchMonitor?.Reset();
                 if (network.IsInNumericOverflow) return PrepareResult(TrainingStopReason.NumericOverflow, i);
 

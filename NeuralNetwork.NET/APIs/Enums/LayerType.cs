@@ -31,6 +31,11 @@
         Softmax,
 
         /// <summary>
+        /// A batch normalization layer, used to scale the input batch into a 0-mean, 1-variance activations map
+        /// </summary>
+        BatchNormalization,
+
+        /// <summary>
         /// An inception module, combining different kinds of convolution with a pooling operation
         /// </summary>
         Inception

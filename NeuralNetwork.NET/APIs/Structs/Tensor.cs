@@ -340,7 +340,7 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// A proxy type to debug instances of the <see cref="Tensor"/> <see langword="struct"/>
         /// </summary>
-        private struct _TensorProxy
+        private readonly struct _TensorProxy
         {
             /// <summary>
             /// Gets a preview of the underlying memory area wrapped by this instance
@@ -352,7 +352,7 @@ namespace NeuralNetworkNET.APIs.Structs
 
             private const int MaximumRowsCount = 10;
 
-            private const int MaximumItemsCount = 40000;
+            private const int MaximumItemsCount = 30000;
 
             [SuppressMessage("ReSharper", "UnusedMember.Local")]
             public _TensorProxy(Tensor obj)

@@ -133,5 +133,40 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported biases initialization mode");
             }
         }
+
+        /// <summary>
+        /// Creates a new weights vector for a batch normalization layer
+        /// </summary>
+        /// <param name="shape">The layer inputs and ouputs</param>
+        /// <param name="mode">The normalization mode to use</param>
+        [Pure, NotNull]
+        public static unsafe float[] NewGammaParameters(in TensorInfo shape, NormalizationMode mode)
+        {
+            int l;
+            if (mode == NormalizationMode.Spatial) l = shape.Channels;
+            else if (mode == NormalizationMode.PerActivation) l = shape.Size;
+            else throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            float[] weights = new float[l];
+            fixed (float* pw = weights)
+                for (int i = 0; i < l; i++)
+                    pw[i] = 1;
+            return weights;
+        }
+
+        /// <summary>
+        /// Creates a new beta weights vector for a batch normalization layer
+        /// </summary>
+        /// <param name="shape">The layer inputs and ouputs</param>
+        /// <param name="mode">The normalization mode to use</param>
+        [Pure, NotNull]
+        public static float[] NewBetaParameters(in TensorInfo shape, NormalizationMode mode)
+        {
+            switch (mode)
+            {
+                case NormalizationMode.Spatial: return NewBiases(shape.Channels, BiasInitializationMode.Zero);
+                case NormalizationMode.PerActivation: return NewBiases(shape.Size, BiasInitializationMode.Zero);
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid normalization mode");
+            }
+        }
     }
 }

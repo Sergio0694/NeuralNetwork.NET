@@ -35,5 +35,15 @@ namespace NeuralNetworkNET.APIs.Settings
             get => _AccuracyTester;
             set => _AccuracyTester = value ?? throw new ArgumentNullException(nameof(AccuracyTester), "The input delegate can't be null");
         }
+
+        /// <summary>
+        /// Gets whether or not a neural network is currently being trained
+        /// </summary>
+        public static bool TrainingInProgress { get; internal set; }
+
+        /// <summary>
+        /// Gets whether or not a neural network is currently processing the training samples through backpropagation (as opposed to evaluating them)
+        /// </summary>
+        internal static bool BackpropagationInProgress { get; set; }
     }
 }

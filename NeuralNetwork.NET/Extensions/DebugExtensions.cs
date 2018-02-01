@@ -22,7 +22,13 @@ namespace NeuralNetworkNET.Extensions
             fixed (float* p1 = &x1.DangerousGetPinnableReference(), p2 = &x2.DangerousGetPinnableReference())
             {
                 for (int i = 0; i < x1.Length; i++)
-                    if (!p1[i].EqualsWithDelta(p2[i], absolute, relative)) return false;
+                    if (!p1[i].EqualsWithDelta(p2[i], absolute, relative))
+                    {
+                        #if DEBUG
+                        System.Diagnostics.Debug.WriteLine($"[NO MATCH] {p1[i]} | {p2[i]} | diff: {(p1[i] - p2[i]).Abs()}");
+                        #endif
+                        return false;
+                    }
             }
             return true;
         }
