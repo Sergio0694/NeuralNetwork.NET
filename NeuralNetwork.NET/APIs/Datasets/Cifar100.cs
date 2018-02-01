@@ -22,7 +22,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         #region Constants
 
         // The number of training samples in the training .bin file
-        private const int TrainingSamplesInBinFiles = 50000;
+        private const int TrainingSamplesInBinFile = 50000;
 
         // The number of test samples in the .bin file
         private const int TestSamplesInBinFile = 10000;
@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         {
             IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
-            IReadOnlyList<(float[], float[])> data = ParseSamples(map[TrainingBinFilename], TrainingSamplesInBinFiles, mode);
+            IReadOnlyList<(float[], float[])> data = ParseSamples(map[TrainingBinFilename], TrainingSamplesInBinFile, mode);
             return DatasetLoader.Training(data, size);
         }
 
@@ -92,9 +92,13 @@ namespace NeuralNetworkNET.APIs.Datasets
             IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, null, token);
             if (map == null) return false;
             if (!directory.Exists) directory.Create();
-            ParallelLoopResult result = Parallel.ForEach(new[] { TrainingBinFilename, TestBinFilename }, (name, state) =>
+            ParallelLoopResult result = Parallel.ForEach(new (String Name, int Count)[]
             {
-                ExportSamples(directory, (name, map[name]), TrainingSamplesInBinFiles, token);
+                (TrainingBinFilename, TrainingSamplesInBinFile),
+                (TestBinFilename, TestSamplesInBinFile)
+            }, (pair, state) =>
+            {
+                ExportSamples(directory, (pair.Name, map[pair.Name]), pair.Count, token);
                 if (token.IsCancellationRequested) state.Stop();
             });
             return result.IsCompleted && !token.IsCancellationRequested;
