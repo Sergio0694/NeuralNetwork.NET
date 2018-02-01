@@ -104,6 +104,8 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
                     (BatchNormMode)NormalizationMode, 1, 0, DataDescription, x_gpu.Ptr, DataDescription, y_gpu.Ptr,
                     BatchNormalizationDescription, gamma_gpu.Ptr, beta_gpu.Ptr, factor, mu_gpu.Ptr, sigma2_gpu.Ptr, CpuDnn.CUDNN_BN_MIN_EPSILON,
                     saveMean_gpu.Ptr, saveInvVariance_gpu.Ptr);
+                mu_gpu.CopyTo(Mu);
+                sigma2_gpu.CopyTo(Sigma2);
                 saveMean_gpu.CopyTo(SaveMean);
                 saveInvVariance_gpu.CopyTo(SaveInvVariance);
                 y_gpu.CopyToHost(x.Entities, x.Length, out z);
