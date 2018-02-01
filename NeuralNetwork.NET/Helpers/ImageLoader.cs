@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Enums;
 using SixLabors.ImageSharp;
@@ -28,13 +29,14 @@ namespace NeuralNetworkNET.Helpers
                 if (typeof(TPixel) == typeof(Alpha8)) return Load(image as Image<Alpha8>, normalization);
                 if (typeof(TPixel) == typeof(Rgb24)) return Load(image as Image<Rgb24>, normalization);
                 if (typeof(TPixel) == typeof(Argb32)) return Load(image as Image<Argb32>, normalization);
+                if (typeof(TPixel) == typeof(Rgba32)) return Load(image as Image<Rgba32>, normalization);
                 throw new InvalidOperationException($"The {typeof(TPixel).Name} pixel format isn't currently supported");
             }
         }
 
         #region Loaders
 
-        // Loads an RGBA32 image
+        // Loads an ARGB32 image
         [Pure, NotNull]
         private static unsafe float[] Load(Image<Argb32> image, ImageNormalizationMode normalization)
         {
@@ -45,18 +47,32 @@ namespace NeuralNetworkNET.Helpers
             {
                 for (int i = 0; i < resolution; i++)
                 {
-                    Vector4 pixels;
-                    switch (normalization)
-                    {
-                        case ImageNormalizationMode.Sigmoid: pixels = p0[i].ToVector4(); break;
-                        case ImageNormalizationMode.Normal: pixels = Vector4.Subtract(p0[i].ToVector4() * 2, Vector4.One); break;
-                        case ImageNormalizationMode.None: pixels = new Vector4(p0[i].R, p0[i].G, p0[i].B, p0[i].A); break;
-                        default: throw new ArgumentOutOfRangeException(nameof(normalization), "Invalid normalization mode");
-                    }
+                    Vector4 pixels = p0[i].Normalize(normalization);
                     psample[i] = pixels.W;
                     psample[i + resolution] = pixels.X;
                     psample[i + 2 * resolution] = pixels.Y;
                     psample[i + 3 * resolution] = pixels.Z;
+                }
+            }
+            return sample;
+        }
+
+        // Loads an RGBA32 image
+        [Pure, NotNull]
+        private static unsafe float[] Load(Image<Rgba32> image, ImageNormalizationMode normalization)
+        {
+            int resolution = image.Height * image.Width;
+            float[] sample = new float[resolution * 4];
+            fixed (Rgba32* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+            fixed (float* psample = sample)
+            {
+                for (int i = 0; i < resolution; i++)
+                {
+                    Vector4 pixels = p0[i].Normalize(normalization);
+                    psample[i] = pixels.X;
+                    psample[i + resolution] = pixels.Y;
+                    psample[i + 2 * resolution] = pixels.Z;
+                    psample[i + 3 * resolution] = pixels.W;
                 }
             }
             return sample;
@@ -73,14 +89,7 @@ namespace NeuralNetworkNET.Helpers
             {
                 for (int i = 0; i < resolution; i++)
                 {
-                    Vector4 pixels;
-                    switch (normalization)
-                    {
-                        case ImageNormalizationMode.Sigmoid: pixels = p0[i].ToVector4(); break;
-                        case ImageNormalizationMode.Normal: pixels = Vector4.Subtract(p0[i].ToVector4() * 2, Vector4.One); break;
-                        case ImageNormalizationMode.None: pixels = new Vector4(p0[i].R, p0[i].G, p0[i].B, 255f); break;
-                        default: throw new ArgumentOutOfRangeException(nameof(normalization), "Invalid normalization mode");
-                    }
+                    Vector4 pixels = p0[i].Normalize(normalization);
                     psample[i] = pixels.X;
                     psample[i + resolution] = pixels.Y;
                     psample[i + 2 * resolution] = pixels.Z;
@@ -111,5 +120,24 @@ namespace NeuralNetworkNET.Helpers
         }
 
         #endregion
+
+        /// <summary>
+        /// Normalizes the input <see cref="IPixel"/> value using the specified mode
+        /// </summary>
+        /// <typeparam name="TPixel">Tye input pixel type</typeparam>
+        /// <param name="pixel">The input pixel to normalize</param>
+        /// <param name="normalization">The normalization mode to use</param>
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector4 Normalize<TPixel>(this TPixel pixel, ImageNormalizationMode normalization) where TPixel : struct, IPixel<TPixel>
+        {
+            switch (normalization)
+            {
+                case ImageNormalizationMode.Sigmoid: return pixel.ToVector4(); // Already in the [0,1] range
+                case ImageNormalizationMode.Normal: return Vector4.Subtract(pixel.ToVector4() * 2, Vector4.One);
+                case ImageNormalizationMode.None: return pixel.ToVector4() * 255f; // Rescale in the [0,255] range
+                default: throw new ArgumentOutOfRangeException(nameof(normalization), "Invalid normalization mode");
+            }
+        }
     }
 }

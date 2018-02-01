@@ -54,7 +54,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new <see cref="ITrainingDataset"/> instance to train a network from the input data, where each input sample is an image in a specified format
         /// </summary>
-        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/>, <see cref="Argb32"/> or <see cref="Rgba32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a vector with the expected outputs</param>
         /// <param name="size">The desired dataset batch size</param>
         /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new <see cref="ITrainingDataset"/> instance to train a network from the input data, where each input sample is an image in a specified format
         /// </summary>
-        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/>, <see cref="Argb32"/> or <see cref="Rgba32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a <see cref="Func{TResult}"/> returning a vector with the expected outputs</param>
         /// <param name="size">The desired dataset batch size</param>
         /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
@@ -133,7 +133,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new <see cref="IValidationDataset"/> instance to validate a network accuracy from the input collection
         /// </summary>
-        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/>, <see cref="Argb32"/> or <see cref="Rgba32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a vector with the expected outputs</param>
         /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
         /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
@@ -156,7 +156,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new <see cref="IValidationDataset"/> instance to validate a network accuracy from the input collection
         /// </summary>
-        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/>, <see cref="Argb32"/> or <see cref="Rgba32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a <see cref="Func{TResult}"/> returning a vector with the expected outputs</param>
         /// <param name="tolerance">The desired tolerance to test the network for convergence</param>
         /// <param name="epochs">The epochs interval to consider when testing the network for convergence</param>
@@ -215,7 +215,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new <see cref="ITestDataset"/> instance to test a network from the input collection
         /// </summary>
-        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/>, <see cref="Argb32"/> or <see cref="Rgba32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a vector with the expected outputs</param>
         /// <param name="progress">The optional progress callback to use</param>
         /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
@@ -237,7 +237,7 @@ namespace NeuralNetworkNET.APIs
         /// <summary>
         /// Creates a new <see cref="ITestDataset"/> instance to test a network from the input collection
         /// </summary>
-        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/> or <see cref="Argb32"/></typeparam>
+        /// <typeparam name="TPixel">The type of image pixels. It must be either <see cref="Alpha8"/>, <see cref="Rgb24"/>, <see cref="Argb32"/> or <see cref="Rgba32"/></typeparam>
         /// <param name="data">A list of <see cref="ValueTuple{T1, T2}"/> items, where the first element is the image path and the second is a <see cref="Func{TResult}"/> returning a vector with the expected outputs</param>
         /// <param name="progress">The optional progress callback to use</param>
         /// <param name="normalization">The desired image normalization mode to use when loading the images</param>
