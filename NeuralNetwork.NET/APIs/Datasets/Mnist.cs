@@ -28,15 +28,15 @@ namespace NeuralNetworkNET.APIs.Datasets
         private const int TestSamples = 10000;
 
         private const int SampleSize = 784;
-
+        
         private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
-
+        
         private const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
-
+        
         private const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
-
+        
         private const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
-
+        
         private const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
 
         #endregion
@@ -80,12 +80,12 @@ namespace NeuralNetworkNET.APIs.Datasets
         }
 
         /// <summary>
-        /// Downloads and exports the MNIST dataset to the target directory
+        /// Downloads and exports the full MNIST dataset (both training and test samples) to the target directory
         /// </summary>
         /// <param name="directory">The target directory</param>
         /// <param name="token">The cancellation token for the operation</param>
         [PublicAPI]
-        public static async Task<bool> ExportSamplesAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
+        public static async Task<bool> ExportDatasetAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
         {
             Func<Stream>[] factories = await Task.WhenAll(
                 DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TrainingSetValuesFilename}", null, token), 

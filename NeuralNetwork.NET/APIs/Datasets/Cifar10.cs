@@ -35,7 +35,7 @@ namespace NeuralNetworkNET.APIs.Datasets
 
         [NotNull, ItemNotNull]
         private static readonly IReadOnlyList<String> TrainingBinFilenames = Enumerable.Range(1, 5).Select(i => $"data_batch_{i}.bin").ToArray();
-
+        
         private const String TestBinFilename = "test_batch.bin";
 
         #endregion
@@ -74,12 +74,12 @@ namespace NeuralNetworkNET.APIs.Datasets
         }
 
         /// <summary>
-        /// Downloads and exports the CIFAR-10 dataset to the target directory
+        /// Downloads and exports the full CIFAR-10 dataset (both training and test samples) to the target directory
         /// </summary>
         /// <param name="directory">The target directory</param>
         /// <param name="token">The cancellation token for the operation</param>
         [PublicAPI]
-        public static async Task<bool> ExportSamplesAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
+        public static async Task<bool> ExportDatasetAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
         {
             IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, null, token);
             if (map == null) return false;
