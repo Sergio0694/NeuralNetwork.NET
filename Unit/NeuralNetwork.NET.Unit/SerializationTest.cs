@@ -95,7 +95,7 @@ namespace NeuralNetworkNET.Unit
                 NetworkLayers.BatchNormalization(NormalizationMode.Spatial, ActivationType.ReLU),
                 NetworkLayers.FullyConnected(125, ActivationType.Tanh),
                 NetworkLayers.Softmax(133));
-            String metadata1 = network.SerializeMetadataAsJson();
+            string metadata1 = network.SerializeMetadataAsJson();
             Assert.IsTrue(metadata1.Length > 0);
             Assert.IsTrue(metadata1.Equals(network.Clone().SerializeMetadataAsJson()));
             network.Layers.First().To<INetworkLayer, ConvolutionalLayer>().Weights[0] += 0.1f;

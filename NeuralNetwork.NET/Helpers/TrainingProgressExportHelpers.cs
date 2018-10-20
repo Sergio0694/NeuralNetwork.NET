@@ -16,7 +16,7 @@ namespace NeuralNetworkNET.Helpers
     public static class TrainingProgressExportHelpers
     {
         // The Python matplotlib template
-        private static readonly String PyTemplate = @"import matplotlib.pyplot as plt
+        private static readonly string PyTemplate = @"import matplotlib.pyplot as plt
                                                       x = [$VALUES$]
                                                       plt.grid(linestyle=""dashed"")
                                                       plt.ylabel(""$YLABEL$"")
@@ -25,14 +25,14 @@ namespace NeuralNetworkNET.Helpers
                                                       plt.show()".TrimVerbatim();
 
         // The custom 4-spaces indentation for the data points (the \t character is not consistent across different editors)
-        private const String Tab = "    ";
+        private const string Tab = "    ";
 
         /// <summary>
         /// Returns a Python script to plot a 2D chart from the given progress reports
         /// </summary>
         /// <param name="results">The input results to plot</param>
         /// <param name="type">The type of progress report to plot</param>
-        public static String AsPythonMatplotlibChart([NotNull] this IReadOnlyList<DatasetEvaluationResult> results, TrainingReportType type)
+        public static string AsPythonMatplotlibChart([NotNull] this IReadOnlyList<DatasetEvaluationResult> results, TrainingReportType type)
         {
             // Result value extractor
             float GetResultValue(DatasetEvaluationResult result)
@@ -46,12 +46,12 @@ namespace NeuralNetworkNET.Helpers
             }
 
             // Load the template and extract the values to plot
-            String
+            string
                 values = results
                     .Select((r, i) => (Result: r, Index: i))
                     .Aggregate($"{Environment.NewLine}{Tab}", (b, v) =>
                     {
-                        String separator = v.Index == results.Count - 1 ? Environment.NewLine : $",{Environment.NewLine}{Tab}";
+                        string separator = v.Index == results.Count - 1 ? Environment.NewLine : $",{Environment.NewLine}{Tab}";
                         return $"{b}{GetResultValue(v.Result).ToString(CultureInfo.InvariantCulture)}{separator}";
                     }),
                 ylabel = type == TrainingReportType.Accuracy ? "Accuracy" : "Cost";

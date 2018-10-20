@@ -29,15 +29,15 @@ namespace NeuralNetworkNET.APIs.Datasets
 
         private const int SampleSize = 784;
         
-        private const String MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
+        private const string MnistHttpRootPath = "http://yann.lecun.com/exdb/mnist/";
         
-        private const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
+        private const string TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
         
-        private const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
+        private const string TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
         
-        private const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
+        private const string TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
         
-        private const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
+        private const string TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
 
         #endregion
 
@@ -94,7 +94,7 @@ namespace NeuralNetworkNET.APIs.Datasets
                 DatasetsDownloader.GetFileAsync($"{MnistHttpRootPath}{TestSetLabelsFilename}", null, token));
             if (factories.Any(s => s == null) || token.IsCancellationRequested) return false;
             if (!directory.Exists) directory.Create();
-            ParallelLoopResult result = Parallel.ForEach(new (String Name, Func<Stream> X, Func<Stream> Y, int Count)[]
+            ParallelLoopResult result = Parallel.ForEach(new (string Name, Func<Stream> X, Func<Stream> Y, int Count)[]
             {
                 (TrainingSetValuesFilename, factories[0], factories[1], TrainingSamples),
                 (TestSetValuesFilename, factories[2], factories[3], TestSamples)
@@ -153,7 +153,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// <param name="source">A pair of factories for the input <see cref="Stream"/> instances to read</param>
         /// <param name="count">The number of samples to parse</param>
         /// <param name="token">A token for the operation</param>
-        private static unsafe void ExportSamples([NotNull] DirectoryInfo folder, (String Name, Func<Stream> X, Func<Stream> Y) source, int count, CancellationToken token)
+        private static unsafe void ExportSamples([NotNull] DirectoryInfo folder, (string Name, Func<Stream> X, Func<Stream> Y) source, int count, CancellationToken token)
         {
             using (Stream inputs = source.X(), labels = source.Y())
             using (GZipStream

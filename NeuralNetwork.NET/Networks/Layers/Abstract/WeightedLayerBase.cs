@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         /// </summary>
         [NotNull]
         [JsonProperty(nameof(Hash), Order = 5)]
-        public virtual String Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases));
+        public virtual string Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases));
 
         /// <summary>
         /// Gets the weights for the current network layer

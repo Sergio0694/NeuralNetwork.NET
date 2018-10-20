@@ -341,7 +341,7 @@ namespace NeuralNetworkNET.Unit
                 var fc1 = bn.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 _ = fc1.Layer(NetworkLayers.Softmax(10));
             });
-            String json = network.SerializeMetadataAsJson();
+            string json = network.SerializeMetadataAsJson();
             Assert.IsTrue(json != null);
         }
 
@@ -380,7 +380,7 @@ namespace NeuralNetworkNET.Unit
                 var fc2 = fc1.Layer(NetworkLayers.FullyConnected(40, ActivationType.Sigmoid));
                 fc2.Layer(NetworkLayers.Softmax(10));
             });
-            String path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
+            string path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
             Directory.CreateDirectory(path);
             FileInfo file = new FileInfo(Path.Combine(path, "graph2.nnet"));
             network.Save(file);
@@ -409,7 +409,7 @@ namespace NeuralNetworkNET.Unit
                 var fc1 = stack.Layer(NetworkLayers.FullyConnected(100, ActivationType.Sigmoid));
                 _ = fc1.Layer(NetworkLayers.Softmax(10));
             });
-            String path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
+            string path = Path.Combine(NetworkTest.DllPath, nameof(GraphNetworkTest));
             Directory.CreateDirectory(path);
             FileInfo file = new FileInfo(Path.Combine(path, "graph2.nnet"));
             network.Save(file);

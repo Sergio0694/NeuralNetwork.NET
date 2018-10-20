@@ -48,7 +48,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
         }
 
         /// <inheritdoc/>
-        public override String Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases, Mu, Sigma2));
+        public override string Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases, Mu, Sigma2));
 
         /// <inheritdoc/>
         public override LayerType LayerType { get; } = LayerType.BatchNormalization;

@@ -26,8 +26,8 @@ namespace NeuralNetworkNET.Unit
             IEnumerable<int> items = Enumerable.Range(0, 25);
             StringBuilder builder = new StringBuilder();
             foreach (var chunk in items.Partition(7))
-                builder.Append($"{chunk.Aggregate(String.Empty, (s, i) => $"{s} {i}")}\n");
-            String result = builder.ToString();
+                builder.Append($"{chunk.Aggregate(string.Empty, (s, i) => $"{s} {i}")}\n");
+            string result = builder.ToString();
             Assert.IsTrue(result.Equals(" 0 1 2 3 4 5 6\n 7 8 9 10 11 12 13\n 14 15 16 17 18 19 20\n 21 22 23 24\n"));
         }
 
@@ -72,14 +72,14 @@ namespace NeuralNetworkNET.Unit
         [TestMethod]
         public void TrimVerbatim()
         {
-            const String text = @"import matplotlib.pyplot as plt
+            const string text = @"import matplotlib.pyplot as plt
                                   x = [$VALUES$]
                                   plt.grid(linestyle=""dashed"")
                                   plt.ylabel(""$YLABEL$"")
                                   plt.xlabel(""Epoch"")
                                   plt.plot(x)
                                   plt.show()";
-            String[] lines =
+            string[] lines =
             {
                 "import matplotlib.pyplot as plt",
                 "x = [$VALUES$]",
@@ -89,7 +89,7 @@ namespace NeuralNetworkNET.Unit
                 "plt.plot(x)",
                 "plt.show()"
             };
-            String expected = lines.Skip(1).Aggregate(lines[0], (s, l) => $"{s}{Environment.NewLine}{l}") + Environment.NewLine;
+            string expected = lines.Skip(1).Aggregate(lines[0], (s, l) => $"{s}{Environment.NewLine}{l}") + Environment.NewLine;
             Assert.IsTrue(text.TrimVerbatim().Equals(expected));
         }
 

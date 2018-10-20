@@ -50,7 +50,7 @@ namespace DigitsCudaTest
                 testDataset: testData, token: cts.Token);
 
             // Save the training reports
-            String
+            string
                 timestamp = DateTime.Now.ToString("yy-MM-dd-hh-mm-ss"),
                 path = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetExecutingAssembly().Location)),
                 dir = Path.Combine(path ?? throw new InvalidOperationException("The dll path can't be null"), "TrainingResults", timestamp);
@@ -65,7 +65,7 @@ namespace DigitsCudaTest
         }
 
         // Prints an output message
-        private static void Printf(String text)
+        private static void Printf(string text)
         {
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Write(">> ");
@@ -80,7 +80,7 @@ namespace DigitsCudaTest
             int n = (int)(progress.Percentage * 32 / 100); // 32 is the number of progress '=' characters to display
             char[] c = new char[32];
             for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
-            Console.Write($"[{new String(c)}] ");
+            Console.Write($"[{new string(c)}] ");
         }
     }
 }

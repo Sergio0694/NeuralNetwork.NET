@@ -21,7 +21,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="normalization">The image normalization mode to apply</param>
         /// <param name="modify">The optional changes to apply to the image</param>
         [Pure, NotNull]
-        public static float[] Load<TPixel>([NotNull] String path, ImageNormalizationMode normalization, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
+        public static float[] Load<TPixel>([NotNull] string path, ImageNormalizationMode normalization, [CanBeNull] Action<IImageProcessingContext<TPixel>> modify) where TPixel : struct, IPixel<TPixel>
         {
             using (Image<TPixel> image = Image.Load<TPixel>(path))
             {

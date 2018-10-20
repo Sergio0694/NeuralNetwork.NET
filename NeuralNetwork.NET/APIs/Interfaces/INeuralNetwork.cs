@@ -122,7 +122,7 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// Serializes the network metadata as a JSON string
         /// </summary>
         [Pure, NotNull]
-        String SerializeMetadataAsJson();
+        string SerializeMetadataAsJson();
 
         /// <summary>
         /// Saves the network to the target file

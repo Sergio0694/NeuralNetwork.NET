@@ -8,6 +8,6 @@ namespace NeuralNetworkNET.Exceptions
     /// </summary>
     public sealed class ComputationGraphBuildException : ArgumentException
     {
-        internal ComputationGraphBuildException([NotNull] String message) : base(message) { }
+        internal ComputationGraphBuildException([NotNull] string message) : base(message) { }
     }
 }

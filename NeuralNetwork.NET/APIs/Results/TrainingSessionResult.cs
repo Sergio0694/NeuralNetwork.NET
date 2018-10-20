@@ -44,7 +44,7 @@ namespace NeuralNetworkNET.APIs.Results
         /// Serializes the current instance as a JSON string with all the current training info
         /// </summary>
         [Pure, NotNull]
-        public String SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
+        public string SerializeAsJson() => JsonConvert.SerializeObject(this, Formatting.Indented, new StringEnumConverter());
 
         // Internal constructor
         internal TrainingSessionResult(

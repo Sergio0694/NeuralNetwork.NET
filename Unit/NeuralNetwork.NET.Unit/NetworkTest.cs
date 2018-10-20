@@ -26,11 +26,11 @@ namespace NeuralNetworkNET.Unit
     {
         // Gets the target assets subfolder
         [NotNull]
-        public static String DllPath
+        public static string DllPath
         {
             get
             {
-                String
+                string
                     code = Assembly.GetExecutingAssembly().Location,
                     dll = Path.GetFullPath(code),
                     root = Path.GetDirectoryName(dll);
@@ -40,12 +40,12 @@ namespace NeuralNetworkNET.Unit
 
         private static ((float[,] X, float[,] Y) TrainingData, (float[,] X, float[,] Y) TestData) ParseMnistDataset(int training = 50_000, int test = 10_000)
         {
-            const String TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
-            const String TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
-            const String TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
-            const String TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
-            String path = Path.Combine(DllPath, "Assets");
-            (float[,], float[,]) ParseSamples(String valuePath, String labelsPath, int count)
+            const string TrainingSetValuesFilename = "train-images-idx3-ubyte.gz";
+            const string TrainingSetLabelsFilename = "train-labels-idx1-ubyte.gz";
+            const string TestSetValuesFilename = "t10k-images-idx3-ubyte.gz";
+            const string TestSetLabelsFilename = "t10k-labels-idx1-ubyte.gz";
+            string path = Path.Combine(DllPath, "Assets");
+            (float[,], float[,]) ParseSamples(string valuePath, string labelsPath, int count)
             {
                 float[,] 
                     x = new float[count, 784],

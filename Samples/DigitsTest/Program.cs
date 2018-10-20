@@ -45,7 +45,7 @@ namespace DigitsTest
         }
 
         // Prints an output message
-        private static void Printf(String text)
+        private static void Printf(string text)
         {
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Write(">> ");
@@ -60,7 +60,7 @@ namespace DigitsTest
             int n = (int)(progress.Percentage * 32 / 100); // 32 is the number of progress '=' characters to display
             char[] c = new char[32];
             for (int i = 0; i < 32; i++) c[i] = i <= n ? '=' : ' ';
-            Console.Write($"[{new String(c)}] ");
+            Console.Write($"[{new string(c)}] ");
         }
     }
 }

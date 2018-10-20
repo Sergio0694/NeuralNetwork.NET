@@ -20,7 +20,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="callback">The optional progress calback</param>
         /// <param name="token">The optional token for the download operation</param>
         [MustUseReturnValue, NotNull, ItemCanBeNull]
-        public static async Task<Stream> GetAsync([NotNull] this HttpClient client, String url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token = default)
+        public static async Task<Stream> GetAsync([NotNull] this HttpClient client, string url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token = default)
         {
             using (HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token))
             {

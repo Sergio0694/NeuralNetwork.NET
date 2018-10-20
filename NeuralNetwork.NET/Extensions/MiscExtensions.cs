@@ -209,9 +209,9 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="text">The string to trim</param>
         [Pure, NotNull]
-        internal static String TrimVerbatim([NotNull] this String text)
+        internal static string TrimVerbatim([NotNull] this string text)
         {
-            String[] lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             return lines.Aggregate(new StringBuilder(), (b, s) =>
             {
                 b.AppendLine(s.Trim());

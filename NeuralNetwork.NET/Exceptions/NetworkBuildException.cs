@@ -8,8 +8,8 @@ namespace NeuralNetworkNET.Exceptions
     /// </summary>
     public sealed class NetworkBuildException : ArgumentException
     {
-        internal NetworkBuildException([NotNull] String message) : base(message) { }
+        internal NetworkBuildException([NotNull] string message) : base(message) { }
 
-        internal NetworkBuildException([NotNull] String message, [NotNull] String param) : base(message, param) { }
+        internal NetworkBuildException([NotNull] string message, [NotNull] string param) : base(message, param) { }
     }
 }

@@ -31,12 +31,12 @@ namespace NeuralNetworkNET.APIs.Datasets
         // A single 32*32 image
         private const int ImageSize = 1024;
 
-        private const String DatasetURL = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
+        private const string DatasetURL = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
 
         [NotNull, ItemNotNull]
-        private static readonly IReadOnlyList<String> TrainingBinFilenames = Enumerable.Range(1, 5).Select(i => $"data_batch_{i}.bin").ToArray();
+        private static readonly IReadOnlyList<string> TrainingBinFilenames = Enumerable.Range(1, 5).Select(i => $"data_batch_{i}.bin").ToArray();
         
-        private const String TestBinFilename = "test_batch.bin";
+        private const string TestBinFilename = "test_batch.bin";
 
         #endregion
 
@@ -50,7 +50,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         [Pure, ItemCanBeNull]
         public static async Task<ITrainingDataset> GetTrainingDatasetAsync(int size, [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
+            IReadOnlyDictionary<string, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
             IReadOnlyList<(float[], float[])>[] data = new IReadOnlyList<(float[], float[])>[TrainingBinFilenames.Count];
             Parallel.For(0, TrainingBinFilenames.Count, i => data[i] = ParseSamples(map[TrainingBinFilenames[i]], TrainingSamplesInBinFiles)).AssertCompleted();
@@ -67,7 +67,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         [Pure, ItemCanBeNull]
         public static async Task<ITestDataset> GetTestDatasetAsync([CanBeNull] Action<TrainingProgressEventArgs> progress = null, [CanBeNull] IProgress<HttpProgress> callback = null, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
+            IReadOnlyDictionary<string, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, callback, token);
             if (map == null) return null;
             IReadOnlyList<(float[], float[])> data = ParseSamples(map[TestBinFilename], TrainingSamplesInBinFiles);
             return DatasetLoader.Test(data, progress);
@@ -81,7 +81,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         [PublicAPI]
         public static async Task<bool> ExportDatasetAsync([NotNull] DirectoryInfo directory, CancellationToken token = default)
         {
-            IReadOnlyDictionary<String, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, null, token);
+            IReadOnlyDictionary<string, Func<Stream>> map = await DatasetsDownloader.GetArchiveAsync(DatasetURL, null, token);
             if (map == null) return false;
             if (!directory.Exists) directory.Create();
             ParallelLoopResult result = Parallel.ForEach(TrainingBinFilenames.Concat(new[] { TestBinFilename }), (name, state) =>
@@ -137,7 +137,7 @@ namespace NeuralNetworkNET.APIs.Datasets
         /// <param name="source">The source filename and a <see cref="Func{TResult}"/> that returns the <see cref="Stream"/> to read</param>
         /// <param name="count">The number of samples to parse</param>
         /// <param name="token">A token for the operation</param>
-        private static unsafe void ExportSamples([NotNull] DirectoryInfo folder, (String Name, Func<Stream> Factory) source, int count, CancellationToken token)
+        private static unsafe void ExportSamples([NotNull] DirectoryInfo folder, (string Name, Func<Stream> Factory) source, int count, CancellationToken token)
         {
             using (Stream stream = source.Factory())
             {

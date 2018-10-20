@@ -24,17 +24,17 @@ namespace NeuralNetworkNET.Helpers
         #region Fields and properties
 
         // The default file extension for local resource files
-        private const String FileExtension = ".bin";
+        private const string FileExtension = ".bin";
 
         /// <summary>
         /// Gets the default datasets path to use to store and load fdata files
         /// </summary>
         [NotNull]
-        private static String DatasetsPath
+        private static string DatasetsPath
         {
             get
             {
-                String
+                string
                     code = Assembly.GetExecutingAssembly().Location,
                     dll = Path.GetFullPath(code),
                     root = Path.GetDirectoryName(dll) ?? throw new NullReferenceException("The root path can't be null"),
@@ -72,10 +72,10 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="callback">The optional progress calback</param>
         /// <param name="token">A cancellation token for the operation</param>
         [MustUseReturnValue, ItemCanBeNull]
-        public static async Task<Func<Stream>> GetFileAsync([NotNull] String url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token)
+        public static async Task<Func<Stream>> GetFileAsync([NotNull] string url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token)
         {
             // Get the target filename
-            String
+            string
                 filename = $"{GetFilename(url)}{FileExtension}",
                 path = Path.Combine(DatasetsPath, filename);
             Directory.CreateDirectory(DatasetsPath);
@@ -114,10 +114,10 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="callback">The optional progress calback</param>
         /// <param name="token">A cancellation token for the operation</param>
         [MustUseReturnValue, ItemCanBeNull]
-        public static async Task<IReadOnlyDictionary<String, Func<Stream>>> GetArchiveAsync([NotNull] String url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token)
+        public static async Task<IReadOnlyDictionary<string, Func<Stream>>> GetArchiveAsync([NotNull] string url, [CanBeNull] IProgress<HttpProgress> callback, CancellationToken token)
         {
             // Check if the archive is already present
-            String folder = Path.Combine(DatasetsPath, GetFilename(url));
+            string folder = Path.Combine(DatasetsPath, GetFilename(url));
             if (!Directory.Exists(folder))
             {
                 {
@@ -135,11 +135,11 @@ namespace NeuralNetworkNET.Helpers
                                 tar.ExtractContents(folder);
 
                                 // Move all the contents in the root directory
-                                foreach (String path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                                foreach (string path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
                                     File.Move(path, Path.Combine(folder, Path.GetFileName(path ?? throw new NullReferenceException("Invalid path"))));
 
                                 // Delete the subfolders
-                                foreach (String subdir in Directory.GetDirectories(folder))
+                                foreach (string subdir in Directory.GetDirectories(folder))
                                     Directory.Delete(subdir);
                             }
                         }
@@ -153,7 +153,7 @@ namespace NeuralNetworkNET.Helpers
             }
 
             // Parse the files
-            return Directory.EnumerateFiles(folder).ToDictionary<String, String, Func<Stream>>(Path.GetFileName, file => () => File.OpenRead(file));
+            return Directory.EnumerateFiles(folder).ToDictionary<string, string, Func<Stream>>(Path.GetFileName, file => () => File.OpenRead(file));
         }
 
         #endregion
@@ -165,7 +165,7 @@ namespace NeuralNetworkNET.Helpers
         /// </summary>
         /// <param name="url">The URL to convert to filename</param>
         [Pure, NotNull]
-        private static String GetFilename([NotNull] String url)
+        private static string GetFilename([NotNull] string url)
         {
             using (MD5 md5 = MD5.Create())
             {
