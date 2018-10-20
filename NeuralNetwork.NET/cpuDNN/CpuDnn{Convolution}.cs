@@ -233,9 +233,9 @@ namespace NeuralNetworkNET.cpuDNN
                 imgSize = xInfo.SliceSize,
                 imgHeight = xInfo.Height,
                 imgWidth = xInfo.Width;
-            if (imgSize * xInfo.Channels != l) throw new ArgumentException(nameof(x), "Invalid depth parameter for the input tensor");
-            if (imgSize < kSize) throw new ArgumentOutOfRangeException("Each subdivided tensor must at least have the size of the kernels");
-            if (nKernels != n) throw new ArgumentException(nameof(dy), "There must be a delta volume for each activation sample");
+            if (imgSize * xInfo.Channels != l) throw new ArgumentException("Invalid depth parameter for the input tensor", nameof(x));
+            if (imgSize < kSize) throw new ArgumentOutOfRangeException(nameof(imgSize), "Each subdivided tensor must at least have the size of the kernels");
+            if (nKernels != n) throw new ArgumentException("There must be a delta volume for each activation sample", nameof(dy));
 
             /* ============================
              * Valid convolution (gradient)

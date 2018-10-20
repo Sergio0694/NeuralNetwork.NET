@@ -76,7 +76,7 @@ namespace NeuralNetworkNET.Networks.Layers.Abstract
                     Mu = new float[InputInfo.Size];
                     Sigma2 = new float[InputInfo.Size];
                     break;
-                default: throw new ArgumentOutOfRangeException("Invalid batch normalization mode");
+                default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid batch normalization mode");
             }
             Sigma2.AsSpan().Fill(1);
             NormalizationMode = mode;

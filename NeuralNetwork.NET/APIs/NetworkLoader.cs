@@ -14,12 +14,13 @@ namespace NeuralNetworkNET.APIs
     /// <summary>
     /// A static class that handles the JSON deserialization for the neural networks
     /// </summary>
+    [PublicAPI]
     public static class NetworkLoader
     {
         /// <summary>
         /// Gets the file extension used when saving a network
         /// </summary>
-        public const String NetworkFileExtension = ".nnet";
+        public const string NetworkFileExtension = ".nnet";
 
         /// <summary>
         /// Tries to deserialize a network from the input file

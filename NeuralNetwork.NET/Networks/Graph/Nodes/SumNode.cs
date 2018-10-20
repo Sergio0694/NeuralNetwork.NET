@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the sum node
         /// </summary>
-        private (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
+        private readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
         /// <summary>
         /// Gets the execution mode set for this <see cref="SumNode"/> instance

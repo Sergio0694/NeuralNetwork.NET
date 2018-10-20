@@ -83,7 +83,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="mask">The resulting mask</param>
         public static unsafe void NextDropoutMask(int x, int y, float dropout, out Tensor mask)
         {
-            if (x <= 0 || y <= 0) throw new ArgumentOutOfRangeException("The size of the matrix isn't valid");
+            if (x <= 0 || y <= 0) throw new ArgumentOutOfRangeException(nameof(x), "The size of the matrix isn't valid");
             float scale = 1 / dropout;
             Tensor.New(x, y, out mask);
             float* r = mask;

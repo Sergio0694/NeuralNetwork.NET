@@ -115,7 +115,7 @@ namespace NeuralNetworkNET.cpuDNN
         public static unsafe void FullyConnectedForward(in Tensor x, in Tensor w, in Tensor b, in Tensor y)
         {
             // Initialize the parameters and the result tensor
-            if (x.Length != w.Entities) throw new ArgumentOutOfRangeException("Invalid tensors shapes");
+            if (x.Length != w.Entities) throw new ArgumentOutOfRangeException(nameof(x), "Invalid tensors shapes");
             if (!b.MatchShape(1, w.Length)) throw new ArgumentException("Invalid biases shape", nameof(b));
             if (!y.MatchShape(x.Entities, w.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(y));
             int

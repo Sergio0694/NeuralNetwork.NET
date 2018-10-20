@@ -37,7 +37,7 @@ namespace NeuralNetworkNET.Helpers
                 String
                     code = Assembly.GetExecutingAssembly().Location,
                     dll = Path.GetFullPath(code),
-                    root = Path.GetDirectoryName(dll),
+                    root = Path.GetDirectoryName(dll) ?? throw new NullReferenceException("The root path can't be null"),
                     path = Path.Combine(root, "Datasets");
                 return path;
             }
@@ -136,7 +136,7 @@ namespace NeuralNetworkNET.Helpers
 
                                 // Move all the contents in the root directory
                                 foreach (String path in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
-                                    File.Move(path, Path.Combine(folder, Path.GetFileName(path)));
+                                    File.Move(path, Path.Combine(folder, Path.GetFileName(path ?? throw new NullReferenceException("Invalid path"))));
 
                                 // Delete the subfolders
                                 foreach (String subdir in Directory.GetDirectories(folder))

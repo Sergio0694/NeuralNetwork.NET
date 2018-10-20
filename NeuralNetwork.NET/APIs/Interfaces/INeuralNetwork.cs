@@ -11,6 +11,7 @@ namespace NeuralNetworkNET.APIs.Interfaces
     /// <summary>
     /// An interface to mask a neural network implementation
     /// </summary>
+    [PublicAPI]
     public interface INeuralNetwork : IEquatable<INeuralNetwork>, IClonable<INeuralNetwork>
     {
         #region Properties

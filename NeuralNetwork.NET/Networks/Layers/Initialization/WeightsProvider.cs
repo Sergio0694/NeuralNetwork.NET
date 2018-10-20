@@ -122,7 +122,7 @@ namespace NeuralNetworkNET.Networks.Layers.Initialization
         [Pure, NotNull]
         public static float[] NewBiases(int length, BiasInitializationMode mode)
         {
-            if (length <= 0) throw new ArgumentException(nameof(length), "The biases vector must have a positive number of items");
+            if (length <= 0) throw new ArgumentException("The biases vector must have a positive number of items", nameof(length));
             float[] biases = new float[length];
             switch (mode)
             {

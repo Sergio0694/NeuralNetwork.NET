@@ -1,8 +1,11 @@
-﻿namespace NeuralNetworkNET.APIs.Enums
+﻿using JetBrains.Annotations;
+
+namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
     /// Indicates the pooling mode performed by a pooling layer
     /// </summary>
+    [PublicAPI]
     public enum PoolingMode : byte
     {
         /// <summary>

@@ -58,7 +58,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Parameters
 
         protected internal DatasetBase((float[,] X, float[,] Y) dataset)
         {
-            if (dataset.X.GetLength(0) != dataset.Y.GetLength(0)) throw new ArgumentException(nameof(dataset), "The size of the input matrices isn't valid");
+            if (dataset.X.GetLength(0) != dataset.Y.GetLength(0)) throw new ArgumentException("The size of the input matrices isn't valid", nameof(dataset));
             Dataset = dataset;
         }
     }

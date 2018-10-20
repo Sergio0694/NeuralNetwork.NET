@@ -41,7 +41,7 @@ namespace NeuralNetworkNET.cpuDNN
         public static unsafe void Multiply(in Tensor x1, in Tensor x2, in Tensor y)
         {
             // Initialize the parameters and the result matrix
-            if (x1.Length != x2.Entities) throw new ArgumentOutOfRangeException("Invalid matrices sizes");
+            if (x1.Length != x2.Entities) throw new ArgumentOutOfRangeException(nameof(x1), "Invalid matrices sizes");
             if (!y.MatchShape(x1.Entities, x2.Length)) throw new ArgumentException("The output tensor doesn't have the right shape", nameof(y));
             int
                 n = x1.Entities,

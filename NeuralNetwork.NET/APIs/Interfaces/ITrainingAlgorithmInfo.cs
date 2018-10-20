@@ -1,10 +1,12 @@
-﻿using NeuralNetworkNET.SupervisedLearning.Algorithms;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.SupervisedLearning.Algorithms;
 
 namespace NeuralNetworkNET.APIs.Interfaces
 {
     /// <summary>
     /// A common interface for all the available training algorithms in the library
     /// </summary>
+    [PublicAPI]
     public interface ITrainingAlgorithmInfo
     {
         /// <summary>

@@ -12,6 +12,7 @@ namespace NeuralNetworkNET.APIs.Structs
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
+    [PublicAPI]
     [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("Entities: {Entities}, Length: {Length}, Ptr: {Ptr}")]
     public readonly struct Tensor

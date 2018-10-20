@@ -285,7 +285,9 @@ namespace NeuralNetworkNET.Networks.Implementations
         }
 
         /// <inheritdoc/>
-        public override bool Equals(INeuralNetwork other) => base.Equals(other) && Layers.Zip(other.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
+        public override bool Equals(INeuralNetwork other) => other != null &&
+                                                             base.Equals(other) &&
+                                                             Layers.Zip(other.Layers, (l1, l2) => l1.Equals(l2)).All(b => b);
 
         /// <inheritdoc/>
         public override INeuralNetwork Clone() => new SequentialNetwork(_Layers.Select(l => l.Clone()).ToArray());

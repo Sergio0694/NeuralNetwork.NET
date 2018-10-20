@@ -24,12 +24,6 @@ namespace NeuralNetworkNET.Helpers
         }
 
         /// <summary>
-        /// Removes the input <see cref="Action"/> from the list of handlers
-        /// </summary>
-        /// <param name="action">The <see cref="Action"/> to remove</param>
-        public void Remove(Action action) => Delegate.Remove(_InvocationList, action);
-
-        /// <summary>
         /// Raises the shared event
         /// </summary>
         public void Raise() => _InvocationList?.Invoke();

@@ -7,7 +7,7 @@ namespace NeuralNetworkNET.Extensions
     /// <summary>
     /// A static class that contains some extensions to check the contents of various types of <see cref="float"/> vectors
     /// </summary>
-    public static class DebugExtensions
+    internal static class DebugExtensions
     {
         /// <summary>
         /// Checks if two <see cref="Span{T}"/> instances have the same size and content

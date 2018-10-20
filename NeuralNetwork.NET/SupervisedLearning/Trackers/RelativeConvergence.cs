@@ -75,7 +75,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Trackers
         public float Tolerance
         {
             get => _Tolerance;
-            set => _Tolerance = value < 0 ? throw new ArgumentOutOfRangeException("value", "Tolerance should be positive") : value;
+            set => _Tolerance = value < 0 ? throw new ArgumentOutOfRangeException(nameof(value), "Tolerance should be positive") : value;
         }
 
         /// <summary>

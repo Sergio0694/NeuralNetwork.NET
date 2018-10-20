@@ -1,10 +1,12 @@
-﻿using NeuralNetworkNET.APIs.Structs;
+﻿using JetBrains.Annotations;
+using NeuralNetworkNET.APIs.Structs;
 
 namespace NeuralNetworkNET.APIs.Interfaces.Data
 {
     /// <summary>
     /// An interface for a dataset used to train or test a network
     /// </summary>
+    [PublicAPI]
     public interface IDataset
     {
         /// <summary>

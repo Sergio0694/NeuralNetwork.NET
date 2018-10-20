@@ -31,7 +31,7 @@ namespace NeuralNetworkNET.cuDNN
             lock (DnnReference)
             {
                 int id = Thread.CurrentThread.ManagedThreadId;
-                if (DnnReference.TryGetTarget(out Dnn dnn) && dnn != null && _ThreadId != id)
+                if (DnnReference.TryGetTarget(out Dnn dnn) && _ThreadId != id)
                 {
                     _ThreadId = id;
                     dnn.Gpu.Context.SetCurrent();
@@ -52,7 +52,7 @@ namespace NeuralNetworkNET.cuDNN
             {
                 lock (DnnReference)
                 {
-                    if (DnnReference.TryGetTarget(out Dnn dnn) && dnn != null) return dnn;
+                    if (DnnReference.TryGetTarget(out Dnn dnn)) return dnn;
                     dnn = Dnn.Get(Gpu.Default);
                     DnnReference.SetTarget(dnn);
                     SharedEventsService.TrainingStarting.Add(SynchronizeDnnContext);

@@ -12,6 +12,7 @@ namespace NeuralNetworkNET.Helpers
     /// <summary>
     /// A class with some helper methods to quickly convert a training report to a 2D chart
     /// </summary>
+    [PublicAPI]
     public static class TrainingProgressExportHelpers
     {
         // The Python matplotlib template
