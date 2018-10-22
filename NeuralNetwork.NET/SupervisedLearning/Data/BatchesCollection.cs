@@ -68,16 +68,21 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public long ByteSize => sizeof(float) * Count * (InputFeatures + OutputFeatures);
 
         /// <inheritdoc/>
-        public int Id
+        public unsafe int Id
         {
             get
             {
                 int[] temp = new int[Count];
+                int
+                    wx = InputFeatures,
+                    wy = OutputFeatures;
                 Parallel.For(0, Count, i =>
                 {
                     ref readonly SamplesBatch batch = ref Batches[i / BatchSize];
                     int offset = i % BatchSize;
-                    temp[i] = batch.X.Slice(offset).GetContentHashCode() ^ batch.Y.Slice(offset).GetContentHashCode();
+                    fixed (float* px = batch.X, py = batch.Y)
+                        temp[i] = new Span<float>(px + offset * wx, wx).GetContentHashCode() ^ 
+                                  new Span<float>(py + offset * wy, wy).GetContentHashCode();
                 }).AssertCompleted();
                 Array.Sort(temp);
                 return temp.AsSpan().GetContentHashCode();

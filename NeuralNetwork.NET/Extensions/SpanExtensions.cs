@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -30,14 +29,14 @@ namespace NeuralNetworkNET.Extensions
                 Parallel.For(0, cores, i =>
                 {
                     T* p = pc + i * batch;
-                    for (int j = 0; j < batch; j++, p++)
-                        Unsafe.Write(p, provider());
+                    for (int j = 0; j < batch; j++)
+                        p[j] = provider();
                 }).AssertCompleted();
 
                 // Remaining values
                 if (mod < 1) return;
                 for (int i = span.Length - mod; i < span.Length; i++)
-                    Unsafe.Write(pc + i, provider());
+                    pc[i] = provider();
             }
         }
 
@@ -72,7 +71,7 @@ namespace NeuralNetworkNET.Extensions
                 unchecked
                 {
                     for (int i = 0; i < span.Length; i++)
-                        hash = hash * 23 + Unsafe.Read<T>(p0 + i).GetHashCode();
+                        hash = hash * 23 + p0[i].GetHashCode();
                     return hash;
                 }
             }
