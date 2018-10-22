@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -17,29 +16,27 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="span">The <see cref="Span{T}"/> to fill up</param>
         /// <param name="provider">The values provider to use</param>
-        public static unsafe void Fill<T>(this Span<T> span, [NotNull] Func<T> provider) where T : struct
+        public static unsafe void Fill<T>(this Span<T> span, [NotNull] Func<T> provider) where T : unmanaged
         {
             // Fill in parallel
             int
                 cores = Environment.ProcessorCount,
                 batch = span.Length / cores,
-                mod = span.Length % cores,
-                size = Unsafe.SizeOf<T>();
-            ref T r0 = ref span.DangerousGetPinnableReference();
-            fixed (byte* p0 = &Unsafe.As<T, byte>(ref r0))
+                mod = span.Length % cores;
+            fixed (T* p0 = span)
             {
-                byte* pc = p0;
+                T* pc = p0;
                 Parallel.For(0, cores, i =>
                 {
-                    byte* p = pc + i * batch * size;
-                    for (int j = 0; j < batch; j++, p += size)
-                        Unsafe.Write(p, provider());
+                    T* p = pc + i * batch;
+                    for (int j = 0; j < batch; j++)
+                        p[j] = provider();
                 }).AssertCompleted();
 
                 // Remaining values
                 if (mod < 1) return;
                 for (int i = span.Length - mod; i < span.Length; i++)
-                    Unsafe.Write(pc + i * size, provider());
+                    pc[i] = provider();
             }
         }
 
@@ -51,11 +48,12 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="w">The number of matrix columns</param>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static T[,] AsMatrix<T>(this Span<T> span, int h, int w) where T : struct
+        public static unsafe T[,] AsMatrix<T>(this Span<T> span, int h, int w) where T : unmanaged
         {
             if (h * w != span.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
             T[,] m = new T[h, w];
-            span.CopyTo(m.AsSpan());
+            fixed (void* p = m)
+                span.CopyTo(new Span<T>(p, m.Length));
             return m;
         }
 
@@ -65,55 +63,32 @@ namespace NeuralNetworkNET.Extensions
         /// <typeparam name="T">The type of each value in the input <see cref="Span{T}"/></typeparam>
         /// <param name="span">The input <see cref="Span{T}"/> to read</param>
         [Pure]
-        public static unsafe int GetContentHashCode<T>(this Span<T> span) where T : struct
+        public static unsafe int GetContentHashCode<T>(this Span<T> span) where T : unmanaged
         {
-            fixed (byte* p0 = &Unsafe.As<T, byte>(ref span.DangerousGetPinnableReference()))
+            fixed (T* p0 = span)
             {
-                int size = Unsafe.SizeOf<T>();
                 int hash = 17;
                 unchecked
                 {
                     for (int i = 0; i < span.Length; i++)
-                        hash = hash * 23 + Unsafe.Read<T>(p0 + size * i).GetHashCode();
+                        hash = hash * 23 + p0[i].GetHashCode();
                     return hash;
                 }
             }
         }
 
         /// <summary>
-        /// Returns a deep copy of the input <see cref="Span{T}"/>
-        /// </summary>
-        /// <param name="span">The <see cref="Span{T}"/> to clone</param>
-        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to the use of the methods in the <see cref="Buffer"/> class</remarks>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static T[] Copy<T>(this Span<T> span) where T : struct
-        {
-            T[] result = new T[span.Length];
-            span.CopyTo(result);
-            return result;
-        }
-
-        /// <summary>
-        /// Returns a new <see cref="Span{T}"/> instance from the input matrix
-        /// </summary>
-        /// <typeparam name="T">The type of the input matrix</typeparam>
-        /// <param name="m">The input matrix</param>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>([NotNull] this T[,] m) where T : struct => Span<T>.DangerousCreate(m, ref m[0, 0], m.Length);
-
-        /// <summary>
         /// Extracts a single row from a given matrix
         /// </summary>
         /// <param name="m">The source matrix</param>
         /// <param name="row">The target row to return</param>
-        [Pure]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static Span<T> Slice<T>([NotNull] this T[,] m, int row) where T : struct
+        public static unsafe T[] Slice<T>([NotNull] this T[,] m, int row) where T : unmanaged
         {
             if (row < 0 || row > m.GetLength(0) - 1) throw new ArgumentOutOfRangeException(nameof(row), "The row index isn't valid");
-            return Span<T>.DangerousCreate(m, ref m[row, 0], m.GetLength(1));
+            int wm = m.GetLength(1);
+            fixed (T* p = m) return new Span<T>(p + row * wm, wm).ToArray();
         }
 
         #endregion
@@ -131,7 +106,7 @@ namespace NeuralNetworkNET.Extensions
             if (span.Length < 2) return default;
             int index = 0;
             float max = float.MinValue;
-            fixed (float* p = &span.DangerousGetPinnableReference())
+            fixed (float* p = span)
             {
                 for (int j = 0; j < span.Length; j++)
                 {
@@ -158,7 +133,7 @@ namespace NeuralNetworkNET.Extensions
         internal static unsafe bool MatchElementwiseThreshold(this Span<float> x1, Span<float> x2, float threshold)
         {
             if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
-            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+            fixed (float* px1 = x1, px2 = x2)
                 for (int i = 0; i < x1.Length; i++)
                     if (px1[i] > threshold != px2[i] > threshold)
                         return false;
@@ -177,7 +152,7 @@ namespace NeuralNetworkNET.Extensions
         internal static unsafe bool IsCloseTo(this Span<float> x1, Span<float> x2, float threshold)
         {
             if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
-            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+            fixed (float* px1 = x1, px2 = x2)
                 for (int i = 0; i < x1.Length; i++)
                     if ((px1[i] - px2[i]).Abs() > threshold)
                         return false;

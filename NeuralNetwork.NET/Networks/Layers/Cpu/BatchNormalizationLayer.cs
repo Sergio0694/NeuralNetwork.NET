@@ -107,6 +107,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), Iteration, Mu.AsSpan().Copy(), Sigma2.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new BatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().ToArray(), Biases.AsSpan().ToArray(), Iteration, Mu.AsSpan().ToArray(), Sigma2.AsSpan().ToArray(), ActivationType);
     }
 }

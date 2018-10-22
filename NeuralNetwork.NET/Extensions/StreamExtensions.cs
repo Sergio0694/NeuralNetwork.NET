@@ -16,7 +16,7 @@ namespace NeuralNetworkNET.Extensions
         /// <typeparam name="T">The <see langword="struct"/> type to serialize</typeparam>
         /// <param name="stream">The target <see cref="Stream"/> to use to write the data</param>
         /// <param name="value">The <see langword="struct"/> to write to the <see cref="Stream"/> instance</param>
-        public static unsafe void Write<T>([NotNull] this Stream stream, T value) where T : struct
+        public static unsafe void Write<T>([NotNull] this Stream stream, T value) where T : unmanaged
         {
             byte[] bytes = new byte[Unsafe.SizeOf<T>()];
             fixed (void* p = bytes) Unsafe.Copy(p, ref value);
@@ -30,7 +30,7 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="stream">The source <see cref="Stream"/> instance to use to read the data</param>
         /// <param name="value">The resulting <typeparamref name="T"/> value that is read from the <see cref="Stream"/></param>
         [MustUseReturnValue]
-        public static unsafe bool TryRead<T>([NotNull] this Stream stream, out T value) where T : struct
+        public static unsafe bool TryRead<T>([NotNull] this Stream stream, out T value) where T : unmanaged
         {
             byte[] bytes = new byte[Unsafe.SizeOf<T>()];
             value = default;

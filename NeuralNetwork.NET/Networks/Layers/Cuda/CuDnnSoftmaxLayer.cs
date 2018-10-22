@@ -112,6 +112,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnSoftmaxLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy());
+        public override INetworkLayer Clone() => new CuDnnSoftmaxLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().ToArray(), Biases.AsSpan().ToArray());
     }
 }

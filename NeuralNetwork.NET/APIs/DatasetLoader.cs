@@ -9,8 +9,8 @@ using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.SupervisedLearning.Data;
 using NeuralNetworkNET.SupervisedLearning.Parameters;
 using NeuralNetworkNET.SupervisedLearning.Progress;
-using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace NeuralNetworkNET.APIs
 {

@@ -188,7 +188,7 @@ namespace NeuralNetworkNET.APIs.Datasets
                             fine = stream.ReadByte();
                         stream.Read(temp, 0, SampleSize);
                         using (Image<Rgb24> image = new Image<Rgb24>(32, 32))
-                            fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+                            fixed (Rgb24* p0 = image.GetPixelSpan())
                             {
                                 for (int j = 0; j < ImageSize; j++)
                                     p0[j] = new Rgb24(ptemp[j], ptemp[j + ImageSize], ptemp[j + 2 * ImageSize]);

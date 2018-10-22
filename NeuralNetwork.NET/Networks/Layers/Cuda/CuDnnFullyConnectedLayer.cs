@@ -95,6 +95,6 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnFullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new CuDnnFullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().ToArray(), Biases.AsSpan().ToArray(), ActivationType);
     }
 }

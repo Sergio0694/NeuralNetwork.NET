@@ -74,7 +74,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         #endregion
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new FullyConnectedLayer(InputInfo, OutputInfo.Size, Weights.AsSpan().ToArray(), Biases.AsSpan().ToArray(), ActivationType);
 
         /// <summary>
         /// Tries to deserialize a new <see cref="FullyConnectedLayer"/> from the input <see cref="Stream"/>

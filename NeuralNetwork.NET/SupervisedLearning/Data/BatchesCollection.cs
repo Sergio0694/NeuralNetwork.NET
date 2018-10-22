@@ -68,16 +68,21 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         public long ByteSize => sizeof(float) * Count * (InputFeatures + OutputFeatures);
 
         /// <inheritdoc/>
-        public int Id
+        public unsafe int Id
         {
             get
             {
                 int[] temp = new int[Count];
+                int
+                    wx = InputFeatures,
+                    wy = OutputFeatures;
                 Parallel.For(0, Count, i =>
                 {
                     ref readonly SamplesBatch batch = ref Batches[i / BatchSize];
                     int offset = i % BatchSize;
-                    temp[i] = batch.X.Slice(offset).GetContentHashCode() ^ batch.Y.Slice(offset).GetContentHashCode();
+                    fixed (float* px = batch.X, py = batch.Y)
+                        temp[i] = new Span<float>(px + offset * wx, wx).GetContentHashCode() ^ 
+                                  new Span<float>(py + offset * wy, wy).GetContentHashCode();
                 }).AssertCompleted();
                 Array.Sort(temp);
                 return temp.AsSpan().GetContentHashCode();
@@ -100,8 +105,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                     for (int i = 0; i < n; i++)
                     {
                         float[]
-                            x = b.X.Slice(i).ToArray(),
-                            y = b.Y.Slice(i).ToArray();
+                            x = b.X.Slice(i),
+                            y = b.Y.Slice(i);
                         yield return () => (x, y);
                         foreach (Func<float[], float[]> f in factories)
                             yield return () => (f(x), y);
@@ -162,7 +167,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
         /// <exception cref="ArgumentOutOfRangeException">The dataset and result matrices have a different number of rows</exception>
         [NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static BatchesCollection From((float[,] X, float[,] Y) dataset, int size)
+        public static unsafe BatchesCollection From((float[,] X, float[,] Y) dataset, int size)
         {
             // Local parameters
             if (size < 10) throw new ArgumentOutOfRangeException(nameof(size), "The batch size can't be smaller than 10");
@@ -178,21 +183,24 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                 nBatchMod = samples % size;
             bool oddBatchPresent = nBatchMod > 0;
             SamplesBatch[] batches = new SamplesBatch[nBatches + (oddBatchPresent ? 1 : 0)];
-            for (int i = 0; i < batches.Length; i++)
+            fixed (float* px = dataset.X, py = dataset.Y)
             {
-                if (oddBatchPresent && i == batches.Length - 1)
+                for (int i = 0; i < batches.Length; i++)
                 {
-                    batches[i] = SamplesBatch.From(
-                        Span<float>.DangerousCreate(dataset.X, ref dataset.X[i * size, 0], nBatchMod * wx),
-                        Span<float>.DangerousCreate(dataset.Y, ref dataset.Y[i * size, 0], nBatchMod * wy),
-                        wx, wy);
-                }
-                else
-                {
-                    batches[i] = SamplesBatch.From(
-                        Span<float>.DangerousCreate(dataset.X, ref dataset.X[i * size, 0], size * wx),
-                        Span<float>.DangerousCreate(dataset.Y, ref dataset.Y[i * size, 0], size * wy),
-                        wx, wy);
+                    if (oddBatchPresent && i == batches.Length - 1)
+                    {
+                        batches[i] = SamplesBatch.From(
+                            new Span<float>(px + i * size * wx, nBatchMod * wx),
+                            new Span<float>(py + i * size * wy, nBatchMod * wy),
+                            wx, wy);
+                    }
+                    else
+                    {
+                        batches[i] = SamplesBatch.From(
+                            new Span<float>(px + i * size * wx, size * wx),
+                            new Span<float>(py + i * size * wy, size * wy),
+                            wx, wy);
+                    }
                 }
             }
             return new BatchesCollection(batches);

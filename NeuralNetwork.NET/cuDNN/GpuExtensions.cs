@@ -42,17 +42,19 @@ namespace NeuralNetworkNET.cuDNN
 
             // Memory copy
             DeviceMemory<float> result_gpu = gpu.AllocateDevice<float>(source.Entities * length);
-            CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc CUDAInterop.CUDA_MEMCPY2D_st[1];
-            ptSt[0] = new CUDAInterop.CUDA_MEMCPY2D_st
+            CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc[]
             {
-                srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
-                srcHost = source.Ptr + sizeof(float) * offset,
-                srcPitch = new IntPtr(sizeof(float) * source.Length),
-                dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
-                dstDevice = result_gpu.Handle,
-                dstPitch = new IntPtr(sizeof(float) * length),
-                WidthInBytes = new IntPtr(sizeof(float) * length),
-                Height = new IntPtr(source.Entities)
+                new CUDAInterop.CUDA_MEMCPY2D_st
+                {
+                    srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
+                    srcHost = source.Ptr + sizeof(float) * offset,
+                    srcPitch = new IntPtr(sizeof(float) * source.Length),
+                    dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
+                    dstDevice = result_gpu.Handle,
+                    dstPitch = new IntPtr(sizeof(float) * length),
+                    WidthInBytes = new IntPtr(sizeof(float) * length),
+                    Height = new IntPtr(source.Entities)
+                }
             };
             CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy2D(ptSt);
             return result == CUDAInterop.cudaError_enum.CUDA_SUCCESS
@@ -103,17 +105,19 @@ namespace NeuralNetworkNET.cuDNN
             if (destination.Length - offset < length) throw new ArgumentOutOfRangeException(nameof(offset), "The input offset isn't valid");
 
             // Memory copy
-            CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc CUDAInterop.CUDA_MEMCPY2D_st[1];
-            ptSt[0] = new CUDAInterop.CUDA_MEMCPY2D_st
+            CUDAInterop.CUDA_MEMCPY2D_st* ptSt = stackalloc[]
             {
-                srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
-                srcDevice = source.Handle,
-                srcPitch = new IntPtr(sizeof(float) * length),
-                dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
-                dstHost = destination.Ptr + sizeof(float) * offset,
-                dstPitch = new IntPtr(sizeof(float) * destination.Length),
-                WidthInBytes = new IntPtr(sizeof(float) * length),
-                Height = new IntPtr(destination.Entities)
+                new CUDAInterop.CUDA_MEMCPY2D_st
+                {
+                    srcMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_DEVICE,
+                    srcDevice = source.Handle,
+                    srcPitch = new IntPtr(sizeof(float) * length),
+                    dstMemoryType = CUDAInterop.CUmemorytype_enum.CU_MEMORYTYPE_HOST,
+                    dstHost = destination.Ptr + sizeof(float) * offset,
+                    dstPitch = new IntPtr(sizeof(float) * destination.Length),
+                    WidthInBytes = new IntPtr(sizeof(float) * length),
+                    Height = new IntPtr(destination.Entities)
+                }
             };
             CUDAInterop.cudaError_enum result = CUDAInterop.cuMemcpy2D(ptSt);
             if (result != CUDAInterop.cudaError_enum.CUDA_SUCCESS)

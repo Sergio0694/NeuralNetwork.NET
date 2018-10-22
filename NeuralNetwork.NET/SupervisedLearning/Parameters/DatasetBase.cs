@@ -43,12 +43,22 @@ namespace NeuralNetworkNET.SupervisedLearning.Parameters
         }
 
         /// <inheritdoc/>
-        public int Id
+        public unsafe int Id
         {
             get
             {
                 int[] temp = new int[Count];
-                Parallel.For(0, Count, i => temp[i] = Dataset.X.Slice(i).GetContentHashCode() ^ Dataset.Y.Slice(i).GetContentHashCode()).AssertCompleted();
+                int
+                    wx = Dataset.X.GetLength(1),
+                    wy = Dataset.Y.GetLength(1);
+                fixed (float* px0 = Dataset.X, py0 = Dataset.Y)
+                {
+                    float* px = px0, py = py0;
+                    Parallel.For(0, Count, i =>
+                    {
+                        temp[i] = new Span<float>(px + i * wx, wx).GetContentHashCode() ^ new Span<float>(py + i * wy, wy).GetContentHashCode();
+                    }).AssertCompleted();
+                }
                 Array.Sort(temp);
                 return temp.AsSpan().GetContentHashCode();
             }
