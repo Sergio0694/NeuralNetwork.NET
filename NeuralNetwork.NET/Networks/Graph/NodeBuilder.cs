@@ -85,6 +85,15 @@ namespace NeuralNetworkNET.Networks.Graph
         #region APIs
 
         /// <summary>
+        /// Creates a new linear sum node that merges two input nodes
+        /// </summary>
+        /// <param name="first">The first node to sum</param>
+        /// <param name="second">The second node to sum</param>
+        [PublicAPI]
+        [MustUseReturnValue, NotNull]
+        public static NodeBuilder operator +([NotNull] NodeBuilder first, [NotNull] NodeBuilder second) => first.Sum(second);
+
+        /// <summary>
         /// Creates a new linear sum node that merges multiple input nodes
         /// </summary>
         /// <param name="inputs">The sequence of parent nodes for the new instance</param>

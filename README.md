@@ -122,7 +122,7 @@ INeuralNetwork network = NetworkManager.NewGraph(TensorInfo.Image<Rgb24>(32,32),
         CuDnnNetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU),
         CuDnnNetworkLayers.Convolutional(ConvolutionInfo.Same(), (5, 5), 40, ActivationType.ReLU),
         CuDnnNetworkLayers.Convolutional((1, 1), 20, ActivationType.ReLU));
-    var sum = conv2.Sum(pool1);
+    var sum = conv2 + pool1;
 
     var fc1 = sum.Layer(CuDnnNetworkLayers.FullyConnected(250, ActivationType.LeCunTanh));
     var fc2 = fc1.Layer(CuDnnNetworkLayers.FullyConnected(125, ActivationType.LeCunTanh));
