@@ -121,7 +121,7 @@ namespace NeuralNetworkNET.Networks.Graph.Nodes
             public override unsafe void Forward(Span<Tensor> inputs, out Tensor z, out Tensor a)
             {
                 Descriptor.Set4D(DataType.FLOAT, TensorFormat.CUDNN_TENSOR_NCHW, inputs[0].Entities, inputs[0].Length, 1, 1);
-                fixed (Tensor* p = &inputs.DangerousGetPinnableReference())
+                fixed (Tensor* p = inputs)
                 {
                     Tensor.New(p->Entities, p->Length, out z);
                     using (DeviceMemory<float> y_gpu = DnnInstance.Gpu.AllocateDevice(*p))

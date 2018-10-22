@@ -23,7 +23,7 @@ namespace NeuralNetworkNET.Extensions
                 cores = Environment.ProcessorCount,
                 batch = span.Length / cores,
                 mod = span.Length % cores;
-            fixed (T* p0 = &span.DangerousGetPinnableReference())
+            fixed (T* p0 = span)
             {
                 T* pc = p0;
                 Parallel.For(0, cores, i =>
@@ -65,7 +65,7 @@ namespace NeuralNetworkNET.Extensions
         [Pure]
         public static unsafe int GetContentHashCode<T>(this Span<T> span) where T : unmanaged
         {
-            fixed (T* p0 = &span.DangerousGetPinnableReference())
+            fixed (T* p0 = span)
             {
                 int hash = 17;
                 unchecked
@@ -106,7 +106,7 @@ namespace NeuralNetworkNET.Extensions
             if (span.Length < 2) return default;
             int index = 0;
             float max = float.MinValue;
-            fixed (float* p = &span.DangerousGetPinnableReference())
+            fixed (float* p = span)
             {
                 for (int j = 0; j < span.Length; j++)
                 {
@@ -133,7 +133,7 @@ namespace NeuralNetworkNET.Extensions
         internal static unsafe bool MatchElementwiseThreshold(this Span<float> x1, Span<float> x2, float threshold)
         {
             if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
-            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+            fixed (float* px1 = x1, px2 = x2)
                 for (int i = 0; i < x1.Length; i++)
                     if (px1[i] > threshold != px2[i] > threshold)
                         return false;
@@ -152,7 +152,7 @@ namespace NeuralNetworkNET.Extensions
         internal static unsafe bool IsCloseTo(this Span<float> x1, Span<float> x2, float threshold)
         {
             if (x1.Length != x2.Length) throw new ArgumentException("The two input spans must have the same length");
-            fixed (float* px1 = &x1.DangerousGetPinnableReference(), px2 = &x2.DangerousGetPinnableReference())
+            fixed (float* px1 = x1, px2 = x2)
                 for (int i = 0; i < x1.Length; i++)
                     if ((px1[i] - px2[i]).Abs() > threshold)
                         return false;

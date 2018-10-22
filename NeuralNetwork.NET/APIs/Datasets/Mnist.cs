@@ -172,7 +172,7 @@ namespace NeuralNetworkNET.APIs.Datasets
                         xGzip.Read(temp, 0, SampleSize);
                         int label = yGzip.ReadByte();
                         using (Image<Rgb24> image = new Image<Rgb24>(28, 28))
-                            fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+                            fixed (Rgb24* p0 = image.GetPixelSpan())
                             {
                                 for (int j = 0; j < SampleSize; j++)
                                     p0[j] = new Rgb24(ptemp[j], ptemp[j], ptemp[j]);

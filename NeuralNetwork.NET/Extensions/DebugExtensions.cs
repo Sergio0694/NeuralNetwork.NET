@@ -19,7 +19,7 @@ namespace NeuralNetworkNET.Extensions
         public static unsafe bool ContentEquals(this Span<float> x1, Span<float> x2, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (x1.Length != x2.Length) return false;
-            fixed (float* p1 = &x1.DangerousGetPinnableReference(), p2 = &x2.DangerousGetPinnableReference())
+            fixed (float* p1 = x1, p2 = x2)
             {
                 for (int i = 0; i < x1.Length; i++)
                     if (!p1[i].EqualsWithDelta(p2[i], absolute, relative))

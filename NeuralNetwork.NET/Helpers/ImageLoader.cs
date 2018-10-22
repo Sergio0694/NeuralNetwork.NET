@@ -6,6 +6,7 @@ using NeuralNetworkNET.APIs.Enums;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace NeuralNetworkNET.Helpers
 {
@@ -42,7 +43,7 @@ namespace NeuralNetworkNET.Helpers
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 4];
-            fixed (Argb32* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+            fixed (Argb32* p0 = image.GetPixelSpan())
             fixed (float* psample = sample)
             {
                 for (int i = 0; i < resolution; i++)
@@ -63,7 +64,7 @@ namespace NeuralNetworkNET.Helpers
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 4];
-            fixed (Rgba32* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+            fixed (Rgba32* p0 = image.GetPixelSpan())
             fixed (float* psample = sample)
             {
                 for (int i = 0; i < resolution; i++)
@@ -84,7 +85,7 @@ namespace NeuralNetworkNET.Helpers
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution * 3];
-            fixed (Rgb24* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+            fixed (Rgb24* p0 = image.GetPixelSpan())
             fixed (float* psample = sample)
             {
                 for (int i = 0; i < resolution; i++)
@@ -104,7 +105,7 @@ namespace NeuralNetworkNET.Helpers
         {
             int resolution = image.Height * image.Width;
             float[] sample = new float[resolution];
-            fixed (Alpha8* p0 = &image.DangerousGetPinnableReferenceToPixelBuffer())
+            fixed (Alpha8* p0 = image.GetPixelSpan())
             fixed (float* psample = sample)
                 for (int i = 0; i < resolution; i++)
                 {

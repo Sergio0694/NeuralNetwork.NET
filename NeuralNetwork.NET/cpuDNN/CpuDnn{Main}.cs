@@ -242,7 +242,7 @@ namespace NeuralNetworkNET.cpuDNN
                 n = y.Entities,
                 count = 0;
             int* offsets = stackalloc int[inputs.Length];
-            fixed (Tensor* p = &inputs.DangerousGetPinnableReference())
+            fixed (Tensor* p = inputs)
             {
                 // Extract input info
                 for (int i = 0; i < inputs.Length; i++)

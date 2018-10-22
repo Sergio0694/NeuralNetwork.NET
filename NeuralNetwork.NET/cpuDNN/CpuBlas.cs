@@ -109,7 +109,7 @@ namespace NeuralNetworkNET.cpuDNN
                 count = inputs.Length,
                 n = y.Entities,
                 l = y.Length;
-            fixed (Tensor * p = &inputs.DangerousGetPinnableReference())
+            fixed (Tensor * p = inputs)
             {
                 // Initial checks
                 float** ps = stackalloc float*[count];
