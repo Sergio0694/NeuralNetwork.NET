@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -11,6 +12,19 @@ namespace NeuralNetworkNET.Extensions
     /// </summary>
     internal static class ArrayExtensions
     {
+        /// <summary>
+        /// Flattens a 2D array to a 1D array
+        /// </summary>
+        /// <typeparam name="T">The type of each element in the input matrix</typeparam>
+        /// <param name="m">The input 2D array to flatten</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe T[] Flatten<T>([NotNull] this T[,] m) where T : struct
+        {
+            fixed (void* p = &Unsafe.As<T, byte>(ref m[0, 0]))
+                return new Span<T>(p, m.Length * Unsafe.SizeOf<T>()).ToArray();
+        }
+
         /// <summary>
         /// Merges the line pairs in the input collection into two 2D arrays
         /// </summary>

@@ -422,8 +422,8 @@ namespace NeuralNetworkNET.Networks.Implementations
         public override IReadOnlyList<(float[] Z, float[] A)> ExtractDeepFeatures(float[] x)
         {
             return (from pair in ExtractDeepFeatures(x.AsSpan().AsMatrix(1, x.Length))
-                    let z = pair.Z?.AsSpan().ToArray()
-                    let a = pair.A.AsSpan().ToArray()
+                    let z = pair.Z?.Flatten()
+                    let a = pair.A.Flatten()
                     select (z, a)).ToArray();
         }
 

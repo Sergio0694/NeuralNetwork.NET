@@ -281,7 +281,8 @@ namespace NeuralNetworkNET.APIs.Structs
         {
             if (Ptr == IntPtr.Zero) return new float[0, 0];
             float[,] result = new float[Entities, Length];
-            new Span<float>(this, Size).CopyTo(result.AsSpan());
+            fixed (float* p = result)
+                new Span<float>(this, Size).CopyTo(new Span<float>(p, Size));
             if (!keepAlive) Free();
             return result;
         }

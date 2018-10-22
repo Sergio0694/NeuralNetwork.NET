@@ -55,13 +55,14 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="o">The second matrix to test</param>
         /// <param name="absolute">The relative comparison threshold</param>
         /// <param name="relative">The relative comparison threshold</param>
-        public static bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o, float absolute = 1e-6f, float relative = 1e-6f)
+        public static unsafe bool ContentEquals([CanBeNull] this float[,] m, [CanBeNull] float[,] o, float absolute = 1e-6f, float relative = 1e-6f)
         {
             if (m == null && o == null) return true;
             if (m == null || o == null) return false;
             if (m.GetLength(0) != o.GetLength(0) ||
                 m.GetLength(1) != o.GetLength(1)) return false;
-            return m.AsSpan().ContentEquals(o.AsSpan(), absolute, relative);
+            fixed (float* pm = m, po = o)
+                return new Span<float>(pm, m.Length).ContentEquals(new Span<float>(po, o.Length), absolute, relative);
         }
 
         /// <summary>

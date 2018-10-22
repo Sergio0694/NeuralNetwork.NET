@@ -51,11 +51,12 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="w">The number of matrix columns</param>
         [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static T[,] AsMatrix<T>(this Span<T> span, int h, int w) where T : struct
+        public static unsafe T[,] AsMatrix<T>(this Span<T> span, int h, int w) where T : struct
         {
             if (h * w != span.Length) throw new ArgumentException("The input dimensions don't match the source vector size");
             T[,] m = new T[h, w];
-            span.CopyTo(m.AsSpan());
+            fixed (void* p = &Unsafe.As<T, byte>(ref m[0, 0]))
+                span.CopyTo(new Span<T>(p, m.Length * Unsafe.SizeOf<T>()));
             return m;
         }
 
@@ -93,15 +94,6 @@ namespace NeuralNetworkNET.Extensions
             span.CopyTo(result);
             return result;
         }
-
-        /// <summary>
-        /// Returns a new <see cref="Span{T}"/> instance from the input matrix
-        /// </summary>
-        /// <typeparam name="T">The type of the input matrix</typeparam>
-        /// <param name="m">The input matrix</param>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>([NotNull] this T[,] m) where T : struct => Span<T>.DangerousCreate(m, ref m[0, 0], m.Length);
 
         /// <summary>
         /// Extracts a single row from a given matrix
