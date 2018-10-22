@@ -82,20 +82,6 @@ namespace NeuralNetworkNET.Extensions
         }
 
         /// <summary>
-        /// Returns a deep copy of the input <see cref="Span{T}"/>
-        /// </summary>
-        /// <param name="span">The <see cref="Span{T}"/> to clone</param>
-        /// <remarks>This method avoids the boxing of the <see cref="Array.Clone"/> method, and it is faster thanks to the use of the methods in the <see cref="Buffer"/> class</remarks>
-        [Pure]
-        [CollectionAccess(CollectionAccessType.Read)]
-        public static T[] Copy<T>(this Span<T> span) where T : struct
-        {
-            T[] result = new T[span.Length];
-            span.CopyTo(result);
-            return result;
-        }
-
-        /// <summary>
         /// Extracts a single row from a given matrix
         /// </summary>
         /// <param name="m">The source matrix</param>

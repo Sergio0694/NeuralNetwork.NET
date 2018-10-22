@@ -129,7 +129,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cpu
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new ConvolutionalLayer(InputInfo, OperationInfo, KernelInfo, OutputInfo, Weights.AsSpan().ToArray(), Biases.AsSpan().ToArray(), ActivationType);
 
         /// <inheritdoc/>
         public override void Serialize(Stream stream)

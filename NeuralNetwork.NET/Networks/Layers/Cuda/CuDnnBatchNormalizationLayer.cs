@@ -167,7 +167,7 @@ namespace NeuralNetworkNET.Networks.Layers.Cuda
         }
 
         /// <inheritdoc/>
-        public override INetworkLayer Clone() => new CuDnnBatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().Copy(), Biases.AsSpan().Copy(), Iteration, Mu.AsSpan().Copy(), Sigma2.AsSpan().Copy(), ActivationType);
+        public override INetworkLayer Clone() => new CuDnnBatchNormalizationLayer(InputInfo, NormalizationMode, Weights.AsSpan().ToArray(), Biases.AsSpan().ToArray(), Iteration, Mu.AsSpan().ToArray(), Sigma2.AsSpan().ToArray(), ActivationType);
 
         #region IDisposable
 
