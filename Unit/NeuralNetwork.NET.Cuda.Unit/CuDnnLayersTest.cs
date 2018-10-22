@@ -176,7 +176,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             BatchNormalizationLayerBase
                 cpu = new BatchNormalizationLayer(TensorInfo.Linear(250), NormalizationMode.PerActivation, ActivationType.ReLU),
-                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().Copy(), cpu.Sigma2.AsSpan().Copy(), cpu.ActivationType);
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().ToArray(), cpu.Sigma2.AsSpan().ToArray(), cpu.ActivationType);
             TestForward(cpu, gpu, 400);
         }
 
@@ -185,7 +185,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             BatchNormalizationLayerBase
                 cpu = new BatchNormalizationLayer(TensorInfo.Linear(250), NormalizationMode.PerActivation, ActivationType.ReLU),
-                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().Copy(), cpu.Sigma2.AsSpan().Copy(), cpu.ActivationType);
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.PerActivation, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().ToArray(), cpu.Sigma2.AsSpan().ToArray(), cpu.ActivationType);
             TestBackward(cpu, gpu, 400);
         }
 
@@ -194,7 +194,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             BatchNormalizationLayerBase
                 cpu = new BatchNormalizationLayer(TensorInfo.Volume(12, 12, 13), NormalizationMode.Spatial, ActivationType.ReLU),
-                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.Spatial, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().Copy(), cpu.Sigma2.AsSpan().Copy(), cpu.ActivationType);
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.Spatial, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().ToArray(), cpu.Sigma2.AsSpan().ToArray(), cpu.ActivationType);
             TestForward(cpu, gpu, 400);
         }
 
@@ -203,7 +203,7 @@ namespace NeuralNetworkNET.Cuda.Unit
         {
             BatchNormalizationLayerBase
                 cpu = new BatchNormalizationLayer(TensorInfo.Volume(12, 12, 13), NormalizationMode.Spatial, ActivationType.ReLU),
-                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.Spatial, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().Copy(), cpu.Sigma2.AsSpan().Copy(), cpu.ActivationType);
+                gpu = new CuDnnBatchNormalizationLayer(cpu.InputInfo, NormalizationMode.Spatial, cpu.Weights, cpu.Biases, cpu.Iteration, cpu.Mu.AsSpan().ToArray(), cpu.Sigma2.AsSpan().ToArray(), cpu.ActivationType);
             TestBackward(cpu, gpu, 400);
         }
 
