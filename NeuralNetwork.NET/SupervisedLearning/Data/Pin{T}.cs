@@ -7,7 +7,7 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
     /// It can be used to replace <see cref="System.Span{T}"/> to quickly pass pointers around in non stack-only methods.
     /// </summary>
     /// <typeparam name="T">The type of the target referenced by the exposed pointer</typeparam>
-    internal readonly unsafe struct Pin<T> where T : struct
+    internal readonly unsafe struct Pin<T> where T : unmanaged
     {
         /// <summary>
         /// The pinned pointer

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
@@ -19,10 +18,9 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="m">The input 2D array to flatten</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static unsafe T[] Flatten<T>([NotNull] this T[,] m) where T : struct
+        public static unsafe T[] Flatten<T>([NotNull] this T[,] m) where T : unmanaged
         {
-            fixed (void* p = &Unsafe.As<T, byte>(ref m[0, 0]))
-                return new Span<T>(p, m.Length * Unsafe.SizeOf<T>()).ToArray();
+            fixed (T* p = m) return new Span<T>(p, m.Length).ToArray();
         }
 
         /// <summary>
@@ -32,17 +30,24 @@ namespace NeuralNetworkNET.Extensions
         /// <param name="lines">The lines to merge</param>
         [Pure]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static (T[,], T[,]) MergeLines<T>(this IEnumerable<(T[], T[])> lines) where T : struct
+        public static unsafe (T[,], T[,]) MergeLines<T>(this IEnumerable<(T[], T[])> lines) where T : unmanaged
         {
             (T[] X, T[] Y)[] set = lines.ToArray();
             T[,] 
                 x = new T[set.Length, set[0].X.Length],
                 y = new T[set.Length, set[0].Y.Length];
-            Parallel.For(0, set.Length, i =>
+            int
+                wx = x.GetLength(1),
+                wy = y.GetLength(1);
+            fixed (T* px0 = x, py0 = y)
             {
-                set[i].X.AsSpan().CopyTo(x.Slice(i));
-                set[i].Y.AsSpan().CopyTo(y.Slice(i));
-            }).AssertCompleted();
+                T* px = px0, py = py0;
+                Parallel.For(0, set.Length, i =>
+                {
+                    set[i].X.AsSpan().CopyTo(new Span<T>(px + i * wx, wx));
+                    set[i].Y.AsSpan().CopyTo(new Span<T>(py + i * wy, wy));
+                }).AssertCompleted();
+            }
             return (x, y);
         }
     }

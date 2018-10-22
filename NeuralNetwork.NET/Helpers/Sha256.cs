@@ -24,11 +24,11 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="array">The input array to process</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static unsafe byte[] Hash<T>([NotNull] T[] array) where T : struct
+        public static unsafe byte[] Hash<T>([NotNull] T[] array) where T : unmanaged
         {
             int size = Unsafe.SizeOf<T>() * array.Length;
-            fixed (byte* p = &Unsafe.As<T, byte>(ref array[0]))
-            using (UnmanagedMemoryStream stream = new UnmanagedMemoryStream(p, size, size, FileAccess.Read))
+            fixed (T* p = array)
+            using (UnmanagedMemoryStream stream = new UnmanagedMemoryStream((byte*)p, size, size, FileAccess.Read))
             using (SHA256 provider = SHA256.Create())
             {
                 return provider.ComputeHash(stream);
@@ -42,7 +42,7 @@ namespace NeuralNetworkNET.Helpers
         /// <param name="arrays">The arrays to process</param>
         [PublicAPI]
         [Pure, NotNull]
-        public static unsafe byte[] Hash<T>([NotNull, ItemNotNull] params T[][] arrays) where T : struct
+        public static unsafe byte[] Hash<T>([NotNull, ItemNotNull] params T[][] arrays) where T : unmanaged
         {
             // Compute the hashes in parallel
             if (arrays.Length == 0) return new byte[0];
