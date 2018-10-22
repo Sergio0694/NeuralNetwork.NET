@@ -10,14 +10,14 @@ namespace NeuralNetworkNET.APIs.Structs
         /// <summary>
         /// Gets the <see cref="Span{T}"/> referencing the current sample inputs
         /// </summary>
-        public Span<float> X { get; }
+        public ReadOnlySpan<float> X { get; }
 
         /// <summary>
         /// Gets the <see cref="Span{T}"/> referencing the current sample expected outputs
         /// </summary>
-        public Span<float> Y { get; }
+        public ReadOnlySpan<float> Y { get; }
 
-        internal DatasetSample(Span<float> x, Span<float> y)
+        internal DatasetSample(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             X = x;
             Y = y;

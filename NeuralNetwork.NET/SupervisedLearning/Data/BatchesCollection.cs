@@ -105,8 +105,8 @@ namespace NeuralNetworkNET.SupervisedLearning.Data
                     for (int i = 0; i < n; i++)
                     {
                         float[]
-                            x = b.X.Slice(i).ToArray(),
-                            y = b.Y.Slice(i).ToArray();
+                            x = b.X.Slice(i),
+                            y = b.Y.Slice(i);
                         yield return () => (x, y);
                         foreach (Func<float[], float[]> f in factories)
                             yield return () => (f(x), y);

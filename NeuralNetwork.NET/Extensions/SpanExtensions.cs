@@ -82,12 +82,13 @@ namespace NeuralNetworkNET.Extensions
         /// </summary>
         /// <param name="m">The source matrix</param>
         /// <param name="row">The target row to return</param>
-        [Pure]
+        [Pure, NotNull]
         [CollectionAccess(CollectionAccessType.Read)]
-        public static Span<T> Slice<T>([NotNull] this T[,] m, int row) where T : struct
+        public static unsafe T[] Slice<T>([NotNull] this T[,] m, int row) where T : unmanaged
         {
             if (row < 0 || row > m.GetLength(0) - 1) throw new ArgumentOutOfRangeException(nameof(row), "The row index isn't valid");
-            return Span<T>.DangerousCreate(m, ref m[row, 0], m.GetLength(1));
+            int wm = m.GetLength(1);
+            fixed (T* p = m) return new Span<T>(p + row * wm, wm).ToArray();
         }
 
         #endregion
