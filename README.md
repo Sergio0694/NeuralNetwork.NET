@@ -138,10 +138,10 @@ This class acts as a container to quickly check and modify any setting at any ti
 For example, it is possible to customize the criteria used by the networks to check their performance during training
 
 ```C#
-NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();      // The default mode (mutually-exclusive classes)
+NetworkSettings.AccuracyTester = AccuracyTesters.Argmax();       // The default mode (mutually-exclusive classes)
 
 // Other testers are available too
-NetworkSettings.AccuracyTester = AccuracyTesters.Threshold();   // Useful for overlapping classes
+NetworkSettings.AccuracyTester = AccuracyTesters.Threshold();    // Useful for overlapping classes
 NetworkSettings.AccuracyTester = AccuracyTesters.Distance(0.2f); // Distance between results and expected outputs
 ```
 
@@ -185,7 +185,7 @@ The **NeuralNetwork.NET** library requires .NET Standard 2.0 support, so it is a
 - .NET Framework >= 4.6.1
 - .NET Core >= 2.0
 - UWP (from SDK 10.0.16299)
-- Mono 5.4
+- Mono >= 5.4
 - Xamarin.iOS 10.14, Xamarin.Mac 3.8, Xamarin.Android 8.0
 
-In addition to the frameworks above, you need an IDE with C# 7.2 support to compile the library on your PC.
+In addition to the frameworks above, you need an IDE with C# 7.3 support to compile the library on your PC.
