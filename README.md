@@ -1,4 +1,4 @@
-![](http://i.pi.gy/8ZDDE.png)
+![](https://i.imgur.com/PVSfgik.png)
 [![NuGet](https://img.shields.io/nuget/v/NeuralNetwork.NET.svg)](https://www.nuget.org/packages/NeuralNetwork.NET/) [![NuGet](https://img.shields.io/nuget/dt/NeuralNetwork.NET.svg)](https://www.nuget.org/stats/packages/NeuralNetwork.NET?groupby=Version) [![AppVeyor](https://img.shields.io/appveyor/ci/Sergio0694/neuralnetwork-net.svg)](https://ci.appveyor.com/project/Sergio0694/neuralnetwork-net) [![AppVeyor tests](https://img.shields.io/appveyor/tests/Sergio0694/neuralnetwork-net.svg)](https://ci.appveyor.com/project/Sergio0694/neuralnetwork-net) [![Twitter Follow](https://img.shields.io/twitter/follow/Sergio0694.svg?style=flat&label=Follow)](https://twitter.com/SergioPedri)
 
 # What is it?
