@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.Core.Enums;
 using NeuralNetworkDotNet.Core.Helpers;
@@ -90,6 +91,51 @@ namespace NeuralNetworkDotNet.Core.Structs
         public static Tensor Like(in Tensor tensor, AllocationMode mode = AllocationMode.Default) => New(tensor.N, tensor.CHW, mode);
 
         /// <summary>
+        /// Creates a new instance by copying the contents of the input vector and reshaping it to the desired size
+        /// </summary>
+        /// <param name="v">The input vector to copy</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Tensor From([NotNull] float[] v)
+        {
+            Guard.IsTrue(v.Length >= 0, nameof(v), "The input vector can't be empty");
+
+            return new Tensor(v, 1, v.Length);
+        }
+
+        /// <summary>
+        /// Creates a new instance by copying the contents of the input vector and reshaping it to the desired size
+        /// </summary>
+        /// <param name="v">The input vector to copy</param>
+        /// <param name="n">The height of the final <see cref="Tensor"/></param>
+        /// <param name="chw">The width of the final <see cref="Tensor"/></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Tensor From([NotNull] float[] v, int n, int chw)
+        {
+            Guard.IsTrue(v.Length >= 0, nameof(v), "The input vector can't be empty");
+            Guard.IsTrue(v.Length == n * chw, "The input shape doesn't match the size of the input vector");
+
+            return new Tensor(v, n, chw);
+        }
+
+        /// <summary>
+        /// Creates a new instance by copying the contents of the input matrix and reshaping it to the desired size
+        /// </summary>
+        /// <param name="m">The input matrix to copy</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Tensor From([NotNull] float[,] m)
+        {
+            Guard.IsTrue(m.Length >= 0, nameof(m), "The input matrix can't be empty");
+
+            var tensor = New(m.GetLength(0), m.GetLength(1));
+            fixed (float* p = m)
+            {
+                new Span<float>(p, m.Length).CopyTo(tensor.Span);
+            }
+
+            return tensor;
+        }
+
+        /// <summary>
         /// Creates a new instance by wrapping the current memory area
         /// </summary>
         /// <param name="n">The height of the final <see cref="Tensor"/></param>
@@ -101,29 +147,6 @@ namespace NeuralNetworkDotNet.Core.Structs
             Guard.IsTrue(n * chw == Size, "The input reshaped size is invalid");
 
             return new Tensor(Data, n, chw);
-        }
-
-        /// <summary>
-        /// Checks whether or not the current instance has the same shape of the input <see cref="Tensor"/>
-        /// </summary>
-        /// <param name="tensor">The instance to compare</param>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MatchShape(in Tensor tensor) => N == tensor.N && CHW == tensor.CHW;
-
-        /// <summary>
-        /// Checks whether or not the current instance has the same shape as the input arguments
-        /// </summary>
-        /// <param name="n">The height of the <see cref="Tensor"/></param>
-        /// <param name="chw">The width of the <see cref="Tensor"/></param>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MatchShape(int n, int chw)
-        {
-            Guard.IsTrue(n > 0, nameof(n), "N must be a positive number");
-            Guard.IsTrue(chw > 0, nameof(chw), "CHW must be a positive number");
-
-            return N == n && CHW == chw;
         }
 
         /// <summary>

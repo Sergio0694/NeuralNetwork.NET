@@ -3,7 +3,7 @@
     /// <summary>
     /// An <see langword="enum"/> that indicates a specific allocation mode for memory buffers
     /// </summary>
-    internal enum AllocationMode
+    public enum AllocationMode
     {
         /// <summary>
         /// The default allocation mode, with no guarantees on the initial data in the allocated buffers
