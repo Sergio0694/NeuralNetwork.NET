@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>NeuralNetworkDotNet.Core</AssemblyName>
+    <RootNamespace>NeuralNetworkDotNet.Core</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

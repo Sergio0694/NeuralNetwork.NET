@@ -1,7 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 
-namespace NeuralNetwork.NET.Core.Extensions
+namespace NeuralNetworkDotNet.Core.Extensions
 {
     /// <summary>
     /// An helper class with methods to process fixed-size matrices

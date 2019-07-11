@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NeuralNetwork.NET.Core.Enums;
-using NeuralNetwork.NET.Core.Helpers;
+using NeuralNetworkDotNet.Core.Enums;
+using NeuralNetworkDotNet.Core.Helpers;
 
-namespace NeuralNetwork.NET.Core.Structs
+namespace NeuralNetworkDotNet.Core.Structs
 {
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated

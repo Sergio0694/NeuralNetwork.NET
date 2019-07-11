@@ -2,11 +2,11 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NeuralNetwork.NET.Core.Extensions;
-using NeuralNetwork.NET.Core.Helpers;
+using NeuralNetworkDotNet.Core.Extensions;
+using NeuralNetworkDotNet.Core.Helpers;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace NeuralNetwork.NET.Core.Structs.Info
+namespace NeuralNetworkDotNet.Core.Structs.Info
 {
     /// <summary>
     /// A <see langword="struct"/> that contains info on the size of a given <see cref="Tensor"/>

@@ -1,4 +1,4 @@
-﻿namespace NeuralNetwork.NET.Core.Enums
+﻿namespace NeuralNetworkDotNet.Core.Enums
 {
     /// <summary>
     /// An <see langword="enum"/> that indicates a specific allocation mode for memory buffers
