@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetwork.NET.Core.Enums;
+using NeuralNetwork.NET.Core.Helpers;
 
 namespace NeuralNetwork.NET.Core.Structs
 {
@@ -69,6 +70,9 @@ namespace NeuralNetwork.NET.Core.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Tensor New(int n, int chw, AllocationMode mode = AllocationMode.Default)
         {
+            Guard.IsTrue(n > 0, nameof(n), "N must be a positive number");
+            Guard.IsTrue(chw > 0, nameof(chw), "CHW must be a positive number");
+
             var data = ArrayPool<float>.Shared.Rent(n * chw);
             var tensor = new Tensor(data, n, chw);
             if (mode == AllocationMode.Clean) tensor.Span.Clear();
@@ -85,8 +89,6 @@ namespace NeuralNetwork.NET.Core.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Tensor Like(in Tensor tensor, AllocationMode mode = AllocationMode.Default) => New(tensor.N, tensor.CHW, mode);
 
-        #region Tools
-
         /// <summary>
         /// Creates a new instance by wrapping the current memory area
         /// </summary>
@@ -96,7 +98,8 @@ namespace NeuralNetwork.NET.Core.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Reshape(int n, int chw)
         {
-            if (n * chw != Size) throw new ArgumentException("Invalid input resized shape");
+            Guard.IsTrue(n * chw == Size, "The input reshaped size is invalid");
+
             return new Tensor(Data, n, chw);
         }
 
@@ -115,7 +118,13 @@ namespace NeuralNetwork.NET.Core.Structs
         /// <param name="chw">The width of the <see cref="Tensor"/></param>
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MatchShape(int n, int chw) => N == n && CHW == chw;
+        public bool MatchShape(int n, int chw)
+        {
+            Guard.IsTrue(n > 0, nameof(n), "N must be a positive number");
+            Guard.IsTrue(chw > 0, nameof(chw), "CHW must be a positive number");
+
+            return N == n && CHW == chw;
+        }
 
         /// <summary>
         /// Overwrites the contents of the current instance with the input <see cref="Tensor"/>
@@ -124,7 +133,8 @@ namespace NeuralNetwork.NET.Core.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Overwrite(in Tensor tensor)
         {
-            if (tensor.N != N || tensor.CHW != CHW) throw new ArgumentException("The input tensor doesn't have the same size as the target");
+            Guard.IsTrue(N == tensor.N, nameof(N), "The N parameter in the input tensor doesn't match the current one");
+            Guard.IsTrue(CHW == tensor.CHW, nameof(CHW), "The CHW parameter in the input tensor doesn't match the current one");
 
             tensor.Span.CopyTo(Span);
         }
@@ -141,8 +151,6 @@ namespace NeuralNetwork.NET.Core.Structs
 
             return tensor;
         }
-
-        #endregion
 
         #region Debug
 

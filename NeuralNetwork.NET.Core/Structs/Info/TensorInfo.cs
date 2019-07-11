@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetwork.NET.Core.Extensions;
+using NeuralNetwork.NET.Core.Helpers;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace NeuralNetwork.NET.Core.Structs.Info
@@ -63,6 +64,10 @@ namespace NeuralNetwork.NET.Core.Structs.Info
 
         internal TensorInfo(int c, int h, int w)
         {
+            Guard.IsTrue(c >= 1, nameof(c), "The C parameter must be a positive number");
+            Guard.IsTrue(h >= 1, nameof(h), "The H parameter must be a positive number");
+            Guard.IsTrue(w >= 1, nameof(w), "The W parameter must be a positive number");
+
             C = c;
             H = h;
             W = w;
