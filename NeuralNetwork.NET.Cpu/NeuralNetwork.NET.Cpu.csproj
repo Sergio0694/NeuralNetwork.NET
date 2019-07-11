@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>NeuralNetworkDotNet.Cpu</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NeuralNetwork.NET.Core\NeuralNetwork.NET.Core.csproj" />
+  </ItemGroup>
+
+</Project>
