@@ -13,6 +13,6 @@
     <PackageReference Include="Alea" Version="3.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
+    <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.Legacy.csproj" />
   </ItemGroup>
 </Project>

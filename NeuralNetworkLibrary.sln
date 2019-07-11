@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2020
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET", "NeuralNetwork.NET\NeuralNetwork.NET.csproj", "{DB944C09-55F9-49E1-8F0D-BBFDE51914DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET.Legacy", "NeuralNetwork.NET\NeuralNetwork.NET.Legacy.csproj", "{DB944C09-55F9-49E1-8F0D-BBFDE51914DE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}"
 EndProject

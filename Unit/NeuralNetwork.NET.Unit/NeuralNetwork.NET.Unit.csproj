@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.csproj" />
+    <ProjectReference Include="..\..\NeuralNetwork.NET\NeuralNetwork.NET.Legacy.csproj" />
   </ItemGroup>
 
 </Project>
