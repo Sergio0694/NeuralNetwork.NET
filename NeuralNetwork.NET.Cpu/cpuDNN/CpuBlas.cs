@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NeuralNetworkDotNet.Core.Helpers;
 using NeuralNetworkDotNet.Core.Structs;
 
@@ -15,7 +16,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// </summary>
         /// <param name="x">The <see cref="Tensor"/> to transpose</param>
         /// <param name="y">The destination <see cref="Tensor"/> that will hold the results</param>
-        public static void Transpose(Tensor x, Tensor y)
+        public static void Transpose([NotNull] Tensor x, [NotNull] Tensor y)
         {
             Guard.IsTrue(x.N == y.CHW, "The output tensor doesn't have a valid CHW configuration");
             Guard.IsTrue(x.CHW == y.N, "The output tensor doesn't have a valid N configuration");
@@ -41,7 +42,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x1">The first <see cref="Tensor"/> to multiply</param>
         /// <param name="x2">The second <see cref="Tensor"/> to multiply</param>
         /// <param name="y">The resulting <see cref="Tensor"/> to hold the results</param>
-        public static void Multiply(Tensor x1, Tensor x2, Tensor y)
+        public static void Multiply([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
             Guard.IsTrue(x1.CHW == x2.N, "The size of the input tensors isn't valid");
             Guard.IsTrue(x1.N == y.N, nameof(y), "The result tensor doesn't have the right N parameter");
@@ -82,7 +83,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x1">The first <see cref="Tensor"/> to multiply</param>
         /// <param name="x2">The second <see cref="Tensor"/> to multiply</param>
         /// <param name="y">The resulting <see cref="Tensor"/> to hold the results</param>
-        public static void MultiplyElementwise(Tensor x1, Tensor x2, Tensor y)
+        public static void MultiplyElementwise([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
             Guard.IsTrue((x1.N, x1.CHW) == (x2.N, x2.CHW), "The x1 and x2 parameters don't have the same shape");
             Guard.IsTrue((x1.N, x1.CHW) == (y.N, y.CHW), nameof(y), "The y parameter don't have the same shape");
@@ -111,7 +112,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// </summary>
         /// <param name="x">The input <see cref="Tensor"/> to sum</param>
         /// <param name="y">The output <see cref="Tensor"/> that will hold the results</param>
-        public static void Sum(Tensor x, Tensor y)
+        public static void Sum([NotNull] Tensor x, [NotNull] Tensor y)
         {
             Guard.IsTrue((x.N, x.CHW) == (y.N, y.CHW), "The x and y parameters don't have the same shape");
 
@@ -140,7 +141,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x1">The first <see cref="Tensor"/></param>
         /// <param name="x2">The second <see cref="Tensor"/></param>
         /// <param name="y">The resulting <see cref="Tensor"/> - it can be the same as one of the inputs</param>
-        internal static void Subtract(Tensor x1, Tensor x2, Tensor y)
+        internal static void Subtract([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
             Guard.IsTrue((x1.N, x1.CHW) == (x2.N, x2.CHW), "The x1 and x2 parameters don't have the same shape");
             Guard.IsTrue((x1.N, x1.CHW) == (y.N, y.CHW), nameof(y), "The y parameter don't have the same shape");
