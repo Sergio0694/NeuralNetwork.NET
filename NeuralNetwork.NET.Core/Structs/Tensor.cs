@@ -31,7 +31,6 @@ namespace NeuralNetwork.NET.Core.Structs
         /// </summary>
         public int Size
         {
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => N * CHW;
         }
@@ -47,7 +46,6 @@ namespace NeuralNetwork.NET.Core.Structs
         /// </summary>
         public Span<float> Span
         {
-            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Data.AsSpan(0, Size);
         }
