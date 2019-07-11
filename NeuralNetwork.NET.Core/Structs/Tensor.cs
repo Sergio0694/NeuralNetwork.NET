@@ -15,7 +15,7 @@ namespace NeuralNetworkDotNet.Core.Structs
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("N: {N}, CHW: {CHW}, Size: {Size}")]
-    internal readonly struct Tensor
+    public readonly struct Tensor
     {
         /// <summary>
         /// The number of rows in the current <see cref="Tensor"/>
