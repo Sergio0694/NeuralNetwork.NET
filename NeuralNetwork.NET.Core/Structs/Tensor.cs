@@ -15,7 +15,7 @@ namespace NeuralNetworkDotNet.Core.Structs
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("N: {N}, CHW: {CHW}, Size: {Size}")]
-    public readonly struct Tensor : IEquatable<Tensor>
+    public sealed class Tensor : IEquatable<Tensor>, IDisposable
     {
         /// <summary>
         /// The number of rows in the current <see cref="Tensor"/>
@@ -66,7 +66,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// <param name="n">The height of the <see cref="Tensor"/></param>
         /// <param name="chw">The width of the <see cref="Tensor"/></param>
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
-        [Pure]
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Tensor New(int n, int chw, AllocationMode mode = AllocationMode.Default)
         {
@@ -85,7 +85,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// </summary>
         /// <param name="tensor">The <see cref="Tensor"/> to use to copy the shape</param>
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
-        [Pure]
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Tensor Like(in Tensor tensor, AllocationMode mode = AllocationMode.Default) => New(tensor.N, tensor.CHW, mode);
 
@@ -93,12 +93,15 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// Creates a new instance by copying the contents of the input vector and reshaping it to the desired size
         /// </summary>
         /// <param name="v">The input vector to copy</param>
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Tensor From([NotNull] float[] v)
         {
             Guard.IsTrue(v.Length >= 0, nameof(v), "The input vector can't be empty");
 
-            return new Tensor(v, 1, v.Length);
+            var tensor = New(1, v.Length);
+            v.AsSpan().CopyTo(tensor.Span);
+            return tensor;
         }
 
         /// <summary>
@@ -107,19 +110,23 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// <param name="v">The input vector to copy</param>
         /// <param name="n">The height of the final <see cref="Tensor"/></param>
         /// <param name="chw">The width of the final <see cref="Tensor"/></param>
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Tensor From([NotNull] float[] v, int n, int chw)
         {
             Guard.IsTrue(v.Length >= 0, nameof(v), "The input vector can't be empty");
             Guard.IsTrue(v.Length == n * chw, "The input shape doesn't match the size of the input vector");
 
-            return new Tensor(v, n, chw);
+            var tensor = New(n, chw);
+            v.AsSpan().CopyTo(tensor.Span);
+            return tensor;
         }
 
         /// <summary>
         /// Creates a new instance by copying the contents of the input matrix and reshaping it to the desired size
         /// </summary>
         /// <param name="m">The input matrix to copy</param>
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Tensor From([NotNull] float[,] m)
         {
@@ -139,7 +146,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// </summary>
         /// <param name="n">The height of the final <see cref="Tensor"/></param>
         /// <param name="chw">The width of the final <see cref="Tensor"/></param>
-        [Pure]
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Reshape(int n, int chw)
         {
@@ -164,7 +171,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// <summary>
         /// Duplicates the current instance to an output <see cref="Tensor"/>
         /// </summary>
-        [Pure]
+        [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Duplicate()
         {
@@ -223,6 +230,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         /// <inheritdoc/>
         public bool Equals(Tensor other)
         {
+            if (other == null) return false;
             if (N != other.N || CHW != other.CHW) return false;
 
             var size = Size;
@@ -252,5 +260,8 @@ namespace NeuralNetworkDotNet.Core.Structs
         }
 
         #endregion
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose() => ArrayPool<float>.Shared.Return(Data);
     }
 }

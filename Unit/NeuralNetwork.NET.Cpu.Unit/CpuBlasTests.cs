@@ -29,11 +29,14 @@ namespace NeuralNetwork.NET.Cpu.Unit
                 v = { 1, 2, 0.1f, -2 },
                 r = { 1.1f, 5.1f, 1.1f, -0.9f };
 
-            var tm = Tensor.From(m);
-            var tv = Tensor.From(v);
-            var y = Tensor.New(1, 4);
-            CpuBlas.Multiply(tv, tm, y);
-            Assert.IsTrue(Tensor.From(r).Equals(y));
+            using (var tm = Tensor.From(m))
+            using (var tv = Tensor.From(v))
+            using (var tr = Tensor.From(r))
+            using (var y = Tensor.New(1, 4))
+            {
+                CpuBlas.Multiply(tv, tm, y);
+                Assert.IsTrue(tr.Equals(y));
+            }
         }
 
         /// <summary>
@@ -61,11 +64,14 @@ namespace NeuralNetwork.NET.Cpu.Unit
                     { 24.3f, 9.7999999999999989f, -5.5f, 11.09f }
                 };
 
-            var tm1 = Tensor.From(m1);
-            var tm2 = Tensor.From(m2);
-            var y = Tensor.New(2, 4);
-            CpuBlas.Multiply(tm1, tm2, y);
-            Assert.IsTrue(Tensor.From(r).Equals(y));
+            using (var tm1 = Tensor.From(m1))
+            using (var tm2 = Tensor.From(m2))
+            using (var tr = Tensor.From(r))
+            using (var y = Tensor.New(2, 4))
+            {
+                CpuBlas.Multiply(tm1, tm2, y);
+                Assert.IsTrue(tr.Equals(y));
+            }
         }
 
         /// <summary>
@@ -95,11 +101,14 @@ namespace NeuralNetwork.NET.Cpu.Unit
                     { 1, 4, 6 }
                 };
 
-            var tm1 = Tensor.From(m1);
-            var tm2 = Tensor.From(m2);
-            var y = Tensor.Like(tm1);
-            CpuBlas.MultiplyElementwise(tm1, tm2, y);
-            Assert.IsTrue(Tensor.From(r).Equals(y));
+            using (var tm1 = Tensor.From(m1))
+            using (var tm2 = Tensor.From(m2))
+            using (var tr = Tensor.From(r))
+            using (var y = Tensor.Like(tm1))
+            {
+                CpuBlas.MultiplyElementwise(tm1, tm2, y);
+                Assert.IsTrue(tr.Equals(y));
+            }
         }
 
         /// <summary>
@@ -123,10 +132,13 @@ namespace NeuralNetwork.NET.Cpu.Unit
                     { 1, 0 }
                 };
 
-            var tm = Tensor.From(m);
-            var y = Tensor.New(4, 2);
-            CpuBlas.Transpose(tm, y);
-            Assert.IsTrue(Tensor.From(r).Equals(y));
+            using (var tm = Tensor.From(m))
+            using (var tr = Tensor.From(r))
+            using (var y = Tensor.New(4, 2))
+            {
+                CpuBlas.Transpose(tm, y);
+                Assert.IsTrue(tr.Equals(y));
+            }
         }
     }
 }
