@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.Core.Enums;
 using NeuralNetworkDotNet.Core.Helpers;
@@ -16,7 +15,7 @@ namespace NeuralNetworkDotNet.Core.Structs
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("N: {N}, CHW: {CHW}, Size: {Size}")]
-    public readonly struct Tensor
+    public readonly struct Tensor : IEquatable<Tensor>
     {
         /// <summary>
         /// The number of rows in the current <see cref="Tensor"/>
@@ -214,6 +213,41 @@ namespace NeuralNetworkDotNet.Core.Structs
                 }
 
                 RowsPreview = ExtractRows();
+            }
+        }
+
+        #endregion
+
+        #region IEquatable<Tensor>
+
+        /// <inheritdoc/>
+        public bool Equals(Tensor other)
+        {
+            if (N != other.N || CHW != other.CHW) return false;
+
+            var size = Size;
+            ref var rx = ref Span.GetPinnableReference();
+            ref var ry = ref other.Span.GetPinnableReference();
+
+            for (var i = 0; i < size; i++)
+                if (Math.Abs(Unsafe.Add(ref rx, i) - Unsafe.Add(ref ry, i)) < 0.0001)
+                    return false;
+
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is Tensor other && Equals(other);
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = N;
+                hashCode = (hashCode * 397) ^ CHW;
+                hashCode = (hashCode * 397) ^ Data.GetHashCode();
+                return hashCode;
             }
         }
 

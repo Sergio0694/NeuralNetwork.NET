@@ -16,11 +16,11 @@ namespace NeuralNetworkDotNet.Core.Extensions
         [Pure]
         public static int GetContentHashCode<T>(this Span<T> span) where T : unmanaged
         {
-            int hash = 17;
+            var hash = 17;
             unchecked
             {
-                for (int i = 0; i < span.Length; i++)
-                    hash = hash * 23 + span[i].GetHashCode();
+                for (var i = 0; i < span.Length; i++)
+                    hash = (hash * 397) ^ i.GetHashCode();
                 return hash;
             }
         }
