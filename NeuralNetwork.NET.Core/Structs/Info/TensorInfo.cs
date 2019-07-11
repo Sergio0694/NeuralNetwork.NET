@@ -115,7 +115,7 @@ namespace NeuralNetworkDotNet.Core.Structs.Info
 
         #endregion
 
-        #region Equality
+        #region IEquatable<TensorInfo>
 
         /// <inheritdoc/>
         public bool Equals(TensorInfo other) => C == other.C && H == other.H && W == other.W;
