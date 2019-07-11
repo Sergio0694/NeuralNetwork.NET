@@ -207,7 +207,7 @@ namespace NeuralNetworkDotNet.Core.Structs
                 {
                     int
                         cappedRows = MaxItems / obj.CHW,
-                        rows = Math.Min(MaxRows, cappedRows);
+                        rows = Math.Min(Math.Min(MaxRows, cappedRows), obj.N);
                     for (int i = 0; i < rows; i++)
                         yield return obj.Span.Slice(i * obj.CHW, obj.CHW).ToArray();
                 }
@@ -230,7 +230,7 @@ namespace NeuralNetworkDotNet.Core.Structs
             ref var ry = ref other.Span.GetPinnableReference();
 
             for (var i = 0; i < size; i++)
-                if (Math.Abs(Unsafe.Add(ref rx, i) - Unsafe.Add(ref ry, i)) < 0.0001)
+                if (Math.Abs(Unsafe.Add(ref rx, i) - Unsafe.Add(ref ry, i)) > 0.0001)
                     return false;
 
             return true;
