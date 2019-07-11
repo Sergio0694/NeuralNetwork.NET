@@ -18,6 +18,8 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The destination <see cref="Tensor"/> that will hold the results</param>
         public static void Transpose([NotNull] Tensor x, [NotNull] Tensor y)
         {
+            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
             Guard.IsTrue(x.N == y.CHW, "The output tensor doesn't have a valid CHW configuration");
             Guard.IsTrue(x.CHW == y.N, "The output tensor doesn't have a valid N configuration");
 
@@ -44,11 +46,13 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The resulting <see cref="Tensor"/> to hold the results</param>
         public static void Multiply([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
+            Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x2.C == 1 && x2.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
             Guard.IsTrue(x1.CHW == x2.N, "The size of the input tensors isn't valid");
             Guard.IsTrue(x1.N == y.N, nameof(y), "The result tensor doesn't have the right N parameter");
             Guard.IsTrue(x2.CHW == y.CHW, nameof(y), "The result tensor doesn't have the right CHW parameter");
 
-            // Initialize the parameters and the result matrix
             int
                 n = x1.N,
                 l = x1.CHW,
@@ -85,6 +89,9 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The resulting <see cref="Tensor"/> to hold the results</param>
         public static void MultiplyElementwise([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
+            Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x2.C == 1 && x2.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
             Guard.IsTrue((x1.N, x1.CHW) == (x2.N, x2.CHW), "The x1 and x2 parameters don't have the same shape");
             Guard.IsTrue((x1.N, x1.CHW) == (y.N, y.CHW), nameof(y), "The y parameter don't have the same shape");
 
@@ -114,6 +121,8 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The output <see cref="Tensor"/> that will hold the results</param>
         public static void Sum([NotNull] Tensor x, [NotNull] Tensor y)
         {
+            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
             Guard.IsTrue((x.N, x.CHW) == (y.N, y.CHW), "The x and y parameters don't have the same shape");
 
             int n = y.N, l = y.CHW;
@@ -143,12 +152,14 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The resulting <see cref="Tensor"/> - it can be the same as one of the inputs</param>
         internal static void Subtract([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
+            Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x2.C == 1 && x2.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
             Guard.IsTrue((x1.N, x1.CHW) == (x2.N, x2.CHW), "The x1 and x2 parameters don't have the same shape");
             Guard.IsTrue((x1.N, x1.CHW) == (y.N, y.CHW), nameof(y), "The y parameter don't have the same shape");
 
             int n = x1.N, l = x1.CHW;
 
-            // Subtract in parallel
             void Kernel(int i)
             {
                 var offset = i * l;

@@ -7,9 +7,6 @@ using NeuralNetworkDotNet.Core.Structs;
 
 namespace NeuralNetworkDotNet.Cpu.cpuDNN
 {
-    /// <summary>
-    /// A <see langword="class"/> that contains primitives to implement a neural network running on CPU
-    /// </summary>
     public static class CpuDnn
     {
         /// <summary>
@@ -21,17 +18,18 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
         public static void FullyConnectedForward([NotNull] Tensor x, [NotNull] Tensor w, [NotNull] Tensor b, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x.CHW == w.N, "The input tensor shape doesn't match the shape of the given weights");
-            Guard.IsTrue((b.N, b.CHW) == (1, w.CHW), nameof(b), "The shape of the input biases isn't valid");
-            Guard.IsTrue((y.N, y.CHW) == (x.N, w.CHW), nameof(y), "The output tensor doesn't have the right shape");
+            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(w.C == 1 && w.H == 1, nameof(w), "The w tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x.W == w.N, "The input tensor shape doesn't match the shape of the given weights");
+            Guard.IsTrue((b.N, b.W) == (1, w.W), nameof(b), "The shape of the input biases isn't valid");
+            Guard.IsTrue((y.N, y.W) == (x.N, w.W), nameof(y), "The output tensor doesn't have the right shape");
 
-            // Initialize the parameters and the result tensor
             int
                 h = x.N,
-                l = x.CHW,
-                k = w.CHW;
+                l = x.W,
+                k = w.W;
 
-            // Execute the multiplication in parallel
             void Kernel(int i)
             {
                 var offset = i * l;
@@ -66,20 +64,21 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")] // Tensors in parallel kernel
         public static void FullyConnectedBackwardData([NotNull] Tensor w, [NotNull] Tensor dy, [NotNull] Tensor dx)
         {
-            Guard.IsTrue(w.CHW == dy.CHW, nameof(w), "The weights tensor doesn't have a valid shape");
-            Guard.IsTrue((dx.N, dx.CHW) == (dy.N, w.N), nameof(dx), "The input tensor doesn't have the right shape");
+            Guard.IsTrue(w.C == 1 && w.H == 1, nameof(w), "The w tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dx.C == 1 && dx.H == 1, nameof(dx), "The dx tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(w.W == dy.W, nameof(w), "The weights tensor doesn't have a valid shape");
+            Guard.IsTrue((dx.N, dx.W) == (dy.N, w.N), nameof(dx), "The input tensor doesn't have the right shape");
 
-            using (var wt = Tensor.New(w.CHW, w.N))
+            using (var wt = Tensor.New(w.W, w.N))
             {
                 CpuBlas.Transpose(w, wt);
 
-                // Initialize the parameters and the result tensor
                 int
                     h = dy.N,
-                    l = dy.CHW,
-                    k = wt.CHW;
+                    l = dy.W,
+                    k = wt.W;
 
-                // Execute the multiplication in parallel
                 void Kernel(int i)
                 {
                     var i1 = i * l;
@@ -112,6 +111,9 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="dw">The resulting weights gradient <see cref="Tensor"/></param>
         public static void FullyConnectedBackwardFilter([NotNull] Tensor x, [NotNull] Tensor dy, [NotNull] Tensor dw)
         {
+            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dw.C == 1 && dw.H == 1, nameof(dw), "The dx tensor doesn't represent a 2D matrix");
             Guard.IsTrue(x.N == dy.N, "The input tensor doesn't match the number of samples from the delta");
 
             using (var xt = Tensor.New(x.CHW, x.N))
@@ -128,7 +130,8 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="db">The resulting biases gradient <see cref="Tensor"/></param>
         public static void FullyConnectedBackwardBias([NotNull] Tensor dy, [NotNull] Tensor db)
         {
-            Guard.IsTrue((db.N, db.CHW) == (1, dy.CHW), "Invalid result tensor shape");
+            Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(db.Shape == (1, 1, 1, dy.W), "Invalid db tensor shape");
 
             int
                 n = dy.N,
