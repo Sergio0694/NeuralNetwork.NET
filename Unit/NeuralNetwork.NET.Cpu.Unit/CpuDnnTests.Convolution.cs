@@ -9,8 +9,8 @@ namespace NeuralNetwork.NET.Cpu.Unit
     /// Test class for the convolution primitives
     /// </summary>
     [TestClass]
-    [TestCategory(nameof(CpuDnnTests) + ".Convolution")]
-    public class CpuDnnTests
+    [TestCategory("CpuDnnTests.Convolution")]
+    public class CpuDnnTests_Convolution
     {
         // 1-depth, 3*3 with 2*2 = 2*2 result
         [TestMethod]
@@ -332,7 +332,7 @@ namespace NeuralNetwork.NET.Cpu.Unit
         }
 
         [TestMethod]
-        public void ConvolutionFull3()
+        public void ConvolutionBackwardData3()
         {
             float[,]
                 l =
@@ -376,7 +376,7 @@ namespace NeuralNetwork.NET.Cpu.Unit
         }
 
         [TestMethod]
-        public void ConvolutionFull4()
+        public void ConvolutionBackwardData4()
         {
             float[,]
                 l =
@@ -441,6 +441,65 @@ namespace NeuralNetwork.NET.Cpu.Unit
             using (var y = Tensor.Like(tr))
             {
                 CpuDnn.ConvolutionBackwardData(tl, tk, y);
+                Assert.IsTrue(y.Equals(tr));
+            }
+        }
+
+        [TestMethod]
+        public void ConvolutionBackwardBias1()
+        {
+            float[,]
+                m =
+                {
+                    {
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 8, 9
+                    }
+                };
+            float[] r = { 45 };
+
+            using (var tm = Tensor.From(m, 1, 3, 3))
+            using (var tr = Tensor.From(r))
+            using (var y = Tensor.Like(tr))
+            {
+                CpuDnn.ConvolutionBackwardBias(tm, y);
+                Assert.IsTrue(y.Equals(tr));
+            }
+        }
+
+        [TestMethod]
+        public void ConvolutionBackwardBias2()
+        {
+            float[,]
+                m =
+                {
+                    {
+                        1, 2, 3,
+                        4, 5, 6,
+                        7, 8, 9,
+
+                        1, 99, 3,
+                        4, 5, 6,
+                        7, 8, 9
+                    },
+                    {
+                        1, 2, 3,
+                        4, 5, 66,
+                        7, 8, 9,
+
+                        1, 2, 3,
+                        44, 5, 6,
+                        7, 8, 9
+                    }
+                };
+            float[] r = { 150, 227 };
+
+            using (var tm = Tensor.From(m, 2, 3, 3))
+            using (var tr = Tensor.From(r, 1, 2, 1, 1))
+            using (var y = Tensor.Like(tr))
+            {
+                CpuDnn.ConvolutionBackwardBias(tm, y);
                 Assert.IsTrue(y.Equals(tr));
             }
         }

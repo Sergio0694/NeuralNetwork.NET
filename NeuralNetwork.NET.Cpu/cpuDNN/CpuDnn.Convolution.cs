@@ -306,7 +306,8 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="db">The resulting gradient</param>
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         [PublicAPI]
-        public static void ConvolutionBackwardBias([NotNull] Tensor dy, in Tensor db)
+        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+        public static void ConvolutionBackwardBias([NotNull] Tensor dy, [NotNull] Tensor db)
         {
             Guard.IsTrue(dy.H == dy.W, nameof(dy), "The input images must be squares");
 
@@ -314,8 +315,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
                 depth = dy.C,
                 h = dy.N,
                 w = dy.CHW,
-                imgSize = dy.HW,
-                imgAxis = dy.H;  // Size of an edge of one of the inner images per sample
+                imgSize = dy.HW;
 
             using (var temp = Tensor.New(h, depth))
             {
@@ -330,14 +330,14 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
                     var sum = 0f;
 
                     ref var rdy = ref dy.Span.GetPinnableReference();
-                    ref var rtemp = ref temp.Span.GetPinnableReference();
+                    ref var rt = ref temp.Span.GetPinnableReference();
 
                     for (var i = 0; i < imgSize; i++)
                     {
                         sum += Unsafe.Add(ref rdy, baseOffset + i);
                     }
 
-                    Unsafe.Add(ref rtemp, iSample * depth + z) = sum;
+                    Unsafe.Add(ref rt, iSample * depth + z) = sum;
                 }
 
                 Parallel.For(0, h * depth, Kernel);
@@ -405,7 +405,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="y">The resulting <see cref="Tensor"/></param>
         private static void CompressVertically([NotNull] Tensor x, [NotNull] Tensor y)
         {
-            Guard.IsTrue((x.N, x.CHW) == (y.N, y.CHW), "The output tensor doesn't have the right shape");
+            Guard.IsTrue((y.N, y.CHW) == (1, x.CHW), "The output tensor doesn't have the right shape");
 
             int
                 n = x.N,
@@ -418,7 +418,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
                 ref var rx = ref x.Span.GetPinnableReference();
                 ref var ry = ref y.Span.GetPinnableReference();
 
-                for (int i = 0; i < n; i++)
+                for (var i = 0; i < n; i++)
                     sum += Unsafe.Add(ref rx, i * l + j);
                 Unsafe.Add(ref ry, j) = sum;
             }
