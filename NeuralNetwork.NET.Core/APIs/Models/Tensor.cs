@@ -9,13 +9,13 @@ using NeuralNetworkDotNet.Core.Enums;
 using NeuralNetworkDotNet.Core.Extensions;
 using NeuralNetworkDotNet.Core.Helpers;
 
-namespace NeuralNetworkDotNet.Core.Structs
+namespace NeuralNetworkDotNet.Core.APIs.Models
 {
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
-    [DebuggerDisplay("Shape: [{N}, {C}, {H}, {W}], Size: {Size}")]
+    [DebuggerDisplay("Shape: [{N}, {C}, {H}, {W}], NCHW: {NCHW}")]
     public sealed class Tensor : IDisposable, IEquatable<Tensor>
     {
         /// <summary>
@@ -39,6 +39,15 @@ namespace NeuralNetworkDotNet.Core.Structs
         public readonly int W;
 
         /// <summary>
+        /// Gets the total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/> instance
+        /// </summary>
+        public int NCHW
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => N * C * H * W;
+        }
+
+        /// <summary>
         /// Gets the CHW size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/> instance
         /// </summary>
         public int CHW
@@ -54,15 +63,6 @@ namespace NeuralNetworkDotNet.Core.Structs
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => H * W;
-        }
-
-        /// <summary>
-        /// Gets the total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/> instance
-        /// </summary>
-        public int Size
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => N * C * H * W;
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         public Span<float> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Data.AsSpan(0, Size);
+            get => Data.AsSpan(0, NCHW);
         }
 
         // Private constructor
@@ -228,7 +228,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Reshape(int n, int l)
         {
-            Guard.IsTrue(n * l == Size, "The input reshaped size is invalid");
+            Guard.IsTrue(n * l == NCHW, "The input reshaped size is invalid");
 
             return new Tensor(Data, n, 1, 1, l);
         }
@@ -244,7 +244,7 @@ namespace NeuralNetworkDotNet.Core.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Reshape(int n, int c, int h, int w)
         {
-            Guard.IsTrue(n * c * h * w == Size, "The input reshaped size is invalid");
+            Guard.IsTrue(n * c * h * w == NCHW, "The input reshaped size is invalid");
 
             return new Tensor(Data, n, c, h, w);
         }
@@ -285,7 +285,7 @@ namespace NeuralNetworkDotNet.Core.Structs
             if (other == null) return false;
             if (other.Shape != Shape) return false;
 
-            var size = Size;
+            var size = NCHW;
             ref var rx = ref Span.GetPinnableReference();
             ref var ry = ref other.Span.GetPinnableReference();
 

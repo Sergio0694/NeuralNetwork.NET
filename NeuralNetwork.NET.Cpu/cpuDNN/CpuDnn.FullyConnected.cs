@@ -2,8 +2,8 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkDotNet.Core.APIs.Models;
 using NeuralNetworkDotNet.Core.Helpers;
-using NeuralNetworkDotNet.Core.Structs;
 
 namespace NeuralNetworkDotNet.Cpu.cpuDNN
 {

@@ -2,8 +2,8 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkDotNet.Core.APIs.Models;
 using NeuralNetworkDotNet.Core.Helpers;
-using NeuralNetworkDotNet.Core.Structs;
 
 namespace NeuralNetworkDotNet.Cpu.cpuDNN
 {
@@ -17,7 +17,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void PoolingForward([NotNull] Tensor x, [NotNull] Tensor y)
         {
-            Guard.IsFalse(x.Size < 1, nameof(x), "The input tensor isn't valid");
+            Guard.IsFalse(x.NCHW < 1, nameof(x), "The input tensor isn't valid");
             Guard.IsTrue(x.H == x.W, nameof(x), "The input tensor must contain square images");
 
             int
@@ -120,7 +120,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void PoolingBackward([NotNull] Tensor x, [NotNull] Tensor dy, [NotNull] Tensor dx)
         {
-            Guard.IsFalse(x.Size < 1, nameof(x), "The input tensor isn't valid");
+            Guard.IsFalse(x.NCHW < 1, nameof(x), "The input tensor isn't valid");
             Guard.IsTrue(dx.Shape == x.Shape, nameof(dx), "The result tensor must have the same shape as the input");
             Guard.IsTrue(x.H == x.W, nameof(x), "The input tensor must contain square images");
 

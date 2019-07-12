@@ -3,8 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NeuralNetworkDotNet.Core.APIs.Models;
 using NeuralNetworkDotNet.Core.Helpers;
-using NeuralNetworkDotNet.Core.Structs;
 
 namespace NeuralNetworkDotNet.Cpu.cpuDNN
 {
@@ -294,7 +294,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
                  * At this point, the temporary tensor has the series of (p,q) gradients for all the layer
                  * kernels, where p is the input depth and q is the kernel index.
                  * The final weights gradient is the sum for all the samples in the current training batch */
-                Tensor wPlane = dw.Reshape(1, dw.Size);  // The gradient is [q,p]-shaped, flatten to the size of each sample before compressing
+                Tensor wPlane = dw.Reshape(1, dw.NCHW);  // The gradient is [q,p]-shaped, flatten to the size of each sample before compressing
                 CompressVertically(dwTemp, wPlane);
             }
         }
