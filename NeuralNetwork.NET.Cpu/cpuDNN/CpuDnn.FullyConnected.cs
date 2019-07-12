@@ -7,7 +7,7 @@ using NeuralNetworkDotNet.Core.Structs;
 
 namespace NeuralNetworkDotNet.Cpu.cpuDNN
 {
-    public static class CpuDnn
+    public static partial class CpuDnn
     {
         /// <summary>
         /// Executes the forward pass on a fully connected layer
@@ -16,6 +16,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="w">The layer weights</param>
         /// <param name="b">The layer biases</param>
         /// <param name="y">The output <see cref="Tensor"/> for the current layer</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void FullyConnectedForward([NotNull] Tensor x, [NotNull] Tensor w, [NotNull] Tensor b, [NotNull] Tensor y)
         {
             Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
@@ -61,6 +62,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="w">The layer weights</param>
         /// <param name="dy">The output error delta</param>
         /// <param name="dx">The resulting input error delta</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")] // Tensors in parallel kernel
         public static void FullyConnectedBackwardData([NotNull] Tensor w, [NotNull] Tensor dy, [NotNull] Tensor dx)
         {
@@ -109,6 +111,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x">The layer inputs</param>
         /// <param name="dy">The layer output error delta</param>
         /// <param name="dw">The resulting weights gradient <see cref="Tensor"/></param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void FullyConnectedBackwardFilter([NotNull] Tensor x, [NotNull] Tensor dy, [NotNull] Tensor dw)
         {
             Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
@@ -128,6 +131,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// </summary>
         /// <param name="dy">The layer output error delta</param>
         /// <param name="db">The resulting biases gradient <see cref="Tensor"/></param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void FullyConnectedBackwardBias([NotNull] Tensor dy, [NotNull] Tensor db)
         {
             Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");

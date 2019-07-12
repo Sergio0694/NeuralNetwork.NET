@@ -16,6 +16,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// </summary>
         /// <param name="x">The <see cref="Tensor"/> to transpose</param>
         /// <param name="y">The destination <see cref="Tensor"/> that will hold the results</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void Transpose([NotNull] Tensor x, [NotNull] Tensor y)
         {
             Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
@@ -44,6 +45,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x1">The first <see cref="Tensor"/> to multiply</param>
         /// <param name="x2">The second <see cref="Tensor"/> to multiply</param>
         /// <param name="y">The resulting <see cref="Tensor"/> to hold the results</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void Multiply([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
             Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
@@ -87,6 +89,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x1">The first <see cref="Tensor"/> to multiply</param>
         /// <param name="x2">The second <see cref="Tensor"/> to multiply</param>
         /// <param name="y">The resulting <see cref="Tensor"/> to hold the results</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void MultiplyElementwise([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
             Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
@@ -119,6 +122,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// </summary>
         /// <param name="x">The input <see cref="Tensor"/> to sum</param>
         /// <param name="y">The output <see cref="Tensor"/> that will hold the results</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void Sum([NotNull] Tensor x, [NotNull] Tensor y)
         {
             Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
@@ -150,6 +154,7 @@ namespace NeuralNetworkDotNet.Cpu.cpuDNN
         /// <param name="x1">The first <see cref="Tensor"/></param>
         /// <param name="x2">The second <see cref="Tensor"/></param>
         /// <param name="y">The resulting <see cref="Tensor"/> - it can be the same as one of the inputs</param>
+        /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         internal static void Subtract([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
             Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");

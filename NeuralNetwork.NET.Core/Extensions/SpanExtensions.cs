@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 namespace NeuralNetworkDotNet.Core.Extensions
 {
     /// <summary>
-    /// An helper class with methods to process fixed-size matrices
+    /// An helper <see langword="class"/> with methods to process fixed-size matrices
     /// </summary>
     public static class SpanExtensions
     {
