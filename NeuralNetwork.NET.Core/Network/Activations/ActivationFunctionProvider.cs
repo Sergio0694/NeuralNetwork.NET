@@ -2,7 +2,6 @@
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.Core.APIs.Enums;
 using NeuralNetworkDotNet.Core.Network.Activations.Delegates;
-using NeuralNetworkNET.Networks.Activations;
 
 namespace NeuralNetworkDotNet.Core.Network.Activations
 {

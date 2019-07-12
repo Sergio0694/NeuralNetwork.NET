@@ -37,5 +37,32 @@ namespace System
             for (var i = 0; i < l; i++)
                 Unsafe.Add(ref r, i) = provider();
         }
+
+        /// <summary>
+        /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
+        /// </summary>
+        /// <param name="span">The source <see cref="Span{T}"/> instance</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static int Argmax(this Span<float> span)
+        {
+            if (span.Length < 2) return default;
+
+            int index = 0, l = span.Length;
+            var max = float.MinValue;
+            ref var r = ref span.GetPinnableReference();
+
+            for (var j = 0; j < l; j++)
+            {
+                var value = Unsafe.Add(ref r, j);
+                if (value > max)
+                {
+                    max = value;
+                    index = j;
+                }
+            }
+
+            return index;
+        }
     }
 }
