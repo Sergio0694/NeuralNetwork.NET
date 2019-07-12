@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.Enums;
+using NeuralNetworkDotNet.Core.APIs.Enums;
 using NeuralNetworkDotNet.Core.Extensions;
 using NeuralNetworkDotNet.Core.Helpers;
 
