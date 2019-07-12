@@ -1,7 +1,7 @@
-﻿using System;
+﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkDotNet.Core.Extensions
+namespace System
 {
     /// <summary>
     /// An helper <see langword="class"/> with methods to process fixed-size matrices
@@ -23,6 +23,19 @@ namespace NeuralNetworkDotNet.Core.Extensions
                     hash = (hash * 397) ^ i.GetHashCode();
                 return hash;
             }
+        }
+
+        /// <summary>
+        /// Fills the target <see cref="Span{T}"/> with the input values provider
+        /// </summary>
+        /// <param name="span">The <see cref="Span{T}"/> to fill up</param>
+        /// <param name="provider">The values provider to use</param>
+        public static void Fill<T>(this Span<T> span, [NotNull] Func<T> provider) where T : unmanaged
+        {
+            var l = span.Length;
+            ref var r = ref span.GetPinnableReference();
+            for (var i = 0; i < l; i++)
+                Unsafe.Add(ref r, i) = provider();
         }
     }
 }

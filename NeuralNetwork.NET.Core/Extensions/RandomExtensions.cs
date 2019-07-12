@@ -1,7 +1,6 @@
-﻿using System;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 
-namespace NeuralNetworkDotNet.Core.Extensions
+namespace System
 {
     /// <summary>
     /// An helper <see langword="class"/> with extension methods for the <see cref="Random"/> type
