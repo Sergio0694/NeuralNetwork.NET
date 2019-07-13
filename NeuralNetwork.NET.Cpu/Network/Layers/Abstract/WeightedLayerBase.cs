@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
+using NeuralNetworkDotNet.Network.Layers.Abstract.Base;
 
 namespace NeuralNetworkDotNet.Network.Layers.Abstract
 {
@@ -49,7 +50,7 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
         /// <param name="dx">The resulting backpropagated error</param>
         /// <param name="dJdw">The resulting gradient with respect to the weights</param>
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
-        public abstract void Backpropagate(in Tensor x, in Tensor y, in Tensor dy, in Tensor dx, out Tensor dJdw, out Tensor dJdb);
+        public abstract void Backpropagate([NotNull] Tensor x, [NotNull] Tensor y, [NotNull] Tensor dy, [NotNull] Tensor dx, out Tensor dJdw, out Tensor dJdb);
 
         /// <summary>
         /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used

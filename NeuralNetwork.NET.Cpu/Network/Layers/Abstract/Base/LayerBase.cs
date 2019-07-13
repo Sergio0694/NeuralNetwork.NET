@@ -4,7 +4,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
 
-namespace NeuralNetworkDotNet.Network.Layers.Abstract
+namespace NeuralNetworkDotNet.Network.Layers.Abstract.Base
 {
     /// <summary>
     /// A base <see langword="class"/> for all network layers
