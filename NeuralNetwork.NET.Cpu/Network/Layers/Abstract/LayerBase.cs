@@ -4,7 +4,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
 
-namespace NeuralNetworkDotNet.Network.Layers.Abstract.Base
+namespace NeuralNetworkDotNet.Network.Layers.Abstract
 {
     /// <summary>
     /// A base <see langword="class"/> for all network layers
@@ -38,11 +38,22 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract.Base
         [MustUseReturnValue, NotNull]
         public abstract Tensor Forward(in Tensor x);
 
+        /// <summary>
+        /// Backpropagates the error to compute the delta for the inputs of the layer
+        /// </summary>
+        /// <param name="x">The layer inputs used in the forward pass</param>
+        /// <param name="y">The output <see cref="Tensor"/> computed in the forward pass</param>
+        /// <param name="dy">The output error delta to backpropagate</param>
+        [MustUseReturnValue, NotNull]
+        public abstract Tensor Backward([NotNull] Tensor x, [NotNull] Tensor y, [NotNull] Tensor dy);
+
         /// <inheritdoc/>
         public virtual bool Equals(ILayer other)
         {
             if (other == null) return false;
-            return InputShape == other.InputShape && OutputShape == other.OutputShape;
+
+            return GetType() == other.GetType() &&
+                   InputShape == other.InputShape && OutputShape == other.OutputShape;
         }
 
         /// <inheritdoc/>
