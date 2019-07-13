@@ -19,17 +19,17 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void FullyConnectedForward([NotNull] Tensor x, [NotNull] Tensor w, [NotNull] Tensor b, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(w.C == 1 && w.H == 1, nameof(w), "The w tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x.W == w.N, "The input tensor shape doesn't match the shape of the given weights");
-            Guard.IsTrue((b.N, b.W) == (1, w.W), nameof(b), "The shape of the input biases isn't valid");
-            Guard.IsTrue((y.N, y.W) == (x.N, w.W), nameof(y), "The output tensor doesn't have the right shape");
+            Guard.IsTrue(x.Shape.C == 1 && x.Shape.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(w.Shape.C == 1 && w.Shape.H == 1, nameof(w), "The w tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.Shape.C == 1 && y.Shape.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x.Shape.W == w.Shape.N, "The input tensor shape doesn't match the shape of the given weights");
+            Guard.IsTrue((b.Shape.N, b.Shape.W) == (1, w.Shape.W), nameof(b), "The shape of the input biases isn't valid");
+            Guard.IsTrue((y.Shape.N, y.Shape.W) == (x.Shape.N, w.Shape.W), nameof(y), "The output tensor doesn't have the right shape");
 
             int
-                h = x.N,
-                l = x.W,
-                k = w.W;
+                h = x.Shape.N,
+                l = x.Shape.W,
+                k = w.Shape.W;
 
             void Kernel(int i)
             {
@@ -66,20 +66,20 @@ namespace NeuralNetworkDotNet.cpuDNN
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")] // Tensors in parallel kernel
         public static void FullyConnectedBackwardData([NotNull] Tensor w, [NotNull] Tensor dy, [NotNull] Tensor dx)
         {
-            Guard.IsTrue(w.C == 1 && w.H == 1, nameof(w), "The w tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(dx.C == 1 && dx.H == 1, nameof(dx), "The dx tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(w.W == dy.W, nameof(w), "The weights tensor doesn't have a valid shape");
-            Guard.IsTrue((dx.N, dx.W) == (dy.N, w.N), nameof(dx), "The input tensor doesn't have the right shape");
+            Guard.IsTrue(w.Shape.C == 1 && w.Shape.H == 1, nameof(w), "The w tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dy.Shape.C == 1 && dy.Shape.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dx.Shape.C == 1 && dx.Shape.H == 1, nameof(dx), "The dx tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(w.Shape.W == dy.Shape.W, nameof(w), "The weights tensor doesn't have a valid shape");
+            Guard.IsTrue((dx.Shape.N, dx.Shape.W) == (dy.Shape.N, w.Shape.N), nameof(dx), "The input tensor doesn't have the right shape");
 
-            using (var wt = Tensor.New(w.W, w.N))
+            using (var wt = Tensor.New(w.Shape.W, w.Shape.N))
             {
                 CpuBlas.Transpose(w, wt);
 
                 int
-                    h = dy.N,
-                    l = dy.W,
-                    k = wt.W;
+                    h = dy.Shape.N,
+                    l = dy.Shape.W,
+                    k = wt.Shape.W;
 
                 void Kernel(int i)
                 {
@@ -114,12 +114,12 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void FullyConnectedBackwardFilter([NotNull] Tensor x, [NotNull] Tensor dy, [NotNull] Tensor dw)
         {
-            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(dw.C == 1 && dw.H == 1, nameof(dw), "The dx tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x.N == dy.N, "The input tensor doesn't match the number of samples from the delta");
+            Guard.IsTrue(x.Shape.C == 1 && x.Shape.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dy.Shape.C == 1 && dy.Shape.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(dw.Shape.C == 1 && dw.Shape.H == 1, nameof(dw), "The dx tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x.Shape.N == dy.Shape.N, "The input tensor doesn't match the number of samples from the delta");
 
-            using (var xt = Tensor.New(x.CHW, x.N))
+            using (var xt = Tensor.New(x.Shape.CHW, x.Shape.N))
             {
                 CpuBlas.Transpose(x, xt);
                 CpuBlas.Multiply(xt, dy, dw);
@@ -134,12 +134,12 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void FullyConnectedBackwardBias([NotNull] Tensor dy, [NotNull] Tensor db)
         {
-            Guard.IsTrue(dy.C == 1 && dy.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(db.Shape == (1, 1, 1, dy.W), "Invalid db tensor shape");
+            Guard.IsTrue(dy.Shape.C == 1 && dy.Shape.H == 1, nameof(dy), "The dy tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(db.Shape == (1, 1, 1, dy.Shape.W), "Invalid db tensor shape");
 
             int
-                n = dy.N,
-                l = dy.CHW;
+                n = dy.Shape.N,
+                l = dy.Shape.CHW;
 
             // Compress the tensor
             void Kernel(int j)

@@ -96,6 +96,17 @@ namespace NeuralNetworkDotNet.APIs.Structs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator Shape((int C, int H, int W) shape) => new Shape(-1, shape.C, shape.H, shape.W);
 
+        /// <summary>
+        /// Deconstructs the current instance into a tuple, see <a href="https://docs.microsoft.com/dotnet/csharp/deconstruct">docs.microsoft.com/dotnet/csharp/deconstruct</a>
+        /// </summary>
+        public void Deconstruct(out int n, out int c, out int h, out int w)
+        {
+            n = N;
+            c = C;
+            h = H;
+            w = W;
+        }
+
         #region IEquatable<Shape>
 
         /// <inheritdoc/>
@@ -128,5 +139,8 @@ namespace NeuralNetworkDotNet.APIs.Structs
         public static bool operator !=(in Shape a, in Shape b) => !(a == b);
 
         #endregion
+
+        /// <inheritdoc/>
+        public override string ToString() => $"[{N}, {C}, {H}, {W}]";
     }
 }

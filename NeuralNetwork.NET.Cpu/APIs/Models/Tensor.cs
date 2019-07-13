@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
+using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
 
 namespace NeuralNetworkDotNet.APIs.Models
@@ -14,64 +15,13 @@ namespace NeuralNetworkDotNet.APIs.Models
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
-    [DebuggerDisplay("Shape: [{N}, {C}, {H}, {W}], NCHW: {NCHW}")]
+    [DebuggerDisplay("Shape: {" + nameof(Shape) + "}")]
     public sealed class Tensor : IDisposable, IEquatable<Tensor>
     {
         /// <summary>
-        /// The N dimension (samples) of the current <see cref="Tensor"/> instance
-        /// </summary>
-        public readonly int N;
-
-        /// <summary>
-        /// The C dimension (channels) of the current <see cref="Tensor"/> instance
-        /// </summary>
-        public readonly int C;
-
-        /// <summary>
-        /// The H dimension (height) of the current <see cref="Tensor"/> instance
-        /// </summary>
-        public readonly int H;
-
-        /// <summary>
-        /// The W dimension (width) of the current <see cref="Tensor"/> instance
-        /// </summary>
-        public readonly int W;
-
-        /// <summary>
-        /// Gets the total size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/> instance
-        /// </summary>
-        public int NCHW
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => N * C * H * W;
-        }
-
-        /// <summary>
-        /// Gets the CHW size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/> instance
-        /// </summary>
-        public int CHW
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => C * H * W;
-        }
-
-        /// <summary>
-        /// Gets the HW size (the number of <see cref="float"/> values) in the current <see cref="Tensor"/> instance
-        /// </summary>
-        public int HW
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => H * W;
-        }
-
-        /// <summary>
         /// Gets the shape of the current <see cref="Tensor"/> instance
         /// </summary>
-        public (int N, int C, int H, int W) Shape
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (N, C, H, W);
-        }
+        public readonly Shape Shape;
 
         /// <summary>
         /// The <see cref="float"/> buffer with the underlying data for the current instance
@@ -85,18 +35,15 @@ namespace NeuralNetworkDotNet.APIs.Models
         public Span<float> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Data.AsSpan(0, NCHW);
+            get => Data.AsSpan(0, Shape.NCHW);
         }
 
         // Private constructor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Tensor([NotNull] float[] data, int n, int c, int h, int w)
+        private Tensor(Shape shape, [NotNull] float[] data)
         {
+            Shape = shape;
             Data = data;
-            N = n;
-            C = c;
-            H = h;
-            W = w;
         }
 
         /// <summary>
@@ -107,7 +54,7 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Tensor New(int n, int l, AllocationMode mode = AllocationMode.Default) => New(n, 1, 1, l, mode);
+        public static Tensor New(int n, int l, AllocationMode mode = AllocationMode.Default) => New((n, 1, 1, l), mode);
 
         /// <summary>
         /// Creates a new <see cref="Tensor"/> instance with the specified shape
@@ -119,15 +66,19 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Tensor New(int n, int c, int h, int w, AllocationMode mode = AllocationMode.Default)
-        {
-            Guard.IsTrue(n > 0, nameof(n), "N must be a positive number");
-            Guard.IsTrue(c > 0, nameof(c), "C must be a positive number");
-            Guard.IsTrue(h > 0, nameof(h), "H must be a positive number");
-            Guard.IsTrue(w > 0, nameof(w), "W must be a positive number");
+        public static Tensor New(int n, int c, int h, int w, AllocationMode mode = AllocationMode.Default) => New((n, c, h, w), mode);
 
-            var data = ArrayPool<float>.Shared.Rent(n * c * h * w);
-            var tensor = new Tensor(data, n, c, h, w);
+        /// <summary>
+        /// Creates a new <see cref="Tensor"/> instance with the specified shape
+        /// </summary>
+        /// <param name="shape">The desired shape for the new <see cref="Tensor"/></param>
+        /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
+        [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Tensor New(Shape shape, AllocationMode mode = AllocationMode.Default)
+        {
+            var data = ArrayPool<float>.Shared.Rent(shape.NCHW);
+            var tensor = new Tensor(shape, data);
             if (mode == AllocationMode.Clean) tensor.Span.Clear();
 
             return tensor;
@@ -140,7 +91,7 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Tensor Like([NotNull] Tensor source, AllocationMode mode = AllocationMode.Default) => New(source.N, source.C, source.H, source.W, mode);
+        public static Tensor Like([NotNull] Tensor source, AllocationMode mode = AllocationMode.Default) => New(source.Shape, mode);
 
         /// <summary>
         /// Creates a new instance by copying the contents of the input vector and reshaping it to the desired size
@@ -227,9 +178,9 @@ namespace NeuralNetworkDotNet.APIs.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Reshape(int n, int l)
         {
-            Guard.IsTrue(n * l == NCHW, "The input reshaped size is invalid");
+            Guard.IsTrue(n * l == Shape.NCHW, "The input reshaped size is invalid");
 
-            return new Tensor(Data, n, 1, 1, l);
+            return new Tensor((n, 1, 1, l), Data);
         }
 
         /// <summary>
@@ -243,9 +194,9 @@ namespace NeuralNetworkDotNet.APIs.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Reshape(int n, int c, int h, int w)
         {
-            Guard.IsTrue(n * c * h * w == NCHW, "The input reshaped size is invalid");
+            Guard.IsTrue(n * c * h * w == Shape.NCHW, "The input reshaped size is invalid");
 
-            return new Tensor(Data, n, c, h, w);
+            return new Tensor((n, c, h, w), Data);
         }
 
         /// <summary>
@@ -267,7 +218,7 @@ namespace NeuralNetworkDotNet.APIs.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tensor Duplicate()
         {
-            var tensor = New(N, C, H, W);
+            var tensor = New(Shape);
             Span.CopyTo(tensor.Span);
 
             return tensor;
@@ -284,7 +235,7 @@ namespace NeuralNetworkDotNet.APIs.Models
             if (other == null) return false;
             if (other.Shape != Shape) return false;
 
-            var size = NCHW;
+            var size = Shape.NCHW;
             ref var rx = ref Span.GetPinnableReference();
             ref var ry = ref other.Span.GetPinnableReference();
 
@@ -301,7 +252,7 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            Span<int> hashes = stackalloc int[] { N, C, H, W, Span.GetContentHashCode() };
+            Span<int> hashes = stackalloc int[] { Shape.GetHashCode(), Span.GetContentHashCode() };
             return hashes.GetContentHashCode();
         }
 
@@ -339,10 +290,10 @@ namespace NeuralNetworkDotNet.APIs.Models
                 IEnumerable<float[]> ExtractRows()
                 {
                     int
-                        cappedRows = MaxItems / obj.CHW,
-                        rows = Math.Min(Math.Min(MaxRows, cappedRows), obj.N);
-                    for (int i = 0; i < rows; i++)
-                        yield return obj.Span.Slice(i * obj.CHW, obj.CHW).ToArray();
+                        cappedRows = MaxItems / obj.Shape.CHW,
+                        rows = Math.Min(Math.Min(MaxRows, cappedRows), obj.Shape.N);
+                    for (var i = 0; i < rows; i++)
+                        yield return obj.Span.Slice(i * obj.Shape.CHW, obj.Shape.CHW).ToArray();
                 }
 
                 RowsPreview = ExtractRows();

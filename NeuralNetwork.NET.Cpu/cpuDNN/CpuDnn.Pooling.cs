@@ -17,21 +17,21 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void PoolingForward([NotNull] Tensor x, [NotNull] Tensor y)
         {
-            Guard.IsFalse(x.NCHW < 1, nameof(x), "The input tensor isn't valid");
-            Guard.IsTrue(x.H == x.W, nameof(x), "The input tensor must contain square images");
+            Guard.IsFalse(x.Shape.NCHW < 1, nameof(x), "The input tensor isn't valid");
+            Guard.IsTrue(x.Shape.H == x.Shape.W, nameof(x), "The input tensor must contain square images");
 
             int
-                h = x.N,
-                w = x.CHW,
-                depth = x.C,
-                imgSize = x.HW,
-                imgAxis = x.H,  // Size of an edge of one of the inner images per sample
+                h = x.Shape.N,
+                w = x.Shape.CHW,
+                depth = x.Shape.C,
+                imgSize = x.Shape.HW,
+                imgAxis = x.Shape.H,  // Size of an edge of one of the inner images per sample
                 poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
                 poolSize = poolAxis * poolAxis,
                 poolFinalWidth = depth * poolSize,
                 edge = imgAxis - 1;
 
-            Guard.IsTrue(y.Shape == (x.N, x.C, poolAxis, poolAxis), nameof(y), "The output tensor doesn't have the right shape");
+            Guard.IsTrue(y.Shape == (x.Shape.N, x.Shape.C, poolAxis, poolAxis), nameof(y), "The output tensor doesn't have the right shape");
 
             // Pooling kernel
             void Kernel(int sample)
@@ -120,22 +120,22 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void PoolingBackward([NotNull] Tensor x, [NotNull] Tensor dy, [NotNull] Tensor dx)
         {
-            Guard.IsFalse(x.NCHW < 1, nameof(x), "The input tensor isn't valid");
+            Guard.IsFalse(x.Shape.NCHW < 1, nameof(x), "The input tensor isn't valid");
             Guard.IsTrue(dx.Shape == x.Shape, nameof(dx), "The result tensor must have the same shape as the input");
-            Guard.IsTrue(x.H == x.W, nameof(x), "The input tensor must contain square images");
+            Guard.IsTrue(x.Shape.H == x.Shape.W, nameof(x), "The input tensor must contain square images");
 
             int
-                n = x.N,
-                l = x.CHW,
-                depth = x.C,
-                imgSize = x.HW,
-                imgAxis = x.H,  // Size of an edge of one of the inner images per sample
+                n = x.Shape.N,
+                l = x.Shape.CHW,
+                depth = x.Shape.C,
+                imgSize = x.Shape.HW,
+                imgAxis = x.Shape.H,  // Size of an edge of one of the inner images per sample
                 poolAxis = imgAxis / 2 + (imgAxis % 2 == 0 ? 0 : 1),
                 poolSize = poolAxis * poolAxis,
                 poolFinalWidth = depth * poolSize,
                 edge = imgAxis - 1,
-                pn = dy.N,
-                pl = dy.CHW;
+                pn = dy.Shape.N,
+                pl = dy.Shape.CHW;
 
             Guard.IsFalse(pn != n || pl != poolFinalWidth, nameof(dy), "Invalid pooled tensor shape");
 

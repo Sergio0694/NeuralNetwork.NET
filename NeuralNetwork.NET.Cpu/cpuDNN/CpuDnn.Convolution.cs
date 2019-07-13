@@ -23,10 +23,10 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void ConvolutionForward([NotNull] Tensor x, [NotNull] Tensor w, [NotNull] Tensor b, [NotNull] Tensor y)
         {
-            Guard.IsFalse(w.CHW == 0, nameof(w), "The kernels can't be empty");
-            Guard.IsFalse(x.HW < w.HW, "Each subdivided tensor must at least have the size of the kernels");
-            Guard.IsTrue(x.C == w.C, "The depth of each kernel must be equal to the depth of each input volume");
-            Guard.IsTrue(b.CHW == w.N, "The sum vector must be as long as the depth of the input volume");
+            Guard.IsFalse(w.Shape.CHW == 0, nameof(w), "The kernels can't be empty");
+            Guard.IsFalse(x.Shape.HW < w.Shape.HW, "Each subdivided tensor must at least have the size of the kernels");
+            Guard.IsTrue(x.Shape.C == w.Shape.C, "The depth of each kernel must be equal to the depth of each input volume");
+            Guard.IsTrue(b.Shape.CHW == w.Shape.N, "The sum vector must be as long as the depth of the input volume");
 
             /* ============================
              * Valid convolution (forward)
@@ -35,17 +35,17 @@ namespace NeuralNetworkDotNet.cpuDNN
              * Kernels:         HK * WK * sourceDepth * kernelsDepth (same depth as the input, each kernel is a 3D volume)
              * Output:          kernelsDepth slices, one for each 3D kernel used */
             int
-                nKernels = w.N,
-                kw = w.CHW,
-                kSize = w.HW,
-                kHeight = w.H,
-                kWidth = w.W,
-                n = x.N,
-                l = x.CHW,
-                sourceDepth = x.C,
-                imgSize = x.HW,
-                imgHeight = x.H,
-                imgWidth = x.W,
+                nKernels = w.Shape.N,
+                kw = w.Shape.CHW,
+                kSize = w.Shape.HW,
+                kHeight = w.Shape.H,
+                kWidth = w.Shape.W,
+                n = x.Shape.N,
+                l = x.Shape.CHW,
+                sourceDepth = x.Shape.C,
+                imgSize = x.Shape.HW,
+                imgHeight = x.Shape.H,
+                imgWidth = x.Shape.W,
                 hResult = imgHeight - kHeight + 1,              // Size of each image edge after the convolution
                 wResult = imgWidth - kWidth + 1,
                 convolutionOutputSize = hResult * wResult,      // Size of each processed image
@@ -114,9 +114,9 @@ namespace NeuralNetworkDotNet.cpuDNN
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public static void ConvolutionBackwardData([NotNull] Tensor dy, [NotNull] Tensor w, [NotNull] Tensor dx)
         {
-            Guard.IsTrue(dy.HW * dy.C == dy.CHW, nameof(dy), "Invalid depth parameter for the input tensor");
-            Guard.IsFalse(dy.HW < w.HW, "Each subdivided tensor must at least have the size of the kernels");
-            Guard.IsTrue(dy.C == w.N, "The source depth must be equal to the number of kernels");
+            Guard.IsTrue(dy.Shape.HW * dy.Shape.C == dy.Shape.CHW, nameof(dy), "Invalid depth parameter for the input tensor");
+            Guard.IsFalse(dy.Shape.HW < w.Shape.HW, "Each subdivided tensor must at least have the size of the kernels");
+            Guard.IsTrue(dy.Shape.C == w.Shape.N, "The source depth must be equal to the number of kernels");
 
             /* ============================
              * Full convolution (backwards)
@@ -125,17 +125,17 @@ namespace NeuralNetworkDotNet.cpuDNN
              * Kernels:         HK*WK*kernelsDepth*sourceDepth (a kernel for each input slice)
              * Output:          kernelsDepth slices, each is the sum of the i-th slice of all the kernelsDepth kernels with convoluted with the i-th input slice */
             int
-                nKernels = w.N,
-                kw = w.CHW,
-                kSize = w.HW,
-                kHeight = w.H,
-                kWidth = w.W,
-                kDepth = w.C,
-                n = dy.N,
-                l = dy.CHW,
-                imgSize = dy.HW,
-                imgHeight = dy.H,
-                imgWidth = dy.W,
+                nKernels = w.Shape.N,
+                kw = w.Shape.CHW,
+                kSize = w.Shape.HW,
+                kHeight = w.Shape.H,
+                kWidth = w.Shape.W,
+                kDepth = w.Shape.C,
+                n = dy.Shape.N,
+                l = dy.Shape.CHW,
+                imgSize = dy.Shape.HW,
+                imgHeight = dy.Shape.H,
+                imgWidth = dy.Shape.W,
                 hResult = imgHeight + kHeight - 1,                  // Size of each image edge after the convolution
                 wResult = imgWidth + kWidth - 1,
                 convolutionOutputSize = hResult * wResult,          // Size of each processed image
@@ -210,8 +210,8 @@ namespace NeuralNetworkDotNet.cpuDNN
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public static void ConvolutionBackwardFilter([NotNull] Tensor x, [NotNull] Tensor dy, [NotNull] Tensor dw)
         {
-            Guard.IsFalse(x.HW < dy.HW, "Each subdivided tensor must at least have the size of the kernels");
-            Guard.IsTrue(dy.N == x.N, nameof(dy), "There must be a delta volume for each activation sample");
+            Guard.IsFalse(x.Shape.HW < dy.Shape.HW, "Each subdivided tensor must at least have the size of the kernels");
+            Guard.IsTrue(dy.Shape.N == x.Shape.N, nameof(dy), "There must be a delta volume for each activation sample");
 
             /* ============================
              * Valid convolution (gradient)
@@ -221,26 +221,26 @@ namespace NeuralNetworkDotNet.cpuDNN
              * Output:          sourceDepth*kernelsDepth slices, where each stack of sourceDepth slices is the gradient for the i-th kernel */
 
             int
-                kw = dy.CHW,
-                kDepth = dy.C,
-                kSize = dy.HW,
-                kHeight = dy.H,
-                kWidth = dy.W,
-                n = x.N,
-                l = x.CHW,
-                imgSize = x.HW,
-                imgHeight = x.H,
-                imgWidth = x.W,
-                hResult = imgHeight - kHeight + 1,              // Size of each image edge after the convolution
+                kw = dy.Shape.CHW,
+                kDepth = dy.Shape.C,
+                kSize = dy.Shape.HW,
+                kHeight = dy.Shape.H,
+                kWidth = dy.Shape.W,
+                n = x.Shape.N,
+                l = x.Shape.CHW,
+                imgSize = x.Shape.HW,
+                imgHeight = x.Shape.H,
+                imgWidth = x.Shape.W,
+                hResult = imgHeight - kHeight + 1,                  // Size of each image edge after the convolution
                 wResult = imgWidth - kWidth + 1,
-                convolutionOutputSize = hResult * wResult,      // Size of each processed image
-                gradientSize = convolutionOutputSize * x.C,     // Size of each calculated gradient (one for each original kernel, so for each input delta)
-                finalWidth = gradientSize * dy.C,               // Final size of each sample row
-                iterationsPerSample = x.C * kDepth;             // Each sample has its own list of 3D gradients, one for each kernel
+                convolutionOutputSize = hResult * wResult,          // Size of each processed image
+                gradientSize = convolutionOutputSize * x.Shape.C,   // Size of each calculated gradient (one for each original kernel, so for each input delta)
+                finalWidth = gradientSize * dy.Shape.C,             // Final size of each sample row
+                iterationsPerSample = x.Shape.C * kDepth;           // Each sample has its own list of 3D gradients, one for each kernel
 
             // Rotate the inputs and prepare the temporary tensor
             using (var xt = Tensor.Like(x))
-            using (var dwTemp = Tensor.New(x.N, finalWidth))
+            using (var dwTemp = Tensor.New(x.Shape.N, finalWidth))
             {
                 Rotate180(x, xt);
 
@@ -294,7 +294,7 @@ namespace NeuralNetworkDotNet.cpuDNN
                  * At this point, the temporary tensor has the series of (p,q) gradients for all the layer
                  * kernels, where p is the input depth and q is the kernel index.
                  * The final weights gradient is the sum for all the samples in the current training batch */
-                Tensor wPlane = dw.Reshape(1, dw.NCHW);  // The gradient is [q,p]-shaped, flatten to the size of each sample before compressing
+                Tensor wPlane = dw.Reshape(1, dw.Shape.NCHW);  // The gradient is [q,p]-shaped, flatten to the size of each sample before compressing
                 CompressVertically(dwTemp, wPlane);
             }
         }
@@ -309,13 +309,13 @@ namespace NeuralNetworkDotNet.cpuDNN
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public static void ConvolutionBackwardBias([NotNull] Tensor dy, [NotNull] Tensor db)
         {
-            Guard.IsTrue(dy.H == dy.W, nameof(dy), "The input images must be squares");
+            Guard.IsTrue(dy.Shape.H == dy.Shape.W, nameof(dy), "The input images must be squares");
 
             int
-                depth = dy.C,
-                h = dy.N,
-                w = dy.CHW,
-                imgSize = dy.HW;
+                depth = dy.Shape.C,
+                h = dy.Shape.N,
+                w = dy.Shape.CHW,
+                imgSize = dy.Shape.HW;
 
             using (var temp = Tensor.New(h, depth))
             {
@@ -355,16 +355,16 @@ namespace NeuralNetworkDotNet.cpuDNN
         private static void Rotate180([NotNull] Tensor x, [NotNull] Tensor y)
         {
             Guard.IsTrue(x.Shape == y.Shape, "The output tensor doesn't match the shape of the input");
-            Guard.IsTrue(x.H == x.W, nameof(x), "The input images must be squares");
+            Guard.IsTrue(x.Shape.H == x.Shape.W, nameof(x), "The input images must be squares");
 
             int
-                n = x.N,
-                l = x.CHW,
-                c = x.C,
-                imgSize = x.HW,
+                n = x.Shape.N,
+                l = x.Shape.CHW,
+                c = x.Shape.C,
+                imgSize = x.Shape.HW,
                 threshold = imgSize / 2,
                 edge = imgSize - 1;
-            bool odd = imgSize % 2 == 1;
+            var odd = imgSize % 2 == 1;
 
             // Inversion kernel
             void Kernel(int index)
@@ -379,7 +379,7 @@ namespace NeuralNetworkDotNet.cpuDNN
                 ref var ry = ref y.Span.GetPinnableReference();
 
                 // Reverse the input tensor sequentially
-                for (int i = 0; i < threshold; i++)
+                for (var i = 0; i < threshold; i++)
                 {
                     int
                         left = baseOffset + i,
@@ -405,11 +405,11 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <param name="y">The resulting <see cref="Tensor"/></param>
         private static void CompressVertically([NotNull] Tensor x, [NotNull] Tensor y)
         {
-            Guard.IsTrue((y.N, y.CHW) == (1, x.CHW), "The output tensor doesn't have the right shape");
+            Guard.IsTrue((y.Shape.N, y.Shape.CHW) == (1, x.Shape.CHW), "The output tensor doesn't have the right shape");
 
             int
-                n = x.N,
-                l = x.CHW;
+                n = x.Shape.N,
+                l = x.Shape.CHW;
 
             void Kernel(int j)
             {

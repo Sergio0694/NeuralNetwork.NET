@@ -26,10 +26,10 @@ namespace NeuralNetworkDotNet.Network.Cost
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public static float QuadraticCost([NotNull] Tensor yHat, [NotNull] Tensor y)
         {
-            Guard.IsTrue(yHat.N == y.N, "The input tensors don't have the same number of samples");
-            Guard.IsTrue(yHat.CHW == y.CHW, "The input tensors don't have the same number of features per sample");
+            Guard.IsTrue(yHat.Shape.N == y.Shape.N, "The input tensors don't have the same number of samples");
+            Guard.IsTrue(yHat.Shape.CHW == y.Shape.CHW, "The input tensors don't have the same number of features per sample");
 
-            int h = yHat.N, w = yHat.CHW;
+            int h = yHat.Shape.N, w = yHat.Shape.CHW;
 
             using (var v = Tensor.New(h, 1))
             {
@@ -75,10 +75,10 @@ namespace NeuralNetworkDotNet.Network.Cost
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public static float CrossEntropyCost([NotNull] Tensor yHat, [NotNull] Tensor y)
         {
-            Guard.IsTrue(yHat.N == y.N, "The input tensors don't have the same number of samples");
-            Guard.IsTrue(yHat.CHW == y.CHW, "The input tensors don't have the same number of features per sample");
+            Guard.IsTrue(yHat.Shape.N == y.Shape.N, "The input tensors don't have the same number of samples");
+            Guard.IsTrue(yHat.Shape.CHW == y.Shape.CHW, "The input tensors don't have the same number of features per sample");
 
-            int h = yHat.N, w = yHat.CHW;
+            int h = yHat.Shape.N, w = yHat.Shape.CHW;
 
             using (var v = Tensor.New(h, 1))
             {
@@ -133,10 +133,10 @@ namespace NeuralNetworkDotNet.Network.Cost
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public static float LogLikelyhoodCost([NotNull] Tensor yHat, [NotNull] Tensor y)
         {
-            Guard.IsTrue(yHat.N == y.N, "The input tensors don't have the same number of samples");
-            Guard.IsTrue(yHat.CHW == y.CHW, "The input tensors don't have the same number of features per sample");
+            Guard.IsTrue(yHat.Shape.N == y.Shape.N, "The input tensors don't have the same number of samples");
+            Guard.IsTrue(yHat.Shape.CHW == y.Shape.CHW, "The input tensors don't have the same number of features per sample");
 
-            int h = yHat.N, w = yHat.CHW;
+            int h = yHat.Shape.N, w = yHat.Shape.CHW;
 
             using (var v = Tensor.New(h, 1))
             {
@@ -175,12 +175,12 @@ namespace NeuralNetworkDotNet.Network.Cost
         /// <param name="dx">The backpropagated error</param>
         public static void QuadraticCostPrime([NotNull] Tensor yHat, [NotNull] Tensor y, [NotNull] Tensor z, [NotNull] ActivationFunction activationPrime, [NotNull] Tensor dx)
         {
-            Guard.IsTrue(yHat.N == y.N, "The input tensors don't have the same number of samples");
-            Guard.IsTrue(yHat.CHW == y.CHW, "The input tensors don't have the same number of features per sample");
-            Guard.IsTrue(yHat.N == dx.N, "The input tensor and the result tensor don't have the same number of samples");
-            Guard.IsTrue(yHat.CHW == dx.CHW, "The input tensor and the result tensor don't have the same number of features per sample");
+            Guard.IsTrue(yHat.Shape.N == y.Shape.N, "The input tensors don't have the same number of samples");
+            Guard.IsTrue(yHat.Shape.CHW == y.Shape.CHW, "The input tensors don't have the same number of features per sample");
+            Guard.IsTrue(yHat.Shape.N == dx.Shape.N, "The input tensor and the result tensor don't have the same number of samples");
+            Guard.IsTrue(yHat.Shape.CHW == dx.Shape.CHW, "The input tensor and the result tensor don't have the same number of features per sample");
 
-            int h = yHat.N, w = yHat.CHW;
+            int h = yHat.Shape.N, w = yHat.Shape.CHW;
 
             // Calculate (yHat - y) * activation'(z)
             void Kernel(int i)

@@ -16,10 +16,12 @@ namespace System
         [Pure]
         public static int GetContentHashCode<T>(this Span<T> span) where T : unmanaged
         {
-            var hash = 17;
+            if (span.Length == 0) return -1;
+
+            var hash = span[0].GetHashCode();
             unchecked
             {
-                for (var i = 0; i < span.Length; i++)
+                for (var i = 1; i < span.Length; i++)
                     hash = (hash * 397) ^ i.GetHashCode();
                 return hash;
             }

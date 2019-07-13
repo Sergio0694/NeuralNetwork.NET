@@ -19,12 +19,12 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void Transpose([NotNull] Tensor x, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x.N == y.CHW, "The output tensor doesn't have a valid CHW configuration");
-            Guard.IsTrue(x.CHW == y.N, "The output tensor doesn't have a valid N configuration");
+            Guard.IsTrue(x.Shape.C == 1 && x.Shape.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.Shape.C == 1 && y.Shape.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x.Shape.N == y.Shape.CHW, "The output tensor doesn't have a valid CHW configuration");
+            Guard.IsTrue(x.Shape.CHW == y.Shape.N, "The output tensor doesn't have a valid N configuration");
 
-            int n = x.N, l = x.CHW;
+            int n = x.Shape.N, l = x.Shape.CHW;
 
             void Kernel(int i)
             {
@@ -48,17 +48,17 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void Multiply([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x2.C == 1 && x2.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x1.CHW == x2.N, "The size of the input tensors isn't valid");
-            Guard.IsTrue(x1.N == y.N, nameof(y), "The result tensor doesn't have the right N parameter");
-            Guard.IsTrue(x2.CHW == y.CHW, nameof(y), "The result tensor doesn't have the right CHW parameter");
+            Guard.IsTrue(x1.Shape.C == 1 && x1.Shape.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x2.Shape.C == 1 && x2.Shape.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.Shape.C == 1 && y.Shape.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x1.Shape.CHW == x2.Shape.N, "The size of the input tensors isn't valid");
+            Guard.IsTrue(x1.Shape.N == y.Shape.N, nameof(y), "The result tensor doesn't have the right N parameter");
+            Guard.IsTrue(x2.Shape.CHW == y.Shape.CHW, nameof(y), "The result tensor doesn't have the right CHW parameter");
 
             int
-                n = x1.N,
-                l = x1.CHW,
-                k = x2.CHW;
+                n = x1.Shape.N,
+                l = x1.Shape.CHW,
+                k = x2.Shape.CHW;
 
             void Kernel(int i)
             {
@@ -92,13 +92,13 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void MultiplyElementwise([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x2.C == 1 && x2.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
-            Guard.IsTrue((x1.N, x1.CHW) == (x2.N, x2.CHW), "The x1 and x2 parameters don't have the same shape");
-            Guard.IsTrue((x1.N, x1.CHW) == (y.N, y.CHW), nameof(y), "The y parameter don't have the same shape");
+            Guard.IsTrue(x1.Shape.C == 1 && x1.Shape.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x2.Shape.C == 1 && x2.Shape.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.Shape.C == 1 && y.Shape.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue((x1.Shape.N, x1.Shape.CHW) == (x2.Shape.N, x2.Shape.CHW), "The x1 and x2 parameters don't have the same shape");
+            Guard.IsTrue((x1.Shape.N, x1.Shape.CHW) == (y.Shape.N, y.Shape.CHW), nameof(y), "The y parameter don't have the same shape");
 
-            int n = x1.N, l = x1.CHW;
+            int n = x1.Shape.N, l = x1.Shape.CHW;
 
             void Kernel(int i)
             {
@@ -107,9 +107,9 @@ namespace NeuralNetworkDotNet.cpuDNN
                 ref var rx2 = ref x2.Span.GetPinnableReference();
                 ref var ry = ref y.Span.GetPinnableReference();
 
-                for (int j = 0; j < l; j++)
+                for (var j = 0; j < l; j++)
                 {
-                    int position = offset + j;
+                    var position = offset + j;
                     Unsafe.Add(ref ry, position) = Unsafe.Add(ref rx1, position) * Unsafe.Add(ref rx2, position);
                 }
             }
@@ -125,11 +125,11 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         public static void Sum([NotNull] Tensor x, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x.C == 1 && x.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
-            Guard.IsTrue((x.N, x.CHW) == (y.N, y.CHW), "The x and y parameters don't have the same shape");
+            Guard.IsTrue(x.Shape.C == 1 && x.Shape.H == 1, nameof(x), "The x tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.Shape.C == 1 && y.Shape.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue((x.Shape.N, x.Shape.CHW) == (y.Shape.N, y.Shape.CHW), "The x and y parameters don't have the same shape");
 
-            int n = y.N, l = y.CHW;
+            int n = y.Shape.N, l = y.Shape.CHW;
 
             void Kernel(int i)
             {
@@ -157,13 +157,13 @@ namespace NeuralNetworkDotNet.cpuDNN
         /// <exception cref="System.ArgumentException">The size of one of the input <see cref="Tensor"/> instances isn't valid</exception>
         internal static void Subtract([NotNull] Tensor x1, [NotNull] Tensor x2, [NotNull] Tensor y)
         {
-            Guard.IsTrue(x1.C == 1 && x1.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(x2.C == 1 && x2.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
-            Guard.IsTrue(y.C == 1 && y.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
-            Guard.IsTrue((x1.N, x1.CHW) == (x2.N, x2.CHW), "The x1 and x2 parameters don't have the same shape");
-            Guard.IsTrue((x1.N, x1.CHW) == (y.N, y.CHW), nameof(y), "The y parameter don't have the same shape");
+            Guard.IsTrue(x1.Shape.C == 1 && x1.Shape.H == 1, nameof(x1), "The x1 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(x2.Shape.C == 1 && x2.Shape.H == 1, nameof(x2), "The x2 tensor doesn't represent a 2D matrix");
+            Guard.IsTrue(y.Shape.C == 1 && y.Shape.H == 1, nameof(y), "The y tensor doesn't represent a 2D matrix");
+            Guard.IsTrue((x1.Shape.N, x1.Shape.CHW) == (x2.Shape.N, x2.Shape.CHW), "The x1 and x2 parameters don't have the same shape");
+            Guard.IsTrue((x1.Shape.N, x1.Shape.CHW) == (y.Shape.N, y.Shape.CHW), nameof(y), "The y parameter don't have the same shape");
 
-            int n = x1.N, l = x1.CHW;
+            int n = x1.Shape.N, l = x1.Shape.CHW;
 
             void Kernel(int i)
             {

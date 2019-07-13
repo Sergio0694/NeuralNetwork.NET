@@ -28,11 +28,11 @@ namespace NeuralNetworkDotNet.Network.Initialization
 
             switch (mode)
             {
-                case WeightsInitializationMode.LeCunUniform: KerasWeightsProvider.FillWithLeCunUniform(weights, weights.N); break;
-                case WeightsInitializationMode.GlorotNormal: KerasWeightsProvider.FillWithGlorotNormal(weights, weights.N, weights.W); break;
-                case WeightsInitializationMode.GlorotUniform: KerasWeightsProvider.FillWithGlorotUniform(weights, weights.N, weights.W); break;
-                case WeightsInitializationMode.HeEtAlNormal: KerasWeightsProvider.FillWithHeEtAlNormal(weights, weights.N); break;
-                case WeightsInitializationMode.HeEtAlUniform: KerasWeightsProvider.FillWithHeEtAlUniform(weights, weights.N); break;
+                case WeightsInitializationMode.LeCunUniform: KerasWeightsProvider.FillWithLeCunUniform(weights, weights.Shape.N); break;
+                case WeightsInitializationMode.GlorotNormal: KerasWeightsProvider.FillWithGlorotNormal(weights, weights.Shape.N, weights.Shape.W); break;
+                case WeightsInitializationMode.GlorotUniform: KerasWeightsProvider.FillWithGlorotUniform(weights, weights.Shape.N, weights.Shape.W); break;
+                case WeightsInitializationMode.HeEtAlNormal: KerasWeightsProvider.FillWithHeEtAlNormal(weights, weights.Shape.N); break;
+                case WeightsInitializationMode.HeEtAlUniform: KerasWeightsProvider.FillWithHeEtAlUniform(weights, weights.Shape.N); break;
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported weights initialization mode");
             }
 
@@ -55,7 +55,7 @@ namespace NeuralNetworkDotNet.Network.Initialization
             Guard.IsTrue(kernels >= 0, nameof(kernels), "The number of kernels must be a positive number");
 
             var weights = Tensor.New(kernels, channels, kernelsHeight, kernelsWidth);
-            KerasWeightsProvider.FillWithHeEtAlUniform(weights, weights.CHW);
+            KerasWeightsProvider.FillWithHeEtAlUniform(weights, weights.Shape.CHW);
 
             return weights;
         }
