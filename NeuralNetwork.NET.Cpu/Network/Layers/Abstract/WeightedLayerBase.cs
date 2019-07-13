@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Security.Cryptography;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
+using NeuralNetworkDotNet.Helpers;
 
 namespace NeuralNetworkDotNet.Network.Layers.Abstract
 {
@@ -16,21 +16,21 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
         /// Gets the weights for the current network layer
         /// </summary>
         [NotNull]
-        public float[] Weights { get; }
+        public Tensor Weights { get; }
 
         /// <summary>
         /// Gets the biases for the current network layer
         /// </summary>
         [NotNull]
-        public float[] Biases { get; }
+        public Tensor Biases { get; }
 
         /// <summary>
         /// Gets an SHA256 hash calculated on both the weights and biases of the layer
         /// </summary>
         [NotNull]
-        public virtual string Hash => Convert.ToBase64String(Sha256.Hash(Weights, Biases));
+        public virtual string Hash => Sha256.Hash(Weights.Span).And(Biases.Span).ToString();
 
-        protected WeightedLayerBase(Shape input, Shape output, [NotNull] float[] w, [NotNull] float[] b) : base(input, output)
+        protected WeightedLayerBase(Shape input, Shape output, [NotNull] Tensor w, [NotNull] Tensor b) : base(input, output)
         {
             Weights = w;
             Biases = b;
@@ -49,15 +49,16 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
         /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used
         /// </summary>
         [Pure]
-        public virtual bool ValidateWeights() => !(Weights.AsSpan().HasNaN() || Biases.AsSpan().HasNaN());
+        public virtual bool ValidateWeights() => !(Weights.Span.HasNaN() || Biases.Span.HasNaN());
 
         /// <inheritdoc/>
         public override bool Equals(ILayer other)
         {
             if (!base.Equals(other)) return false;
+
             return other is WeightedLayerBase layer &&
-                   Weights.AsSpan().ContentEquals(layer.Weights) &&
-                   Biases.AsSpan().ContentEquals(layer.Biases);
+                   Weights.Span.ContentEquals(layer.Weights.Span) &&
+                   Biases.Span.ContentEquals(layer.Biases.Span);
         }
     }
 }

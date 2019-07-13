@@ -97,6 +97,13 @@ namespace NeuralNetworkDotNet.APIs.Structs
         public static implicit operator Shape((int C, int H, int W) shape) => new Shape(-1, shape.C, shape.H, shape.W);
 
         /// <summary>
+        /// Converts a tuple to a <see cref="Shape"/> instance
+        /// </summary>
+        /// <param name="shape">The tuple with the values to convert</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static implicit operator Shape((int N, int W) shape) => new Shape(shape.N, 1, 1, shape.W);
+
+        /// <summary>
         /// Deconstructs the current instance into a tuple, see <a href="https://docs.microsoft.com/dotnet/csharp/deconstruct">docs.microsoft.com/dotnet/csharp/deconstruct</a>
         /// </summary>
         public void Deconstruct(out int n, out int c, out int h, out int w)
