@@ -235,15 +235,7 @@ namespace NeuralNetworkDotNet.APIs.Models
             if (other == null) return false;
             if (other.Shape != Shape) return false;
 
-            var size = Shape.NCHW;
-            ref var rx = ref Span.GetPinnableReference();
-            ref var ry = ref other.Span.GetPinnableReference();
-
-            for (var i = 0; i < size; i++)
-                if (Math.Abs(Unsafe.Add(ref rx, i) - Unsafe.Add(ref ry, i)) > 0.0001)
-                    return false;
-
-            return true;
+            return Span.ContentEquals(other.Span);
         }
 
         /// <inheritdoc/>

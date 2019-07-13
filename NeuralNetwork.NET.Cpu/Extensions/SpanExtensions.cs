@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using NeuralNetworkDotNet.Helpers;
 
 namespace System
 {
@@ -41,6 +42,31 @@ namespace System
         }
 
         /// <summary>
+        /// Checks whether or not the two input <see cref="Span{T}"/> instances have the same content
+        /// </summary>
+        /// <param name="a">The first <see cref="Span{T}"/> to check</param>
+        /// <param name="b">The second <see cref="Span{T}"/> to check</param>
+        /// <param name="threshold">The threshold to use for the comparisons</param>
+        [Pure]
+        public static bool ContentEquals(this Span<float> a, Span<float> b, float threshold = 0.0001f)
+        {
+            Guard.IsFalse(threshold <= 0, nameof(threshold), "The threshold must be a positive number");
+
+            if (a.Length != b.Length) return false;
+            if (a.Length == 0) return true;
+
+            var l = a.Length;
+            ref var ra = ref a.GetPinnableReference();
+            ref var rb = ref b.GetPinnableReference();
+
+            for (var i = 0; i < l; i++)
+                if (Math.Abs(Unsafe.Add(ref ra, i) - Unsafe.Add(ref rb, i)) > threshold)
+                    return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The source <see cref="Span{T}"/> instance</param>
@@ -65,6 +91,24 @@ namespace System
             }
 
             return index;
+        }
+
+        /// <summary>
+        /// Returns whether or not the input <see cref="Span{T}"/> contains at least one <see cref="float.NaN"/> value
+        /// </summary>
+        /// <param name="span">The source <see cref="Span{T}"/> instance</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static bool HasNaN(this Span<float> span)
+        {
+            var l = span.Length;
+            ref var r = ref span.GetPinnableReference();
+
+            for (var w = 0; w < l; w++)
+                if (float.IsNaN(Unsafe.Add(ref r, w)))
+                    return true;
+
+            return false;
         }
     }
 }
