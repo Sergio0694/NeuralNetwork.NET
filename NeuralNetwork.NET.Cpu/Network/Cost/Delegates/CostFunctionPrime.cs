@@ -1,8 +1,8 @@
 ﻿using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Models;
-using NeuralNetworkDotNet.Core.Network.Activations.Delegates;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.Network.Activations.Delegates;
 
-namespace NeuralNetworkDotNet.Cpu.Network.Cost.Delegates
+namespace NeuralNetworkDotNet.Network.Cost.Delegates
 {
     /// <summary>
     /// A <see langword="delegate"/> for a function that computes the derivative of the cost function used to train a neural network

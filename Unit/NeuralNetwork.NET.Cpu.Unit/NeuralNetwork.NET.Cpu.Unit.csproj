@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\NeuralNetwork.NET.Cpu\NeuralNetwork.NET.Cpu.csproj" />
+    <ProjectReference Include="..\..\NeuralNetwork.NET.Cpu\NeuralNetwork.NET.csproj" />
   </ItemGroup>
 
 </Project>

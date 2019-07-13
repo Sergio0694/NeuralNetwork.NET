@@ -1,9 +1,9 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Models;
-using NeuralNetworkDotNet.Core.Helpers;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.Helpers;
 
-namespace NeuralNetworkDotNet.Core.Network.Initialization
+namespace NeuralNetworkDotNet.Network.Initialization
 {
     /// <summary>
     /// A <see langword="class"/> with some weights initialization methods ported over the Keras library

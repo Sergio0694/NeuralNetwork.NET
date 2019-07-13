@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkDotNet.Core.Network.Activations.Delegates
+﻿namespace NeuralNetworkDotNet.Network.Activations.Delegates
 {
     /// <summary>
     /// A <see langword="delegate"/> that represents an activation function (or the derivative of an activation function) used in a neural network

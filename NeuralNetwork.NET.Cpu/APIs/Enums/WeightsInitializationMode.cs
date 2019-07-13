@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkDotNet.Core.APIs.Enums
+﻿namespace NeuralNetworkDotNet.APIs.Enums
 {
     /// <summary>
     /// An <see langword="enum"/> indicating an initialization mode to use for the weights in a network layer

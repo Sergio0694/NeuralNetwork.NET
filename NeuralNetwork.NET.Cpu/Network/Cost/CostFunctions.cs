@@ -3,12 +3,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Models;
-using NeuralNetworkDotNet.Core.Helpers;
-using NeuralNetworkDotNet.Core.Network.Activations.Delegates;
-using NeuralNetworkDotNet.Cpu.cpuDNN;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.cpuDNN;
+using NeuralNetworkDotNet.Helpers;
+using NeuralNetworkDotNet.Network.Activations.Delegates;
 
-namespace NeuralNetworkDotNet.Cpu.Network.Cost
+namespace NeuralNetworkDotNet.Network.Cost
 {
     /// <summary>
     /// A collection of cost functions available for the neural networks

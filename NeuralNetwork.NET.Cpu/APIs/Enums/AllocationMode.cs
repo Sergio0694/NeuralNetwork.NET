@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkDotNet.Core.APIs.Enums
+﻿namespace NeuralNetworkDotNet.APIs.Enums
 {
     /// <summary>
     /// An <see langword="enum"/> that indicates a specific allocation mode for memory buffers

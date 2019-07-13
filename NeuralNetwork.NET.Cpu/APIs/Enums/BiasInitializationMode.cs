@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkDotNet.Core.APIs.Enums
+﻿namespace NeuralNetworkDotNet.APIs.Enums
 {
     /// <summary>
     /// An <see langword="enum"/> indicating an initialization mode for the biases in a network layer

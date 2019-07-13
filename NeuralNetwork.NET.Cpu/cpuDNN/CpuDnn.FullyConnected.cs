@@ -2,10 +2,10 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Models;
-using NeuralNetworkDotNet.Core.Helpers;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.Helpers;
 
-namespace NeuralNetworkDotNet.Cpu.cpuDNN
+namespace NeuralNetworkDotNet.cpuDNN
 {
     public static partial class CpuDnn
     {

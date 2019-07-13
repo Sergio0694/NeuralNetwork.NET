@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using JetBrains.Annotations;
 
-namespace NeuralNetworkDotNet.Core.Helpers
+namespace NeuralNetworkDotNet.Helpers
 {
     /// <summary>
     /// A <see langword="class"/> that exposes a set of APIs to check parameters in different methods across the library

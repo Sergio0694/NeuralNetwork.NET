@@ -1,9 +1,9 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Enums;
-using NeuralNetworkDotNet.Core.Network.Activations.Delegates;
+using NeuralNetworkDotNet.APIs.Enums;
+using NeuralNetworkDotNet.Network.Activations.Delegates;
 
-namespace NeuralNetworkDotNet.Core.Network.Activations
+namespace NeuralNetworkDotNet.Network.Activations
 {
     /// <summary>
     /// A <see langword="class"/> that returns the right activation function for the given type

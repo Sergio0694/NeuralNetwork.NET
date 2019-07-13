@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeuralNetworkDotNet.Core.APIs.Models;
-using NeuralNetworkDotNet.Cpu.cpuDNN;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.cpuDNN;
 
 namespace NeuralNetwork.NET.Cpu.Unit
 {

@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkDotNet.Core.APIs.Enums
+﻿namespace NeuralNetworkDotNet.APIs.Enums
 {
     /// <summary>
     /// Indicates an activation function to use in a neural network

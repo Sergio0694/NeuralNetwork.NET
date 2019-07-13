@@ -1,7 +1,7 @@
 ﻿using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Models;
+using NeuralNetworkDotNet.APIs.Models;
 
-namespace NeuralNetworkDotNet.Cpu.Network.Cost.Delegates
+namespace NeuralNetworkDotNet.Network.Cost.Delegates
 {
     /// <summary>
     /// A <see langword="delegate"/> that represents a cost function used to compute the accuracy of a neural network

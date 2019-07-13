@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Enums;
-using NeuralNetworkDotNet.Core.APIs.Models;
-using NeuralNetworkDotNet.Core.Helpers;
+using NeuralNetworkDotNet.APIs.Enums;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.Helpers;
 
-namespace NeuralNetworkDotNet.Core.Network.Initialization
+namespace NeuralNetworkDotNet.Network.Initialization
 {
     /// <summary>
     /// A simple class that provides some helper methods to quickly initialize the weights of a neural network layer

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NeuralNetworkDotNet.Core.APIs.Interfaces
+namespace NeuralNetworkDotNet.APIs.Interfaces
 {
     /// <summary>
     /// An interface that represents a single layer in a network

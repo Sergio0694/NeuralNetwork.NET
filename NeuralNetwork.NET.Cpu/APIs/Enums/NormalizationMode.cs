@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkDotNet.Core.APIs.Enums
+﻿namespace NeuralNetworkDotNet.APIs.Enums
 {
     /// <summary>
     /// An <see langword="enum"/> indicating the normalization mode to apply to the input data of a layer

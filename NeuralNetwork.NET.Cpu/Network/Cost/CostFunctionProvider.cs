@@ -1,9 +1,9 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.Core.APIs.Enums;
-using NeuralNetworkDotNet.Cpu.Network.Cost.Delegates;
+using NeuralNetworkDotNet.APIs.Enums;
+using NeuralNetworkDotNet.Network.Cost.Delegates;
 
-namespace NeuralNetworkDotNet.Cpu.Network.Cost
+namespace NeuralNetworkDotNet.Network.Cost
 {
     /// <summary>
     /// A <see langword="class"/> that returns the right cost function for the given type
