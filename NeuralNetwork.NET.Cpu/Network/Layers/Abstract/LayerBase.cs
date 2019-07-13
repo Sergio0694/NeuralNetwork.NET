@@ -1,4 +1,6 @@
-﻿using NeuralNetworkDotNet.APIs.Interfaces;
+﻿using JetBrains.Annotations;
+using NeuralNetworkDotNet.APIs.Interfaces;
+using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
 
@@ -28,6 +30,13 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
             InputShape = input;
             OutputShape = output;
         }
+
+        /// <summary>
+        /// Forwards the inputs through the layer and returns the resulting <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/> to process</param>
+        [MustUseReturnValue, NotNull]
+        public abstract Tensor Forward(in Tensor x);
 
         /// <inheritdoc/>
         public virtual bool Equals(ILayer other)
