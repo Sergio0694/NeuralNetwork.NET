@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
+using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
 
@@ -16,7 +17,7 @@ namespace NeuralNetworkDotNet.APIs.Models
     /// </summary>
     [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("Shape: {" + nameof(Shape) + "}")]
-    public sealed class Tensor : IDisposable, IEquatable<Tensor>
+    public sealed class Tensor : IDisposable, IEquatable<Tensor>, IClonable<Tensor>
     {
         /// <summary>
         /// Gets the shape of the current <see cref="Tensor"/> instance
@@ -224,10 +225,10 @@ namespace NeuralNetworkDotNet.APIs.Models
             return tensor;
         }
 
+        #region Interfaces
+
         /// <inheritdoc/>
         void IDisposable.Dispose() => ArrayPool<float>.Shared.Return(Data);
-
-        #region IEquatable<Tensor>
 
         /// <inheritdoc/>
         public bool Equals(Tensor other)
@@ -246,6 +247,15 @@ namespace NeuralNetworkDotNet.APIs.Models
         {
             Span<int> hashes = stackalloc int[] { Shape.GetHashCode(), Span.GetContentHashCode() };
             return hashes.GetContentHashCode();
+        }
+
+        /// <inheritdoc/>
+        public Tensor Clone()
+        {
+            var copy = New(Shape);
+            copy.Overwrite(this);
+
+            return copy;
         }
 
         #endregion
