@@ -1,4 +1,5 @@
 ﻿using System;
+using NeuralNetworkDotNet.APIs.Structs;
 
 namespace NeuralNetworkDotNet.APIs.Interfaces
 {
@@ -10,11 +11,11 @@ namespace NeuralNetworkDotNet.APIs.Interfaces
         /// <summary>
         /// Gets the shape of the layer inputs
         /// </summary>
-        (int C, int H, int W) InputShape { get; }
+        Shape InputShape { get; }
 
         /// <summary>
         /// Gets the shape of the layer outputs
         /// </summary>
-        (int C, int H, int W) OutputShape { get; }
+        Shape OutputShape { get; }
     }
 }
