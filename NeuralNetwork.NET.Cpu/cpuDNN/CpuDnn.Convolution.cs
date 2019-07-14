@@ -8,9 +8,6 @@ using NeuralNetworkDotNet.Helpers;
 
 namespace NeuralNetworkDotNet.cpuDNN
 {
-    /// <summary>
-    /// A <see langword="class"/> that contains primitives to implement a neural network running on CPU
-    /// </summary>
     public static partial class CpuDnn
     {
         /// <summary>
