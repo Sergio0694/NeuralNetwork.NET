@@ -49,6 +49,15 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
+        public override bool Equals(ILayer other)
+        {
+            if (!base.Equals(other)) return false;
+
+            return other is ActivationLayer layer &&
+                   ActivationType.Equals(layer.ActivationType);
+        }
+
+        /// <inheritdoc/>
         public override ILayer Clone() => new ActivationLayer(InputShape, OutputShape, ActivationType);
     }
 }

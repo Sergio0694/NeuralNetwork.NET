@@ -71,6 +71,15 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
+        public override bool Equals(ILayer other)
+        {
+            if (!base.Equals(other)) return false;
+
+            return other is ConvolutionalLayer layer &&
+                   OperationInfo.Equals(layer.OperationInfo);
+        }
+
+        /// <inheritdoc/>
         public override ILayer Clone() => new ConvolutionalLayer(InputShape, OperationInfo, Weights.Clone(), Biases.Clone());
     }
 }
