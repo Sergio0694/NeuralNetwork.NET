@@ -43,7 +43,7 @@ namespace NeuralNetworkDotNet.Network.Layers
         /// <inheritdoc/>
         public override Tensor Backward(Tensor x, Tensor y, Tensor dy)
         {
-            var dx = Tensor.New(x.Shape.N, InputShape.CHW);
+            var dx = Tensor.Like(x);
             CpuDnn.FullyConnectedBackwardData(Weights, dy, dx);
 
             return dx;
