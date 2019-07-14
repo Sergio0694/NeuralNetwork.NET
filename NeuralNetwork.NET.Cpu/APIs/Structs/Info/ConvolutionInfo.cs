@@ -36,7 +36,7 @@ namespace NeuralNetworkDotNet.APIs.Structs.Info
         /// </summary>
         public readonly int HorizontalStride;
 
-        // Internal constructor
+        // Private constructor
         private ConvolutionInfo(
             ConvolutionMode mode,
             int verticalPadding, int horizontalPadding,
