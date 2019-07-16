@@ -2,7 +2,6 @@
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
-using NeuralNetworkDotNet.Network.Nodes.Interfaces;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Abstract
 {

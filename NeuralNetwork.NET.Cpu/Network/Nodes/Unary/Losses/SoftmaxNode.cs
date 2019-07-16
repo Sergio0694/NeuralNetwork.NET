@@ -3,7 +3,6 @@ using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
-using NeuralNetworkDotNet.Network.Nodes.Interfaces;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
 {

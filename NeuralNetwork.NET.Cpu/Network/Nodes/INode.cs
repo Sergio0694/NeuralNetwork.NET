@@ -1,7 +1,7 @@
 ﻿using System;
 using NeuralNetworkDotNet.APIs.Structs;
 
-namespace NeuralNetworkDotNet.Network.Nodes.Interfaces
+namespace NeuralNetworkDotNet.Network.Nodes
 {
     /// <summary>
     /// An <see langword="interface"/> for all the available nodes

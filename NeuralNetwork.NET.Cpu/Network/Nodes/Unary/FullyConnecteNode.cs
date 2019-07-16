@@ -4,7 +4,6 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
-using NeuralNetworkDotNet.Network.Nodes.Interfaces;
 using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary

@@ -6,7 +6,6 @@ using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Activations;
 using NeuralNetworkDotNet.Network.Activations.Delegates;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
-using NeuralNetworkDotNet.Network.Nodes.Interfaces;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {

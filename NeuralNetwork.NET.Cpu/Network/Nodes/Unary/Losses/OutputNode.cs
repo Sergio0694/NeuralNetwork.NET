@@ -4,7 +4,6 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Network.Cost;
 using NeuralNetworkDotNet.Network.Cost.Delegates;
-using NeuralNetworkDotNet.Network.Nodes.Interfaces;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
 {
