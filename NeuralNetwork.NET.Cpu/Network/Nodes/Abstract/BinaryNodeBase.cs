@@ -55,13 +55,10 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         /// <param name="x2">The right input <see cref="Tensor"/> used in the forward pass</param>
         /// <param name="y">The output <see cref="Tensor"/> computed in the forward pass</param>
         /// <param name="dy">The output error delta to backpropagate</param>
-        /// <param name="dx1">The backpropagated delta for the left parent node</param>
-        /// <param name="dx2">The backpropagated delta for the right parent node</param>
         [MustUseReturnValue, NotNull]
         public abstract Tensor Backward(
             [NotNull] Tensor x1, [NotNull] Tensor x2,
-            [NotNull] Tensor y, [NotNull] Tensor dy,
-            out Tensor dx1, out Tensor dx2);
+            [NotNull] Tensor y, [NotNull] Tensor dy);
 
         /// <inheritdoc/>
         public virtual bool Equals(INode other)
