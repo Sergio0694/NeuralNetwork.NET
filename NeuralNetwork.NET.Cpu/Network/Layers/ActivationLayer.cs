@@ -12,7 +12,7 @@ namespace NeuralNetworkDotNet.Network.Layers
     /// <summary>
     /// An activation layer
     /// </summary>
-    internal sealed class ActivationLayer : LayerBase
+    internal class ActivationLayer : LayerBase
     {
         /// <summary>
         /// Gets the activation type used in the current layer
@@ -22,7 +22,7 @@ namespace NeuralNetworkDotNet.Network.Layers
         /// <summary>
         /// Gets the list of activation and activation prime functions used in the network
         /// </summary>
-        private readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
+        protected readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
         public ActivationLayer(Shape input, Shape output, ActivationType type) : base(input, output)
         {
