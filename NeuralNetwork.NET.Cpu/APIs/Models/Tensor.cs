@@ -39,6 +39,68 @@ namespace NeuralNetworkDotNet.APIs.Models
             get => Data.AsSpan(0, Shape.NCHW);
         }
 
+        /// <summary>
+        /// Gets a <see cref="Span{T}"/> instance for a specific sample in the current <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="n">The index of the item to retrieve</param>
+        public Span<float> this[int n]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                var offset = n * Shape.CHW;
+                return Data.AsSpan(offset, Shape.CHW);
+            }
+        }
+
+        /// <summary>
+        /// Gets a <see cref="Span{T}"/> instance for a specific 2D slice in the current <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="n">The index of the item to retrieve</param>
+        /// <param name="c">The index of the channel to retrieve</param>
+        public Span<float> this[int n, int c]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                var offset = n * Shape.CHW + c * Shape.HW;
+                return Data.AsSpan(offset, Shape.HW);
+            }
+        }
+
+        /// <summary>
+        /// Gets a <see cref="Span{T}"/> instance for a specific row slice in the current <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="n">The index of the item to retrieve</param>
+        /// <param name="c">The index of the channel to retrieve</param>
+        /// <param name="h">The index of the row to retrieve</param>
+        public Span<float> this[int n, int c, int h]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                var offset = n * Shape.CHW + c * Shape.HW + h * Shape.W;
+                return Data.AsSpan(offset, Shape.W);
+            }
+        }
+
+        /// <summary>
+        /// Gets a reference to a specifc value in the current <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="n">The index of the item to retrieve</param>
+        /// <param name="c">The index of the channel to retrieve</param>
+        /// <param name="h">The index of the row to retrieve</param>
+        /// <param name="w">The index of the column to retrieve</param>
+        public ref float this[int n, int c, int h, int w]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                var offset = n * Shape.CHW + c * Shape.HW + h * Shape.W + w;
+                return ref Data[offset];
+            }
+        }
+
         // Private constructor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Tensor(Shape shape, [NotNull] float[] data)
