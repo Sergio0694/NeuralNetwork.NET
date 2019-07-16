@@ -1,16 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Threading;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.Helpers;
 
-namespace NeuralNetworkDotNet.Extensions
+namespace System.IO
 {
     /// <summary>
     /// A <see langword="class"/> with some <see cref="Stream"/> extensions to load/write data
     /// </summary>
-    internal static class StreamExtensions
+    public static class StreamExtensions
     {
         /// <summary>
         /// The maximum size of values to serialize
@@ -83,7 +81,7 @@ namespace NeuralNetworkDotNet.Extensions
             ref var rx = ref Unsafe.As<T, byte>(ref span.GetPinnableReference());
             ref var ry = ref buffer[0];
 
-            for (var b = 0; b < l; b++, rx = ref Unsafe.Add(ref rx, 1))
+            for (var b = 0; b < l; b++)
             {
                 for (var i = 0; i < span.Length; i++)
                 {
@@ -91,6 +89,8 @@ namespace NeuralNetworkDotNet.Extensions
                 }
 
                 stream.Write(buffer, 0, buffer.Length);
+
+                rx = ref Unsafe.Add(ref rx, 1);
             }
         }
 
@@ -111,12 +111,15 @@ namespace NeuralNetworkDotNet.Extensions
             ref var rx = ref temp[0];
             ref var ry = ref Unsafe.As<T, byte>(ref data[0]);
 
-            for (var b = 0; b < l; b++, ry = ref Unsafe.Add(ref ry, 1))
+            for (var b = 0; b < l; b++)
             {
                 for (var i = 0; i < n; i++)
                 {
                     Unsafe.Add(ref ry, i * l) = Unsafe.Add(ref rx, i);
                 }
+
+                rx = ref Unsafe.Add(ref rx, n);
+                ry = ref Unsafe.Add(ref ry, 1);
             }
 
             return data;
