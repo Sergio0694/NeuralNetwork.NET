@@ -50,7 +50,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         public abstract Tensor Backward([NotNull] Tensor x, [NotNull] Tensor y, [NotNull] Tensor dy);
 
         /// <inheritdoc/>
-        public bool Equals(INode other)
+        public virtual bool Equals(INode other)
         {
             if (other == null) return false;
 

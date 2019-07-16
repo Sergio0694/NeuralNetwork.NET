@@ -65,7 +65,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
             out Tensor dx1, out Tensor dx2);
 
         /// <inheritdoc/>
-        public bool Equals(INode other)
+        public virtual bool Equals(INode other)
         {
             if (other == null) return false;
 
