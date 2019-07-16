@@ -11,7 +11,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
     /// </summary>
     internal sealed class SoftmaxNode : OutputNode
     {
-        public SoftmaxNode([NotNull] INode input, Shape output)
+        public SoftmaxNode([NotNull] Node input, Shape output)
             : base(input, output, ActivationType.Softmax, CostFunctionType.LogLikelyhood)
         { }
 

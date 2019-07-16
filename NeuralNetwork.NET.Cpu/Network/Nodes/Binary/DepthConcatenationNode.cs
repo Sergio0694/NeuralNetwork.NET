@@ -10,7 +10,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Binary
     /// </summary>
     internal sealed class DepthConcatenationNode : BinaryNodeBase
     {
-        public DepthConcatenationNode([NotNull] INode left, [NotNull] INode right)
+        public DepthConcatenationNode([NotNull] Node left, [NotNull] Node right)
             : base(left, right, (left.Shape.C + right.Shape.C, left.Shape.H, left.Shape.W))
         { }
 

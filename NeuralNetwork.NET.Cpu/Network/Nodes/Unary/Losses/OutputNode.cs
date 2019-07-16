@@ -22,7 +22,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
         /// </summary>
         public (CostFunction Cost, CostFunctionPrime CostPrime) CostFunctions { get; }
 
-        public OutputNode([NotNull] INode input, Shape output, ActivationType activation, CostFunctionType costFunctionType)
+        public OutputNode([NotNull] Node input, Shape output, ActivationType activation, CostFunctionType costFunctionType)
             : base(input, output, activation)
         {
             CostFunctionType = costFunctionType;
@@ -39,7 +39,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
         }
 
         /// <inheritdoc/>
-        public override bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 

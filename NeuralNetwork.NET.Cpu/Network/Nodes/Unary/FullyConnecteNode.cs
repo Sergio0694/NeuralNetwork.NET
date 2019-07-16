@@ -13,7 +13,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// </summary>
     internal sealed class FullyConnecteNode : WeightedUnaryNodeBase
     {
-        public FullyConnecteNode([NotNull] INode input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(
+        public FullyConnecteNode([NotNull] Node input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(
             input, (input.Shape.CHW, outputs),
             WeightsProvider.NewFullyConnectedWeights(input.Shape.CHW, outputs, weightsMode),
             WeightsProvider.NewBiases(outputs, biasMode))
@@ -21,7 +21,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
             Guard.IsTrue(outputs >= 0, nameof(outputs), "The outputs must be a positive number");
         }
 
-        public FullyConnecteNode([NotNull] INode input, int outputs, [NotNull] Tensor weights, [NotNull] Tensor biases)
+        public FullyConnecteNode([NotNull] Node input, int outputs, [NotNull] Tensor weights, [NotNull] Tensor biases)
             : base(input, (input.Shape.CHW, outputs), weights, biases)
         {
             Guard.IsTrue(outputs >= 0, nameof(outputs), "The outputs must be a positive number");

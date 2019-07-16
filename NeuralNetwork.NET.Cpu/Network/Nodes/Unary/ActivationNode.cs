@@ -1,7 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Activations;
 using NeuralNetworkDotNet.Network.Activations.Delegates;
@@ -24,7 +23,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         /// </summary>
         protected readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
-        public ActivationNode([NotNull] INode input, Shape shape, ActivationType type) : base(input, shape)
+        public ActivationNode([NotNull] Node input, ActivationType type) : base(input, input.Shape)
         {
             ActivationType = type;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(type);
@@ -50,7 +49,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         }
 
         /// <inheritdoc/>
-        public override bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 

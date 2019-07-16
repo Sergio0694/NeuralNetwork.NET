@@ -23,7 +23,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
             get => ref _OperationInfo;
         }
 
-        public PoolingNode([NotNull] INode input, PoolingInfo operation) : base(input, operation.GetOutputShape(input.Shape))
+        public PoolingNode([NotNull] Node input, PoolingInfo operation) : base(input, operation.GetOutputShape(input.Shape))
         {
             _OperationInfo = operation;
         }
@@ -47,7 +47,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         }
 
         /// <inheritdoc/>
-        public override bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 

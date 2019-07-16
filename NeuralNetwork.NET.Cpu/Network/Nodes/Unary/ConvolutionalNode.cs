@@ -2,7 +2,6 @@
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Initialization;
@@ -26,7 +25,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
             get => ref _OperationInfo;
         }
 
-        public ConvolutionalNode([NotNull] INode input, Shape shape, ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, BiasInitializationMode biasMode) : base(
+        public ConvolutionalNode([NotNull] Node input, ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, BiasInitializationMode biasMode) : base(
             input,
             operation.GetOutputShape(input.Shape, kernelSize, kernels),
             WeightsProvider.NewConvolutionalKernels(input.Shape.C, kernelSize.X, kernelSize.Y, kernels),
@@ -35,7 +34,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
             _OperationInfo = operation;
         }
 
-        public ConvolutionalNode([NotNull] INode input, Shape shape, ConvolutionInfo operation, [NotNull] Tensor weights, [NotNull] Tensor biases)
+        public ConvolutionalNode([NotNull] Node input, ConvolutionInfo operation, [NotNull] Tensor weights, [NotNull] Tensor biases)
             : base(input, operation.GetOutputShape(input.Shape, (weights.Shape.H, weights.Shape.W), weights.Shape.N), weights, biases)
         {
             _OperationInfo = operation;
@@ -70,7 +69,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         }
 
         /// <inheritdoc/>
-        public override bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 

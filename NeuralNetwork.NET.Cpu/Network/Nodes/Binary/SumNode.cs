@@ -1,7 +1,7 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
+using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Binary
@@ -11,7 +11,10 @@ namespace NeuralNetworkDotNet.Network.Nodes.Binary
     /// </summary>
     internal sealed class SumNode : BinaryNodeBase
     {
-        public SumNode([NotNull] INode left, [NotNull] INode right, Shape shape) : base(left, right, shape) { }
+        public SumNode([NotNull] Node left, [NotNull] Node right) : base(left, right, left.Shape)
+        {
+            Guard.IsTrue(left.Shape == right.Shape, "The input tensors must have the same shape");
+        }
 
         /// <inheritdoc/>
         public override Tensor Forward(Tensor x1, Tensor x2)

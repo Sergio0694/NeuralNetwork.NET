@@ -8,28 +8,24 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
     /// <summary>
     /// A base <see langword="class"/> for all nodes representing unary operations
     /// </summary>
-    public abstract class UnaryNodeBase : INode
+    public abstract class UnaryNodeBase : Node
     {
         /// <summary>
-        /// Gets the parent <see cref="INode"/> instance for the current node
+        /// Gets the parent <see cref="Node"/> instance for the current node
         /// </summary>
         [NotNull]
-        public INode Parent { get; }
-
-        /// <inheritdoc/>
-        public Shape Shape { get; }
+        public Node Parent { get; }
 
         /// <summary>
         /// Creates a new <see cref="UnaryNodeBase"/> instance with the specified parameters
         /// </summary>
-        /// <param name="input">The input <see cref="INode"/> instance</param>
+        /// <param name="input">The input <see cref="Node"/> instance</param>
         /// <param name="shape">The output <see cref="Shape"/> value for the current node</param>
-        protected UnaryNodeBase([NotNull] INode input, Shape shape)
+        protected UnaryNodeBase([NotNull] Node input, Shape shape) : base(shape)
         {
             Guard.IsTrue(shape.N == -1, nameof(shape), "The output shape can't have a defined N channel");
 
             Parent = input;
-            Shape = shape;
         }
 
         /// <summary>
@@ -49,14 +45,12 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         public abstract Tensor Backward([NotNull] Tensor x, [NotNull] Tensor y, [NotNull] Tensor dy);
 
         /// <inheritdoc/>
-        public virtual bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (other == null) return false;
 
-            return GetType() == other.GetType() &&
-                   other is UnaryNodeBase unary &&
-                   Parent.Shape == unary.Parent.Shape &&
-                   Shape == unary.Shape;
+            return other is UnaryNodeBase unary &&
+                   Parent.Shape == unary.Parent.Shape;
         }
     }
 }

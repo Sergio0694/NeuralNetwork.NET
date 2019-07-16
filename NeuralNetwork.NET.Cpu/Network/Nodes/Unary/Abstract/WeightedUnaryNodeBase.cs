@@ -30,7 +30,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
         [NotNull]
         public virtual string Hash => Sha256.Hash(Weights.Span).And(Biases.Span).ToString();
 
-        protected WeightedUnaryNodeBase([NotNull] INode input, Shape shape, [NotNull] Tensor w, [NotNull] Tensor b) : base(input, shape)
+        protected WeightedUnaryNodeBase([NotNull] Node input, Shape shape, [NotNull] Tensor w, [NotNull] Tensor b) : base(input, shape)
         {
             Weights = w;
             Biases = b;
@@ -52,7 +52,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
         public virtual bool ValidateWeights() => !(Weights.Span.HasNaN() || Biases.Span.HasNaN());
 
         /// <inheritdoc/>
-        public override bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 

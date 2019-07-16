@@ -8,36 +8,32 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
     /// <summary>
     /// A base <see langword="class"/> for all nodes representing binary operations
     /// </summary>
-    public abstract class BinaryNodeBase : INode
+    public abstract class BinaryNodeBase : Node
     {
         /// <summary>
-        /// Gets the first parent <see cref="INode"/> instance for the current node
+        /// Gets the first parent <see cref="Node"/> instance for the current node
         /// </summary>
         [NotNull]
-        public INode LeftParent { get; }
+        public Node LeftParent { get; }
 
         /// <summary>
-        /// Gets the second <see cref="INode"/> instance for the current node
+        /// Gets the second <see cref="Node"/> instance for the current node
         /// </summary>
         [NotNull]
-        public INode RightParent { get; }
-
-        /// <inheritdoc/>
-        public Shape Shape { get; }
+        public Node RightParent { get; }
 
         /// <summary>
         /// Creates a new <see cref="BinaryNodeBase"/> instance with the specified parameters
         /// </summary>
-        /// <param name="left">The left parent <see cref="INode"/></param>
-        /// <param name="right">The right parent <see cref="INode"/></param>
+        /// <param name="left">The left parent <see cref="Node"/></param>
+        /// <param name="right">The right parent <see cref="Node"/></param>
         /// <param name="shape">The output <see cref="Shape"/> value for the current node</param>
-        protected BinaryNodeBase([NotNull] INode left, [NotNull] INode right, Shape shape)
+        protected BinaryNodeBase([NotNull] Node left, [NotNull] Node right, Shape shape) : base(shape)
         {
             Guard.IsTrue(shape.N == -1, nameof(shape), "The output shape can't have a defined N channel");
 
             LeftParent = left;
             RightParent = right;
-            Shape = shape;
         }
 
         /// <summary>
@@ -59,17 +55,5 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         public abstract Tensor Backward(
             [NotNull] Tensor x1, [NotNull] Tensor x2,
             [NotNull] Tensor y, [NotNull] Tensor dy);
-
-        /// <inheritdoc/>
-        public virtual bool Equals(INode other)
-        {
-            if (other == null) return false;
-
-            return GetType() == other.GetType() &&
-                   other is BinaryNodeBase binary &&
-                   LeftParent.Shape == binary.LeftParent.Shape &&
-                   RightParent.Shape == binary.RightParent.Shape &&
-                   Shape == binary.Shape;
-        }
     }
 }

@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
@@ -50,15 +49,15 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         /// </summary>
         public NormalizationMode NormalizationMode { get; }
 
-        public BatchNormalizationNode([NotNull] INode input, Shape shape, NormalizationMode mode) : base(
-            input, shape,
-            WeightsProvider.NewGammaParameters(shape.C, shape.HW, mode),
-            WeightsProvider.NewBetaParameters(shape.C, shape.HW, mode))
+        public BatchNormalizationNode([NotNull] Node input, NormalizationMode mode) : base(
+            input, input.Shape,
+            WeightsProvider.NewGammaParameters(input.Shape.C, input.Shape.HW, mode),
+            WeightsProvider.NewBetaParameters(input.Shape.C, input.Shape.HW, mode))
         {
             switch (mode)
             {
-                case NormalizationMode.Spatial: Mu = Tensor.New(1, shape.C, AllocationMode.Clean); break;
-                case NormalizationMode.PerActivation: Mu = Tensor.New(shape, AllocationMode.Clean); break;
+                case NormalizationMode.Spatial: Mu = Tensor.New(1, input.Shape.C, AllocationMode.Clean); break;
+                case NormalizationMode.PerActivation: Mu = Tensor.New(input.Shape, AllocationMode.Clean); break;
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid batch normalization mode");
             }
 
@@ -68,10 +67,10 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         }
 
         public BatchNormalizationNode(
-            [NotNull] INode input, Shape shape, NormalizationMode mode,
+            [NotNull] Node input, NormalizationMode mode,
             [NotNull] Tensor w, [NotNull] Tensor b,
             [NotNull] Tensor mu, [NotNull] Tensor sigma2, int iteration)
-            : base(input, shape, w, b)
+            : base(input, input.Shape, w, b)
         {
             Mu = mu;
             Sigma2 = sigma2;
@@ -109,7 +108,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         }
 
         /// <inheritdoc/>
-        public override bool Equals(INode other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
