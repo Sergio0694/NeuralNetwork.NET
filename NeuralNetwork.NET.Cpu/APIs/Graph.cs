@@ -97,6 +97,14 @@ namespace NeuralNetworkDotNet.APIs
         public static Node BatchNormalization([NotNull] this Node node, NormalizationMode mode) => new BatchNormalizationNode(node, mode);
 
         /// <summary>
+        /// Creates a new dropout node
+        /// </summary>
+        /// <param name="node">The source <see cref="Node"/> to connect to the new operation</param>
+        /// <returns>The resulting dropout <see cref="Node"/> instance</returns>
+        [Pure, NotNull]
+        public static Node Dropout([NotNull] this Node node) => new DropoutNode(node);
+
+        /// <summary>
         /// Creates a new loss node with a specified activation function and loss function
         /// </summary>
         /// <param name="node">The source <see cref="Node"/> to connect to the new operation</param>
