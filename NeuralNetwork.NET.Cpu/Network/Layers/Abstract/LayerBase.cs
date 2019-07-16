@@ -36,7 +36,7 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
         /// </summary>
         /// <param name="x">The input <see cref="Tensor"/> to process</param>
         [MustUseReturnValue, NotNull]
-        public abstract Tensor Forward(in Tensor x);
+        public abstract Tensor Forward([NotNull] Tensor x);
 
         /// <summary>
         /// Backpropagates the error to compute the delta for the inputs of the layer

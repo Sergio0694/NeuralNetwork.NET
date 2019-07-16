@@ -1,0 +1,57 @@
+﻿using JetBrains.Annotations;
+using NeuralNetworkDotNet.APIs.Models;
+using NeuralNetworkDotNet.APIs.Structs;
+using NeuralNetworkDotNet.Helpers;
+using NeuralNetworkDotNet.Network.Nodes.Interfaces;
+
+namespace NeuralNetworkDotNet.Network.Nodes.Abstract
+{
+    /// <summary>
+    /// A base <see langword="class"/> for all nodes representing unary operations
+    /// </summary>
+    public abstract class UnaryNode : INode
+    {
+        /// <summary>
+        /// Gets the parent <see cref="INode"/> instance for the current node
+        /// </summary>
+        [NotNull]
+        public INode Parent { get; }
+
+        /// <summary>
+        /// Gets the shape of the layer inputs
+        /// </summary>
+        public Shape InputShape => Parent.Shape;
+
+        /// <inheritdoc/>
+        public Shape Shape { get; }
+
+        /// <summary>
+        /// Creates a new <see cref="UnaryNode"/> instance with the specified parameters
+        /// </summary>
+        /// <param name="input">The input <see cref="INode"/> instance</param>
+        /// <param name="shape">The output <see cref="Shape"/> value for the current node</param>
+        protected UnaryNode([NotNull] INode input, Shape shape)
+        {
+            Guard.IsTrue(shape.N == -1, nameof(shape), "The output shape can't have a defined N channel");
+
+            Parent = input;
+            Shape = shape;
+        }
+
+        /// <summary>
+        /// Forwards the inputs through the layer and returns the resulting <see cref="Tensor"/>
+        /// </summary>
+        /// <param name="x">The input <see cref="Tensor"/> to process</param>
+        [MustUseReturnValue, NotNull]
+        public abstract Tensor Forward([NotNull] Tensor x);
+
+        /// <summary>
+        /// Backpropagates the error to compute the delta for the inputs of the layer
+        /// </summary>
+        /// <param name="x">The layer inputs used in the forward pass</param>
+        /// <param name="y">The output <see cref="Tensor"/> computed in the forward pass</param>
+        /// <param name="dy">The output error delta to backpropagate</param>
+        [MustUseReturnValue, NotNull]
+        public abstract Tensor Backward([NotNull] Tensor x, [NotNull] Tensor y, [NotNull] Tensor dy);
+    }
+}
