@@ -57,8 +57,8 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
             if (!base.Equals(other)) return false;
 
             return other is WeightedLayerBase layer &&
-                   Weights.Span.ContentEquals(layer.Weights.Span) &&
-                   Biases.Span.ContentEquals(layer.Biases.Span);
+                   Weights.Equals(layer.Weights) &&
+                   Biases.Equals(layer.Biases);
         }
     }
 }
