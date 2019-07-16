@@ -95,7 +95,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Reads a shuffled <see cref="float"/> vector from the target <see cref="Stream"/>
+        /// Reads an array of a specified length from a given <see cref="Stream"/>
         /// </summary>
         /// <param name="stream">The source <see cref="Stream"/></param>
         /// <param name="n">The vector length</param>
