@@ -4,6 +4,7 @@ using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.Network.Nodes;
 using NeuralNetworkDotNet.Network.Nodes.Nullary;
 using NeuralNetworkDotNet.Network.Nodes.Unary;
+using NeuralNetworkDotNet.Network.Nodes.Unary.Losses;
 
 namespace NeuralNetworkDotNet.APIs
 {
@@ -94,5 +95,23 @@ namespace NeuralNetworkDotNet.APIs
         /// <returns>The resulting batch normalization <see cref="Node"/> instance</returns>
         [Pure, NotNull]
         public static Node BatchNormalization([NotNull] this Node node, NormalizationMode mode) => new BatchNormalizationNode(node, mode);
+
+        /// <summary>
+        /// Creates a new loss node with a specified activation function and loss function
+        /// </summary>
+        /// <param name="node">The source <see cref="Node"/> to connect to the new operation</param>
+        /// <param name="activation"></param>
+        /// <param name="cost"></param>
+        /// <returns>The resulting loss <see cref="Node"/> instance</returns>
+        [Pure, NotNull]
+        public static Node Loss([NotNull] this Node node, ActivationType activation, CostFunctionType cost) => new OutputNode(node, activation, cost);
+
+        /// <summary>
+        /// Creates a new softmax node
+        /// </summary>
+        /// <param name="node">The source <see cref="Node"/> to connect to the new operation</param>
+        /// <returns>The resulting softmax <see cref="Node"/> instance</returns>
+        [Pure, NotNull]
+        public static Node Softmax([NotNull] this Node node) => new SoftmaxNode(node);
     }
 }

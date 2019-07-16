@@ -1,7 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Network.Cost;
 using NeuralNetworkDotNet.Network.Cost.Delegates;
 
@@ -22,8 +21,8 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
         /// </summary>
         public (CostFunction Cost, CostFunctionPrime CostPrime) CostFunctions { get; }
 
-        public OutputNode([NotNull] Node input, Shape output, ActivationType activation, CostFunctionType costFunctionType)
-            : base(input, output, activation)
+        public OutputNode([NotNull] Node input, ActivationType activation, CostFunctionType costFunctionType)
+            : base(input, activation)
         {
             CostFunctionType = costFunctionType;
             CostFunctions = CostFunctionProvider.GetCostFunctions(costFunctionType);

@@ -1,7 +1,6 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
@@ -11,8 +10,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
     /// </summary>
     internal sealed class SoftmaxNode : OutputNode
     {
-        public SoftmaxNode([NotNull] Node input, Shape output)
-            : base(input, output, ActivationType.Softmax, CostFunctionType.LogLikelyhood)
+        public SoftmaxNode([NotNull] Node input) : base(input, ActivationType.Softmax, CostFunctionType.LogLikelyhood)
         { }
 
         /// <inheritdoc/>
