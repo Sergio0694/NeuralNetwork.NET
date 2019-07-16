@@ -81,7 +81,7 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+        public override Tensor Forward(Tensor x)
         {
             // TODO: handle inference mode and variable factor
             var y = Tensor.Like(x);

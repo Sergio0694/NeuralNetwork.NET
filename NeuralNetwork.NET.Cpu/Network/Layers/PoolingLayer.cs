@@ -30,7 +30,7 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+        public override Tensor Forward(Tensor x)
         {
             var y = Tensor.New(x.Shape.N, OutputShape.C, OutputShape.H, OutputShape.W);
             CpuDnn.PoolingForward(x, y);
