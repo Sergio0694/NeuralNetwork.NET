@@ -59,8 +59,5 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
                    Parent.Shape == unary.Parent.Shape &&
                    Shape == unary.Shape;
         }
-
-        /// <inheritdoc/>
-        public abstract INode Clone();
     }
 }

@@ -75,7 +75,5 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
                    RightParent.Shape == binary.RightParent.Shape &&
                    Shape == binary.Shape;
         }
-
-        public abstract INode Clone();
     }
 }
