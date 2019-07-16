@@ -5,6 +5,7 @@ using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
+using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
 using NeuralNetworkDotNet.Network.Layers.Abstract;
@@ -82,19 +83,30 @@ namespace NeuralNetworkDotNet.Network.Layers
         /// <inheritdoc/>
         public override Tensor Forward(in Tensor x)
         {
-            throw new NotImplementedException();
+            // TODO: handle inference mode and variable factor
+            var y = Tensor.Like(x);
+            CpuDnn.BatchNormalizationForward(NormalizationMode, 0.5f, x, Weights, Biases, Mu, Sigma2, y);
+
+            return y;
         }
 
         /// <inheritdoc/>
         public override Tensor Backward(Tensor x, Tensor y, Tensor dy)
         {
-            throw new NotImplementedException();
+            var dx = Tensor.Like(x);
+            CpuDnn.BatchNormalizationBackwardData(NormalizationMode, x, Weights, Mu, Sigma2, dy, dx);
+
+            return dx;
         }
 
         /// <inheritdoc/>
         public override void Gradient(Tensor x, Tensor dy, out Tensor dJdw, out Tensor dJdb)
         {
-            throw new NotImplementedException();
+            dJdw = Tensor.Like(Weights);
+            CpuDnn.BatchNormalizationBackwardGamma(NormalizationMode, x, Mu, Sigma2, dy, dJdw);
+
+            dJdb = Tensor.Like(Biases);
+            CpuDnn.BatchNormalizationBackwardBeta(NormalizationMode, dy, dJdb);
         }
 
         /// <inheritdoc/>
