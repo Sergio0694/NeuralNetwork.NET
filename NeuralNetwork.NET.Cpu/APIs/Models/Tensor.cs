@@ -290,7 +290,7 @@ namespace NeuralNetworkDotNet.APIs.Models
         #region Interfaces
 
         /// <inheritdoc/>
-        void IDisposable.Dispose() => ArrayPool<float>.Shared.Return(Data);
+        public void Dispose() => ArrayPool<float>.Shared.Return(Data);
 
         /// <inheritdoc/>
         public bool Equals(Tensor other)
