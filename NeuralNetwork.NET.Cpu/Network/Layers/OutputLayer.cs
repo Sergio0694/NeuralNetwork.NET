@@ -10,7 +10,7 @@ namespace NeuralNetworkDotNet.Network.Layers
     /// <summary>
     /// A custom <see cref="ActivationLayer"/> used as output in a graph, that also contains a specific cost function
     /// </summary>
-    internal sealed class OutputLayer : ActivationLayer
+    internal class OutputLayer : ActivationLayer
     {
         /// <summary>
         /// Gets the cost function for the current layer
