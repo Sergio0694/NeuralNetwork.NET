@@ -17,11 +17,6 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         [NotNull]
         public INode Parent { get; }
 
-        /// <summary>
-        /// Gets the shape of the layer inputs
-        /// </summary>
-        public Shape InputShape => Parent.Shape;
-
         /// <inheritdoc/>
         public Shape Shape { get; }
 
@@ -53,5 +48,19 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         /// <param name="dy">The output error delta to backpropagate</param>
         [MustUseReturnValue, NotNull]
         public abstract Tensor Backward([NotNull] Tensor x, [NotNull] Tensor y, [NotNull] Tensor dy);
+
+        /// <inheritdoc/>
+        public bool Equals(INode other)
+        {
+            if (other == null) return false;
+
+            return GetType() == other.GetType() &&
+                   other is UnaryNode unary &&
+                   Parent.Shape == unary.Parent.Shape &&
+                   Shape == unary.Shape;
+        }
+
+        /// <inheritdoc/>
+        public abstract INode Clone();
     }
 }

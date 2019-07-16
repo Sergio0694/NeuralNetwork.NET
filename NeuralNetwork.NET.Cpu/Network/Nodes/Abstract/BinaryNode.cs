@@ -63,5 +63,19 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
             [NotNull] Tensor x1, [NotNull] Tensor x2,
             [NotNull] Tensor y, [NotNull] Tensor dy,
             out Tensor dx1, out Tensor dx2);
+
+        /// <inheritdoc/>
+        public bool Equals(INode other)
+        {
+            if (other == null) return false;
+
+            return GetType() == other.GetType() &&
+                   other is BinaryNode binary &&
+                   LeftParent.Shape == binary.LeftParent.Shape &&
+                   RightParent.Shape == binary.RightParent.Shape &&
+                   Shape == binary.Shape;
+        }
+
+        public abstract INode Clone();
     }
 }
