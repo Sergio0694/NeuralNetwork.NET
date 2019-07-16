@@ -9,7 +9,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
     /// <summary>
     /// A base <see langword="class"/> for all nodes representing binary operations
     /// </summary>
-    public abstract class BinaryNode : INode
+    public abstract class BinaryNodeBase : INode
     {
         /// <summary>
         /// Gets the first parent <see cref="INode"/> instance for the current node
@@ -27,12 +27,12 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         public Shape Shape { get; }
 
         /// <summary>
-        /// Creates a new <see cref="BinaryNode"/> instance with the specified parameters
+        /// Creates a new <see cref="BinaryNodeBase"/> instance with the specified parameters
         /// </summary>
         /// <param name="left">The left parent <see cref="INode"/></param>
         /// <param name="right">The right parent <see cref="INode"/></param>
         /// <param name="shape">The output <see cref="Shape"/> value for the current node</param>
-        protected BinaryNode([NotNull] INode left, [NotNull] INode right, Shape shape)
+        protected BinaryNodeBase([NotNull] INode left, [NotNull] INode right, Shape shape)
         {
             Guard.IsTrue(shape.N == -1, nameof(shape), "The output shape can't have a defined N channel");
 
@@ -70,7 +70,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
             if (other == null) return false;
 
             return GetType() == other.GetType() &&
-                   other is BinaryNode binary &&
+                   other is BinaryNodeBase binary &&
                    LeftParent.Shape == binary.LeftParent.Shape &&
                    RightParent.Shape == binary.RightParent.Shape &&
                    Shape == binary.Shape;

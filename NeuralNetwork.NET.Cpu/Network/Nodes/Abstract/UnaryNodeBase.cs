@@ -9,7 +9,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
     /// <summary>
     /// A base <see langword="class"/> for all nodes representing unary operations
     /// </summary>
-    public abstract class UnaryNode : INode
+    public abstract class UnaryNodeBase : INode
     {
         /// <summary>
         /// Gets the parent <see cref="INode"/> instance for the current node
@@ -21,11 +21,11 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
         public Shape Shape { get; }
 
         /// <summary>
-        /// Creates a new <see cref="UnaryNode"/> instance with the specified parameters
+        /// Creates a new <see cref="UnaryNodeBase"/> instance with the specified parameters
         /// </summary>
         /// <param name="input">The input <see cref="INode"/> instance</param>
         /// <param name="shape">The output <see cref="Shape"/> value for the current node</param>
-        protected UnaryNode([NotNull] INode input, Shape shape)
+        protected UnaryNodeBase([NotNull] INode input, Shape shape)
         {
             Guard.IsTrue(shape.N == -1, nameof(shape), "The output shape can't have a defined N channel");
 
@@ -55,7 +55,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
             if (other == null) return false;
 
             return GetType() == other.GetType() &&
-                   other is UnaryNode unary &&
+                   other is UnaryNodeBase unary &&
                    Parent.Shape == unary.Parent.Shape &&
                    Shape == unary.Shape;
         }

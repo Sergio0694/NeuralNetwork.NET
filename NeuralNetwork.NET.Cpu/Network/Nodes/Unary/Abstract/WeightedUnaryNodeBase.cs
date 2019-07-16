@@ -11,7 +11,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
     /// <summary>
     /// The base <see langword="class"/> for all the network layers that have weights and biases as parameters
     /// </summary>
-    internal abstract class WeightedUnaryNodeBase : UnaryNode
+    internal abstract class WeightedUnaryNodeBase : UnaryNodeBase
     {
         /// <summary>
         /// Gets the weights for the current network layer
