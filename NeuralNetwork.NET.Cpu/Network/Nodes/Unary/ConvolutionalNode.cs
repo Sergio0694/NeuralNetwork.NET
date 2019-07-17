@@ -5,6 +5,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Initialization;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
@@ -14,6 +15,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// </summary>
     internal sealed class ConvolutionalNode : WeightedUnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Convolution;
+
         private readonly ConvolutionInfo _OperationInfo;
 
         /// <summary>

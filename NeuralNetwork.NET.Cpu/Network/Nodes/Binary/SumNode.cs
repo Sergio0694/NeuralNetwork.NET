@@ -3,6 +3,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Binary
 {
@@ -11,6 +12,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Binary
     /// </summary>
     internal sealed class SumNode : BinaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Sum;
+
         public SumNode([NotNull] Node left, [NotNull] Node right) : base(left, right, left.Shape)
         {
             Guard.IsTrue(left.Shape == right.Shape, "The input tensors must have the same shape");

@@ -6,6 +6,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
@@ -15,6 +16,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// </summary>
     internal sealed class BatchNormalizationNode : WeightedUnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.BatchNormalization;
+
         /// <summary>
         /// Gets the mu <see cref="Tensor"/> for the current instance
         /// </summary>

@@ -4,6 +4,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
@@ -11,9 +12,12 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// <summary>
     /// A fully connected (dense) network node
     /// </summary>
-    internal sealed class FullyConnecteNode : WeightedUnaryNodeBase
+    internal sealed class FullyConnectedNode : WeightedUnaryNodeBase
     {
-        public FullyConnecteNode([NotNull] Node input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.FullyConnected;
+
+        public FullyConnectedNode([NotNull] Node input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(
             input, (input.Shape.CHW, outputs),
             WeightsProvider.NewFullyConnectedWeights(input.Shape.CHW, outputs, weightsMode),
             WeightsProvider.NewBiases(outputs, biasMode))
@@ -21,7 +25,7 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
             Guard.IsTrue(outputs >= 0, nameof(outputs), "The outputs must be a positive number");
         }
 
-        public FullyConnecteNode([NotNull] Node input, int outputs, [NotNull] Tensor weights, [NotNull] Tensor biases)
+        public FullyConnectedNode([NotNull] Node input, int outputs, [NotNull] Tensor weights, [NotNull] Tensor biases)
             : base(input, (input.Shape.CHW, outputs), weights, biases)
         {
             Guard.IsTrue(outputs >= 0, nameof(outputs), "The outputs must be a positive number");

@@ -1,4 +1,5 @@
 ﻿using NeuralNetworkDotNet.APIs.Structs;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Nullary
 {
@@ -7,6 +8,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Nullary
     /// </summary>
     internal sealed class PlaceholderNode : Node
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Placeholder;
+
         public PlaceholderNode(Shape shape) : base(shape) { }
     }
 }

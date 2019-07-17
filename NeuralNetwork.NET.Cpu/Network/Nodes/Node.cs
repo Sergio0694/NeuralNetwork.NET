@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes
 {
@@ -11,6 +12,11 @@ namespace NeuralNetworkDotNet.Network.Nodes
     /// </summary>
     public abstract partial class Node : IEquatable<Node>
     {
+        /// <summary>
+        /// Gets the type of the current node
+        /// </summary>
+        public abstract NodeType Type { get; }
+
         /// <summary>
         /// Gets the shape of the node outputs
         /// </summary>

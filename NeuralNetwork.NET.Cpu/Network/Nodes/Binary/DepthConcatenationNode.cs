@@ -2,6 +2,7 @@
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Binary
 {
@@ -10,6 +11,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Binary
     /// </summary>
     internal sealed class DepthConcatenationNode : BinaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.DepthConcatenation;
+
         public DepthConcatenationNode([NotNull] Node left, [NotNull] Node right)
             : base(left, right, (left.Shape.C + right.Shape.C, left.Shape.H, left.Shape.W))
         { }

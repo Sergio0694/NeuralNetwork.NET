@@ -3,6 +3,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
@@ -11,6 +12,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// </summary>
     internal sealed class DropoutNode : UnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Dropout;
+
         public DropoutNode([NotNull] Node input) : base(input, input.Shape) { }
 
         [CanBeNull]

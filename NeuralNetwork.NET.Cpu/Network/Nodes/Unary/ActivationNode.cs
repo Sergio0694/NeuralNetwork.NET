@@ -5,6 +5,7 @@ using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Activations;
 using NeuralNetworkDotNet.Network.Activations.Delegates;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
@@ -13,6 +14,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// </summary>
     internal class ActivationNode : UnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Activation;
+
         /// <summary>
         /// Gets the activation type used in the current layer
         /// </summary>

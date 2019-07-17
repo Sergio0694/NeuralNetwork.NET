@@ -3,6 +3,7 @@ using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.Network.Cost;
 using NeuralNetworkDotNet.Network.Cost.Delegates;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
 {
@@ -11,6 +12,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
     /// </summary>
     internal class OutputNode : ActivationNode
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Output;
+
         /// <summary>
         /// Gets the cost function for the current layer
         /// </summary>

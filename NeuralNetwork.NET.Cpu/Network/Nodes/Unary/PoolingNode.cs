@@ -4,6 +4,7 @@ using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
 namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
@@ -12,6 +13,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
     /// </summary>
     internal sealed class PoolingNode : UnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Pooling;
+
         private readonly PoolingInfo _OperationInfo;
 
         /// <summary>
