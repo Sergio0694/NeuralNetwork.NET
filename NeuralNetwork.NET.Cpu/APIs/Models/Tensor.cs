@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
@@ -14,7 +15,7 @@ namespace NeuralNetworkDotNet.APIs.Models
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
     [DebuggerDisplay("Shape: {" + nameof(Shape) + "}")]
-    public sealed class Tensor : IDisposable, IEquatable<Tensor>, IClonable<Tensor>
+    public sealed class Tensor : IDisposable, IEquatable<Tensor>, IClonable<Tensor>, ISerializable
     {
         /// <summary>
         /// Gets the shape of the current <see cref="Tensor"/> instance
@@ -315,6 +316,13 @@ namespace NeuralNetworkDotNet.APIs.Models
             copy.Overwrite(this);
 
             return copy;
+        }
+
+        /// <inheritdoc/>
+        public void Serialize(Stream stream)
+        {
+            stream.Write(Shape);
+            stream.Write(Span);
         }
 
         #endregion

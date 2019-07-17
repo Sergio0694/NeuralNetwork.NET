@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.IO;
+using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.Network.Cost;
@@ -48,6 +49,14 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
 
             return other is OutputNode node &&
                    CostFunctionType.Equals(node.CostFunctionType);
+        }
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(CostFunctionType);
         }
     }
 }

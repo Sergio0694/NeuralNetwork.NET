@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.IO;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs.Info;
@@ -57,6 +58,14 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
 
             return other is PoolingNode node &&
                    OperationInfo.Equals(node.OperationInfo);
+        }
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(OperationInfo);
         }
     }
 }

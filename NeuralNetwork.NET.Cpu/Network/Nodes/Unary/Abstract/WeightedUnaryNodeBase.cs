@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
@@ -63,6 +64,15 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
             return other is WeightedUnaryNodeBase layer &&
                    Weights.Equals(layer.Weights) &&
                    Biases.Equals(layer.Biases);
+        }
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            Weights.Serialize(stream);
+            Biases.Serialize(stream);
         }
     }
 }

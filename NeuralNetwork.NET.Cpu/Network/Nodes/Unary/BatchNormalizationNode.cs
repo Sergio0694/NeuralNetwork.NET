@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
@@ -126,6 +127,17 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
                    Iteration == node.Iteration &&
                    Mu.Equals(node.Mu) &&
                    Sigma2.Equals(node.Sigma2);
+        }
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            Mu.Serialize(stream);
+            Sigma2.Serialize(stream);
+
+            stream.Write(Iteration);
         }
     }
 }

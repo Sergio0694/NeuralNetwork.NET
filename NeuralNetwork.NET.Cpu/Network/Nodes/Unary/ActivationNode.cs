@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.IO;
+using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.cpuDNN;
@@ -59,6 +60,14 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
 
             return other is ActivationNode node &&
                    ActivationType.Equals(node.ActivationType);
+        }
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(ActivationType);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using JetBrains.Annotations;
+using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Nodes.Enums;
@@ -10,7 +12,7 @@ namespace NeuralNetworkDotNet.Network.Nodes
     /// <summary>
     /// A base <see langword="class"/> for all the available nodes
     /// </summary>
-    public abstract partial class Node : IEquatable<Node>
+    public abstract partial class Node : IEquatable<Node>, ISerializable
     {
         /// <summary>
         /// Gets the type of the current node
@@ -56,6 +58,13 @@ namespace NeuralNetworkDotNet.Network.Nodes
             return GetType() == other.GetType() &&
                    other is Node node &&
                    Shape == node.Shape;
+        }
+
+        /// <inheritdoc/>
+        public virtual void Serialize(Stream stream)
+        {
+            stream.Write(Type);
+            stream.Write(Shape);
         }
     }
 }
