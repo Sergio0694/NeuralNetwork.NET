@@ -25,6 +25,16 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
         public Tensor Biases { get; }
 
         /// <summary>
+        /// Gets the number of parameters in the current instance
+        /// </summary>
+        public virtual int Parameters => Weights.Shape.NCHW + Biases.Shape.NCHW;
+
+        /// <summary>
+        /// Gets whether or not all the weights in the current node are valid and the node can be safely used
+        /// </summary>
+        public virtual bool IsInNumericOverflow => Weights.Span.HasNaN() || Biases.Span.HasNaN();
+
+        /// <summary>
         /// Gets an SHA256 hash calculated on both the weights and biases of the layer
         /// </summary>
         [NotNull]
@@ -44,12 +54,6 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
         /// <param name="dJdw">The resulting gradient with respect to the weights</param>
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
         public abstract void Gradient([NotNull] Tensor x, [NotNull] Tensor dy, out Tensor dJdw, out Tensor dJdb);
-
-        /// <summary>
-        /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used
-        /// </summary>
-        [Pure]
-        public virtual bool ValidateWeights() => !(Weights.Span.HasNaN() || Biases.Span.HasNaN());
 
         /// <inheritdoc/>
         public override bool Equals(Node other)

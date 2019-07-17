@@ -10,7 +10,7 @@ namespace NeuralNetworkDotNet.APIs
     /// <summary>
     /// A <see langword="class"/> with primitives to build a computational graph
     /// </summary>
-    public sealed class Graph
+    public abstract class Graph
     {
         /// <summary>
         /// Gets the root <see cref="PlaceholderNode"/> for the current graph

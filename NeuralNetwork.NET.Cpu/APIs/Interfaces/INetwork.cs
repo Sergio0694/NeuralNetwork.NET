@@ -9,17 +9,17 @@ namespace NeuralNetworkDotNet.APIs.Interfaces
     /// <summary>
     /// An <see langword="interface"/> for a neural network
     /// </summary>
-    public interface INetwork : IEquatable<INetwork>, IClonable<INetwork>, IDisposable
+    public interface INetwork : IEquatable<INetwork>, IClonable<INetwork>
     {
         /// <summary>
         /// Gets the <see cref="Shape"/> of the network inputs
         /// </summary>
-        ref readonly Shape InputShape { get; }
+        Shape InputShape { get; }
 
         /// <summary>
         /// Gets the <see cref="Shape"/> of the network outputs
         /// </summary>
-        ref readonly Shape OutputShape { get; }
+        Shape OutputShape { get; }
 
         /// <summary>
         /// Gets the number of nodes in the current network

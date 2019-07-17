@@ -42,6 +42,11 @@ namespace NeuralNetworkDotNet.Network.Nodes.Unary
         }
 
         /// <inheritdoc/>
+        public override int Parameters => base.Parameters + Mu.Shape.NCHW + Sigma2.Shape.NCHW;
+
+        public override bool IsInNumericOverflow => base.IsInNumericOverflow || Mu.Span.HasNaN() || Sigma2.Span.HasNaN();
+
+        /// <inheritdoc/>
         public override string Hash => Sha256.Hash(Weights.Span).And(Biases.Span).And(Mu.Span).And(Sigma2.Span).ToString();
 
         /// <summary>
