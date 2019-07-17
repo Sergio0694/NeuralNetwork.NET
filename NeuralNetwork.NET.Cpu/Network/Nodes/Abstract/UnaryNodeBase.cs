@@ -26,6 +26,8 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
             Guard.IsTrue(shape.N == -1, nameof(shape), "The output shape can't have a defined N channel");
 
             Parent = input;
+
+            input.Append(this);
         }
 
         /// <summary>

@@ -34,6 +34,9 @@ namespace NeuralNetworkDotNet.Network.Nodes.Abstract
 
             LeftParent = left;
             RightParent = right;
+
+            left.Append(this);
+            right.Append(this);
         }
 
         /// <summary>

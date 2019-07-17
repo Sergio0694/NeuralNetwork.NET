@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Structs;
+using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Nodes.Binary;
 
 namespace NeuralNetworkDotNet.Network.Nodes
@@ -15,7 +17,26 @@ namespace NeuralNetworkDotNet.Network.Nodes
         /// </summary>
         public Shape Shape { get; }
 
+        private readonly List<Node> _Children = new List<Node>();
+
+        /// <summary>
+        /// Gets the list of child nodes for the current instance
+        /// </summary>
+        [NotNull, ItemNotNull]
+        public IReadOnlyList<Node> Children => _Children;
+
         protected Node(Shape shape) => Shape = shape;
+
+        /// <summary>
+        /// Appens the given <see cref="Node"/> as child to the current instance
+        /// </summary>
+        /// <param name="child">The child <see cref="Node"/> to append</param>
+        internal void Append([NotNull] Node child)
+        {
+            Guard.IsFalse(_Children.Contains(child), nameof(child), "The parent node already contains the given child node");
+
+            _Children.Add(child);
+        }
 
         /// <inheritdoc/>
         public virtual bool Equals(Node other)
