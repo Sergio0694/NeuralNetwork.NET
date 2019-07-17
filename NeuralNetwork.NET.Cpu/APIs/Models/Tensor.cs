@@ -110,11 +110,11 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// Creates a new <see cref="Tensor"/> instance with the specified shape
         /// </summary>
         /// <param name="n">The N dimension (samples) of the <see cref="Tensor"/></param>
-        /// <param name="l">The number of values for each sample of the <see cref="Tensor"/></param>
+        /// <param name="c">The number of values for each sample of the <see cref="Tensor"/></param>
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Tensor New(int n, int l, AllocationMode mode = AllocationMode.Default) => New((n, 1, 1, l), mode);
+        public static Tensor New(int n, int c, AllocationMode mode = AllocationMode.Default) => New((n, c, 1, 1), mode);
 
         /// <summary>
         /// Creates a new <see cref="Tensor"/> instance with the specified shape
@@ -233,14 +233,14 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// Reshapes the current instance to the specified shape
         /// </summary>
         /// <param name="n">The height of the final <see cref="Tensor"/></param>
-        /// <param name="l">The number of values for each sample of the <see cref="Tensor"/></param>
+        /// <param name="c">The number of values for each sample of the <see cref="Tensor"/></param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Tensor Reshape(int n, int l)
+        public Tensor Reshape(int n, int c)
         {
-            Guard.IsTrue(n * l == Shape.NCHW, "The input reshaped size is invalid");
+            Guard.IsTrue(n * c == Shape.NCHW, "The input reshaped size is invalid");
 
-            return new Tensor((n, 1, 1, l), Data);
+            return new Tensor((n, c, 1, 1), Data);
         }
 
         /// <summary>
@@ -257,6 +257,19 @@ namespace NeuralNetworkDotNet.APIs.Models
             Guard.IsTrue(n * c * h * w == Shape.NCHW, "The input reshaped size is invalid");
 
             return new Tensor((n, c, h, w), Data);
+        }
+
+        /// <summary>
+        /// Reshapes the current instance to the specified shape
+        /// </summary>
+        /// <param name="shape">The desired shape for the new <see cref="Tensor"/></param>
+        [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Tensor Reshape(Shape shape)
+        {
+            Guard.IsTrue(shape.NCHW == Shape.NCHW, "The input reshaped size is invalid");
+
+            return new Tensor(shape, Data);
         }
 
         /// <summary>
