@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
+using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.Helpers;
+using NeuralNetworkDotNet.Network.Graph;
 using NeuralNetworkDotNet.Network.Nodes.Abstract;
 using NeuralNetworkDotNet.Network.Nodes.Binary;
 using NeuralNetworkDotNet.Network.Nodes.Nullary;
@@ -21,7 +23,7 @@ namespace NeuralNetworkDotNet.Network.Nodes
         /// <param name="neurons">The number of output neurons in the new <see cref="Node"/></param>
         /// <returns>The resulting fully connected <see cref="Node"/> instance</returns>
         [Pure, NotNull]
-        public Node FullyConnected(int neurons) => new FullyConnecteNode(this, neurons, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Zero);
+        public Node FullyConnected(int neurons) => new FullyConnectedNode(this, neurons, WeightsInitializationMode.GlorotUniform, BiasInitializationMode.Zero);
 
         /// <summary>
         /// Creates a new fully connected node with the specified number of output neurons
@@ -31,7 +33,7 @@ namespace NeuralNetworkDotNet.Network.Nodes
         /// <param name="biasMode">The desired initialization mode to use for the biases of the node</param>
         /// <returns>The resulting fully connected <see cref="Node"/> instance</returns>
         [Pure, NotNull]
-        public Node FullyConnected(int neurons, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) => new FullyConnecteNode(this, neurons, weightsMode, biasMode);
+        public Node FullyConnected(int neurons, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) => new FullyConnectedNode(this, neurons, weightsMode, biasMode);
 
         /// <summary>
         /// Creates a new convolutional node with the specified number of kernels of a given size
@@ -103,7 +105,7 @@ namespace NeuralNetworkDotNet.Network.Nodes
         /// </summary>
         /// <returns>The resulting <see cref="APIs.Graph"/> instance with the created nodes</returns>
         [Pure, NotNull]
-        public APIs.Graph Build()
+        public INetwork Build()
         {
             Guard.IsTrue(this is OutputNode, "The last node must be an output node");
 
@@ -134,7 +136,7 @@ namespace NeuralNetworkDotNet.Network.Nodes
             Guard.IsFalse(nodes.OfType<PlaceholderNode>().Count() > 1, "A graph can't contain more than a placeholder node");
             Guard.IsFalse(nodes.OfType<OutputNode>().Count() > 1, "A graph can't contain more than an output node");
 
-            return new APIs.Graph(nodes);
+            return new ComputationalGraph(nodes);
         }
 
         /// <summary>
