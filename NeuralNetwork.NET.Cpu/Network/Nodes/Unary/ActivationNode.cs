@@ -1,19 +1,23 @@
-﻿using NeuralNetworkDotNet.APIs.Enums;
-using NeuralNetworkDotNet.APIs.Interfaces;
+﻿using System.IO;
+using JetBrains.Annotations;
+using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Activations;
 using NeuralNetworkDotNet.Network.Activations.Delegates;
-using NeuralNetworkDotNet.Network.Layers.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
-namespace NeuralNetworkDotNet.Network.Layers
+namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
     /// <summary>
-    /// An activation layer
+    /// An activation node, that applies a specific activation function to its inputs
     /// </summary>
-    internal class ActivationLayer : LayerBase
+    internal class ActivationNode : UnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Activation;
+
         /// <summary>
         /// Gets the activation type used in the current layer
         /// </summary>
@@ -24,14 +28,15 @@ namespace NeuralNetworkDotNet.Network.Layers
         /// </summary>
         protected readonly (ActivationFunction Activation, ActivationFunction ActivationPrime) ActivationFunctions;
 
-        public ActivationLayer(Shape input, Shape output, ActivationType type) : base(input, output)
+        public ActivationNode([NotNull] Node input, ActivationType type) : base(input, input.Shape)
         {
             ActivationType = type;
             ActivationFunctions = ActivationFunctionProvider.GetActivations(type);
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+
+        public override Tensor Forward(Tensor x)
         {
             var y = Tensor.Like(x);
             CpuDnn.ActivationForward(x, ActivationFunctions.Activation, y);
@@ -49,15 +54,20 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override bool Equals(ILayer other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
-            return other is ActivationLayer layer &&
-                   ActivationType.Equals(layer.ActivationType);
+            return other is ActivationNode node &&
+                   ActivationType.Equals(node.ActivationType);
         }
 
         /// <inheritdoc/>
-        public override ILayer Clone() => new ActivationLayer(InputShape, OutputShape, ActivationType);
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(ActivationType);
+        }
     }
 }

@@ -1,22 +1,25 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
-using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
-using NeuralNetworkDotNet.Network.Layers.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
+using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
-namespace NeuralNetworkDotNet.Network.Layers
+namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
     /// <summary>
-    /// A batch normalization layer, used to improve the convergence speed of a neural network
+    /// A batch normalization node, used to improve the convergence speed of a neural network
     /// </summary>
-    internal sealed class BatchNormalizationLayer : WeightedLayerBase
+    internal sealed class BatchNormalizationNode : WeightedUnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.BatchNormalization;
+
         /// <summary>
         /// Gets the mu <see cref="Tensor"/> for the current instance
         /// </summary>
@@ -44,6 +47,11 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
+        public override int Parameters => base.Parameters + Mu.Shape.NCHW + Sigma2.Shape.NCHW;
+
+        public override bool IsInNumericOverflow => base.IsInNumericOverflow || Mu.Span.HasNaN() || Sigma2.Span.HasNaN();
+
+        /// <inheritdoc/>
         public override string Hash => Sha256.Hash(Weights.Span).And(Biases.Span).And(Mu.Span).And(Sigma2.Span).ToString();
 
         /// <summary>
@@ -51,15 +59,15 @@ namespace NeuralNetworkDotNet.Network.Layers
         /// </summary>
         public NormalizationMode NormalizationMode { get; }
 
-        public BatchNormalizationLayer(Shape shape, NormalizationMode mode) : base(
-            shape, shape,
-            WeightsProvider.NewGammaParameters(shape.C, shape.HW, mode),
-            WeightsProvider.NewBetaParameters(shape.C, shape.HW, mode))
+        public BatchNormalizationNode([NotNull] Node input, NormalizationMode mode) : base(
+            input, input.Shape,
+            WeightsProvider.NewGammaParameters(input.Shape.C, input.Shape.HW, mode),
+            WeightsProvider.NewBetaParameters(input.Shape.C, input.Shape.HW, mode))
         {
             switch (mode)
             {
-                case NormalizationMode.Spatial: Mu = Tensor.New(1, shape.C, AllocationMode.Clean); break;
-                case NormalizationMode.PerActivation: Mu = Tensor.New(shape, AllocationMode.Clean); break;
+                case NormalizationMode.Spatial: Mu = Tensor.New(1, input.Shape.C, AllocationMode.Clean); break;
+                case NormalizationMode.PerActivation: Mu = Tensor.New(input.Shape, AllocationMode.Clean); break;
                 default: throw new ArgumentOutOfRangeException(nameof(mode), "Invalid batch normalization mode");
             }
 
@@ -68,11 +76,11 @@ namespace NeuralNetworkDotNet.Network.Layers
             NormalizationMode = mode;
         }
 
-        public BatchNormalizationLayer(
-            Shape shape, NormalizationMode mode,
+        public BatchNormalizationNode(
+            [NotNull] Node input, NormalizationMode mode,
             [NotNull] Tensor w, [NotNull] Tensor b,
             [NotNull] Tensor mu, [NotNull] Tensor sigma2, int iteration)
-            : base(shape, shape, w, b)
+            : base(input, input.Shape, w, b)
         {
             Mu = mu;
             Sigma2 = sigma2;
@@ -81,7 +89,7 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+        public override Tensor Forward(Tensor x)
         {
             // TODO: handle inference mode and variable factor
             var y = Tensor.Like(x);
@@ -110,18 +118,26 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override bool Equals(ILayer other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
-            return other is BatchNormalizationLayer layer &&
-                   NormalizationMode == layer.NormalizationMode &&
-                   Iteration == layer.Iteration &&
-                   Mu.Equals(layer.Mu) &&
-                   Sigma2.Equals(layer.Sigma2);
+            return other is BatchNormalizationNode node &&
+                   NormalizationMode == node.NormalizationMode &&
+                   Iteration == node.Iteration &&
+                   Mu.Equals(node.Mu) &&
+                   Sigma2.Equals(node.Sigma2);
         }
 
         /// <inheritdoc/>
-        public override ILayer Clone() => new BatchNormalizationLayer(InputShape, NormalizationMode, Weights.Clone(), Biases.Clone(), Mu.Clone(), Sigma2.Clone(), Iteration);
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            Mu.Serialize(stream);
+            Sigma2.Serialize(stream);
+
+            stream.Write(Iteration);
+        }
     }
 }

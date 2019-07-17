@@ -1,21 +1,24 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.IO;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
-using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Network.Initialization;
-using NeuralNetworkDotNet.Network.Layers.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
+using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
-namespace NeuralNetworkDotNet.Network.Layers
+namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
     /// <summary>
-    /// A convolutional layer
+    /// A convolutional node
     /// </summary>
-    internal sealed class ConvolutionalLayer : WeightedLayerBase
+    internal sealed class ConvolutionalNode : WeightedUnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Convolution;
+
         private readonly ConvolutionInfo _OperationInfo;
 
         /// <summary>
@@ -27,25 +30,25 @@ namespace NeuralNetworkDotNet.Network.Layers
             get => ref _OperationInfo;
         }
 
-        public ConvolutionalLayer(Shape input, ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, BiasInitializationMode biasMode) : base(
+        public ConvolutionalNode([NotNull] Node input, ConvolutionInfo operation, (int X, int Y) kernelSize, int kernels, BiasInitializationMode biasMode) : base(
             input,
-            operation.GetOutputShape(input, kernelSize, kernels),
-            WeightsProvider.NewConvolutionalKernels(input.C, kernelSize.X, kernelSize.Y, kernels),
+            operation.GetOutputShape(input.Shape, kernelSize, kernels),
+            WeightsProvider.NewConvolutionalKernels(input.Shape.C, kernelSize.X, kernelSize.Y, kernels),
             WeightsProvider.NewBiases(kernels, biasMode))
         {
             _OperationInfo = operation;
         }
 
-        public ConvolutionalLayer(Shape input, ConvolutionInfo operation, [NotNull] Tensor weights, [NotNull] Tensor biases)
-            : base(input, operation.GetOutputShape(input, (weights.Shape.H, weights.Shape.W), weights.Shape.N), weights, biases)
+        public ConvolutionalNode([NotNull] Node input, ConvolutionInfo operation, [NotNull] Tensor weights, [NotNull] Tensor biases)
+            : base(input, operation.GetOutputShape(input.Shape, (weights.Shape.H, weights.Shape.W), weights.Shape.N), weights, biases)
         {
             _OperationInfo = operation;
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+        public override Tensor Forward(Tensor x)
         {
-            var y = Tensor.New(x.Shape.N, OutputShape.C, OutputShape.H, OutputShape.W);
+            var y = Tensor.New(x.Shape.N, Shape.C, Shape.H, Shape.W);
             CpuDnn.ConvolutionForward(x, Weights, Biases, y);
 
             return y;
@@ -71,15 +74,20 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override bool Equals(ILayer other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
-            return other is ConvolutionalLayer layer &&
-                   OperationInfo.Equals(layer.OperationInfo);
+            return other is ConvolutionalNode node &&
+                   OperationInfo.Equals(node.OperationInfo);
         }
 
         /// <inheritdoc/>
-        public override ILayer Clone() => new ConvolutionalLayer(InputShape, OperationInfo, Weights.Clone(), Biases.Clone());
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(OperationInfo);
+        }
     }
 }

@@ -1,17 +1,21 @@
-﻿using NeuralNetworkDotNet.APIs.Enums;
-using NeuralNetworkDotNet.APIs.Interfaces;
+﻿using System.IO;
+using JetBrains.Annotations;
+using NeuralNetworkDotNet.APIs.Enums;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Network.Cost;
 using NeuralNetworkDotNet.Network.Cost.Delegates;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
-namespace NeuralNetworkDotNet.Network.Layers
+namespace NeuralNetworkDotNet.Network.Nodes.Unary.Losses
 {
     /// <summary>
-    /// A custom <see cref="ActivationLayer"/> used as output in a graph, that also contains a specific cost function
+    /// A custom <see cref="OutputNode"/> used as output in a graph, that also contains a specific cost function
     /// </summary>
-    internal class OutputLayer : ActivationLayer
+    internal class OutputNode : ActivationNode
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Output;
+
         /// <summary>
         /// Gets the cost function for the current layer
         /// </summary>
@@ -22,8 +26,8 @@ namespace NeuralNetworkDotNet.Network.Layers
         /// </summary>
         public (CostFunction Cost, CostFunctionPrime CostPrime) CostFunctions { get; }
 
-        public OutputLayer(Shape input, Shape output, ActivationType activation, CostFunctionType costFunctionType)
-            : base(input, output, activation)
+        public OutputNode([NotNull] Node input, ActivationType activation, CostFunctionType costFunctionType)
+            : base(input, activation)
         {
             CostFunctionType = costFunctionType;
             CostFunctions = CostFunctionProvider.GetCostFunctions(costFunctionType);
@@ -39,15 +43,20 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override bool Equals(ILayer other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
-            return other is OutputLayer layer &&
-                   CostFunctionType.Equals(layer.CostFunctionType);
+            return other is OutputNode node &&
+                   CostFunctionType.Equals(node.CostFunctionType);
         }
 
         /// <inheritdoc/>
-        public override ILayer Clone() => new OutputLayer(InputShape, OutputShape, ActivationType, CostFunctionType);
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(CostFunctionType);
+        }
     }
 }

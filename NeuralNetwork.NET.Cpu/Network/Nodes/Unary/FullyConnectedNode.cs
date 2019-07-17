@@ -1,40 +1,42 @@
 ﻿using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
-using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.cpuDNN;
 using NeuralNetworkDotNet.Helpers;
 using NeuralNetworkDotNet.Network.Initialization;
-using NeuralNetworkDotNet.Network.Layers.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
+using NeuralNetworkDotNet.Network.Nodes.Unary.Abstract;
 
-namespace NeuralNetworkDotNet.Network.Layers
+namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
     /// <summary>
-    /// A fully connected (dense) network layer
+    /// A fully connected (dense) network node
     /// </summary>
-    internal sealed class FullyConnectedLayer : WeightedLayerBase
+    internal sealed class FullyConnectedNode : WeightedUnaryNodeBase
     {
-        public FullyConnectedLayer(Shape input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(
-            input, (input.CHW, outputs),
-            WeightsProvider.NewFullyConnectedWeights(input.CHW, outputs, weightsMode),
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.FullyConnected;
+
+        public FullyConnectedNode([NotNull] Node input, int outputs, WeightsInitializationMode weightsMode, BiasInitializationMode biasMode) : base(
+            input, (input.Shape.CHW, outputs),
+            WeightsProvider.NewFullyConnectedWeights(input.Shape.CHW, outputs, weightsMode),
             WeightsProvider.NewBiases(outputs, biasMode))
         {
             Guard.IsTrue(outputs >= 0, nameof(outputs), "The outputs must be a positive number");
         }
 
-        public FullyConnectedLayer(Shape input, int outputs, [NotNull] Tensor weights, [NotNull] Tensor biases)
-            : base(input, (input.CHW, outputs), weights, biases)
+        public FullyConnectedNode([NotNull] Node input, int outputs, [NotNull] Tensor weights, [NotNull] Tensor biases)
+            : base(input, (input.Shape.CHW, outputs), weights, biases)
         {
             Guard.IsTrue(outputs >= 0, nameof(outputs), "The outputs must be a positive number");
-            Guard.IsTrue(weights.Shape == (input.CHW, 1, 1, outputs), "The input weights don't have the right shape");
+            Guard.IsTrue(weights.Shape == (input.Shape.CHW, 1, 1, outputs), "The input weights don't have the right shape");
             Guard.IsTrue(biases.Shape == (1, 1, 1, outputs), nameof(biases), "The biases don't have the right shape");
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+        public override Tensor Forward(Tensor x)
         {
-            var y = Tensor.New(x.Shape.N, OutputShape.CHW);
+            var y = Tensor.New(x.Shape.N, Shape.CHW);
             CpuDnn.FullyConnectedForward(x, Weights, Biases, y);
 
             return y;
@@ -58,8 +60,5 @@ namespace NeuralNetworkDotNet.Network.Layers
             dJdb = Tensor.Like(Biases);
             CpuDnn.FullyConnectedBackwardBias(dy, dJdb);
         }
-
-        /// <inheritdoc/>
-        public override ILayer Clone() => new FullyConnectedLayer(InputShape, OutputShape.CHW, Weights.Clone(), Biases.Clone());
     }
 }

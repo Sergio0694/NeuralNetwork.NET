@@ -1,18 +1,22 @@
-﻿using System.Runtime.CompilerServices;
-using NeuralNetworkDotNet.APIs.Interfaces;
+﻿using System.IO;
+using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Models;
-using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.APIs.Structs.Info;
 using NeuralNetworkDotNet.cpuDNN;
-using NeuralNetworkDotNet.Network.Layers.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Abstract;
+using NeuralNetworkDotNet.Network.Nodes.Enums;
 
-namespace NeuralNetworkDotNet.Network.Layers
+namespace NeuralNetworkDotNet.Network.Nodes.Unary
 {
     /// <summary>
-    /// A pooling layer, with a 2x2 window and a stride of 2
+    /// A pooling node, with a 2x2 window and a stride of 2
     /// </summary>
-    internal sealed class PoolingLayer : LayerBase
+    internal sealed class PoolingNode : UnaryNodeBase
     {
+        /// <inheritdoc/>
+        public override NodeType Type => NodeType.Pooling;
+
         private readonly PoolingInfo _OperationInfo;
 
         /// <summary>
@@ -24,15 +28,15 @@ namespace NeuralNetworkDotNet.Network.Layers
             get => ref _OperationInfo;
         }
 
-        public PoolingLayer(Shape input, PoolingInfo operation) : base(input, operation.GetOutputShape(input))
+        public PoolingNode([NotNull] Node input, PoolingInfo operation) : base(input, operation.GetOutputShape(input.Shape))
         {
             _OperationInfo = operation;
         }
 
         /// <inheritdoc/>
-        public override Tensor Forward(in Tensor x)
+        public override Tensor Forward(Tensor x)
         {
-            var y = Tensor.New(x.Shape.N, OutputShape.C, OutputShape.H, OutputShape.W);
+            var y = Tensor.New(x.Shape.N, Shape.C, Shape.H, Shape.W);
             CpuDnn.PoolingForward(x, y);
 
             return y;
@@ -48,15 +52,20 @@ namespace NeuralNetworkDotNet.Network.Layers
         }
 
         /// <inheritdoc/>
-        public override bool Equals(ILayer other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
-            return other is PoolingLayer layer &&
-                   OperationInfo.Equals(layer.OperationInfo);
+            return other is PoolingNode node &&
+                   OperationInfo.Equals(node.OperationInfo);
         }
 
         /// <inheritdoc/>
-        public override ILayer Clone() => new PoolingLayer(InputShape, OperationInfo);
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            stream.Write(OperationInfo);
+        }
     }
 }

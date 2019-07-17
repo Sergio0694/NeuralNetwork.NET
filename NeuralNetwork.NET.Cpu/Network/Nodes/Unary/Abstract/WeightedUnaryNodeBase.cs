@@ -1,16 +1,17 @@
 ﻿using System;
+using System.IO;
 using JetBrains.Annotations;
-using NeuralNetworkDotNet.APIs.Interfaces;
 using NeuralNetworkDotNet.APIs.Models;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
+using NeuralNetworkDotNet.Network.Nodes.Abstract;
 
-namespace NeuralNetworkDotNet.Network.Layers.Abstract
+namespace NeuralNetworkDotNet.Network.Nodes.Unary.Abstract
 {
     /// <summary>
     /// The base <see langword="class"/> for all the network layers that have weights and biases as parameters
     /// </summary>
-    internal abstract class WeightedLayerBase : LayerBase
+    internal abstract class WeightedUnaryNodeBase : UnaryNodeBase
     {
         /// <summary>
         /// Gets the weights for the current network layer
@@ -25,12 +26,22 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
         public Tensor Biases { get; }
 
         /// <summary>
+        /// Gets the number of parameters in the current instance
+        /// </summary>
+        public virtual int Parameters => Weights.Shape.NCHW + Biases.Shape.NCHW;
+
+        /// <summary>
+        /// Gets whether or not all the weights in the current node are valid and the node can be safely used
+        /// </summary>
+        public virtual bool IsInNumericOverflow => Weights.Span.HasNaN() || Biases.Span.HasNaN();
+
+        /// <summary>
         /// Gets an SHA256 hash calculated on both the weights and biases of the layer
         /// </summary>
         [NotNull]
         public virtual string Hash => Sha256.Hash(Weights.Span).And(Biases.Span).ToString();
 
-        protected WeightedLayerBase(Shape input, Shape output, [NotNull] Tensor w, [NotNull] Tensor b) : base(input, output)
+        protected WeightedUnaryNodeBase([NotNull] Node input, Shape shape, [NotNull] Tensor w, [NotNull] Tensor b) : base(input, shape)
         {
             Weights = w;
             Biases = b;
@@ -45,20 +56,23 @@ namespace NeuralNetworkDotNet.Network.Layers.Abstract
         /// <param name="dJdb">The resulting gradient with respect to the biases</param>
         public abstract void Gradient([NotNull] Tensor x, [NotNull] Tensor dy, out Tensor dJdw, out Tensor dJdb);
 
-        /// <summary>
-        /// Checks whether or not all the weights in the current layer are valid and the layer can be safely used
-        /// </summary>
-        [Pure]
-        public virtual bool ValidateWeights() => !(Weights.Span.HasNaN() || Biases.Span.HasNaN());
-
         /// <inheritdoc/>
-        public override bool Equals(ILayer other)
+        public override bool Equals(Node other)
         {
             if (!base.Equals(other)) return false;
 
-            return other is WeightedLayerBase layer &&
+            return other is WeightedUnaryNodeBase layer &&
                    Weights.Equals(layer.Weights) &&
                    Biases.Equals(layer.Biases);
+        }
+
+        /// <inheritdoc/>
+        public override void Serialize(Stream stream)
+        {
+            base.Serialize(stream);
+
+            Weights.Serialize(stream);
+            Biases.Serialize(stream);
         }
     }
 }

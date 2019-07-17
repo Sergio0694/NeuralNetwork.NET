@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
@@ -15,9 +14,8 @@ namespace NeuralNetworkDotNet.APIs.Models
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
-    [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("Shape: {" + nameof(Shape) + "}")]
-    public sealed class Tensor : IDisposable, IEquatable<Tensor>, IClonable<Tensor>
+    public sealed class Tensor : IDisposable, IEquatable<Tensor>, IClonable<Tensor>, ISerializable
     {
         /// <summary>
         /// Gets the shape of the current <see cref="Tensor"/> instance
@@ -113,11 +111,11 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// Creates a new <see cref="Tensor"/> instance with the specified shape
         /// </summary>
         /// <param name="n">The N dimension (samples) of the <see cref="Tensor"/></param>
-        /// <param name="l">The number of values for each sample of the <see cref="Tensor"/></param>
+        /// <param name="c">The number of values for each sample of the <see cref="Tensor"/></param>
         /// <param name="mode">The desired allocation mode to use when creating the new <see cref="Tensor"/> instance</param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Tensor New(int n, int l, AllocationMode mode = AllocationMode.Default) => New((n, 1, 1, l), mode);
+        public static Tensor New(int n, int c, AllocationMode mode = AllocationMode.Default) => New((n, c, 1, 1), mode);
 
         /// <summary>
         /// Creates a new <see cref="Tensor"/> instance with the specified shape
@@ -236,14 +234,14 @@ namespace NeuralNetworkDotNet.APIs.Models
         /// Reshapes the current instance to the specified shape
         /// </summary>
         /// <param name="n">The height of the final <see cref="Tensor"/></param>
-        /// <param name="l">The number of values for each sample of the <see cref="Tensor"/></param>
+        /// <param name="c">The number of values for each sample of the <see cref="Tensor"/></param>
         [Pure, NotNull]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Tensor Reshape(int n, int l)
+        public Tensor Reshape(int n, int c)
         {
-            Guard.IsTrue(n * l == Shape.NCHW, "The input reshaped size is invalid");
+            Guard.IsTrue(n * c == Shape.NCHW, "The input reshaped size is invalid");
 
-            return new Tensor((n, 1, 1, l), Data);
+            return new Tensor((n, c, 1, 1), Data);
         }
 
         /// <summary>
@@ -263,6 +261,19 @@ namespace NeuralNetworkDotNet.APIs.Models
         }
 
         /// <summary>
+        /// Reshapes the current instance to the specified shape
+        /// </summary>
+        /// <param name="shape">The desired shape for the new <see cref="Tensor"/></param>
+        [Pure, NotNull]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Tensor Reshape(Shape shape)
+        {
+            Guard.IsTrue(shape.NCHW == Shape.NCHW, "The input reshaped size is invalid");
+
+            return new Tensor(shape, Data);
+        }
+
+        /// <summary>
         /// Overwrites the contents of the current instance with the input <see cref="Tensor"/>
         /// </summary>
         /// <param name="tensor">The input <see cref="Tensor"/> to copy</param>
@@ -274,23 +285,10 @@ namespace NeuralNetworkDotNet.APIs.Models
             tensor.Span.CopyTo(Span);
         }
 
-        /// <summary>
-        /// Duplicates the current instance to an output <see cref="Tensor"/>
-        /// </summary>
-        [Pure, NotNull]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Tensor Duplicate()
-        {
-            var tensor = New(Shape);
-            Span.CopyTo(tensor.Span);
-
-            return tensor;
-        }
-
         #region Interfaces
 
         /// <inheritdoc/>
-        void IDisposable.Dispose() => ArrayPool<float>.Shared.Return(Data);
+        public void Dispose() => ArrayPool<float>.Shared.Return(Data);
 
         /// <inheritdoc/>
         public bool Equals(Tensor other)
@@ -320,48 +318,11 @@ namespace NeuralNetworkDotNet.APIs.Models
             return copy;
         }
 
-        #endregion
-
-        #region Debug
-
-        /// <summary>
-        /// A proxy type to debug instances of the <see cref="Tensor"/> <see langword="struct"/>
-        /// </summary>
-        private readonly struct _TensorProxy
+        /// <inheritdoc/>
+        public void Serialize(Stream stream)
         {
-            /// <summary>
-            /// Gets a preview of the underlying memory area wrapped by this instance
-            /// </summary>
-            [NotNull]
-            [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
-            [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-            public IEnumerable<float[]> RowsPreview { get; }
-
-            /// <summary>
-            /// The maximum number of rows to display in the debugger
-            /// </summary>
-            private const int MaxRows = 10;
-
-            /// <summary>
-            /// The maximum number of total items to display in the debugger
-            /// </summary>
-            private const int MaxItems = 30000;
-
-            [SuppressMessage("ReSharper", "UnusedMember.Local")]
-            public _TensorProxy(Tensor obj)
-            {
-                // Iterator to delay the creation of the debugger display rows until requested by the user
-                IEnumerable<float[]> ExtractRows()
-                {
-                    int
-                        cappedRows = MaxItems / obj.Shape.CHW,
-                        rows = Math.Min(Math.Min(MaxRows, cappedRows), obj.Shape.N);
-                    for (var i = 0; i < rows; i++)
-                        yield return obj.Span.Slice(i * obj.Shape.CHW, obj.Shape.CHW).ToArray();
-                }
-
-                RowsPreview = ExtractRows();
-            }
+            stream.Write(Shape);
+            stream.Write(Span);
         }
 
         #endregion

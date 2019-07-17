@@ -1,3 +1,3 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("NeuralNetworkDotNet.Cpu")]
+[assembly: InternalsVisibleTo("NeuralNetwork.NET.Cpu.Unit")]
