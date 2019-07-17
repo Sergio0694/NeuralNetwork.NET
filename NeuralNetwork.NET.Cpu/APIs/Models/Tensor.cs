@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Enums;
@@ -15,7 +13,6 @@ namespace NeuralNetworkDotNet.APIs.Models
     /// <summary>
     /// A readonly struct that holds the info on an unmanaged memory area that has been allocated
     /// </summary>
-    [DebuggerTypeProxy(typeof(_TensorProxy))]
     [DebuggerDisplay("Shape: {" + nameof(Shape) + "}")]
     public sealed class Tensor : IDisposable, IEquatable<Tensor>, IClonable<Tensor>
     {
@@ -274,19 +271,6 @@ namespace NeuralNetworkDotNet.APIs.Models
             tensor.Span.CopyTo(Span);
         }
 
-        /// <summary>
-        /// Duplicates the current instance to an output <see cref="Tensor"/>
-        /// </summary>
-        [Pure, NotNull]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Tensor Duplicate()
-        {
-            var tensor = New(Shape);
-            Span.CopyTo(tensor.Span);
-
-            return tensor;
-        }
-
         #region Interfaces
 
         /// <inheritdoc/>
@@ -318,50 +302,6 @@ namespace NeuralNetworkDotNet.APIs.Models
             copy.Overwrite(this);
 
             return copy;
-        }
-
-        #endregion
-
-        #region Debug
-
-        /// <summary>
-        /// A proxy type to debug instances of the <see cref="Tensor"/> <see langword="struct"/>
-        /// </summary>
-        private readonly struct _TensorProxy
-        {
-            /// <summary>
-            /// Gets a preview of the underlying memory area wrapped by this instance
-            /// </summary>
-            [NotNull]
-            [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
-            [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-            public IEnumerable<float[]> RowsPreview { get; }
-
-            /// <summary>
-            /// The maximum number of rows to display in the debugger
-            /// </summary>
-            private const int MaxRows = 10;
-
-            /// <summary>
-            /// The maximum number of total items to display in the debugger
-            /// </summary>
-            private const int MaxItems = 30000;
-
-            [SuppressMessage("ReSharper", "UnusedMember.Local")]
-            public _TensorProxy(Tensor obj)
-            {
-                // Iterator to delay the creation of the debugger display rows until requested by the user
-                IEnumerable<float[]> ExtractRows()
-                {
-                    int
-                        cappedRows = MaxItems / obj.Shape.CHW,
-                        rows = Math.Min(Math.Min(MaxRows, cappedRows), obj.Shape.N);
-                    for (var i = 0; i < rows; i++)
-                        yield return obj.Span.Slice(i * obj.Shape.CHW, obj.Shape.CHW).ToArray();
-                }
-
-                RowsPreview = ExtractRows();
-            }
         }
 
         #endregion
