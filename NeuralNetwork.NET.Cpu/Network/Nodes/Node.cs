@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using NeuralNetworkDotNet.APIs.Structs;
 using NeuralNetworkDotNet.Helpers;
-using NeuralNetworkDotNet.Network.Nodes.Binary;
 
 namespace NeuralNetworkDotNet.Network.Nodes
 {
     /// <summary>
     /// A base <see langword="class"/> for all the available nodes
     /// </summary>
-    public abstract class Node : IEquatable<Node>
+    public abstract partial class Node : IEquatable<Node>
     {
         /// <summary>
         /// Gets the shape of the node outputs
@@ -25,6 +24,10 @@ namespace NeuralNetworkDotNet.Network.Nodes
         [NotNull, ItemNotNull]
         public IReadOnlyList<Node> Children => _Children;
 
+        /// <summary>
+        /// Creates a new <see cref="Node"/> instance with the specified output shape
+        /// </summary>
+        /// <param name="shape">The output shape for the current <see cref="Node"/></param>
         protected Node(Shape shape) => Shape = shape;
 
         /// <summary>
@@ -48,23 +51,5 @@ namespace NeuralNetworkDotNet.Network.Nodes
                    other is Node node &&
                    Shape == node.Shape;
         }
-
-        /// <summary>
-        /// Sums the two input nodes and returns a new <see cref="Node"/> instance
-        /// </summary>
-        /// <param name="a">The first <see cref="Node"/> to sum</param>
-        /// <param name="b">The second <see cref="Node"/> to sum</param>
-        /// <returns>A new <see cref="Node"/> that performs the sum of the two input nodes</returns>
-        [Pure, NotNull]
-        public static Node operator +([NotNull] Node a, [NotNull] Node b) => new SumNode(a, b);
-
-        /// <summary>
-        /// Stacks (depth concatenation) the two input nodes and returns a new <see cref="Node"/> instance
-        /// </summary>
-        /// <param name="a">The first <see cref="Node"/> to stack</param>
-        /// <param name="b">The second <see cref="Node"/> to stack</param>
-        /// <returns>A new <see cref="Node"/> that performs the stack of the two input nodes</returns>
-        [Pure, NotNull]
-        public static Node operator |([NotNull] Node a, [NotNull] Node b) => new DepthConcatenationNode(a, b);
     }
 }
