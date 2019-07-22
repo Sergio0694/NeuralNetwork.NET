@@ -10,6 +10,7 @@ using NeuralNetworkNET.APIs.Interfaces.Data;
 using NeuralNetworkNET.APIs.Results;
 using NeuralNetworkNET.APIs.Structs;
 using NeuralNetworkNET.Extensions;
+using NeuralNetworkNET.Helpers;
 using NeuralNetworkNET.Networks.Graph;
 using NeuralNetworkNET.Networks.Implementations;
 using NeuralNetworkNET.SupervisedLearning.Data;
@@ -124,6 +125,41 @@ namespace NeuralNetworkNET.APIs
             IProgress<BatchProgress> batchProgress = batchCallback.AsIProgress();
             IProgress<TrainingProgressEventArgs> trainingProgress = trainingCallback.AsIProgress(); // Capture the synchronization contexts
             return Task.Run(() => TrainNetworkCore(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
+        }
+
+        public static void TrainNetwork(
+            [NotNull] INeuralNetwork network,
+            [NotNull] IEnvironment environment,
+            float epsilon,
+            CancellationToken token)
+        {
+            var graph = (NeuralNetworkBase)network;
+            var algorithm = TrainingAlgorithms.AdaDelta();
+            var optimizer = WeightsUpdaters.AdaDelta(algorithm, graph);
+            var queue = new Queue<IEnvironment>(1000);
+            var sample = new float[environment.Size];
+
+            while (true)
+            {
+                // Exploration
+                for (int i = 0; i < 100; i++)
+                {
+                    var current = environment;
+                    while (current.CanExecute)
+                    {
+                        if (ThreadSafeRandom.NextFloat() < epsilon)
+                        {
+                            current = environment.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
+                        }
+                        else
+                        {
+                            current.Serialize(sample.AsSpan());
+                            var qvalues = graph.Forward(sample);
+                            current = environment.Execute(qvalues.AsSpan().Argmax());
+                        }
+                    }
+                }
+            }
         }
 
         #endregion
