@@ -35,5 +35,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         /// <returns>The new, updated <see cref="IEnvironment"/> instance</returns>
         [Pure, NotNull]
         IEnvironment Execute(int action);
+
+        /// <summary>
+        /// Exports the current environment to a target <see cref="Span{T}"/>
+        /// </summary>
+        /// <param name="span">The target <see cref="Span{T}"/> instance to use to serialize the current environment</param>
+        void Serialize(Span<float> span);
     }
 }

@@ -52,6 +52,9 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         }
 
         /// <inheritdoc/>
+        public void Serialize(Span<float> span) => State.AsSpan(0, Size).CopyTo(span);
+
+        /// <inheritdoc/>
         public IEnvironment Clone()
         {
             var instance = new TicTacToeEnvironment(Timestep);
