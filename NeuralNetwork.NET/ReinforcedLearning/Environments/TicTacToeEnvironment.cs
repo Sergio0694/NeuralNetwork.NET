@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NeuralNetworkNET.APIs.Interfaces;
 using NeuralNetworkNET.Extensions;
@@ -22,6 +23,19 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
 
         /// <inheritdoc/>
         public int Timestep { get; }
+
+        /// <inheritdoc/>
+        public bool CanExecute
+        {
+            get
+            {
+                ref float r = ref State[0];
+                for (int i = 0; i < 9; i++)
+                    if (0f.EqualsWithDelta(Unsafe.Add(ref r, i)))
+                        return true;
+                return false;
+            }
+        }
 
         /// <summary>
         /// A singleton <see cref="ArrayPool{T}"/> instance to quickly create new instances of the environment

@@ -29,6 +29,11 @@ namespace NeuralNetworkNET.APIs.Interfaces
         int Timestep { get; }
 
         /// <summary>
+        /// Gets whether or not the environment has reached a final state
+        /// </summary>
+        bool CanExecute { get; }
+
+        /// <summary>
         /// Executes an action with the specified index, and returns a new <see cref="IEnvironment"/> instance
         /// </summary>
         /// <param name="action">The index of the action to execute</param>
