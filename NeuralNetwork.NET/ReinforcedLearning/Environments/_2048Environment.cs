@@ -45,13 +45,13 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         /// A singleton <see cref="ArrayPool{T}"/> instance to quickly create new instances of the environment
         /// </summary>
         [NotNull]
-        private static readonly ArrayPool<int> Allocator = ArrayPool<int>.Create(32, 1000);
+        private static readonly ArrayPool<int> Allocator = ArrayPool<int>.Create(16, 1000);
 
         /// <summary>
         /// The array representing the environment current state
         /// </summary>
         [NotNull]
-        private readonly int[] Data = Allocator.Rent(32);
+        private readonly int[] Data = Allocator.Rent(16);
 
         /// <summary>
         /// Creates a new, empty <see cref="TicTacToeEnvironment"/> instance
@@ -59,10 +59,7 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         public _2048Environment()
         {
             Data[ThreadSafeRandom.NextInt(max: 4) * 4 + ThreadSafeRandom.NextInt(max: 4)] = ThreadSafeRandom.NextInt(1, 3) * 2;
-            Span<int> free = GetFreePositions();
-            int next = ThreadSafeRandom.NextInt(max: free.Length);
-            Data[free[next]] = ThreadSafeRandom.NextInt(1, 3) * 2;
-
+            GetFreePositionReference() = ThreadSafeRandom.NextInt(1, 3) * 2;
         }
 
         private _2048Environment(int reward, int timestep)
@@ -71,11 +68,70 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
             Timestep = timestep;
         }
 
+        private static readonly (int X, int Y)[] Directions =
+        {
+            (0, -1),    // Up
+            (0, 1),     // Down
+            (-1, 0),    // Left
+            (1, 0)      // Right
+        };
+
+        private static readonly int[] Ascending = { 0, 1, 2, 3 };
+        private static readonly int[] Descending = { 3, 2, 1, 0 };
+
+        private const int UP = 0;
+        private const int DOWN = 1;
+        private const int LEFT = 2;
+        private const int RIGHT = 3;
+
         /// <inheritdoc/>
         public IEnvironment Execute(int action)
         {
-            // TODO
-            return null;
+            var state = (_2048Environment)Clone();
+            Span<bool> map = stackalloc bool[16];
+            ref var rmap = ref map.GetPinnableReference();
+            ref var rdata = ref state.Data[0];
+            ref var rx = ref action == RIGHT ? ref Descending[0] : ref Ascending[0];
+            ref var ry = ref action == DOWN ? ref Descending[1] : ref Ascending[1];
+            var direction = Directions[action];
+
+            for (var i = 1; i < 4; i++)
+            {
+                for (var j = 1; j < 4; j++)
+                {
+                    var x = Unsafe.Add(ref rx, i);
+                    var y = Unsafe.Add(ref ry, j);
+                    ref var rxy = ref Unsafe.Add(ref rdata, y * 4 + x);
+                    if (rxy == 0) continue;
+
+                    var (tx, ty) = (x, y);
+                    ref var rtxy = ref rxy;
+                    do
+                    {
+                        tx += direction.X;
+                        ty += direction.Y;
+                    } while (tx >= 0 && tx < 4 &&
+                             ty >= 0 && ty < 4 &&
+                             (rtxy = ref Unsafe.Add(ref rdata, ty * 4 + tx)) == 0);
+
+                    if (Unsafe.AreSame(ref rxy, ref rtxy)) continue;
+                    if (rtxy == 0)
+                    {
+                        rtxy = rxy;
+                        rxy = 0;
+                    }
+                    else if (rtxy == rxy)
+                    {
+                        ref var rtmap = ref Unsafe.Add(ref rmap, ty * 4 + rx);
+                        if (rtmap) continue;
+                        rtmap = true;
+                        rtxy *= 2;
+                        rxy = 0;
+                    }
+                }
+            }
+
+            return state;
         }
 
         /// <inheritdoc/>
@@ -129,20 +185,25 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         /// Returns the index of the free tiles in the current state
         /// </summary>
         [Pure]
-        private Span<int> GetFreePositions()
+        private ref int GetFreePositionReference()
         {
-            Span<int> positions = Data.AsSpan(16, 16);
+            Span<int> positions = stackalloc int[16];
             ref int r0 = ref Data[0];
             ref int rp = ref positions.GetPinnableReference();
             int free = 0;
 
+            // Iterate over the current state and mark the free cells
             for (int i = 0; i < 16; i++)
             {
                 if (Unsafe.Add(ref r0, i) > 0) continue;
                 Unsafe.Add(ref rp, free++) = i;
             }
 
-            return positions.Slice(0, free);
+            // Pick a random free cell and return a reference to it
+            int
+                pick = ThreadSafeRandom.NextInt(max: free),
+                index = Unsafe.Add(ref rp, pick);
+            return ref Unsafe.Add(ref r0, index);
         }
     }
 }
