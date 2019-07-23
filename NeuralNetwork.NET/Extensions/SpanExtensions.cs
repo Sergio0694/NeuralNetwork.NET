@@ -96,6 +96,29 @@ namespace NeuralNetworkNET.Extensions
         #region Float
 
         /// <summary>
+        /// Returns the maximum value in the input <see cref="Span{T}"/>
+        /// </summary>
+        /// <param name="span">The source <see cref="Span{T}"/> instance</param>
+        [Pure]
+        [CollectionAccess(CollectionAccessType.Read)]
+        public static unsafe float Max(this Span<float> span)
+        {
+            if (span.Length == 0) throw new ArgumentException("The input span can't be empty", nameof(span));
+            if (span.Length == 1) return span[0];
+            float max = float.MinValue;
+            fixed (float* p = span)
+            {
+                for (int j = 0; j < span.Length; j++)
+                {
+                    float value = p[j];
+                    if (value > max) max = value;
+                }
+            }
+
+            return max;
+        }
+
+        /// <summary>
         /// Returns the index of the maximum value in the input <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The source <see cref="Span{T}"/> instance</param>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -127,37 +128,63 @@ namespace NeuralNetworkNET.APIs
             return Task.Run(() => TrainNetworkCore(network, dataset, algorithm, epochs, dropout, batchProgress, trainingProgress, validationDataset, testDataset, token), token);
         }
 
-        public static void TrainNetwork(
+        public static unsafe void TrainNetwork<TEnvironment>(
             [NotNull] INeuralNetwork network,
-            [NotNull] IEnvironment environment,
-            float epsilon,
+            [NotNull] TEnvironment environment,
+            float epsilon, float discount,
             CancellationToken token)
+            where TEnvironment : IEnvironment
         {
             var graph = (NeuralNetworkBase)network;
             var algorithm = TrainingAlgorithms.AdaDelta();
             var optimizer = WeightsUpdaters.AdaDelta(algorithm, graph);
-            var queue = new Queue<IEnvironment>(1000);
             var sample = new float[environment.Size];
+            var count = 128;
+            float[,]
+                x = new float[count, environment.Size],
+                y = new float[count, environment.Actions];
+            var batch = new SamplesBatch(x, y);
+            var current = (TEnvironment)environment.Clone();
 
-            while (true)
+            fixed (float* px = x, py = y)
             {
-                // Exploration
-                for (int i = 0; i < 100; i++)
+                while (true)
                 {
-                    var current = environment;
-                    while (current.CanExecute)
+                    // Explore and execute an action
+                    for (int i = 0; i < count; i++)
                     {
+                        // Prepare the training sample
+                        float* tx = px + environment.Size * i;
+                        current.Serialize(new Span<float>(tx, sizeof(float) * environment.Size));
+
+                        // Prepare the training output
+                        float* ty = py + environment.Actions * i;
+                        for (int j = 0; j < environment.Actions; j++)
+                        {
+                            var sn = (TEnvironment)current.Execute(j);
+                            sn.Serialize(sample.AsSpan());
+                            var qvalues = graph.Forward(sample);
+                            ty[j] = sn.Reward + discount * qvalues.AsSpan().Max();
+                        }
+
+                        // Explore
                         if (ThreadSafeRandom.NextFloat() < epsilon)
                         {
-                            current = environment.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
+                            current = (TEnvironment)environment.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
                         }
                         else
                         {
                             current.Serialize(sample.AsSpan());
                             var qvalues = graph.Forward(sample);
-                            current = environment.Execute(qvalues.AsSpan().Argmax());
+                            current = (TEnvironment)environment.Execute(qvalues.AsSpan().Argmax());
                         }
+
+                        // Reset if needed
+                        if (!current.CanExecute) current = (TEnvironment)environment.Clone();
                     }
+
+                    // Perform a training step when a batch has been fully populated
+                    graph.Backpropagate(batch, 0, optimizer);
                 }
             }
         }
