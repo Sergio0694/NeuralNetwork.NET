@@ -122,9 +122,9 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
                     }
                     else if (rtxy == rxy)
                     {
-                        ref var rtmap = ref Unsafe.Add(ref rmap, ty * 4 + rx);
-                        if (rtmap) continue;
-                        rtmap = true;
+                        ref var rmaptxy = ref Unsafe.Add(ref rmap, ty * 4 + tx);
+                        if (rmaptxy) continue;
+                        rmaptxy = true;
                         rtxy *= 2;
                         rxy = 0;
                     }
