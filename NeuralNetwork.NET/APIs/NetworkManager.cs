@@ -161,22 +161,24 @@ namespace NeuralNetworkNET.APIs
                         float* ty = py + environment.Actions * i;
                         for (int j = 0; j < environment.Actions; j++)
                         {
-                            var sn = (TEnvironment)current.Execute(j);
-                            sn.Serialize(sample.AsSpan());
-                            var qvalues = graph.Forward(sample);
-                            ty[j] = sn.Reward + discount * qvalues.AsSpan().Max();
+                            using (var sn = (TEnvironment) current.Execute(j))
+                            {
+                                sn.Serialize(sample.AsSpan());
+                                var qvalues = graph.Forward(sample);
+                                ty[j] = sn.Reward + discount * qvalues.AsSpan().Max();
+                            }
                         }
 
                         // Explore
                         if (ThreadSafeRandom.NextFloat() < epsilon)
                         {
-                            current = (TEnvironment)environment.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
+                            current = (TEnvironment)current.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
                         }
                         else
                         {
                             current.Serialize(sample.AsSpan());
                             var qvalues = graph.Forward(sample);
-                            current = (TEnvironment)environment.Execute(qvalues.AsSpan().Argmax());
+                            current = (TEnvironment)current.Execute(qvalues.AsSpan().Argmax());
                         }
 
                         // Reset if needed
