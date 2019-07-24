@@ -101,46 +101,54 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
             var moved = false;
             var won = false;
 
+            // Iterate on all the cells in the grid
             for (var i = 0; i < 4; i++)
             {
                 for (var j = 0; j < 4; j++)
                 {
+                    // Get the current cell, skip if it's empty
                     var x = Unsafe.Add(ref rx, i);
                     var y = Unsafe.Add(ref ry, j);
                     ref var rxy = ref Unsafe.Add(ref rdata, y * 4 + x);
                     if (rxy == 0) continue;
 
+                    // Find the farthest cell with a value, and the farthest empty cell
                     var (tx, ty) = (x, y);
-                    ref var rtxy = ref rxy;
+                    ref var rtxy0 = ref rxy;
+                    ref var rtxy1 = ref rxy;
                     do
                     {
+                        rtxy1 = ref rtxy0;
                         tx += direction.X;
                         ty += direction.Y;
                     } while (tx >= 0 && tx < 4 &&
                              ty >= 0 && ty < 4 &&
-                             (rtxy = ref Unsafe.Add(ref rdata, ty * 4 + tx)) == 0);
+                             (rtxy0 = ref Unsafe.Add(ref rdata, ty * 4 + tx)) == 0);
 
-                    if (Unsafe.AreSame(ref rxy, ref rtxy)) continue;
-                    if (rtxy == 0)
+                    // Check if the current cell can be moved
+                    if (Unsafe.AreSame(ref rxy, ref rtxy0)) continue;
+                    ref var rmaptxy = ref Unsafe.Add(ref rmap, ty * 4 + tx);
+                    if (rtxy0 == rxy && !rmaptxy)
                     {
-                        rtxy = rxy;
-                        rxy = 0;
-                        moved = true;
-                    }
-                    else if (rtxy == rxy)
-                    {
-                        ref var rmaptxy = ref Unsafe.Add(ref rmap, ty * 4 + tx);
-                        if (rmaptxy) continue;
+                        // Merge if the farthest cell has the same value and it hadn't been merged before
                         rmaptxy = true;
-                        rtxy *= 2;
+                        rtxy0 *= 2;
                         rxy = 0;
-                        score += rtxy;
+                        score += rtxy0;
                         moved = true;
-                        if (rtxy == 2048) won = true;
+                        if (rtxy0 == 2048) won = true;
+                    }
+                    else if (rtxy1 == 0 && !Unsafe.AreSame(ref rxy, ref rtxy1))
+                    {
+                        // If the farthest cell is empty, move the current cell
+                        rtxy1 = rxy;
+                        rxy = 0;
+                        moved = true;
                     }
                 }
             }
 
+            // If at least one cell has been moved, insert a new random cell in an empty space
             if (moved && !won)
             {
                 ref var rfree = ref GetFreePositionReference(data);
