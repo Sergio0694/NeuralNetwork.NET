@@ -51,19 +51,21 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         /// The array representing the environment current state
         /// </summary>
         [NotNull]
-        private readonly int[] Data = Allocator.Rent(16);
+        public readonly int[] Data;
 
         /// <summary>
         /// Creates a new, empty <see cref="TicTacToeEnvironment"/> instance
         /// </summary>
         public _2048Environment()
         {
+            Data = Allocator.Rent(16);
             Data[ThreadSafeRandom.NextInt(max: 4) * 4 + ThreadSafeRandom.NextInt(max: 4)] = ThreadSafeRandom.NextInt(1, 3) * 2;
             GetFreePositionReference() = ThreadSafeRandom.NextInt(1, 3) * 2;
         }
 
-        private _2048Environment(int reward, int timestep)
+        private _2048Environment([NotNull] int[] data, int reward, int timestep)
         {
+            Data = data;
             Reward = reward;
             Timestep = timestep;
         }
@@ -87,13 +89,14 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         /// <inheritdoc/>
         public IEnvironment Execute(int action)
         {
-            var state = (_2048Environment)Clone();
             Span<bool> map = stackalloc bool[16];
             ref var rmap = ref map.GetPinnableReference();
-            ref var rdata = ref state.Data[0];
+            var data = Allocator.Rent(16);
+            ref var rdata = ref data[0];
             ref var rx = ref action == RIGHT ? ref Descending[0] : ref Ascending[0];
             ref var ry = ref action == DOWN ? ref Descending[1] : ref Ascending[1];
             var direction = Directions[action];
+            var score = 0;
 
             for (var i = 1; i < 4; i++)
             {
@@ -127,11 +130,12 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
                         rmaptxy = true;
                         rtxy *= 2;
                         rxy = 0;
+                        score += rtxy;
                     }
                 }
             }
 
-            return state;
+            return new _2048Environment(data, Reward + score, Timestep + 1);
         }
 
         /// <inheritdoc/>
