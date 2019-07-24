@@ -131,7 +131,7 @@ namespace NeuralNetworkNET.APIs
         public static unsafe void TrainNetwork<TEnvironment>(
             [NotNull] INeuralNetwork network,
             [NotNull] TEnvironment environment,
-            float epsilon, float discount,
+            float decay, float discount,
             [NotNull] Action<int> callback,
             CancellationToken token)
             where TEnvironment : IEnvironment
@@ -140,18 +140,23 @@ namespace NeuralNetworkNET.APIs
             var algorithm = TrainingAlgorithms.AdaDelta();
             var optimizer = WeightsUpdaters.AdaDelta(algorithm, graph);
             var sample = new float[environment.Size];
-            var count = 128;
+            var count = 1024;
             float[,]
                 x = new float[count, environment.Size],
                 y = new float[count, environment.Actions];
             var batch = new SamplesBatch(x, y);
             var current = (TEnvironment)environment.Clone();
             var max = 0;
+            var iteration = 0;
 
             fixed (float* px = x, py = y)
             {
                 while (true)
                 {
+                    // Update the exploration rate
+                    var epsilon = (float)Math.Exp(-iteration / decay);
+                    iteration++;
+
                     // Explore and execute an action
                     for (int i = 0; i < count; i++)
                     {

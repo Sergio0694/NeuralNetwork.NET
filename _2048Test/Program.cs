@@ -26,7 +26,7 @@ namespace _2048Test
             NetworkManager.TrainNetwork(
                 network,
                 environment,
-                0.5f, 0.9f,
+                40, 0.9f,
                 score => Console.WriteLine($"SCORE: {score}"),
                 CancellationToken.None);
         }
