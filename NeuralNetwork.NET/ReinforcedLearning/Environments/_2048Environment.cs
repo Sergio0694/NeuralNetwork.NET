@@ -60,7 +60,7 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         {
             Data = Allocator.Rent(16);
             Data[ThreadSafeRandom.NextInt(max: 4) * 4 + ThreadSafeRandom.NextInt(max: 4)] = ThreadSafeRandom.NextInt(1, 3) * 2;
-            GetFreePositionReference() = ThreadSafeRandom.NextInt(1, 3) * 2;
+            GetFreePositionReference(Data) = ThreadSafeRandom.NextInt(1, 3) * 2;
         }
 
         private _2048Environment([NotNull] int[] data, int reward, int timestep)
@@ -92,15 +92,18 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
             Span<bool> map = stackalloc bool[16];
             ref var rmap = ref map.GetPinnableReference();
             var data = Allocator.Rent(16);
+            Data.AsSpan(0, 16).CopyTo(data);
             ref var rdata = ref data[0];
             ref var rx = ref action == RIGHT ? ref Descending[0] : ref Ascending[0];
-            ref var ry = ref action == DOWN ? ref Descending[1] : ref Ascending[1];
+            ref var ry = ref action == DOWN ? ref Descending[0] : ref Ascending[0];
             var direction = Directions[action];
             var score = 0;
+            var moved = false;
+            var won = false;
 
-            for (var i = 1; i < 4; i++)
+            for (var i = 0; i < 4; i++)
             {
-                for (var j = 1; j < 4; j++)
+                for (var j = 0; j < 4; j++)
                 {
                     var x = Unsafe.Add(ref rx, i);
                     var y = Unsafe.Add(ref ry, j);
@@ -122,6 +125,7 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
                     {
                         rtxy = rxy;
                         rxy = 0;
+                        moved = true;
                     }
                     else if (rtxy == rxy)
                     {
@@ -131,8 +135,16 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
                         rtxy *= 2;
                         rxy = 0;
                         score += rtxy;
+                        moved = true;
+                        if (rtxy == 2048) won = true;
                     }
                 }
+            }
+
+            if (moved && !won)
+            {
+                ref var rfree = ref GetFreePositionReference(data);
+                if (rfree == 0) rfree = ThreadSafeRandom.NextInt(1, 3) * 2;
             }
 
             return new _2048Environment(data, Reward + score, Timestep + 1);
@@ -189,12 +201,13 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         /// <summary>
         /// Returns the index of the free tiles in the current state
         /// </summary>
+        /// <param name="data">The input state to analyze</param>
         [Pure]
-        private ref int GetFreePositionReference()
+        private static ref int GetFreePositionReference([NotNull] int[] data)
         {
             Span<int> positions = stackalloc int[16];
-            ref int r0 = ref Data[0];
             ref int rp = ref positions.GetPinnableReference();
+            ref int r0 = ref data[0];
             int free = 0;
 
             // Iterate over the current state and mark the free cells
@@ -205,6 +218,7 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
             }
 
             // Pick a random free cell and return a reference to it
+            if (free == 0) return ref r0;
             int
                 pick = ThreadSafeRandom.NextInt(max: free),
                 index = Unsafe.Add(ref rp, pick);
