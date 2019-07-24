@@ -155,7 +155,9 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
                 if (rfree == 0) rfree = ThreadSafeRandom.NextInt(1, 3) * 2;
             }
 
-            return new _2048Environment(data, Reward + score, Timestep + 1);
+            score += Reward;
+            var timestamp = Timestep + (moved ? 1 : 0);
+            return new _2048Environment(data, score, timestamp);
         }
 
         /// <inheritdoc/>
