@@ -153,8 +153,9 @@ namespace NeuralNetworkNET.ReinforcedLearning.Environments
         /// <inheritdoc/>
         public IEnvironment Clone()
         {
-            var instance = new _2048Environment(Reward, Timestep);
-            Data.AsSpan(0, Size).CopyTo(instance.Data.AsSpan(0, Size));
+            var data = Allocator.Rent(16);
+            Data.AsSpan(0, Size).CopyTo(data.AsSpan(0, Size));
+            var instance = new _2048Environment(data, Reward, Timestep);
             return instance;
         }
 
