@@ -140,67 +140,80 @@ namespace NeuralNetworkNET.APIs
             var algorithm = TrainingAlgorithms.AdaDelta();
             var optimizer = WeightsUpdaters.AdaDelta(algorithm, graph);
             var sample = new float[environment.Size];
-            var count = 1024;
+            var iteration = 0;
+            var cores = Environment.ProcessorCount;
+            var currents = Enumerable.Range(0, cores).Select(_ => environment.Clone()).Cast<TEnvironment>().ToArray();
+            var maximums = new int[cores];
+            var size = 512;
+            var count = cores * 512;
             float[,]
                 x = new float[count, environment.Size],
                 y = new float[count, environment.Actions];
             var batch = new SamplesBatch(x, y);
-            var current = (TEnvironment)environment.Clone();
-            var max = 0;
-            var iteration = 0;
 
             fixed (float* px = x, py = y)
             {
+                float* px0 = px, py0 = py;
+
                 while (true)
                 {
                     // Update the exploration rate
                     var epsilon = (float)Math.Exp(-iteration / decay);
                     iteration++;
 
-                    // Explore and execute an action
-                    for (int i = 0; i < count; i++)
+                    // Explore and execute an action in parallel
+                    Parallel.For(0, cores, c =>
                     {
-                        // Prepare the training sample
-                        float* tx = px + environment.Size * i;
-                        current.Serialize(new Span<float>(tx, sizeof(float) * environment.Size));
-
-                        // Prepare the training output
-                        float* ty = py + environment.Actions * i;
-                        for (int j = 0; j < environment.Actions; j++)
+                        ref var current = ref currents[c];
+                        ref var max = ref maximums[c];
+                        for (int i = 0; i < size; i++)
                         {
-                            using (var sn = (TEnvironment) current.Execute(j))
+                            // Prepare the training sample
+                            float* tx = px0 + environment.Size * size * c + environment.Size * i;
+                            current.Serialize(new Span<float>(tx, sizeof(float) * environment.Size));
+
+                            // Prepare the training output
+                            float* ty = py0 + environment.Actions * size * c + environment.Actions * i;
+                            for (int j = 0; j < environment.Actions; j++)
                             {
-                                sn.Serialize(sample.AsSpan());
+                                using (var sn = (TEnvironment)current.Execute(j))
+                                {
+                                    sn.Serialize(sample.AsSpan());
+                                    var qvalues = graph.Forward(sample);
+                                    ty[j] = sn.Reward + discount * qvalues.AsSpan().Max();
+                                }
+                            }
+
+                            // Explore
+                            if (ThreadSafeRandom.NextFloat() < epsilon)
+                            {
+                                current = (TEnvironment)current.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
+                            }
+                            else
+                            {
+                                current.Serialize(sample.AsSpan());
                                 var qvalues = graph.Forward(sample);
-                                ty[j] = sn.Reward + discount * qvalues.AsSpan().Max();
+                                current = (TEnvironment)current.Execute(qvalues.AsSpan().Argmax());
+                            }
+
+                            // Reset if needed
+                            if (!current.CanExecute)
+                            {
+                                if (current.Reward > max) max = current.Reward;
+                                current = (TEnvironment)environment.Clone();
                             }
                         }
-
-                        // Explore
-                        if (ThreadSafeRandom.NextFloat() < epsilon)
-                        {
-                            current = (TEnvironment)current.Execute(ThreadSafeRandom.NextInt(max: environment.Actions));
-                        }
-                        else
-                        {
-                            current.Serialize(sample.AsSpan());
-                            var qvalues = graph.Forward(sample);
-                            current = (TEnvironment)current.Execute(qvalues.AsSpan().Argmax());
-                        }
-
-                        // Reset if needed
-                        if (!current.CanExecute)
-                        {
-                            if (current.Reward > max) max = current.Reward;
-                            current = (TEnvironment)environment.Clone();
-                        }
-                    }
+                    });
 
                     // Perform a training step when a batch has been fully populated
                     graph.Backpropagate(batch, 0, optimizer);
 
                     // Notify the user
-                    callback(max);
+                    int best = 0;
+                    for (int i = 0; i < cores; i++)
+                        if (maximums[i] > best)
+                            best = maximums[i];
+                    callback(best);
                 }
             }
         }
