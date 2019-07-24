@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2020
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET", "NeuralNetwork.NET\NeuralNetwork.NET.csproj", "{DB944C09-55F9-49E1-8F0D-BBFDE51914DE}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuralNetwork.NET.Cuda.Unit", "Unit\NeuralNetwork.NET.Cuda.Unit\NeuralNetwork.NET.Cuda.Unit.csproj", "{7A72CECA-927F-4207-ADBD-44597A3314B0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DigitsCudaTest", "Samples\DigitsCudaTest\DigitsCudaTest.csproj", "{61AE027B-B2C2-443F-A5B8-59D55FD70259}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_2048Test", "_2048Test\_2048Test.csproj", "{8C181789-974F-4D31-A806-18C3E30E3A55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -109,6 +111,22 @@ Global
 		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x64.Build.0 = Release|Any CPU
 		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x86.ActiveCfg = Release|Any CPU
 		{61AE027B-B2C2-443F-A5B8-59D55FD70259}.Release|x86.Build.0 = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|ARM.Build.0 = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|x64.Build.0 = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Debug|x86.Build.0 = Debug|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|ARM.ActiveCfg = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|ARM.Build.0 = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|x64.ActiveCfg = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|x64.Build.0 = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|x86.ActiveCfg = Release|Any CPU
+		{8C181789-974F-4D31-A806-18C3E30E3A55}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,6 +136,7 @@ Global
 		{2DC460A3-F62D-4F90-983C-14F496A5240C} = {49AA3089-344B-4572-B1D2-413875F958AB}
 		{7A72CECA-927F-4207-ADBD-44597A3314B0} = {49AA3089-344B-4572-B1D2-413875F958AB}
 		{61AE027B-B2C2-443F-A5B8-59D55FD70259} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
+		{8C181789-974F-4D31-A806-18C3E30E3A55} = {4E3B7094-50D8-4AE9-BD6D-9181AA867AAF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E8684D12-614F-431C-80F6-09FC9B5E51ED}

@@ -132,6 +132,7 @@ namespace NeuralNetworkNET.APIs
             [NotNull] INeuralNetwork network,
             [NotNull] TEnvironment environment,
             float epsilon, float discount,
+            [NotNull] Action<int> callback,
             CancellationToken token)
             where TEnvironment : IEnvironment
         {
@@ -145,6 +146,7 @@ namespace NeuralNetworkNET.APIs
                 y = new float[count, environment.Actions];
             var batch = new SamplesBatch(x, y);
             var current = (TEnvironment)environment.Clone();
+            var max = 0;
 
             fixed (float* px = x, py = y)
             {
@@ -182,11 +184,18 @@ namespace NeuralNetworkNET.APIs
                         }
 
                         // Reset if needed
-                        if (!current.CanExecute) current = (TEnvironment)environment.Clone();
+                        if (!current.CanExecute)
+                        {
+                            if (current.Reward > max) max = current.Reward;
+                            current = (TEnvironment)environment.Clone();
+                        }
                     }
 
                     // Perform a training step when a batch has been fully populated
                     graph.Backpropagate(batch, 0, optimizer);
+
+                    // Notify the user
+                    callback(max);
                 }
             }
         }
