@@ -1,4 +1,4 @@
-![](https://i.imgur.com/PVSfgik.png)
+<a href="https://www.nuget.org/packages/NeuralNetwork.NET/"><img src="https://user-images.githubusercontent.com/10199417/66044718-7ec50280-e522-11e9-90cd-fd5800fbe506.png" alt="Get it from NuGet" width='748' height='200' /></a> <a href="https://scisharp.github.io/SciSharp/"><img src="https://github.com/SciSharp/SciSharp/raw/master/art/scisharp_badge.png" alt="ScuSharp STACK" width='200' height='200' /></a>
 [![NuGet](https://img.shields.io/nuget/v/NeuralNetwork.NET.svg)](https://www.nuget.org/packages/NeuralNetwork.NET/) [![NuGet](https://img.shields.io/nuget/dt/NeuralNetwork.NET.svg)](https://www.nuget.org/stats/packages/NeuralNetwork.NET?groupby=Version) [![AppVeyor](https://img.shields.io/appveyor/ci/Sergio0694/neuralnetwork-net/master.svg)](https://ci.appveyor.com/project/Sergio0694/neuralnetwork-net/master) [![AppVeyor tests](https://img.shields.io/appveyor/tests/Sergio0694/neuralnetwork-net/master.svg)](https://ci.appveyor.com/project/Sergio0694/neuralnetwork-net/master) [![Twitter Follow](https://img.shields.io/twitter/follow/Sergio0694.svg?style=flat&label=Follow)](https://twitter.com/SergioPedri)
 
 # What is it?
