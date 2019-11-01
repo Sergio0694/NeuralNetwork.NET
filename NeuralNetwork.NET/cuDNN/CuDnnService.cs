@@ -76,17 +76,10 @@ namespace NeuralNetworkNET.cuDNN
                     // Calling this directly could cause a crash in the <Module> loader due to the missing .dll files
                     return CuDnnSupportHelper.IsGpuAccelerationSupported();
                 }
-                catch (Exception e)
+                catch (Exception e) when (e is FileNotFoundException || e is TypeInitializationException)
                 {
-                    switch (e)
-                    {
-                        case TypeInitializationException _:
-                        case FileNotFoundException _:
-                            // Missing .dll file
-                            return false;
-                        default:
-                            throw;
-                    }
+                    // Missing .dll file
+                    return false;
                 }
             }
         }
