@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Alea;
@@ -75,10 +76,17 @@ namespace NeuralNetworkNET.cuDNN
                     // Calling this directly could cause a crash in the <Module> loader due to the missing .dll files
                     return CuDnnSupportHelper.IsGpuAccelerationSupported();
                 }
-                catch (TypeInitializationException)
+                catch (Exception e)
                 {
-                    // Missing .dll file
-                    return false;
+                    switch (e)
+                    {
+                        case TypeInitializationException _:
+                        case FileNotFoundException _:
+                            // Missing .dll file
+                            return false;
+                        default:
+                            throw;
+                    }
                 }
             }
         }
