@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
@@ -217,6 +217,31 @@ namespace NeuralNetworkNET.Networks.Activations
         [PublicAPI]
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Identityprime(float x) => 1;
+        public static float IdentityPrime(float x) => 1;
+
+        /// <summary>
+        /// Applies the Mish function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Mish(float x) => x * Tanh(Softplus(x));
+
+        /// <summary>
+        /// Applies the Mish Derivative function
+        /// </summary>
+        /// <param name="x">The input to process</param>
+        [PublicAPI]
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float MishPrime(float x)
+        {
+            float
+                omega = (float)Math.Exp(3 * x) + 4 * (float)Math.Exp(2 * x) + (6 + 4 * x) * (float)Math.Exp(x) + 4 * (1 + x),
+                delta = 1 + (float)Math.Pow((Math.Exp(x) + 1), 2),
+                derivative = (float)Math.Exp(x) * omega / (float)Math.Pow(delta, 2);
+            return derivative;
+        }
     }
 }
