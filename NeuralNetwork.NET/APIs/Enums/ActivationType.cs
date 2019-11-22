@@ -1,4 +1,4 @@
-﻿namespace NeuralNetworkNET.APIs.Enums
+namespace NeuralNetworkNET.APIs.Enums
 {
     /// <summary>
     /// Indicates an activation function to use in a neural network
@@ -59,6 +59,14 @@
         /// <summary>
         /// A linear activation function that just returns the input value
         /// </summary>
-        Identity
+        Identity,
+
+        /// <summary>
+        /// The Mish function, proposed by Diganta Misra (https://arxiv.org/abs/1908.08681)
+        /// Definition: x tanh(ln(1 + e^2)) 
+        /// Implimentation: x * Tanh(Softplus(x))
+        /// </summary>
+        Mish
+
     }
 }
