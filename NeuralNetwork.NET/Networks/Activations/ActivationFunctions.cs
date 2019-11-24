@@ -238,10 +238,9 @@ namespace NeuralNetworkNET.Networks.Activations
         public static float MishPrime(float x)
         {
             float
-                omega = (float)Math.Exp(3 * x) + 4 * (float)Math.Exp(2 * x) + (6 + 4 * x) * (float)Math.Exp(x) + 4 * (1 + x),
-                delta = 1 + (float)Math.Pow((Math.Exp(x) + 1), 2),
-                derivative = (float)Math.Exp(x) * omega / (float)Math.Pow(delta, 2);
-            return derivative;
+                s = 2 * (float)Math.Exp(x) + (float)Math.Exp(2 * x) + 2,
+                w = 4 * (x + 1) + (4 * ((float)Math.Exp(2 * x))) + (float)Math.Exp(3 * x) + (float)Math.Exp(x) * (4 * x + 6);
+            return (float)Math.Exp(x) * w / (s * s);
         }
     }
 }
