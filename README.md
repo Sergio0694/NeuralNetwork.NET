@@ -5,9 +5,9 @@
 # What is it?
 
 **NeuralNetwork.NET** is a .NET Standard 2.0 library that implements sequential and computation graph neural networks with customizable layers, built from scratch with C#.
-It provides simple APIs designed for quick prototyping to define and train models using stochastic gradient descent, as well as methods to save/load a network model and its metadata and more.
+It provides simple APIs designed for quick prototyping to define and train models using stochastic gradient descent, as well as methods to save/load a network model and its metadata and more. The library also exposes CUDA-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
 
-The library also exposes CUDA-accelerated layers with more advanced features that leverage the GPU and the cuDNN toolkit to greatly increase the performances when training or using a neural network.
+> **DISCLAIMER:** this library is provided as is, and it's no longer being actively maintained. NeuralNetwork.NET was developed during a university course and it's not meant to be a replacement for other well known machine learning frameworks. If you're looking for a machine learning library for .NET to use in production, I recommend trying out [ML.NET](https://dotnet.microsoft.com/apps/machinelearning-ai/ml-dotnet) or alternatively [TensorFlow.NET](https://github.com/SciSharp/TensorFlow.NET).
 
 # Table of Contents
 
